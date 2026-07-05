@@ -1,0 +1,119 @@
+{
+  "name": "smiley-rpc",
+  "productName": "Smiley",
+  "version": "2.0.0",
+  "description": "Discord Rich Presence with animated anime characters and beautiful UI",
+  "main": "main.js",
+  "author": "Smiley",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --mac --win --linux",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "electron-updater": "^6.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.4.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.smiley.rpc",
+    "productName": "Smiley",
+    "copyright": "Copyright © 2025 Smiley",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "config.example.json",
+      "manifest.json",
+      "ToS.md",
+      "PRIVACY.md"
+    ],
+    "extraResources": [
+      {
+        "from": "src/assets/",
+        "to": "assets/"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "1tsRaj",
+      "repo": "smiley-rpc",
+      "releaseType": "release"
+    },
+    "mac": {
+      "category": "public.app-category.social-networking",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "publisherName": "Smiley"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icons",
+      "category": "Network",
+      "maintainer": "Smiley",
+      "vendor": "Smiley",
+      "synopsis": "Discord Rich Presence with animated characters",
+      "description": "Set your Discord status with beautiful animated anime characters"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Smiley",
+      "license": "LICENSE",
+      "artifactName": "Smiley-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "dmg": {
+      "title": "Smiley ${version}",
+      "artifactName": "Smiley-${version}-${arch}.${ext}"
+    }
+  }
+}

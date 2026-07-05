@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https://api.waifu.pics https://cdn.waifu.im https://i.waifu.pics https://media.tenor.com; connect-src 'self' https://api.waifu.pics https://raw.githubusercontent.com;"
+    />
+    <title>Smiley</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="brand">
+          <div class="brand-icon" id="brandIcon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="40" height="40">
+              <defs>
+                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#7aa2f7;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#bb9af7;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#logoGrad)" />
+              <circle cx="19" cy="20" r="4" fill="#1a1b26" /><circle cx="19" cy="19" r="1.5" fill="#fff" />
+              <circle cx="29" cy="20" r="4" fill="#1a1b26" /><circle cx="29" cy="19" r="1.5" fill="#fff" />
+              <path d="M16 30 Q24 38 32 30" stroke="#1a1b26" stroke-width="2.5" fill="none" stroke-linecap="round" />
+              <circle cx="14" cy="32" r="2" fill="#f7768e" opacity="0.6" />
+              <circle cx="34" cy="32" r="2" fill="#f7768e" opacity="0.6" />
+            </svg>
+          </div>
+          <div>
+            <h1>Smiley</h1>
+            <p class="tagline">Discord Rich Presence</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="connection-pill" id="connectionPill">
+            <span class="connection-dot"></span>
+            <span id="connectionText">Connecting…</span>
+          </div>
+          <button class="btn btn-ghost" id="minimizeBtn" title="Minimize">─</button>
+          <button class="btn btn-ghost" id="settingsBtn" title="Settings">⚙️</button>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <div class="content">
+        <!-- Left Sidebar: Animated Character Preview -->
+        <aside class="preview-sidebar">
+          <!-- Character Stage with GIF -->
+          <div class="character-stage" id="characterStage">
+            <div class="character-container" id="characterContainer">
+              <img class="character-gif" id="characterGif" src="" alt="Character" style="display:none;" />
+              <div class="character-loading" id="characterLoading">
+                <span class="loading-spinner">⏳</span>
+                <span>Loading character...</span>
+              </div>
+            </div>
+            <div class="character-label" id="characterLabel">Pick an activity to see your character!</div>
+            <div class="character-source" id="characterSource"></div>
+          </div>
+
+          <!-- Discord Preview Card -->
+          <div class="discord-card" id="previewCard">
+            <div class="discord-card-glow"></div>
+            <div class="discord-card-inner">
+              <div class="discord-art" id="previewArt">
+                <img class="discord-art-gif" id="previewGif" src="" alt="" style="display:none;" />
+                <span class="discord-art-emoji" id="previewEmoji">🍕</span>
+              </div>
+              <div class="discord-info">
+                <div class="discord-app-name">Smiley</div>
+                <div class="discord-details" id="previewDetails">Pick an activity</div>
+                <div class="discord-state" id="previewState">Your status appears here</div>
+                <div class="discord-timer" id="previewTimer">
+                  <span class="timer-icon">⏱</span>
+                  <span id="timerText">0:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
+
+          <!-- BIG Donate Banner -->
+          <a class="donate-banner" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener" id="donateBanner">
+            <span class="donate-banner-icon">💝</span>
+            <div class="donate-banner-text">
+              <strong>Support the Developer</strong>
+              <span>Help keep Smiley free &amp; updated!</span>
+            </div>
+            <span class="donate-banner-arrow">→</span>
+          </a>
+        </aside>
+
+        <!-- Right: Activity Picker -->
+        <main class="picker-main">
+          <div class="picker-header">
+            <div class="category-tabs" id="categoryTabs" role="tablist"></div>
+            <div class="search-wrap">
+              <input type="search" id="searchInput" placeholder="Search activities…" autocomplete="off" />
+            </div>
+          </div>
+          <div class="activity-grid" id="activityGrid"></div>
+        </main>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span class="footer-version" id="footerVersion">Smiley v2.0</span>
+        <span class="footer-hint">Updates rate-limited to ~15s by Discord</span>
+      </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <dialog class="modal" id="settingsModal">
+      <form method="dialog" class="modal-content" id="settingsForm">
+        <div class="modal-header">
+          <h2>⚙️ Settings</h2>
+          <button type="button" class="btn-close" id="closeSettings">✕</button>
+        </div>
+        <div class="settings-tabs" id="settingsTabs">
+          <button type="button" class="settings-tab active" data-tab="general">General</button>
+          <button type="button" class="settings-tab" data-tab="appearance">Appearance</button>
+          <button type="button" class="settings-tab" data-tab="animations">Animations</button>
+          <button type="button" class="settings-tab" data-tab="about">About</button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-panel active" data-panel="general">
+            <label class="field">
+              <span class="field-label">Discord Application Client ID</span>
+              <input type="password" id="clientIdInput" placeholder="123456789012345678" pattern="[0-9]+" required />
+              <span class="field-hint">Create a free app at <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a> → copy Application ID</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Donation link</span>
+              <input type="url" id="donationInput" placeholder="https://paypal.me/you" />
+            </label>
+            <div class="field toggle-field">
+              <span class="field-label">Auto-connect on launch</span>
+              <label class="toggle"><input type="checkbox" id="autoConnectToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field toggle-field">
+              <span class="field-label">Minimize to tray on close</span>
+              <label class="toggle"><input type="checkbox" id="minimizeTrayToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="settings-panel" data-panel="appearance">
+            <div class="field toggle-field">
+              <span class="field-label">Show session timer</span>
+              <label class="toggle"><input type="checkbox" id="showTimerToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field">
+              <span class="field-label">Theme</span>
+              <div class="theme-options" id="themeOptions">
+                <label class="theme-option active" data-theme="dark"><div class="theme-preview theme-dark"></div><span>Dark</span></label>
+                <label class="theme-option" data-theme="midnight"><div class="theme-preview theme-midnight"></div><span>Midnight</span></label>
+                <label class="theme-option" data-theme="ocean"><div class="theme-preview theme-ocean"></div><span>Ocean</span></label>
+                <label class="theme-option" data-theme="sakura"><div class="theme-preview theme-sakura"></div><span>Sakura</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="settings-panel" data-panel="animations">
+            <div class="field toggle-field">
+              <span class="field-label">Enable anime animations</span>
+              <label class="toggle"><input type="checkbox" id="animationsToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field">
+              <span class="field-label">Custom Animation</span>
+              <p class="field-hint">Upload your own animated GIF or image to use as your character</p>
+              <div class="custom-animation-area" id="customAnimationArea">
+                <div class="custom-animation-drop" id="customAnimationDrop">
+                  <span class="drop-icon">🎨</span>
+                  <p>Click to browse for an image</p>
+                  <span class="drop-formats">PNG, JPG, GIF, WebP, SVG (max 5MB)</span>
+                </div>
+                <div class="custom-animation-list" id="customAnimationList"></div>
+              </div>
+            </div>
+          </div>
+          <div class="settings-panel" data-panel="about">
+            <div class="about-section">
+              <div class="about-logo">
+                <svg viewBox="0 0 48 48" width="64" height="64">
+                  <defs><linearGradient id="aboutLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#7aa2f7;stop-opacity:1" /><stop offset="100%" style="stop-color:#bb9af7;stop-opacity:1" /></linearGradient></defs>
+                  <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#aboutLogoGrad)" />
+                  <circle cx="19" cy="20" r="4" fill="#1a1b26" /><circle cx="19" cy="19" r="1.5" fill="#fff" />
+                  <circle cx="29" cy="20" r="4" fill="#1a1b26" /><circle cx="29" cy="19" r="1.5" fill="#fff" />
+                  <path d="M16 30 Q24 38 32 30" stroke="#1a1b26" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                </svg>
+              </div>
+              <h3>Smiley v2.0</h3>
+              <p class="about-desc">Discord Rich Presence with animated anime characters and beautiful UI.</p>
+              <div class="about-links">
+                <a class="about-link" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener"><span>💝</span> Support on PayPal</a>
+              </div>
+              <div class="about-legal">
+                <a href="#" id="tosLink">Terms of Service</a> &middot; <a href="#" id="privacyLink">Privacy Policy</a>
+              </div>
+              <p class="about-credit">Made with love for the Discord community</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="checkUpdateBtn">Check for Updates</button>
+          <button type="submit" class="btn btn-primary">Save &amp; Connect</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Legal Modal -->
+    <dialog class="modal modal-wide" id="legalModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="legalTitle">Legal</h2>
+          <button type="button" class="btn-close" id="closeLegal">✕</button>
+        </div>
+        <div class="modal-body legal-body" id="legalBody"></div>
+      </div>
+    </dialog>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script type="module" src="renderer.js"></script>
+  </body>
+</html>
