@@ -163,3 +163,14 @@ Your support helps keep Smiley free and regularly updated with new features!
 ## License
 
 MIT
+
+## Acknowledgments
+
+This app was built with the help of **AI (Kimi / Moonshot AI)**. It is **not** a fully self-built project — AI assisted with coding, architecture, design decisions, and documentation. We believe in being transparent about how software is made.
+
+- AI-generated code was reviewed and adapted by the project owner
+- The Discord Rich Presence integration uses the official `discord-rpc` library
+- Animations powered by [waifu.pics](https://waifu.pics) and [Tenor](https://tenor.com) APIs
+- Icons and visual design inspired by modern Discord clients
+
+MIT

@@ -1,7 +1,6 @@
 import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES, fetchWaifuImage } from './activities.js';
 
 const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
 
 // ─── DOM refs ────────────────────────────────────────────────────────
 const connectionPill = $('#connectionPill');
@@ -31,7 +30,6 @@ const characterLabel = $('#characterLabel');
 const characterSource = $('#characterSource');
 const appEl = $('#app');
 const footerVersion = $('#footerVersion');
-const checkUpdateBtn = $('#checkUpdateBtn');
 const legalModal = $('#legalModal');
 const legalTitle = $('#legalTitle');
 const legalBody = $('#legalBody');
@@ -40,13 +38,13 @@ const tosLink = $('#tosLink');
 const privacyLink = $('#privacyLink');
 
 // Settings refs
-const settingsTabs = $$('.settings-tab');
-const settingsPanels = $$('.settings-panel');
+const settingsTabs = document.querySelectorAll('.settings-tab');
+const settingsPanels = document.querySelectorAll('.settings-panel');
 const autoConnectToggle = $('#autoConnectToggle');
 const minimizeTrayToggle = $('#minimizeTrayToggle');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
-const themeOptions = $$('.theme-option');
+const themeOptions = document.querySelectorAll('.theme-option');
 const customAnimationDrop = $('#customAnimationDrop');
 const customAnimationList = $('#customAnimationList');
 
@@ -59,7 +57,7 @@ let searchQuery = '';
 let currentSettings = {};
 let customAnimations = [];
 let activeCustomAnimation = null;
-let currentWaifuUrl = null;
+let currentGifUrl = null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
@@ -101,41 +99,25 @@ function startTimer(start) {
   timerInterval = setInterval(tick, 1000);
 }
 
-// ─── GIF Loading ─────────────────────────────────────────────────────
-async function loadCharacterGif(category) {
-  if (activeCustomAnimation) {
-    setCharacterGif(activeCustomAnimation, 'Custom');
-    return;
-  }
+// ─── GIF Loading (async, with proper sequencing) ─────────────────────
+async function resolveGifUrl(category) {
+  if (activeCustomAnimation) return { url: activeCustomAnimation, source: 'Custom' };
 
   const cat = ACTIVITY_CATEGORIES.find((c) => c.id === category);
-  if (!cat) {
-    setCharacterGif(null, '');
-    return;
-  }
+  if (!cat) return { url: null, source: '' };
 
-  // Show loading
-  characterGif.style.display = 'none';
-  characterLoading.style.display = 'flex';
-
-  // Try waifu.pics API first
-  let url = null;
+  // Try waifu.pics API with timeout
   if (currentSettings.animationsEnabled !== false && cat.waifuTag) {
-    try {
-      url = await fetchWaifuImage(cat.waifuTag);
-    } catch (e) { /* ignore */ }
+    const url = await fetchWaifuImage(cat.waifuTag);
+    if (url) return { url, source: `waifu.pics · ${cat.label}` };
   }
 
   // Fallback to Tenor GIF
-  if (!url && cat.fallbackGif) {
-    url = cat.fallbackGif;
-  }
-
-  currentWaifuUrl = url;
-  setCharacterGif(url, cat.label);
+  if (cat.fallbackGif) return { url: cat.fallbackGif, source: `tenor · ${cat.label}` };
+  return { url: null, source: '' };
 }
 
-function setCharacterGif(url, label) {
+function setCharacterDisplay(url, source) {
   characterLoading.style.display = 'none';
   if (!url) {
     characterGif.style.display = 'none';
@@ -144,14 +126,11 @@ function setCharacterGif(url, label) {
   }
   characterGif.src = url;
   characterGif.style.display = 'block';
-  characterGif.classList.remove('character-gif-loaded');
-  void characterGif.offsetWidth; // trigger reflow
-  characterGif.classList.add('character-gif-loaded');
-  characterSource.textContent = label ? `via waifu.pics · ${label}` : '';
+  characterGif.onload = () => characterGif.classList.add('character-gif-loaded');
+  characterSource.textContent = source;
 }
 
-// ─── Discord Preview ─────────────────────────────────────────────────
-function updatePreview(activity) {
+function setPreviewDisplay(activity, gifUrl) {
   if (!activity) {
     previewCard.classList.remove('active');
     previewCard.style.removeProperty('--card-glow');
@@ -162,8 +141,6 @@ function updatePreview(activity) {
     previewState.textContent = 'Your status appears here';
     clearBtn.disabled = true;
     startTimer(null);
-    loadCharacterGif(null);
-    updateCharacterLabel(null);
     return;
   }
 
@@ -171,10 +148,10 @@ function updatePreview(activity) {
   previewCard.classList.add('active');
   previewCard.style.setProperty('--card-glow', `${category?.color || '#7aa2f7'}33`);
 
-  // Use GIF if available, else emoji
-  if (currentWaifuUrl && currentSettings.animationsEnabled !== false) {
+  // Use GIF in preview if animations enabled
+  if (gifUrl && currentSettings.animationsEnabled !== false) {
     previewEmoji.style.display = 'none';
-    previewGif.src = currentWaifuUrl;
+    previewGif.src = gifUrl;
     previewGif.style.display = 'block';
   } else {
     previewGif.style.display = 'none';
@@ -185,11 +162,9 @@ function updatePreview(activity) {
   previewDetails.textContent = activity.details;
   previewState.textContent = activity.state || '';
   clearBtn.disabled = false;
-  loadCharacterGif(activity.category);
-  updateCharacterLabel(activity);
 }
 
-function updateCharacterLabel(activity) {
+function setCharacterLabel(activity) {
   if (!activity) {
     characterLabel.textContent = 'Pick an activity to see your character!';
     return;
@@ -202,6 +177,29 @@ function updateCharacterLabel(activity) {
     social: 'Having fun with friends! ✨',
   };
   characterLabel.textContent = labels[activity.category] || `${activity.details} time!`;
+}
+
+async function updatePreview(activity) {
+  if (!activity) {
+    setPreviewDisplay(null);
+    setCharacterDisplay(null, '');
+    setCharacterLabel(null);
+    currentGifUrl = null;
+    return;
+  }
+
+  // Show loading state
+  characterGif.style.display = 'none';
+  characterLoading.style.display = 'flex';
+
+  // Resolve GIF
+  const { url, source } = await resolveGifUrl(activity.category);
+  currentGifUrl = url;
+
+  // Update displays
+  setPreviewDisplay(activity, url);
+  setCharacterDisplay(url, source);
+  setCharacterLabel(activity);
 }
 
 // ─── Activity Grid ───────────────────────────────────────────────────
@@ -234,7 +232,7 @@ function getFilteredActivities() {
     );
   }
   const cat = ACTIVITY_CATEGORIES.find((c) => c.id === activeCategory);
-  return cat ? cat.activities.map((a) => ({ ...a, category: cat.id, categoryColor: cat.color, animationType: cat.animationType, waifuTag: cat.waifuTag, fallbackGif: cat.fallbackGif })) : [];
+  return cat ? cat.activities.map((a) => ({ ...a, category: cat.id, categoryColor: cat.color })) : [];
 }
 
 function renderActivityGrid() {
@@ -269,7 +267,9 @@ async function selectActivity(id) {
   const isReselect = selectedActivityId === id;
   selectedActivityId = id;
   renderActivityGrid();
-  updatePreview(activity);
+
+  // Update preview (includes async GIF loading)
+  await updatePreview(activity);
 
   const rpcPayload = {
     details: activity.details,
@@ -297,7 +297,7 @@ async function handleClear() {
   await window.smiley.clearActivity();
   selectedActivityId = null;
   renderActivityGrid();
-  updatePreview(null);
+  await updatePreview(null);
   showToast('Presence cleared');
 }
 
@@ -341,7 +341,8 @@ async function handleSaveSettings(e) {
   }
 
   const newSettings = {
-    clientId, donationUrl,
+    clientId,
+    donationUrl,
     autoConnect: autoConnectToggle.checked,
     minimizeToTray: minimizeTrayToggle.checked,
     showTimer: showTimerToggle.checked,
@@ -461,56 +462,52 @@ function setupDragDrop() {
 }
 
 // ─── Legal Modal ─────────────────────────────────────────────────────
-const LEGAL_CONTENT = {
-  tos: { title: 'Terms of Service', file: 'ToS.md' },
-  privacy: { title: 'Privacy Policy', file: 'PRIVACY.md' },
-};
-
 async function showLegal(type) {
-  const info = LEGAL_CONTENT[type];
-  if (!info) return;
-  legalTitle.textContent = info.title;
+  const titles = { tos: 'Terms of Service', privacy: 'Privacy Policy' };
+  const files = { tos: 'ToS.md', privacy: 'PRIVACY.md' };
+  legalTitle.textContent = titles[type] || 'Legal';
   legalBody.innerHTML = '<p>Loading...</p>';
   legalModal.showModal();
   try {
-    const res = await fetch(info.file);
+    const res = await fetch(files[type]);
     const text = await res.text();
-    // Simple markdown to HTML
-    const html = text
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    // Better markdown to HTML
+    let html = text
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\|([^|]+)\|([^|]+)\|/g, '<tr><td>$1</td><td>$2</td></tr>')
-      .replace(/\n/g, '<br>');
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Simple table handling
+    if (html.includes('|')) {
+      const lines = html.split('<br>');
+      const processed = lines.map((line) => {
+        if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+          const cells = line.split('|').filter((c) => c.trim());
+          if (cells.length >= 2 && !cells[0].includes('---')) {
+            return `<tr>${cells.map((c) => `<td>${c.trim()}</td>`).join('')}</tr>`;
+          }
+          return '';
+        }
+        return line;
+      });
+      html = processed.join('<br>');
+      html = html.replace(/(<tr>.*?<\/tr>)+/g, (match) => `<table>${match}</table>`);
+    }
     legalBody.innerHTML = `<div class="legal-content">${html}</div>`;
   } catch (e) {
-    legalBody.innerHTML = '<p>Failed to load. Please check the file in the app folder.</p>';
+    legalBody.innerHTML = '<p>Failed to load legal document.</p>';
   }
 }
 
 // ─── Update Status ───────────────────────────────────────────────────
 function handleUpdateStatus(data) {
   switch (data.status) {
-    case 'checking':
-      showToast('Checking for updates...');
-      break;
-    case 'available':
-      showToast(`Update v${data.version} available! Downloading...`);
-      break;
-    case 'up-to-date':
-      showToast('You are on the latest version!');
-      break;
-    case 'downloading':
-      // silent
-      break;
-    case 'downloaded':
-      showToast(`Update v${data.version} ready! Restart to apply.`);
-      break;
-    case 'error':
-      showToast(`Update check failed: ${data.error}`, 'error');
-      break;
+    case 'checking': showToast('Checking for updates...'); break;
+    case 'available': showToast(`Update v${data.version} available! Downloading...`); break;
+    case 'up-to-date': showToast('You are on the latest version!'); break;
+    case 'downloaded': showToast(`Update v${data.version} ready! Restart to apply.`); break;
+    case 'error': showToast(`Update error: ${data.error}`, 'error'); break;
   }
 }
 
@@ -524,11 +521,6 @@ async function init() {
   closeSettings.addEventListener('click', () => settingsModal.close());
   settingsForm.addEventListener('submit', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
-
-  checkUpdateBtn?.addEventListener('click', () => {
-    window.smiley.checkForUpdates();
-    showToast('Checking for updates...');
-  });
 
   searchInput.addEventListener('input', (e) => {
     searchQuery = e.target.value;
@@ -567,7 +559,16 @@ async function init() {
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
   if (closeLegal) closeLegal.addEventListener('click', () => legalModal.close());
 
-  // Events
+  // Check for Updates button (inside settings modal)
+  const checkUpdateBtn = $('#checkUpdateBtn');
+  if (checkUpdateBtn) {
+    checkUpdateBtn.addEventListener('click', () => {
+      window.smiley.checkForUpdates();
+      showToast('Checking for updates...');
+    });
+  }
+
+  // IPC events
   window.smiley.onStatus((data) => {
     if (data.donationUrl) donateBanner.href = data.donationUrl;
     if (data.settings) {
@@ -596,12 +597,10 @@ async function init() {
     }
   });
 
-  window.smiley.onOpenSettings(() => {
-    openSettings('general');
-  });
-
+  window.smiley.onOpenSettings(() => openSettings('general'));
   window.smiley.onUpdateStatus(handleUpdateStatus);
 
+  // Initial config load
   const cfg = await window.smiley.getConfig();
   currentSettings = { ...currentSettings, ...cfg };
   applyTheme(cfg.theme || 'dark');
@@ -613,13 +612,14 @@ async function init() {
     setTimeout(() => openSettings('general'), 800);
   }
 
+  // Restore previous activity
   const status = await window.smiley.getStatus();
   if (status.activity) {
     const match = ALL_ACTIVITIES.find((a) => a.details === status.activity.details && a.state === status.activity.state);
     if (match) {
       selectedActivityId = match.id;
       renderActivityGrid();
-      updatePreview({ ...match, category: match.category });
+      await updatePreview({ ...match, category: match.category });
     }
     if (status.sessionStart) startTimer(status.sessionStart);
   }

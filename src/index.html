@@ -48,13 +48,13 @@
 
       <!-- Main Content -->
       <div class="content">
-        <!-- Left Sidebar: Animated Character Preview -->
+        <!-- Left Sidebar -->
         <aside class="preview-sidebar">
           <!-- Character Stage with GIF -->
           <div class="character-stage" id="characterStage">
             <div class="character-container" id="characterContainer">
               <img class="character-gif" id="characterGif" src="" alt="Character" style="display:none;" />
-              <div class="character-loading" id="characterLoading">
+              <div class="character-loading" id="characterLoading" style="display:none;">
                 <span class="loading-spinner">⏳</span>
                 <span>Loading character...</span>
               </div>
@@ -85,7 +85,7 @@
 
           <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
 
-          <!-- BIG Donate Banner -->
+          <!-- Donate Banner -->
           <a class="donate-banner" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener" id="donateBanner">
             <span class="donate-banner-icon">💝</span>
             <div class="donate-banner-text">
@@ -117,7 +117,7 @@
 
     <!-- Settings Modal -->
     <dialog class="modal" id="settingsModal">
-      <form method="dialog" class="modal-content" id="settingsForm">
+      <div class="modal-content">
         <div class="modal-header">
           <h2>⚙️ Settings</h2>
           <button type="button" class="btn-close" id="closeSettings">✕</button>
@@ -206,9 +206,9 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="checkUpdateBtn">Check for Updates</button>
-          <button type="submit" class="btn btn-primary">Save &amp; Connect</button>
+          <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save &amp; Connect</button>
         </div>
-      </form>
+      </div>
     </dialog>
 
     <!-- Legal Modal -->

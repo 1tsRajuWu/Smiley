@@ -1,15 +1,14 @@
-// Anime GIF sources via waifu.pics (free, no API key needed)
-// These endpoints return direct image URLs for cute anime content
-export const WAIFU_ENDPOINTS = {
-  food: 'https://api.waifu.pics/sfw/neko',       // Cute neko for food
-  gaming: 'https://api.waifu.pics/sfw/shinobu',  // Gaming vibes
-  chill: 'https://api.waifu.pics/sfw/megumin',   // Chill vibes
-  work: 'https://api.waifu.pics/sfw/awoo',       // Working hard
-  social: 'https://api.waifu.pics/sfw/cry',      // Social/emotional
+// Anime GIF sources via waifu.pics (free, no API key)
+export const WAIFU_TAGS = {
+  food: 'neko',
+  gaming: 'shinobu',
+  chill: 'megumin',
+  work: 'awoo',
+  social: 'cry',
 };
 
-// Fallback GIF URLs (reliable hosted GIFs for each category)
-export const ANIMATION_FALLBACKS = {
+// Reliable fallback GIFs (these are actual GIF URLs that work)
+export const FALLBACK_GIFS = {
   food: 'https://media.tenor.com/RVvnVPK-GU8AAAAC/anime-eating.gif',
   gaming: 'https://media.tenor.com/Xy1U8f2w3xAAAAAC/anime-gaming.gif',
   chill: 'https://media.tenor.com/5QKQHH4m2xkAAAAC/anime-sleep.gif',
@@ -17,14 +16,12 @@ export const ANIMATION_FALLBACKS = {
   social: 'https://media.tenor.com/1iSARpjQW0AAAAAC/anime-wave.gif',
 };
 
-/** @type {import('./activities.js').ActivityCategory[]} */
 export const ACTIVITY_CATEGORIES = [
   {
     id: 'food',
     label: 'Food',
     emoji: '🍽️',
     color: '#f7768e',
-    animationType: 'food',
     waifuTag: 'neko',
     fallbackGif: 'https://media.tenor.com/RVvnVPK-GU8AAAAC/anime-eating.gif',
     activities: [
@@ -43,7 +40,6 @@ export const ACTIVITY_CATEGORIES = [
     label: 'Gaming',
     emoji: '🎮',
     color: '#7aa2f7',
-    animationType: 'gaming',
     waifuTag: 'shinobu',
     fallbackGif: 'https://media.tenor.com/Xy1U8f2w3xAAAAAC/anime-gaming.gif',
     activities: [
@@ -60,7 +56,6 @@ export const ACTIVITY_CATEGORIES = [
     label: 'Chill',
     emoji: '😌',
     color: '#9ece6a',
-    animationType: 'chill',
     waifuTag: 'megumin',
     fallbackGif: 'https://media.tenor.com/5QKQHH4m2xkAAAAC/anime-sleep.gif',
     activities: [
@@ -77,7 +72,6 @@ export const ACTIVITY_CATEGORIES = [
     label: 'Work',
     emoji: '💻',
     color: '#bb9af7',
-    animationType: 'work',
     waifuTag: 'awoo',
     fallbackGif: 'https://media.tenor.com/7r-BGEoIoh4AAAAC/anime-typing.gif',
     activities: [
@@ -94,7 +88,6 @@ export const ACTIVITY_CATEGORIES = [
     label: 'Social',
     emoji: '✨',
     color: '#ff9e64',
-    animationType: 'social',
     waifuTag: 'cry',
     fallbackGif: 'https://media.tenor.com/1iSARpjQW0AAAAAC/anime-wave.gif',
     activities: [
@@ -109,13 +102,16 @@ export const ACTIVITY_CATEGORIES = [
 ];
 
 export const ALL_ACTIVITIES = ACTIVITY_CATEGORIES.flatMap((c) =>
-  c.activities.map((a) => ({ ...a, category: c.id, categoryColor: c.color, animationType: c.animationType, waifuTag: c.waifuTag, fallbackGif: c.fallbackGif }))
+  c.activities.map((a) => ({ ...a, category: c.id, categoryColor: c.color, waifuTag: c.waifuTag, fallbackGif: c.fallbackGif }))
 );
 
-// Fetch a random anime image from waifu.pics (returns { url: string })
+// Fetch with timeout
 export async function fetchWaifuImage(tag) {
   try {
-    const response = await fetch(`https://api.waifu.pics/sfw/${tag}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(`https://api.waifu.pics/sfw/${tag}`, { signal: controller.signal });
+    clearTimeout(timeout);
     if (!response.ok) throw new Error('API error');
     const data = await response.json();
     return data.url || null;

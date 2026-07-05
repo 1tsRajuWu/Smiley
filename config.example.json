@@ -5,6 +5,7 @@
   "showTimer": true,
   "animationsEnabled": true,
   "customAnimation": null,
+  "windowState": { "width": 1100, "height": 780 },
   "autoConnect": true,
   "minimizeToTray": true
 }
