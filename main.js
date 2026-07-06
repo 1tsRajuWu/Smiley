@@ -285,6 +285,7 @@ function createWindow() {
     x: state.x,
     y: state.y,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    autoHideMenuBar: true,
     backgroundColor: '#1a1b26',
     show: false,
     webPreferences: {
@@ -299,6 +300,8 @@ function createWindow() {
     icon: getAppIcon(),
   });
 
+  mainWindow.setMenu(null);
+  mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 
   mainWindow.once('ready-to-show', () => {
@@ -556,6 +559,27 @@ function resetDownloadStallTimer() {
 function formatUpdateError(err) {
   const msg = String(err?.message || err || '').toLowerCase();
   if (
+    msg.includes('not signed') ||
+    msg.includes('invalid_signature') ||
+    msg.includes('signature verification') ||
+    msg.includes('signed by the application owner')
+  ) {
+    return {
+      ok: false,
+      status: 'unsigned-update',
+      message: 'Auto-update could not verify the installer signature. Download the latest installer from github.com/1tsRajuWu/Smiley/releases',
+      expected: true,
+    };
+  }
+  if (msg.includes('no update filepath') || msg.includes("can't quit and install")) {
+    return {
+      ok: false,
+      status: 'error',
+      error: 'Update is not ready to install. Wait for the download to finish or install manually from GitHub Releases.',
+      expected: true,
+    };
+  }
+  if (
     msg.includes('latest.yml') ||
     msg.includes('latest-mac.yml') ||
     msg.includes('latest-linux.yml') ||
@@ -653,19 +677,41 @@ async function checkForUpdates(manual = false) {
   }
 }
 
+function isUpdateReadyToInstall() {
+  if (!isPackaged || !updateDownloaded || !pendingUpdateVersion) return false;
+  const helper = getAutoUpdater().downloadedUpdateHelper;
+  if (helper?.file || helper?.packageFile) return true;
+  return false;
+}
+
 function installPendingUpdate() {
-  if (!isPackaged || !pendingUpdateVersion || !updateDownloaded) return false;
-  app.isQuitting = true;
-  getAutoUpdater().quitAndInstall(false, true);
-  return true;
+  if (!isUpdateReadyToInstall()) return false;
+  try {
+    app.isQuitting = true;
+    getAutoUpdater().quitAndInstall(false, true);
+    return true;
+  } catch (err) {
+    console.error('[updater] quitAndInstall failed:', err.message);
+    updateDownloaded = false;
+    const formatted = formatUpdateError(err);
+    sendUpdateStatus(formatted);
+    return false;
+  }
 }
 
 function setupAutoUpdater() {
   try {
-    getAutoUpdater().autoDownload = isPackaged;
-    getAutoUpdater().autoInstallOnAppQuit = isPackaged;
-    getAutoUpdater().allowPrerelease = false;
-    getAutoUpdater().logger = console;
+    const autoUpdater = getAutoUpdater();
+    autoUpdater.autoDownload = isPackaged;
+    autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.allowPrerelease = false;
+    autoUpdater.disableWebInstaller = true;
+    autoUpdater.logger = console;
+
+    // Unsigned Windows builds: skip publisher signature check (see win.verifyUpdateCodeSignature in package.json)
+    if (process.platform === 'win32') {
+      autoUpdater.verifyUpdateCodeSignature = () => Promise.resolve(null);
+    }
 
     if (!isPackaged || updaterListenersAttached) return;
     updaterListenersAttached = true;
@@ -725,6 +771,7 @@ function setupAutoUpdater() {
       console.error('[updater]', err.message);
       clearDownloadStallTimer();
       updateDownloaded = false;
+      lastDownloadPercent = 0;
       const formatted = formatUpdateError(err);
       sendUpdateStatus(formatted);
       resolveManualUpdate(formatted);
@@ -841,8 +888,17 @@ function setupIPC() {
   });
 
   ipcMain.handle('install-update', () => {
+    if (!isUpdateReadyToInstall()) {
+      return {
+        success: false,
+        error: 'Update is not ready to install. Wait for the download to finish or install manually from GitHub Releases.',
+      };
+    }
     const started = installPendingUpdate();
-    return { success: started };
+    return {
+      success: started,
+      error: started ? undefined : 'Could not start installer. Try downloading from GitHub Releases.',
+    };
   });
 
   ipcMain.handle('pick-custom-animation', async () => {
@@ -985,8 +1041,10 @@ app.on('web-contents-created', (_, contents) => {
   contents.on('will-navigate', (e, url) => { if (url !== contents.getURL()) { e.preventDefault(); shell.openExternal(url); } });
 });
 
-// Block DevTools shortcuts in production
+// Hide menu bar on every window (Windows shows File/Edit/View without this)
 app.on('browser-window-created', (_, win) => {
+  win.setMenu(null);
+  win.setMenuBarVisibility(false);
   if (!isDev) {
     win.webContents.on('before-input-event', (e, input) => {
       if (input.key && (input.control || input.meta) && input.shift && ['i', 'j', 'c'].includes(input.key.toLowerCase())) {

@@ -1,104 +1,204 @@
-# Smiley
+<div align="center">
 
-> Set your Discord status with one click. Pick what you're doing — eating, gaming, coding — and it shows on your profile with a live GIF.
+# 😊 Smiley
 
-[![release](https://img.shields.io/github/v/release/1tsRajuWu/Smiley)](https://github.com/1tsRajuWu/Smiley/releases/latest)
-[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#installing-smiley)
-[![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey)](LICENSE)
+<img src="build/icon.png" width="120" alt="Smiley app icon" />
 
-**[Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues) · [Smiley.Native](README-NATIVE.md) (lightweight build)
+**One click → your Discord profile shows what you're up to — with a live anime GIF.**
 
----
+Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Developer Portal. No config files. Just download and go.
 
-## Quick start
+<br>
 
-Three steps. No Discord Developer Portal setup for normal users.
+[![release](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge)](https://github.com/1tsRajuWu/Smiley/releases/latest)
+[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](#-download)
+[![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey?style=for-the-badge)](LICENSE)
 
-| Step | What to do |
-|------|------------|
-| **1. Download** | Grab the installer for your OS from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) (see [Installing Smiley](#installing-smiley)). |
-| **2. Install** | Run the installer (or make the AppImage executable). Open **Discord desktop** — not the browser tab, not mobile. |
-| **3. Pick an activity** | Launch Smiley, choose a category, click an activity. Your profile updates with text + animated image. |
+<br>
 
-Smiley ships with a bundled Discord Client ID. Download, run, pick something — that's it.
+**[⬇️ Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** &nbsp;·&nbsp; 🐛 [Report a bug](https://github.com/1tsRajuWu/Smiley/issues) &nbsp;·&nbsp; ⚡ [Smiley.Native](README-NATIVE.md) (lightweight)
+
+</div>
 
 ---
 
-## Download (v2.1.10)
+## ⬇️ Download
 
-## Low-end PC? Use Smiley Native (~25 MB)
+**Current release: v2.1.10** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
 
-No Electron, no Chromium. Same Discord presence — lower RAM and faster startup. See [README-NATIVE.md](README-NATIVE.md).
+### 🪟 Windows
 
-[Windows zip](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-win-x64.zip) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-arm64.zip) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-x64.zip) · [Linux](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-linux-x64.zip)
+| | Download | Notes |
+|---|----------|-------|
+| **Installer** (recommended) | [**Smiley-Setup-2.1.10.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe) | Start menu + desktop shortcut |
+| **Portable** | [**Smiley-Portable-2.1.10.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) | No install — run from anywhere |
+
+[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe)
+[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe)
+
+### 🍎 macOS
+
+| Chip | Download |
+|------|----------|
+| **Apple Silicon** (M1/M2/M3/M4) | [**Smiley-2.1.10-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg) |
+| **Intel** (pre-2020 Macs) | [**Smiley-2.1.10-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg) |
+
+[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg)
+[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg)
+
+> macOS might block the first launch — that's Gatekeeper, not a virus. See [Installing → macOS](#-macos) below.
+
+### 🐧 Linux
+
+| Format | Download | Notes |
+|--------|----------|-------|
+| **AppImage** | [**Smiley-2.1.10.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage) | Works on most distros — `chmod +x` then run |
+| **.deb** | [**Smiley-2.1.10.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.deb) | Debian / Ubuntu / Mint |
+
+[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage)
+[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.deb)
+
+### ⚡ Smiley.Native — for low-end PCs (~25 MB)
+
+No Electron. No Chromium. Same Discord presence, way less RAM. Perfect if the full app feels heavy on your machine.
+
+| Platform | Download |
+|----------|----------|
+| Windows | [**Smiley-Native-2.1.10-win-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-win-x64.zip) |
+| macOS ARM | [**Smiley-Native-2.1.10-osx-arm64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-arm64.zip) |
+| macOS Intel | [**Smiley-Native-2.1.10-osx-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-x64.zip) |
+| Linux | [**Smiley-Native-2.1.10-linux-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-linux-x64.zip) |
+
+👉 Full details: **[README-NATIVE.md](README-NATIVE.md)**
 
 ---
 
-| Platform | File | Notes |
-|----------|------|-------|
-| **Windows** (installer) | [Smiley-Setup-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe) | Recommended. Start menu + desktop shortcut. |
-| **Windows** Portable (no install) | [Smiley-Portable-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) | No install — run from anywhere. |
-| **macOS** Apple Silicon | [Smiley-2.1.10-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg) | M1/M2/M3/M4. [Install help](#installing-smiley) |
-| **macOS** Intel | [Smiley-2.1.10-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg) | Pre-2020 Intel. [Install help](#installing-smiley) |
-| **Linux** AppImage | [Smiley-2.1.10.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage) | `chmod +x` then run. Most distros. |
-| **Linux** .deb | [Smiley-2.1.10.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.deb) | Debian / Ubuntu / derivatives. |
+## 🚀 Quick start
 
-**One-click buttons**
+Three steps. That's it.
 
-[Windows installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe) · [Portable (no install)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg) · [Linux AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage) · [Linux .deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.deb)
+| | Step | What you do |
+|---|------|-------------|
+| 1️⃣ | **Download** | Grab the installer for your OS from the section above |
+| 2️⃣ | **Install & open Discord** | Run the installer. Keep **Discord desktop** open — not the browser tab, not mobile |
+| 3️⃣ | **Pick an activity** | Launch Smiley → choose a category → click an activity. Your profile updates instantly |
 
----
-
-## Installing Smiley
-
-Step-by-step for Windows 10/11, macOS (Sonoma, Sequoia, Tahoe), and Linux. Full macOS detail also in [INSTALL-MAC.md](INSTALL-MAC.md).
-
-### Requirements (all platforms)
-
-- **Discord desktop app** open — not the browser tab, not mobile
-- **Internet** for GIF images (nekos.best / waifu.pics)
-- **Not Invisible** on Discord (invisible hides your presence)
+Smiley ships with a bundled Discord Client ID. You don't need to touch the Developer Portal.
 
 ---
 
-### macOS (Sonoma, Sequoia, Tahoe)
+## ✨ Features
 
-1. Download the `.dmg` for your chip — ARM64 for Apple Silicon, x64 for Intel.
-2. Open the DMG and drag **Smiley** into **Applications**.
-3. Launch Smiley (see below if macOS blocks it).
+**🎯 Activity picker**
+- 5 categories — Food, Gaming, Chill, Work, Social — 32 presets total
+- Search by name or emoji
+- Live preview before it hits Discord
+- Session timer (how long you've been "doing the thing")
 
-The DMG includes **INSTALL.txt** with the same steps.
+**🖼️ Animated Discord presence**
+- Large profile image = live GIF from [nekos.best](https://nekos.best) & [waifu.pics](https://waifu.pics) (SFW APIs)
+- HTTPS fallbacks if an API is slow — no more `?` placeholder on Discord
+- Upload your own GIF/image in Settings → Animations (PNG, JPG, GIF, WebP, SVG — max 5 MB)
 
-#### If Gatekeeper blocks (malware warning)
+**🎨 Appearance**
+- 11 themes: Dark, Midnight, Ocean, Sakura, **Low Light** (OLED black), Sunset, Forest, Lavender, Cyber, Coffee, Rose
+- Toggle session timer on/off
 
-macOS may show:
+**⚙️ System integration**
+- System tray — show window, clear status, check updates, quit
+- Minimize to tray on close (default)
+- Global hotkey **Cmd/Ctrl + Shift + S** to show/hide
+- Optional start on login
+- Export / import settings as JSON
+
+**🔄 Auto-updates**
+- Packaged builds check [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) on launch
+- Downloads in background → "Restart to update" prompt
+- Manual check from Settings or tray menu
+
+---
+
+## 📸 Preview
+
+<div align="center">
+
+<img src="build/icon.png" width="96" alt="Smiley icon" />
+
+*Smiley in action — screenshots coming soon. For now, download it and see for yourself.* 😄
+
+| Main window | Activity picker | Discord profile |
+|:-----------:|:---------------:|:---------------:|
+| 🖥️ *soon* | 🎮 *soon* | 💬 *soon* |
+
+<!-- When ready, drop images in docs/screenshots/ and uncomment:
+![Main window](docs/screenshots/main-window.png)
+![Activity picker](docs/screenshots/activity-picker.png)
+![Discord profile](docs/screenshots/discord-profile.png)
+-->
+
+</div>
+
+---
+
+## 📦 Installing Smiley
+
+### Before you start (all platforms)
+
+- ✅ **Discord desktop app** running — browser Discord and mobile won't work
+- ✅ **Internet** for GIF images
+- ✅ **Not Invisible** on Discord (invisible hides your presence)
+
+---
+
+### 🪟 Windows
+
+1. Download [**Smiley-Setup-2.1.10.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe)
+2. Run the installer
+3. If **SmartScreen** pops up → **More info** → **Run anyway** (app isn't code-signed yet — it's safe, [source is here](https://github.com/1tsRajuWu/Smiley))
+4. Launch from Start or desktop shortcut. Discord desktop must be open.
+
+**Portable?** Grab [**Smiley-Portable-2.1.10.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) and double-click. No install needed.
+
+---
+
+### 🍎 macOS
+
+Works on Sonoma, Sequoia, Tahoe, and earlier.
+
+1. Download the `.dmg` for your chip — **ARM64** for Apple Silicon, **x64** for Intel
+2. Open the DMG → drag **Smiley** into **Applications**
+3. Launch Smiley (see below if macOS blocks it)
+
+The DMG includes **INSTALL.txt** with the same steps. More detail: [INSTALL-MAC.md](INSTALL-MAC.md)
+
+#### 🛡️ Gatekeeper says "can't verify"?
+
+macOS might show:
 
 > **Smiley Not Opened** — Apple could not verify Smiley is free of malware…
 
-This is **not** a damaged file. Smiley is ad-hoc signed but not notarized (no Apple Developer certificate yet). The app is safe and [open source](https://github.com/1tsRajuWu/Smiley). You only approve it once.
+That's **not** a damaged file. Smiley is ad-hoc signed but not notarized (no Apple Developer cert yet). Open source, safe, you only approve once.
 
-**Option A — Right-click Open (easiest)**
+**Easiest fix — Right-click Open**
+1. Go to **Applications**
+2. **Right-click Smiley → Open** (don't double-click)
+3. Click **Open** in the dialog
+4. After first launch, double-click works fine
 
-1. Go to **Applications**.
-2. **Right-click Smiley → Open** (don't double-click).
-3. Click **Open** in the dialog.
-4. After the first launch, double-click works.
-
-**Option B — System Settings**
-
+**Or — System Settings**
 1. **System Settings → Privacy & Security**
-2. Scroll down — **Smiley was blocked** → click **Open Anyway**
-3. Confirm.
+2. Scroll down → **Smiley was blocked** → **Open Anyway**
+3. Confirm
 
-#### If "cannot be opened because of a problem" (crash)
+#### 💥 "Cannot be opened because of a problem"?
 
-That dialog means the app **crashed on launch**, not Gatekeeper. Try this:
+That means the app **crashed on launch**, not Gatekeeper. Try:
 
-1. Delete Smiley from Applications.
-2. Re-download the latest build from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
-3. Run the terminal fix below, then install and open again.
-4. Still crashing? Try **[Smiley.Native](README-NATIVE.md)** — lighter build, no Chromium.
-5. [Open an issue](https://github.com/1tsRajuWu/Smiley/issues) with your macOS version (e.g. macOS 15.5).
+1. Delete Smiley from Applications
+2. Re-download from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
+3. Run the terminal fix below, then install again
+4. Still crashing? Try **[Smiley.Native](README-NATIVE.md)** — lighter, no Chromium
+5. [Open an issue](https://github.com/1tsRajuWu/Smiley/issues) with your macOS version
 
 #### Terminal fix
 
@@ -109,24 +209,13 @@ xattr -cr ~/Downloads/Smiley-*.dmg
 xattr -cr /Applications/Smiley.app
 ```
 
-Or from a cloned repo: `./scripts/install-mac.sh /Applications/Smiley.app`
+From a cloned repo: `./scripts/install-mac.sh /Applications/Smiley.app`
 
 ---
 
-### Windows 10 & 11
+### 🐧 Linux
 
-1. Download [Smiley-Setup-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe).
-2. Run the installer.
-3. If **SmartScreen** says "Windows protected your PC" → **More info** → **Run anyway** (app is not code-signed yet).
-4. Launch Smiley from Start or the desktop shortcut. Keep **Discord desktop** running.
-
-**Portable (no install):** download [Smiley-Portable-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) and double-click it.
-
----
-
-### Linux (Ubuntu 22.04+, Fedora, etc.)
-
-**AppImage** (works on most distros):
+**AppImage** (most distros):
 
 ```bash
 chmod +x Smiley-2.1.10.AppImage
@@ -139,155 +228,96 @@ chmod +x Smiley-2.1.10.AppImage
 sudo dpkg -i Smiley-2.1.10.deb
 ```
 
-Launch from your app menu. Discord must be the **desktop** client (`.deb`, Flatpak, or native — not web-only).
+Launch from your app menu. Discord must be the **desktop** client — not web-only.
 
 ---
 
-## Features
+## 💬 How Discord presence works
 
-**Activity picker**
-- Five categories: Food, Gaming, Chill, Work, Social — 32 presets total
-- Search bar to filter by name or emoji
-- Live preview card before it hits Discord
-- Session timer (elapsed time since you picked an activity)
+Smiley talks to the **Discord desktop app** over local IPC — same way games do Rich Presence. Both apps on the same machine.
 
-**Animated Discord presence**
-- Large profile image is a live GIF fetched from [nekos.best](https://nekos.best) and [waifu.pics](https://waifu.pics) (SFW community APIs)
-- Verified HTTPS fallbacks if an API is slow or down — avoids Discord's `?` placeholder
-- Upload your own GIF/image in Settings → Animations (PNG, JPG, GIF, WebP, SVG, max 5 MB)
+| You need | Why |
+|----------|-----|
+| Discord **desktop** open | Browser + mobile can't receive IPC |
+| Not Invisible | Discord hides presence when invisible |
+| Packaged build (or `npm start` for dev) | Releases are what most people want |
 
-**Appearance**
-- 11 colour themes: Dark, Midnight, Ocean, Sakura, **Low Light** (OLED-friendly deep black), Sunset, Forest, Lavender, Cyber, Coffee, Rose
-- Toggle session timer visibility
-
-**System integration**
-- System tray icon with quick actions (show window, clear status, check updates, quit)
-- Minimize to tray on close (default on)
-- Global hotkey **Cmd/Ctrl + Shift + S** to show/hide the window
-- Optional start on system login
-- Export / import settings JSON
-
-**Updates**
-- Packaged builds auto-check [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) on launch
-- Background download + "Restart to update" prompt
-- Manual check from Settings or tray menu
-
-**Smiley.Native** (~25–70 MB trimmed)
-- Avalonia/.NET alternative for low-end PCs — same activities, less RAM
-- See [README-NATIVE.md](README-NATIVE.md)
-
-**Support link**
-- PayPal donate banner is fixed to [paypal.me/1tsRaj](https://paypal.me/1tsRaj) in the app (not user-editable)
-
----
-
-## Screenshots
-
-<!-- Add screenshots to docs/screenshots/ and uncomment paths below -->
-
-| Main window | Activity picker | Discord profile |
-|-------------|-----------------|-----------------|
-| <!-- ![Main window](docs/screenshots/main-window.png) --> *coming soon* | <!-- ![Activities](docs/screenshots/activity-picker.png) --> *coming soon* | <!-- ![Discord profile](docs/screenshots/discord-profile.png) --> *coming soon* |
-
-| Settings | Themes | System tray |
-|----------|--------|-------------|
-| <!-- ![Settings](docs/screenshots/settings.png) --> *coming soon* | <!-- ![Themes](docs/screenshots/themes.png) --> *coming soon* | <!-- ![Tray](docs/screenshots/tray.png) --> *coming soon* |
-
----
-
-## macOS won't open? (quick link)
-
-See **[Installing Smiley → macOS](#macos-sonoma-sequoia-tahoe)** for Gatekeeper blocks, crash-on-launch fixes, and terminal commands. Full guide: [INSTALL-MAC.md](INSTALL-MAC.md).
-
----
-
-## Discord presence
-
-### How it works
-
-Smiley talks to the **Discord desktop app** over local IPC — the same mechanism games use for Rich Presence. Both apps must be running on the same machine.
-
-| Requirement | Why |
-|-------------|-----|
-| Discord **desktop** app open | Browser Discord and mobile cannot receive IPC from Smiley |
-| Not Invisible | Discord hides presence when you're invisible |
-| Packaged Smiley build | `npm start` dev builds work too, but releases are what most users need |
-
-### What shows on your profile
+**What friends see on your profile:**
 
 | Field | Example |
 |-------|---------|
-| **Details** (top line) | `Coding` |
-| **State** (second line) | `Building something cool` |
-| **Large image** | Animated anime GIF (HTTPS URL from nekos.best / waifu.pics) |
-| **Timer** | Elapsed time since you selected the activity (if enabled) |
-| **App name** | Smiley |
+| Details (top line) | `Coding` |
+| State (second line) | `Building something cool` |
+| Large image | Animated anime GIF |
+| Timer | Elapsed time since you picked the activity |
+| App name | Smiley |
 
-Friends see this on your profile card and in the member list. Click **Clear** in Smiley (or tray → Clear Status) to remove it.
+Click **Clear** in Smiley (or tray → Clear Status) to wipe it.
 
 ---
 
-## Settings
+## ⚙️ Settings
 
-Open via the gear icon or tray → **Settings**.
+Gear icon in the app, or tray → **Settings**.
 
-| Tab | Options |
-|-----|---------|
-| **General** | Auto-connect on launch, minimize to tray on close, check for updates |
-| **Appearance** | Show/hide session timer, pick from 11 themes |
-| **Animations** | Enable/disable anime GIFs, upload custom animation |
-| **Advanced** | Start on login, global hotkey toggle, export/import settings |
+| Tab | What's in there |
+|-----|-----------------|
+| **General** | Auto-connect, minimize to tray, check for updates |
+| **Appearance** | Session timer toggle, 11 themes |
+| **Animations** | Enable/disable GIFs, upload custom animation |
+| **Advanced** | Start on login, global hotkey, export/import settings |
 | **About** | Version, support link, Terms & Privacy |
 
-Hit **Save & Connect** to apply. Discord connection status shows in the header pill (green = connected).
+Hit **Save & Connect**. Header pill turns green when Discord is connected.
 
 ---
 
-## Auto-updates
+## 🔄 Auto-updates
 
-For users who installed from a **packaged** build (`.exe`, `.dmg`, AppImage, `.deb`):
+Installed from a packaged build (`.exe`, `.dmg`, AppImage, `.deb`)?
 
-1. On launch, Smiley checks GitHub Releases (~5 seconds after open).
-2. If a newer version exists, it downloads in the background.
-3. A banner and dialog ask you to **Restart to update**.
-4. Restart installs the new version — no manual re-download.
+1. Smiley checks GitHub Releases ~5 seconds after launch
+2. Newer version? Downloads in the background
+3. Banner + dialog → **Restart to update**
+4. Done — no manual re-download
 
-You can also trigger a check from **Settings → Check for Updates** or the tray menu.
+Also: **Settings → Check for Updates** or tray menu.
 
-> Dev builds (`npm start`) do not auto-update. Clone the repo and pull instead.
+> Dev builds (`npm start`) don't auto-update. Pull from git instead.
 
-See [docs/RELEASING.md](docs/RELEASING.md) for the maintainer release workflow.
+Maintainers: see [docs/RELEASING.md](docs/RELEASING.md)
 
 ---
 
-## Smiley.Native (optional)
+## ⚡ Electron vs Smiley.Native
 
-Low on RAM or disk space? Use **[Smiley.Native](README-NATIVE.md)** — a .NET + Avalonia build with the same Discord RPC and activity list, but without Chromium.
-
-| | Electron (this repo) | Smiley.Native |
-|---|---------------------|---------------|
-| Download size | ~150 MB+ | ~25–70 MB trimmed |
+| | 😊 Smiley (Electron) | ⚡ Smiley.Native |
+|---|---------------------|------------------|
+| Download size | ~150 MB+ | ~25–70 MB |
 | RAM | Higher | Lower |
-| Custom GIF upload | Yes | No |
-| Auto-update | Yes | Opens Releases page if newer |
+| Custom GIF upload | ✅ | ❌ |
+| Auto-update | ✅ | Opens Releases page |
+| Best for | Full experience | Low-end / old hardware |
+
+Both use the same Discord app ID and activity list. Pick what fits your machine.
 
 ---
 
-## Building from source
+## 🛠️ Building from source
 
-For developers only. End users should use [Releases](https://github.com/1tsRajuWu/Smiley/releases).
+For developers. Everyone else → [Download](#-download).
 
-**Requirements:** Node.js 18+, npm, Discord desktop app
+**Needs:** Node.js 18+, npm, Discord desktop
 
 ```bash
 git clone https://github.com/1tsRajuWu/Smiley.git
 cd Smiley
-cp discord.app.example.json discord.app.json   # add your Discord Application Client ID
+cp discord.app.example.json discord.app.json   # your Discord Application Client ID
 npm install
 npm start
 ```
 
-`discord.app.json` needs a Client ID from the [Discord Developer Portal](https://discord.com/developers/applications). **Releases bundle this for you** — you only need your own ID when building locally.
+`discord.app.json` needs a Client ID from the [Discord Developer Portal](https://discord.com/developers/applications). **Releases bundle this** — only needed for local dev.
 
 ```bash
 npm run build:mac    # macOS .dmg
@@ -297,31 +327,63 @@ npm run build:linux  # AppImage + .deb
 
 ---
 
-## Releasing (for maintainer)
+## ☕ Support
 
-Tagged pushes trigger GitHub Actions to build and publish installers.
+If Smiley's been useful to you:
 
-See **[docs/RELEASING.md](docs/RELEASING.md)** for the full checklist (version bump, tag, CI secrets, release notes template).
+### **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 
----
-
-## Support
-
-If Smiley's been useful:
-
-**[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
-
-The donate link in the app is locked to this URL. Thanks for supporting development.
+The donate link in the app points here. Thanks for supporting development — it genuinely helps. 🙏
 
 ---
 
-## License & credits
+## ❓ FAQ
+
+<details>
+<summary><strong>Why does Discord show a <code>?</code> for the image?</strong></summary>
+
+Usually a bad or unreachable image URL. Smiley uses verified HTTPS fallbacks from nekos.best and waifu.pics. Still seeing `?`? Check internet, wait a few seconds, or try another activity. Custom uploads must be under 5 MB.
+</details>
+
+<details>
+<summary><strong>Why won't macOS open Smiley?</strong></summary>
+
+Not <strong>notarized</strong> yet (no Apple Developer cert). macOS 13+ may warn — not a damaged file. See <a href="#-macos">Installing → macOS</a> and <a href="INSTALL-MAC.md">INSTALL-MAC.md</a>.
+</details>
+
+<details>
+<summary><strong>Can I use this on my phone?</strong></summary>
+
+No. Rich Presence needs the <strong>desktop</strong> Discord client on the same computer. See <code>mobile/README.md</code>.
+</details>
+
+<details>
+<summary><strong>Do I need a Discord Client ID?</strong></summary>
+
+Not for releases — bundled for you. Only if you clone and run <code>npm start</code>. Copy <code>discord.app.example.json</code> → <code>discord.app.json</code> with your ID from the Discord Developer Portal.
+</details>
+
+<details>
+<summary><strong>Discord says "Disconnected" in Smiley</strong></summary>
+
+Discord <strong>desktop</strong> running? Not Invisible? No other app hogging RPC? Restart Discord, then Smiley.
+</details>
+
+<details>
+<summary><strong>Electron or Native — which one?</strong></summary>
+
+Same presence, different shell. Electron = full UI, custom uploads, auto-updates. Native = smaller, faster on weak PCs. <a href="README-NATIVE.md">README-NATIVE.md</a> has the details.
+</details>
+
+---
+
+## 📄 License & credits
 
 © Raj ([@1tsRaj](https://github.com/1tsRaj)) — **All Rights Reserved**. See [LICENSE](LICENSE).
 
 | Resource | Credit |
 |----------|--------|
-| Anime GIFs | [nekos.best](https://nekos.best), [waifu.pics](https://waifu.pics) — community SFW APIs |
+| Anime GIFs | [nekos.best](https://nekos.best), [waifu.pics](https://waifu.pics) |
 | Discord RPC | [discord-rpc](https://github.com/discord/discord-rpc) |
 | Desktop shell | [Electron](https://www.electronjs.org/) |
 
@@ -329,40 +391,10 @@ The donate link in the app is locked to this URL. Thanks for supporting developm
 
 ---
 
-## FAQ
+<div align="center">
 
-<details>
-<summary><strong>Why does Discord show a <code>?</code> for the image?</strong></summary>
+**Made with 😊 by Raj**
 
-Usually a bad or unreachable image URL. Smiley resolves GIFs from nekos.best and waifu.pics with verified HTTPS fallbacks. If you still see `?`, check your internet, wait a few seconds, or pick a different activity. Custom uploads must be under 5 MB and a supported format.
-</details>
+[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Issues](https://github.com/1tsRajuWu/Smiley/issues) · [Native build](README-NATIVE.md)
 
-<details>
-<summary><strong>Why won't macOS open Smiley?</strong></summary>
-
-Smiley isn't <strong>notarized</strong> by Apple yet (no Developer certificate). macOS 13+ may show "Apple could not verify…" — not a damaged file. See <a href="#installing-smiley">Installing Smiley</a> and <a href="INSTALL-MAC.md">INSTALL-MAC.md</a>.
-</details>
-
-<details>
-<summary><strong>Can I use this on my phone?</strong></summary>
-
-No. Discord Rich Presence over IPC requires the <strong>desktop</strong> Discord client on the same computer. Mobile Discord cannot receive presence from Smiley. See <code>mobile/README.md</code> for details.
-</details>
-
-<details>
-<summary><strong>Do I need a Discord Client ID?</strong></summary>
-
-Not for releases — it's bundled. Only needed if you clone the repo and run <code>npm start</code>. Copy <code>discord.app.example.json</code> → <code>discord.app.json</code> and paste your Application ID from the Discord Developer Portal.
-</details>
-
-<details>
-<summary><strong>Discord says "Disconnected" in Smiley</strong></summary>
-
-Make sure the Discord <strong>desktop</strong> app is running (not just a browser tab), you're not Invisible, and no other app is hogging the RPC connection. Restart Discord, then Smiley.
-</details>
-
-<details>
-<summary><strong>What's the difference between Electron and Native?</strong></summary>
-
-Same Discord presence, different shell. Electron has the full web UI, custom uploads, and auto-updates. Native is smaller and faster on weak hardware. See <a href="README-NATIVE.md">README-NATIVE.md</a>.
-</details>
+</div>

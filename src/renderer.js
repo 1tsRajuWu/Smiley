@@ -558,6 +558,7 @@ function handleUpdateStatus(data) {
       updateBanner?.classList.add('visible');
       break;
     case 'downloading':
+      updateState.downloaded = false;
       updateState.percent = data.percent ?? updateState.percent;
       if (updateState.dismissed) break;
       if (updateBannerText) {
@@ -582,11 +583,20 @@ function handleUpdateStatus(data) {
       showToast(`Update v${data.version} ready! Restart to apply.`);
       break;
     case 'download-stalled':
-      updateState.dismissed = true;
+      updateState = { downloaded: false, dismissed: true, percent: 0 };
+      syncUpdateBannerButtons();
       hideUpdateBanner();
       showToast(data.error || 'Update download stalled. Try again later.', 'error');
       break;
+    case 'unsigned-update':
+      updateState = { downloaded: false, dismissed: true, percent: 0 };
+      syncUpdateBannerButtons();
+      hideUpdateBanner();
+      showToast(data.message || 'Download the latest installer from GitHub Releases.', 'error');
+      break;
     case 'error':
+      updateState = { downloaded: false, dismissed: false, percent: 0 };
+      syncUpdateBannerButtons();
       hideUpdateBanner();
       if (data.expected) {
         showToast(data.message || data.error || 'Update check unavailable.');
@@ -696,7 +706,7 @@ async function init() {
         showToast(`Update v${result.version} ready — restart to apply.`);
         return;
       }
-      if (result.status === 'no-release') {
+      if (result.status === 'no-release' || result.status === 'unsigned-update') {
         showToast(result.message || 'No release on GitHub yet — download from Releases page.');
         return;
       }
@@ -750,7 +760,9 @@ async function init() {
         return;
       }
       const result = await window.smiley.installUpdate();
-      if (!result?.success) showToast('No update ready — check again in a moment', 'error');
+      if (!result?.success) {
+        showToast(result?.error || 'No update ready — check again in a moment', 'error');
+      }
     });
   }
 

@@ -1,15 +1,38 @@
-# Smiley Native (.NET / Avalonia)
+# ⚡ Smiley Native (.NET / Avalonia)
 
 **Lightweight alternative to the Electron app** — recommended for low-end PCs.
 
+No Chromium. No Electron. Same Discord Rich Presence, way less RAM and disk space.
+
+👉 **Full app (Electron):** [README.md](README.md) · **Download Native builds:** [Releases v2.1.10](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.10)
+
+---
+
+## ⬇️ Download (v2.1.10)
+
+| Platform | Download |
+|----------|----------|
+| 🪟 Windows | [**Smiley-Native-2.1.10-win-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-win-x64.zip) |
+| 🍎 macOS ARM (M1+) | [**Smiley-Native-2.1.10-osx-arm64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-arm64.zip) |
+| 🍎 macOS Intel | [**Smiley-Native-2.1.10-osx-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-x64.zip) |
+| 🐧 Linux | [**Smiley-Native-2.1.10-linux-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-linux-x64.zip) |
+
+Unzip and run `Smiley` (or `Smiley.exe` on Windows). Keep **Discord desktop** open.
+
+---
+
+## Electron vs Native
+
 | | Electron | **Smiley Native** |
 |---|---|---|
-| Runtime | Chromium (~150MB+) | .NET + Avalonia (~40–70MB trimmed) |
+| Runtime | Chromium (~150MB+) | .NET + Avalonia (~25–70MB trimmed) |
 | RAM usage | Higher | Lower |
 | Startup | Slower | Faster |
 | UI | Web/HTML | Native GPU-accelerated |
 | Discord RPC | ✅ | ✅ |
 | Animated GIF on Discord | ✅ HTTPS URLs | ✅ HTTPS URLs |
+| Custom GIF upload | ✅ | ❌ |
+| Auto-update | ✅ | Opens Releases page if newer |
 
 ## Features
 
@@ -24,7 +47,7 @@
 
 ## Requirements
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) (or .NET 8+)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) (or .NET 8+) — only for building from source
 - **Discord desktop app** open (not Invisible mode)
 
 ## Run (development)
@@ -44,7 +67,6 @@ chmod +x build-native-all.sh
 ```
 
 Output: `dist-native/Smiley-Native-<version>-<rid>.zip` for `win-x64`, `osx-arm64`, `osx-x64`, `linux-x64`.
-
 
 ### macOS (.app / optional .dmg)
 
@@ -92,7 +114,7 @@ Discord Rich Presence **requires the desktop Discord client**. Mobile apps canno
 
 | Use case | App |
 |----------|-----|
-| Low-end PC, small download | **Smiley.Native** |
-| Full web UI, auto-updater, custom animations upload | Smiley (Electron) |
+| Low-end PC, small download | **Smiley.Native** ⚡ |
+| Full web UI, auto-updater, custom animations upload | Smiley (Electron) 😊 |
 
 Both share the same Discord Application ID and activity list.
