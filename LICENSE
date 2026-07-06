@@ -1,33 +1,40 @@
 Smiley — Proprietary Software License
-Copyright © 2025–2026 Raj (@1tsRaj). All Rights Reserved.
+Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.
 
-This software and associated documentation (the "Software") are the exclusive
-property of Raj (@1tsRaj). Unauthorized use is prohibited.
+This software and associated documentation, media, and branding (the "Software")
+are the exclusive property of 1tsRajuWu (Raj). Unauthorized use, copying, or
+distribution is prohibited.
 
 PERMITTED USE
-You may download and run official releases of Smiley from the official
-repository only, for personal, non-commercial use:
+You may download and run official releases of Smiley from the authorized
+repository only, for personal, non-commercial use on your own devices:
 
-  https://github.com/1tsRaj/smiley-rpc
+  https://github.com/1tsRajuWu/Smiley
 
 PROHIBITED WITHOUT WRITTEN PERMISSION
-You may NOT, without prior written consent from Raj (@1tsRaj):
+You may NOT, without prior written consent from 1tsRajuWu (Raj):
 
-  • Copy, redistribute, or re-upload the Software or any part of it
+  • Copy, clone, mirror, redistribute, or re-upload the Software or any part
   • Modify, fork, or create derivative works for public distribution
-  • Sell, sublicense, or use the Software commercially
+  • Rebrand, rename, or pass off the Software as your own work
+  • Sell, sublicense, bundle, or use the Software commercially
   • Remove or alter copyright, trademark, or attribution notices
-  • Pass off the Software as your own work
+  • Distribute binaries or source under a different name or author
+
+TRADEMARK
+"Smiley" (the application name, logo, and branding) is the intellectual
+property of 1tsRajuWu (Raj). Unauthorized use of the name or logo is prohibited.
 
 OFFICIAL SOURCE
-The only authorized source for Smiley is the repository above. Builds,
-forks, or mirrors from other sources are not endorsed and may be unsafe.
+The only authorized source for Smiley is the repository above. Builds, forks,
+clones, or mirrors from other sources are not endorsed and may be unsafe or
+infringing.
 
 CONTACT
-For licensing inquiries or permission requests:
+For licensing inquiries, permission requests, or unauthorized-copy reports:
 
-  • PayPal: https://paypal.me/1tsRaj
-  • GitHub: https://github.com/1tsRaj
+  • GitHub: https://github.com/1tsRajuWu
+  • Issues: https://github.com/1tsRajuWu/Smiley/issues
 
 DISCLAIMER
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. THE AUTHOR

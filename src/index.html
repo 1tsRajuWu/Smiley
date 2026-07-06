@@ -88,13 +88,18 @@
           </div>
 
           <!-- Donate Banner -->
-          <a class="donate-banner" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener" id="donateBanner">
-            <span class="donate-banner-heart" aria-hidden="true">❤️</span>
+          <a class="donate-banner" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener" id="donateBanner" aria-label="Support the developer on PayPal">
+            <span class="donate-banner-shine" aria-hidden="true"></span>
+            <span class="donate-banner-icons" aria-hidden="true">
+              <span class="donate-icon">☕</span>
+              <span class="donate-icon donate-icon-heart">❤️</span>
+              <span class="donate-icon">✨</span>
+            </span>
             <div class="donate-banner-text">
               <strong>Support the Developer</strong>
-              <span>Help keep Smiley free &amp; updated!</span>
+              <span>Help keep Smiley free</span>
             </div>
-            <span class="donate-banner-arrow">→</span>
+            <span class="donate-banner-cta">PayPal</span>
           </a>
         </aside>
 
@@ -113,13 +118,28 @@
             </div>
           </div>
           <div class="activity-grid" id="activityGrid"></div>
+          <section class="gif-picker-section" id="gifPickerSection" hidden aria-labelledby="gifPickerLabel">
+            <div class="gif-picker-header">
+              <h3 class="gif-picker-label" id="gifPickerLabel">Choose animation</h3>
+            </div>
+            <div class="gif-picker-strip" id="gifPickerStrip" role="listbox" aria-label="Preset animations"></div>
+            <div class="gif-picker-my-gifs" id="gifPickerMyGifs" hidden>
+              <h4 class="gif-picker-sublabel">My GIFs</h4>
+              <div class="gif-picker-strip" id="gifPickerMyStrip" role="listbox" aria-label="My saved GIFs"></div>
+            </div>
+          </section>
         </main>
       </div>
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v3.2.0</span>
+        <span class="footer-version" id="footerVersion">Smiley v4.0.0</span>
+        <span class="footer-copyright">© 2026 1tsRajuWu</span>
+        <a href="#" class="footer-link" id="footerLicense">License</a>
+        <a href="#" class="footer-link" id="footerTos">Terms</a>
+        <a href="#" class="footer-link" id="footerPrivacy">Privacy</a>
         <a href="#" class="footer-link" id="footerBugReport">Report a bug</a>
+        <a href="#" class="footer-link" id="footerReview">⭐ Review</a>
         <span class="footer-hint" id="footerShortcuts"></span>
       </footer>
     </div>
@@ -266,14 +286,16 @@
               <p class="about-hint field-hint">Installed builds check for updates on startup (Settings → General). Downloads run in the background; restart or quit to apply.</p>
               <p class="about-hint field-hint">Friends viewing your Discord profile can tap <strong>Download Smiley</strong> on your presence card to get the app from GitHub.</p>
               <div class="about-links">
+                <a class="about-link" href="#" id="reviewLink"><span>⭐</span> Leave a review</a>
                 <a class="about-link" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener"><span>💝</span> Support on PayPal</a>
               </div>
+              <p class="about-watermark">Official build by 1tsRajuWu only</p>
               <div class="about-legal">
                 <a href="#" id="bugReportLink">Report a bug</a> &middot;
-                <a href="#" id="licenseLink">License</a> &middot; <a href="#" id="tosLink">Terms of Service</a> &middot; <a href="#" id="privacyLink">Privacy Policy</a>
+                <a href="#" id="licenseLink">License</a> &middot; <a href="#" id="tosLink">Terms of Service</a> &middot; <a href="#" id="privacyLink">Privacy Policy</a> &middot; <a href="#" id="legalInfoLink">Legal</a>
               </div>
               <p class="about-hint field-hint">No GitHub account? <a href="#" id="bugReportEmailLink">Email the developer</a></p>
-              <p class="about-credit">© Raj (@1tsRaj) — All Rights Reserved</p>
+              <p class="about-credit">© 2026 1tsRajuWu. All Rights Reserved.</p>
             </div>
           </div>
         </div>

@@ -7,5 +7,6 @@
   "windowState": { "width": 1100, "height": 780 },
   "autoConnect": true,
   "minimizeToTray": true,
-  "customActivities": []
+  "customActivities": [],
+  "activityGifChoice": {}
 }

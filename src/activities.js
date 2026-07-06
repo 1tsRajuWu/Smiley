@@ -12,6 +12,10 @@ export const WAIFU_TAGS = {
 export {
   VERIFIED_FALLBACKS as FALLBACK_GIFS,
   ACTIVITY_TENOR_FALLBACKS,
+  ACTIVITY_GIF_OPTIONS,
+  getActivityGifOptions,
+  resolveGifChoiceUrl,
+  getDefaultGifChoiceId,
   fetchWaifuImage,
   fetchNekosBest,
 } from './discord-images.js';

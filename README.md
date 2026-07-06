@@ -8,7 +8,7 @@
 
 Pick eating, gaming, coding, chilling — Smiley sets your Rich Presence with a live anime GIF. No Developer Portal. No config files. Download, open Discord, click an activity. Done.
 
-[![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v3.2.0&color=5865F2)](https://github.com/1tsRajuWu/Smiley/releases/latest)
+[![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v4.0.0&color=5865F2)](https://github.com/1tsRajuWu/Smiley/releases/latest)
 [![downloads](https://img.shields.io/github/downloads/1tsRajuWu/Smiley/total?style=for-the-badge&color=57F287)](https://github.com/1tsRajuWu/Smiley/releases)
 [![platform](https://img.shields.io/badge/desktop-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](#-download)
 [![Discord Rich Presence](https://img.shields.io/badge/Discord-Rich%20Presence-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/)
@@ -16,26 +16,38 @@ Pick eating, gaming, coding, chilling — Smiley sets your Rich Presence with a 
 
 <br>
 
-[![Download for Windows](https://img.shields.io/badge/⬇️_Windows-Installer-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-3.2.0.exe)
-[![Download for macOS](https://img.shields.io/badge/⬇️_macOS-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-3.2.0-arm64.dmg)
-[![Download for Linux](https://img.shields.io/badge/⬇️_Linux-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-3.2.0.AppImage)
+[![Download for Windows](https://img.shields.io/badge/⬇️_Windows-Installer-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.0.exe)
+[![Download for macOS](https://img.shields.io/badge/⬇️_macOS-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-arm64.dmg)
+[![Download for Linux](https://img.shields.io/badge/⬇️_Linux-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.AppImage)
 
 <br>
 
-[All releases](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Smiley.Native](README-NATIVE.md) (lightweight, ~25 MB)
+[All releases](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Smiley.Native](README-NATIVE.md) (lightweight, ~25 MB)
 
 </div>
 
 ---
 
-## ✨ What's new in v3.2.0
+## ✨ What's new in v4.0.0
 
 | | |
 |---|---|
-| 🎨 **Custom activities** | Build your own — title, emoji, and GIF. Shows up under **My Activities**. |
-| 🖼️ **GIF picker** | Swap animations per activity from a scrollable strip — presets + your saved GIFs. |
-| 🎬 **Curated anime animations** | Hand-picked Tenor GIFs per activity so Discord and the in-app preview match. |
-| 🌓 **Theme-aware logo** | Header icon flips light/dark with your theme — looks right on every palette. |
+| 🖼️ **Per-activity GIF picker** | Choose from 3–4 curated animations per activity, plus your saved GIFs — same image in-app and on Discord. |
+| 🎨 **Custom activities** | Build your own — title, emoji, and GIF under **My Activities**. |
+| ⭐ **Leave a review** | Settings → About or footer link — share feedback via GitHub. |
+| 🍎 **Mac auto-update fixed** | CI publishes `latest-mac.yml` with zip artifacts so in-app updates work on macOS. |
+| 🐛 **Logo & Discord GIF fixes** | Header/taskbar icon restored; RPC uses verified `media.tenor.com` URLs (no bot logo overlay). |
+| ⚖️ **Legal protection** | LICENSE, NOTICE, LEGAL.md — no unauthorized forks or rebrands. |
+| 💝 **Decorative donate banner** | Refreshed PayPal support card in the sidebar. |
+
+<details>
+<summary><strong>Also in v3.2.x</strong></summary>
+
+- Curated anime GIFs per activity with app ↔ Discord sync
+- Theme-aware transparent logo
+- 11 themes, favorites, recents, tray, hotkey, auto-update
+
+</details>
 
 ---
 
@@ -67,7 +79,7 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 
 ## ⬇️ Download
 
-**Latest: v3.2.0** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v3.2.0)
+**Latest: v4.0.0** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.0)
 
 > **Needs:** Discord **desktop** app (not browser), macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](docs/MINIMUM-REQUIREMENTS.md)
 
@@ -75,21 +87,21 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 
 | | Link | Notes |
 |---|---|---|
-| **Installer** ⭐ | [**Smiley-Setup-3.2.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-3.2.0.exe) | Recommended — Start menu + desktop shortcut |
+| **Installer** ⭐ | [**Smiley-Setup-4.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.0.exe) | Recommended — Start menu + desktop shortcut |
 
 ### macOS
 
 | Chip | Link |
 |---|---|
-| **Apple Silicon** (M1–M5) | [**Smiley-3.2.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-3.2.0-arm64.dmg) |
-| **Intel** (pre-2020) | [**Smiley-3.2.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-3.2.0-x64.dmg) |
+| **Apple Silicon** (M1–M5) | [**Smiley-4.0.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-arm64.dmg) |
+| **Intel** (pre-2020) | [**Smiley-4.0.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-x64.dmg) |
 
 ### Linux
 
 | Format | Link | Notes |
 |---|---|---|
-| **AppImage** | [**Smiley-3.2.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-3.2.0.AppImage) | `chmod +x` then run — works on most distros |
-| **.deb** | [**Smiley-3.2.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-3.2.0.deb) | Debian / Ubuntu / Mint |
+| **AppImage** | [**Smiley-4.0.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.AppImage) | `chmod +x` then run — works on most distros |
+| **.deb** | [**Smiley-4.0.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.deb) | Debian / Ubuntu / Mint |
 
 ### Low-end PC?
 
@@ -143,7 +155,7 @@ Not code-signed yet — [source is public](https://github.com/1tsRajuWu/Smiley).
 <details>
 <summary><strong>Portable .exe is gone</strong></summary>
 
-v3.2 onward ships the **installer only** on Windows. Portable builds were dropped — use [Smiley-Setup-3.2.0.exe](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-3.2.0.exe). Need something lighter? Try [Smiley.Native](README-NATIVE.md).
+v4.0 onward ships the **installer only** on Windows. Portable builds were dropped — use [Smiley-Setup-4.0.0.exe](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.0.exe). Need something lighter? Try [Smiley.Native](README-NATIVE.md).
 </details>
 
 <details>
@@ -200,9 +212,29 @@ npm run build:linux  # AppImage + .deb (x64)
 
 ---
 
+## Legal
+
+**Smiley is NOT open source.** The source is visible on GitHub for transparency and official releases only — it is **not** licensed for reuse, forking, or redistribution.
+
+| Allowed | Not allowed (without written permission) |
+|---------|----------------------------------------|
+| Download official releases for personal use | Fork, clone, mirror, or redistribute |
+| Report bugs via Issues | Rebrand or rename and distribute |
+| Optional PayPal donation | Remove copyright or branding |
+| | Claim as your own work |
+| | Commercial use or derivative builds |
+
+**Official source only:** [github.com/1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley)
+
+Found an unauthorized copy? [Report it via Issues](https://github.com/1tsRajuWu/Smiley/issues/new) — include the URL and details.
+
+Full details: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [NOTICE](NOTICE) · [Terms of Service](ToS.md) · [Privacy Policy](PRIVACY.md)
+
+---
+
 ## 📄 License & credits
 
-© Raj ([@1tsRaj](https://github.com/1tsRaj) / [@1tsRajuWu](https://github.com/1tsRajuWu)) — **All Rights Reserved**. See [LICENSE](LICENSE).
+© 1tsRajuWu (Raj) — **All Rights Reserved**. See [LICENSE](LICENSE).
 
 | | |
 |---|---|
@@ -210,14 +242,14 @@ npm run build:linux  # AppImage + .deb (x64)
 | Discord RPC | [discord-rpc](https://github.com/discord/discord-rpc) |
 | Desktop shell | [Electron](https://www.electronjs.org/) |
 
-[Terms of Service](ToS.md) · [Privacy Policy](PRIVACY.md)
-
 ---
 
 <div align="center">
 
-**Smiley v3.2.0** — made with ♥ by Raj
+**Smiley v4.0.0** — made with ♥ by Raj
 
-[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj)
+[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [⭐ Review](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj)
+
+Enjoying Smiley? [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review)
 
 </div>

@@ -115,6 +115,30 @@ function buildBugReportUrl() {
   return `${BUG_REPORT_REPO}?${params}`;
 }
 
+function buildReviewBody() {
+  return [
+    '**Rating (1–5 stars):**',
+    '⭐⭐⭐⭐⭐',
+    '',
+    '**What you like:**',
+    '',
+    '**Suggestions / ideas:**',
+    '',
+    `**Smiley version:** ${VERSION} (mobile)`,
+    `**OS:** ${getPlatformLabel()}`,
+    '',
+  ].join('\n');
+}
+
+function buildReviewUrl() {
+  const params = new URLSearchParams({
+    template: 'review.md',
+    labels: 'review',
+    body: buildReviewBody(),
+  });
+  return `${BUG_REPORT_REPO}?${params}`;
+}
+
 async function openExternal(url) {
   if (isNative) {
     await Browser.open({ url });
@@ -427,6 +451,12 @@ function bindEvents() {
   footerBugReport?.addEventListener('click', (e) => {
     e.preventDefault();
     openExternal(buildBugReportUrl());
+  });
+
+  const footerReview = $('footerReview');
+  footerReview?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openExternal(buildReviewUrl());
   });
 }
 

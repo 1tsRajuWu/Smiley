@@ -8,7 +8,7 @@ const FETCH_TIMEOUT_MS = 6000;
 const DISCORD_IMAGE_MAX_LEN = 512;
 const FETCH_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'Smiley/3.2.1 (Discord Rich Presence)',
+  'User-Agent': 'Smiley/4.0.0 (Discord Rich Presence)',
 };
 
 /** Per-category API config — nekos GIF endpoint + waifu still fallback */
@@ -172,6 +172,105 @@ export const ACTIVITY_TENOR_FALLBACKS = {
   shopping: 'https://media.tenor.com/9M34adQOtNwAAAAM/shopping-hi.gif',
 };
 
+/** Per-activity GIF picker options — first entry matches ACTIVITY_TENOR_FALLBACKS default */
+export const ACTIVITY_GIF_OPTIONS = {
+  sleeping: [
+    { id: 'sleep-1', label: 'Sleepy Sleep', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
+    { id: 'sleep-2', label: 'Go to Sleep', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
+    { id: 'sleep-3', label: 'Nekos Sleep', url: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif' },
+    { id: 'sleep-4', label: 'Power Nap', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
+  ],
+  napping: [
+    { id: 'nap-1', label: 'Power Nap', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
+    { id: 'nap-2', label: 'Go to Sleep', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
+    { id: 'nap-3', label: 'Sleepy Sleep', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
+    { id: 'nap-4', label: 'Nekos Sleep', url: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif' },
+  ],
+  'eating-ramen': [
+    { id: 'ramen-1', label: 'Hungry Ramen', url: 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif' },
+    { id: 'ramen-2', label: 'Nekos Feed', url: 'https://nekos.best/api/v2/feed/e480b6f8-aa99-4f36-b112-7bda61bf4ab8.gif' },
+    { id: 'ramen-3', label: 'Naruto Ramen', url: 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif' },
+    { id: 'ramen-4', label: 'Sora Cooking', url: 'https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif' },
+  ],
+  'eating-pizza': [
+    { id: 'pizza-1', label: 'Pizza Food', url: 'https://media.tenor.com/i-xS-A_DTCEAAAAM/pizza-food.gif' },
+    { id: 'pizza-2', label: 'Nekos Feed', url: 'https://nekos.best/api/v2/feed/b9abbae0-3b59-437e-b866-3402c2c7f22e.gif' },
+    { id: 'pizza-3', label: 'Umaru Snack', url: 'https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif' },
+    { id: 'pizza-4', label: 'Uwu Taco', url: 'https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif' },
+  ],
+  gaming: [
+    { id: 'game-1', label: 'Konata Gaming', url: 'https://media.tenor.com/9tbKJeCFPaUAAAAd/konata-gaming.gif' },
+    { id: 'game-2', label: 'Nekos Yeet', url: 'https://nekos.best/api/v2/yeet/bd0af6f9-aabe-4d69-a467-4727ee6ebee0.gif' },
+    { id: 'game-3', label: 'Co-op Hug', url: 'https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif' },
+    { id: 'game-4', label: 'Happy Dance', url: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif' },
+  ],
+  listening: [
+    { id: 'listen-1', label: 'Headphones', url: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif' },
+    { id: 'listen-2', label: 'Nekos Dance', url: 'https://nekos.best/api/v2/dance/2fa17d31-404a-4d50-b092-4448d403a59e.gif' },
+    { id: 'listen-3', label: 'Party Hard', url: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif' },
+    { id: 'listen-4', label: 'Love Live', url: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif' },
+  ],
+  studying: [
+    { id: 'study-1', label: 'Studying Girl', url: 'https://media.tenor.com/etfl8OlhPIYAAAAM/studying-anime-girl.gif' },
+    { id: 'study-2', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+    { id: 'study-3', label: 'Nekos Pat', url: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif' },
+    { id: 'study-4', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+  ],
+  watching: [
+    { id: 'watch-1', label: 'Movie Night', url: 'https://media.tenor.com/P8jCycbR6k8AAAAM/yosuke-tickets.gif' },
+    { id: 'watch-2', label: 'Nekos Happy', url: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif' },
+    { id: 'watch-3', label: 'Anime Read', url: 'https://media.tenor.com/rJxGy9CYwHoAAAAM/anime-read.gif' },
+    { id: 'watch-4', label: 'Love Live', url: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif' },
+  ],
+  partying: [
+    { id: 'party-1', label: 'Party Hard', url: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif' },
+    { id: 'party-2', label: 'Nekos Dance', url: 'https://nekos.best/api/v2/dance/2fa17d31-404a-4d50-b092-4448d403a59e.gif' },
+    { id: 'party-3', label: 'Happy Dance', url: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif' },
+    { id: 'party-4', label: 'Headphones', url: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif' },
+  ],
+  focus: [
+    { id: 'focus-1', label: 'Anime Pat', url: 'https://media.tenor.com/qhe3ahMJ_i0AAAAM/anime-anime-pat.gif' },
+    { id: 'focus-2', label: 'Nekos Pat', url: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif' },
+    { id: 'focus-3', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+    { id: 'focus-4', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+  ],
+  traveling: [
+    { id: 'travel-1', label: 'Road Trip', url: 'https://media.tenor.com/gPjII19ICdIAAAAM/road-road-trip-move-dragon-ball-anime-tyan-vibe-car.gif' },
+    { id: 'travel-2', label: 'Nekos Run', url: 'https://nekos.best/api/v2/run/e13cc2bc-5826-41e2-8093-732a59bd39d1.gif' },
+    { id: 'travel-3', label: 'Anime Running', url: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif' },
+    { id: 'travel-4', label: 'Anime Running', url: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif' },
+  ],
+};
+
+export function getActivityGifOptions(activityId) {
+  if (ACTIVITY_GIF_OPTIONS[activityId]) return [...ACTIVITY_GIF_OPTIONS[activityId]];
+  const options = [];
+  const tenor = ACTIVITY_TENOR_FALLBACKS[activityId];
+  const verified = VERIFIED_FALLBACKS[activityId];
+  if (tenor) options.push({ id: `${activityId}-curated`, label: 'Curated', url: tenor });
+  if (verified && verified !== tenor) {
+    options.push({ id: `${activityId}-nekos`, label: 'Neko Alt', url: verified });
+  }
+  return options;
+}
+
+export function resolveGifChoiceUrl(activityId, choiceId) {
+  if (!choiceId || !activityId) return null;
+  if (choiceId.startsWith('custom:')) {
+    const url = normalizeDiscordImageUrl(choiceId.slice(7));
+    return isValidDiscordImageUrl(url) ? url : null;
+  }
+  const options = getActivityGifOptions(activityId);
+  const match = options.find((o) => o.id === choiceId);
+  const url = normalizeDiscordImageUrl(match?.url || options[0]?.url || ACTIVITY_TENOR_FALLBACKS[activityId] || null);
+  return isValidDiscordImageUrl(url) ? url : null;
+}
+
+export function getDefaultGifChoiceId(activityId) {
+  const options = getActivityGifOptions(activityId);
+  return options[0]?.id || null;
+}
+
 /** Session cache — keyed by activity.id */
 const sessionImageCache = new Map();
 
@@ -183,11 +282,31 @@ export function clearActivityImageCacheEntry(activityId) {
   if (activityId) sessionImageCache.delete(activityId);
 }
 
+export function normalizeDiscordImageUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  let normalized = url.trim();
+  if (/^https?:\/\/media1\.tenor\.com\//i.test(normalized)) {
+    const match = normalized.match(/^https?:\/\/media1\.tenor\.com\/m\/([^/]+)\/(.+)$/i);
+    if (match) {
+      let id = match[1];
+      if (id.endsWith('AAAAC')) id = `${id.slice(0, -5)}AAAAM`;
+      normalized = `https://media.tenor.com/${id}/${match[2]}`;
+    } else {
+      normalized = normalized.replace(/^https?:\/\/media1\.tenor\.com/i, 'https://media.tenor.com');
+    }
+  }
+  // Prefer short Giphy CDN paths (Discord rejects URLs over 512 chars)
+  const giphy = normalized.match(/^https:\/\/media\d\.giphy\.com\/media\/([^/]+)\/giphy\.gif/i);
+  if (giphy) normalized = `https://i.giphy.com/${giphy[1]}.gif`;
+  return normalized;
+}
+
 export function isValidDiscordImageUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  if (!/^https:\/\//i.test(url)) return false;
-  if (url.startsWith('data:') || url.startsWith('blob:')) return false;
-  return url.length <= DISCORD_IMAGE_MAX_LEN;
+  const normalized = normalizeDiscordImageUrl(url);
+  if (!normalized || typeof normalized !== 'string') return false;
+  if (!/^https:\/\//i.test(normalized)) return false;
+  if (normalized.startsWith('data:') || normalized.startsWith('blob:')) return false;
+  return normalized.length <= DISCORD_IMAGE_MAX_LEN;
 }
 
 function uniqueUrls(urls) {
@@ -338,7 +457,7 @@ function buildResult(activityId, { url, discordUrl, source, fallbacks }) {
  */
 export async function resolveDiscordImageUrl(
   activity,
-  { animationsEnabled = true, customDataUrl = null, bustCache = false } = {}
+  { animationsEnabled = true, customDataUrl = null, bustCache = false, preferredGifUrl = null } = {}
 ) {
   const verified = getVerifiedFallback(activity);
   const tenor = getTenorFallback(activity);
@@ -356,8 +475,28 @@ export async function resolveDiscordImageUrl(
   if (bustCache) clearActivityImageCacheEntry(activity.id);
 
   if (activity.isCustom || activity.category === 'custom') {
+    if (preferredGifUrl) {
+      const previewUrl = isPreviewImageUrl(preferredGifUrl) ? preferredGifUrl : null;
+      const discordUrl = isValidDiscordImageUrl(preferredGifUrl)
+        ? preferredGifUrl
+        : isValidDiscordImageUrl(activity.gifUrl)
+          ? activity.gifUrl
+          : null;
+      if (previewUrl || discordUrl) {
+        return cacheResult(
+          activity.id,
+          buildResult(activity.id, {
+            url: previewUrl || discordUrl,
+            discordUrl,
+            source: discordUrl ? 'Chosen GIF' : 'Chosen · preview only',
+            fallbacks: uniqueUrls([activity.localGifPath, activity.gifUrl].filter(Boolean)),
+          })
+        );
+      }
+    }
+
     const cached = readCache(activity.id);
-    if (cached) return { ...cached, fallbacks: cached.fallbacks || [] };
+    if (cached && !preferredGifUrl) return { ...cached, fallbacks: cached.fallbacks || [] };
 
     const discord = isValidDiscordImageUrl(activity.gifUrl) ? activity.gifUrl : null;
     const local = activity.localGifPath || activity.previewUrl || null;
@@ -396,7 +535,27 @@ export async function resolveDiscordImageUrl(
   }
 
   const cached = readCache(activity.id);
-  if (cached) return { ...cached, fallbacks };
+  if (cached && !preferredGifUrl) return { ...cached, fallbacks };
+
+  if (preferredGifUrl) {
+    const previewUrl = isPreviewImageUrl(preferredGifUrl) ? preferredGifUrl : null;
+    const discordUrl = isValidDiscordImageUrl(preferredGifUrl)
+      ? preferredGifUrl
+      : isValidDiscordImageUrl(tenor)
+        ? tenor
+        : verified;
+    if (previewUrl || discordUrl) {
+      return cacheResult(
+        activity.id,
+        buildResult(activity.id, {
+          url: previewUrl || discordUrl,
+          discordUrl,
+          source: isValidDiscordImageUrl(preferredGifUrl) ? 'Chosen GIF' : 'Chosen · preview only',
+          fallbacks,
+        })
+      );
+    }
+  }
 
   // Curated GIF — same URL in app preview and Discord (skip random API rotation)
   if (isValidDiscordImageUrl(tenor)) {
@@ -458,7 +617,8 @@ export const resolveActivityImage = resolveDiscordImageUrl;
 
 /** Build fields for Discord RPC payload */
 export function discordImageFields(activity, discordUrl) {
-  const url = isValidDiscordImageUrl(discordUrl) ? discordUrl : getVerifiedFallback(activity);
+  const normalized = normalizeDiscordImageUrl(discordUrl);
+  const url = isValidDiscordImageUrl(normalized) ? normalized : getVerifiedFallback(activity);
   return {
     largeImageUrl: url,
     discordImageUrl: url,

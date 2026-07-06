@@ -4,6 +4,9 @@ import {
   discordImageFields,
   getActivityFallbackUrls,
   getTenorFallback,
+  getActivityGifOptions,
+  resolveGifChoiceUrl,
+  getDefaultGifChoiceId,
   clearActivityImageCacheEntry,
   isValidDiscordImageUrl,
 } from './discord-images.js';
@@ -25,6 +28,10 @@ const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
 const categoryTabs = $('#categoryTabs');
 const activityGrid = $('#activityGrid');
+const gifPickerSection = $('#gifPickerSection');
+const gifPickerStrip = $('#gifPickerStrip');
+const gifPickerMyGifs = $('#gifPickerMyGifs');
+const gifPickerMyStrip = $('#gifPickerMyStrip');
 const searchInput = $('#searchInput');
 const settingsBtn = $('#settingsBtn');
 const minimizeBtn = $('#minimizeBtn');
@@ -48,9 +55,15 @@ const closeLegal = $('#closeLegal');
 const tosLink = $('#tosLink');
 const privacyLink = $('#privacyLink');
 const licenseLink = $('#licenseLink');
+const legalInfoLink = $('#legalInfoLink');
+const footerLicense = $('#footerLicense');
+const footerTos = $('#footerTos');
+const footerPrivacy = $('#footerPrivacy');
 const bugReportLink = $('#bugReportLink');
 const bugReportEmailLink = $('#bugReportEmailLink');
+const reviewLink = $('#reviewLink');
 const footerBugReport = $('#footerBugReport');
+const footerReview = $('#footerReview');
 const footerShortcuts = $('#footerShortcuts');
 
 // Wallpaper settings refs
@@ -129,6 +142,7 @@ let lastGifActivityId = null;
 let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 let customActivitiesConfig = [];
+let activityGifChoices = {};
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -256,11 +270,170 @@ function startTimer(start) {
   timerInterval = setInterval(tick, 1000);
 }
 
+function resolveChoiceToUrl(activityId, choiceId) {
+  if (!choiceId) return null;
+  if (choiceId.startsWith('custom-anim:')) {
+    const name = choiceId.slice(12);
+    const anim = customAnimations.find((a) => a.name === name);
+    return anim?.dataUrl || null;
+  }
+  if (choiceId.startsWith('custom:')) {
+    const url = choiceId.slice(7);
+    return url || null;
+  }
+  return resolveGifChoiceUrl(activityId, choiceId);
+}
+
+function getSavedGifChoiceId(activity) {
+  if (!activity) return null;
+  const saved = activityGifChoices[activity.id];
+  if (saved) return saved;
+  if (activity.isCustom && isValidDiscordImageUrl(activity.gifUrl)) {
+    return `custom:${activity.gifUrl}`;
+  }
+  return getDefaultGifChoiceId(activity.id);
+}
+
+function getPreferredGifUrl(activity) {
+  if (!activity) return null;
+  const saved = activityGifChoices[activity.id];
+  if (!saved) return null;
+  return resolveChoiceToUrl(activity.id, saved);
+}
+
+function collectMyGifs() {
+  const seen = new Set();
+  const items = [];
+
+  for (const ca of customActivitiesConfig) {
+    if (isValidDiscordImageUrl(ca.gifUrl) && !seen.has(ca.gifUrl)) {
+      seen.add(ca.gifUrl);
+      items.push({
+        id: `custom:${ca.gifUrl}`,
+        label: `${ca.emoji || '✨'} ${ca.details}`,
+        url: ca.gifUrl,
+        previewOnly: false,
+      });
+    }
+  }
+
+  for (const anim of customAnimations) {
+    if (!anim?.dataUrl || seen.has(anim.dataUrl)) continue;
+    seen.add(anim.dataUrl);
+    items.push({
+      id: `custom-anim:${anim.name}`,
+      label: anim.name,
+      url: anim.dataUrl,
+      previewOnly: !isValidDiscordImageUrl(anim.dataUrl),
+    });
+  }
+
+  return items;
+}
+
+function renderGifOptionButton(option, selectedId) {
+  const selected = option.id === selectedId;
+  const previewOnly = option.previewOnly ? ' preview-only' : '';
+  return `
+    <button type="button" class="gif-option${selected ? ' selected' : ''}${previewOnly}"
+      role="option" aria-selected="${selected}" data-choice="${escapeHtml(option.id)}"
+      title="${escapeHtml(option.label)}${option.previewOnly ? ' (app preview only)' : ''}">
+      <span class="gif-option-thumb">
+        <img src="${escapeHtml(option.url)}" alt="" loading="lazy" decoding="async" />
+      </span>
+      <span class="gif-option-label">${escapeHtml(option.label)}</span>
+    </button>`;
+}
+
+function bindGifPickerStrip(strip, activity, onSelect) {
+  if (!strip) return;
+  strip.querySelectorAll('.gif-option').forEach((btn) => {
+    const handler = () => onSelect(activity.id, btn.dataset.choice);
+    btn.addEventListener('click', handler);
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handler();
+      }
+    });
+  });
+}
+
+function renderGifPicker(activity) {
+  if (!gifPickerSection || !gifPickerStrip) return;
+
+  if (!activity) {
+    gifPickerSection.hidden = true;
+    gifPickerStrip.innerHTML = '';
+    if (gifPickerMyStrip) gifPickerMyStrip.innerHTML = '';
+    if (gifPickerMyGifs) gifPickerMyGifs.hidden = true;
+    return;
+  }
+
+  const presetOptions = getActivityGifOptions(activity.id);
+  if (activity.isCustom && isValidDiscordImageUrl(activity.gifUrl)) {
+    const hasOwn = presetOptions.some((o) => o.url === activity.gifUrl);
+    if (!hasOwn) {
+      presetOptions.unshift({
+        id: `custom:${activity.gifUrl}`,
+        label: 'Activity GIF',
+        url: activity.gifUrl,
+      });
+    }
+  }
+
+  const selectedId = getSavedGifChoiceId(activity);
+  gifPickerSection.hidden = presetOptions.length === 0 && collectMyGifs().length === 0;
+  gifPickerStrip.innerHTML = presetOptions.map((o) => renderGifOptionButton(o, selectedId)).join('');
+
+  const myGifs = collectMyGifs().filter(
+    (g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id)
+  );
+  if (gifPickerMyGifs && gifPickerMyStrip) {
+    if (myGifs.length) {
+      gifPickerMyGifs.hidden = false;
+      gifPickerMyStrip.innerHTML = myGifs.map((o) => renderGifOptionButton(o, selectedId)).join('');
+      bindGifPickerStrip(gifPickerMyStrip, activity, onGifOptionSelect);
+    } else {
+      gifPickerMyGifs.hidden = true;
+      gifPickerMyStrip.innerHTML = '';
+    }
+  }
+
+  bindGifPickerStrip(gifPickerStrip, activity, onGifOptionSelect);
+}
+
+async function onGifOptionSelect(activityId, choiceId) {
+  if (!activityId || !choiceId) return;
+  activityGifChoices = { ...activityGifChoices, [activityId]: choiceId };
+  await window.smiley.saveConfig({ activityGifChoice: activityGifChoices });
+
+  const activity = findActivity(activityId);
+  if (!activity || selectedActivityId !== activityId) return;
+
+  clearActivityImageCacheEntry(activityId);
+  renderGifPicker(activity);
+
+  const resolved = await applyActivityGif(activity, { bustCache: true });
+  if (!resolved || selectedActivityId !== activityId) return;
+
+  if (choiceId.startsWith('custom-anim:') && !isValidDiscordImageUrl(resolved.discordUrl)) {
+    showToast('Custom upload shows in Smiley — add HTTPS URL for Discord', 'error');
+  }
+
+  const rpcPayload = buildRpcPayload(activity, resolved.discordUrl);
+  const result = await window.smiley.setActivity(rpcPayload, false);
+  if (result?.error) showToast(result.error, 'error');
+  else if (result?.queued) showToast('GIF updated (rate limited)', 'success');
+}
+
 async function resolveGifUrl(activity, { bustCache = false } = {}) {
+  const preferredGifUrl = getPreferredGifUrl(activity);
   const { url, discordUrl, source, fallbacks } = await resolveDiscordImageUrl(activity, {
     animationsEnabled: currentSettings.animationsEnabled,
     customDataUrl: activeCustomAnimation,
     bustCache,
+    preferredGifUrl,
   });
   return { url, discordUrl, source, fallbacks };
 }
@@ -476,9 +649,11 @@ async function updatePreview(activity) {
     clearGifDisplay();
     currentGifUrl = null;
     currentDiscordImageUrl = null;
+    renderGifPicker(null);
     return;
   }
 
+  renderGifPicker(activity);
   await applyActivityGif(activity);
 }
 
@@ -651,6 +826,7 @@ async function selectActivity(id) {
   setCharacterLabel(activity);
   setPreviewDisplay(activity, null);
   characterLoading.style.display = 'flex';
+  renderGifPicker(activity);
 
   const resolved = await applyActivityGif(activity);
   if (!resolved || selectedActivityId !== id) return;
@@ -686,6 +862,7 @@ async function handleClear() {
   await window.smiley.clearActivity();
   selectedActivityId = null;
   renderActivityGrid();
+  renderGifPicker(null);
   await updatePreview(null);
   showToast('Status cleared');
 }
@@ -1232,10 +1409,54 @@ async function openBugReportEmail() {
   window.smiley.openExternal(buildBugReportEmailUrl(version, platform));
 }
 
+// ─── Review / Feedback ───────────────────────────────────────────────
+const REVIEW_REPO = 'https://github.com/1tsRajuWu/Smiley/issues/new';
+
+function buildReviewBody(version, platform) {
+  return [
+    '**Rating (1–5 stars):**',
+    '⭐⭐⭐⭐⭐',
+    '',
+    '**What you like:**',
+    '',
+    '**Suggestions / ideas:**',
+    '',
+    `**Smiley version:** ${version}`,
+    `**OS:** ${platform}`,
+    '',
+  ].join('\n');
+}
+
+function buildReviewUrl(version, platform) {
+  const params = new URLSearchParams({
+    template: 'review.md',
+    labels: 'review',
+    body: buildReviewBody(version, platform),
+  });
+  return `${REVIEW_REPO}?${params}`;
+}
+
+async function openReview() {
+  const cfg = await window.smiley.getConfig();
+  const version = cfg.version || 'unknown';
+  const platform = cfg.platform || navigator.userAgent;
+  window.smiley.openExternal(buildReviewUrl(version, platform));
+}
+
 // ─── Legal Modal ─────────────────────────────────────────────────────
 async function showLegal(type) {
-  const titles = { license: 'License Agreement', tos: 'Terms of Service', privacy: 'Privacy Policy' };
-  const files = { license: '../LICENSE', tos: '../ToS.md', privacy: '../PRIVACY.md' };
+  const titles = {
+    license: 'License Agreement',
+    tos: 'Terms of Service',
+    privacy: 'Privacy Policy',
+    legal: 'Legal Information',
+  };
+  const files = {
+    license: '../LICENSE',
+    tos: '../ToS.md',
+    privacy: '../PRIVACY.md',
+    legal: '../LEGAL.md',
+  };
   legalTitle.textContent = titles[type] || 'Legal';
   legalBody.innerHTML = '<p>Loading...</p>';
   legalModal.showModal();
@@ -1489,20 +1710,25 @@ async function init() {
     window.smiley.openExternal(donateBanner.href);
   });
 
-  const aboutLink = $('.about-link');
-  if (aboutLink) {
-    aboutLink.addEventListener('click', (e) => {
+  document.querySelectorAll('.about-link[href^="http"]').forEach((link) => {
+    link.addEventListener('click', (e) => {
       e.preventDefault();
-      window.smiley.openExternal(aboutLink.href);
+      window.smiley.openExternal(link.href);
     });
-  }
+  });
 
   if (licenseLink) licenseLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('license'); });
+  if (legalInfoLink) legalInfoLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('legal'); });
   if (tosLink) tosLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('tos'); });
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
+  if (footerLicense) footerLicense.addEventListener('click', (e) => { e.preventDefault(); showLegal('license'); });
+  if (footerTos) footerTos.addEventListener('click', (e) => { e.preventDefault(); showLegal('tos'); });
+  if (footerPrivacy) footerPrivacy.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
   if (bugReportLink) bugReportLink.addEventListener('click', (e) => { e.preventDefault(); openBugReport(); });
   if (bugReportEmailLink) bugReportEmailLink.addEventListener('click', (e) => { e.preventDefault(); openBugReportEmail(); });
+  if (reviewLink) reviewLink.addEventListener('click', (e) => { e.preventDefault(); openReview(); });
   if (footerBugReport) footerBugReport.addEventListener('click', (e) => { e.preventDefault(); openBugReport(); });
+  if (footerReview) footerReview.addEventListener('click', (e) => { e.preventDefault(); openReview(); });
 
   async function triggerUpdateCheck() {
     showToast('Checking for updates...');
@@ -1611,6 +1837,10 @@ async function init() {
       customActivitiesConfig = data.customActivities;
       renderActivityGrid();
       renderCustomActivitiesSettingsList();
+      if (selectedActivityId) {
+        const activity = findActivity(selectedActivityId);
+        if (activity) renderGifPicker(activity);
+      }
     }
   });
 
@@ -1634,6 +1864,7 @@ async function init() {
       if (match) {
         selectedActivityId = match.id;
         renderActivityGrid();
+        renderGifPicker(match);
         updatePreview({ ...match, category: match.category });
       }
       if (data.sessionStart) startTimer(data.sessionStart);
@@ -1651,6 +1882,7 @@ async function init() {
   // Initial config load
   const cfg = await window.smiley.getConfig();
   currentSettings = { ...currentSettings, ...cfg };
+  activityGifChoices = cfg.activityGifChoice || {};
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
   await loadCustomActivitiesConfig();

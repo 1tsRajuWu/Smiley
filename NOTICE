@@ -1,18 +1,33 @@
 Smiley — Copyright & Trademark Notice
 =====================================
 
-Copyright © 2025–2026 Raj (@1tsRaj). All Rights Reserved.
+Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.
 
-"Smiley" (the application name, logo, and branding) is the intellectual
-property of Raj (@1tsRaj). Unauthorized use of the name, logo, or source
-code for redistribution, rebranding, or commercial purposes is prohibited.
+TRADEMARK
+---------
+"Smiley" — including the application name, logo, iconography, and all related
+branding — is the intellectual property of 1tsRajuWu (Raj).
 
-Official repository (only authorized source):
-  https://github.com/1tsRaj/smiley-rpc
+Unauthorized use of the Smiley name, logo, or branding for redistribution,
+rebranding, commercial purposes, or to imply endorsement is prohibited.
 
-Support the developer:
+UNAUTHORIZED FORKS & CLONES
+---------------------------
+Creating public forks, clones, mirrors, or rebranded copies of Smiley violates
+copyright and trademark rights. Such copies may be reported for takedown under
+applicable law and platform policies.
+
+See LEGAL.md for what users may and may not do.
+
+OFFICIAL SOURCE (only authorized distribution)
+------------------------------------------------
+  https://github.com/1tsRajuWu/Smiley
+
+Support the developer (optional):
   https://paypal.me/1tsRaj
 
-Third-party assets (anime GIFs) are sourced from public APIs (waifu.pics,
-nekos.best, Tenor) and remain subject to their respective terms. The Smiley
-application code, design, and branding are proprietary.
+THIRD-PARTY CONTENT
+-------------------
+Anime GIFs are sourced from public APIs (waifu.pics, nekos.best, Tenor) and
+remain subject to their respective terms. The Smiley application code, design,
+UI, and branding are proprietary and not open source.

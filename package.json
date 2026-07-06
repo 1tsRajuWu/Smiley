@@ -1,10 +1,11 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "3.2.3",
+  "version": "4.0.0",
   "description": "Discord Rich Presence with animated anime GIFs",
   "main": "main.js",
-  "author": "Raj (1tsRaj)",
+  "author": "1tsRajuWu (Raj)",
+  "copyright": "Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",

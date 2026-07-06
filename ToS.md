@@ -15,8 +15,11 @@ Official releases include a bundled Discord Application Client ID. If you build 
 ## Don't
 
 - Break Discord's Terms of Service or Community Guidelines
-- Reverse-engineer or redistribute modified builds
+- Fork, clone, mirror, redistribute, or rebrand Smiley without written permission
+- Reverse-engineer or distribute modified builds
 - Use Smiley for anything illegal
+
+Unauthorized copies violate copyright. See [LEGAL.md](LEGAL.md).
 
 ## Images
 
