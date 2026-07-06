@@ -87,7 +87,7 @@
           </div>
 
           <p class="field-hint discord-rpc-hint" id="discordRpcHint" hidden>
-            Discord still showing the Smiley icon? Quit and reopen Discord, then set your status again. v4.0.2+ sends Tenor GIFs only — Neko picks preview in-app but Discord uses curated Tenor links.
+            Discord still showing the Smiley icon? Quit and reopen Discord, then set your status again. v4.0.3+ sends Tenor GIFs only — Neko picks preview in-app but Discord uses curated Tenor links.
           </p>
 
           <div class="preview-actions">
@@ -109,6 +109,8 @@
             </div>
             <div class="donate-banner-actions">
               <button type="button" class="donate-banner-cta" id="donatePaypalBtn">PayPal</button>
+              <button type="button" class="donate-banner-cta donate-banner-cta-upi" id="donateUpiBtn" title="Copy UPI ID">Pay via UPI</button>
+              <button type="button" class="donate-banner-cta donate-banner-cta-qr" id="donateUpiQrBtn" title="Show UPI QR code" aria-label="Show UPI QR code">QR</button>
             </div>
           </div>
         </aside>
@@ -181,9 +183,13 @@
             </div>
             <div class="field" style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-xs);padding:12px 14px;">
               <span class="field-label" style="color:var(--accent);">💝 Support the developer</span>
-              <p class="field-hint" style="margin:0;">
+              <p class="field-hint" style="margin:0 0 8px;">
                 <a href="https://paypal.me/1tsRaj" id="supportPaypalLink" target="_blank" rel="noopener">paypal.me/1tsRaj</a>
               </p>
+              <p class="field-hint" style="margin:0 0 8px;">UPI: <code id="supportUpiId">therajind.07@oksbi</code> (Himanshu Raj)</p>
+              <div class="support-upi-actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="supportUpiCopyBtn">Copy UPI ID</button>
+              </div>
             </div>
             <div class="field toggle-field">
               <span class="field-label">Auto-connect on launch</span>
@@ -303,6 +309,8 @@
               <div class="about-links">
                 <a class="about-link" href="#" id="reviewLink"><span>⭐</span> Leave a review</a>
                 <a class="about-link" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener"><span>💝</span> Support on PayPal</a>
+                <button type="button" class="about-link about-link-btn" id="aboutUpiCopyBtn"><span>🇮🇳</span> Copy UPI ID</button>
+                <button type="button" class="about-link about-link-btn" id="aboutUpiQrBtn"><span>📱</span> UPI QR code</button>
               </div>
               <p class="about-watermark">Official build by 1tsRajuWu only</p>
               <div class="about-legal">
@@ -366,6 +374,23 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelCreateActivity">Cancel</button>
           <button type="button" class="btn btn-primary" id="saveCreateActivity">Save</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- UPI QR Modal -->
+    <dialog class="modal" id="upiQrModal">
+      <div class="modal-content upi-qr-modal">
+        <div class="modal-header">
+          <h2>Pay via UPI</h2>
+          <button type="button" class="btn-close" id="closeUpiQr">✕</button>
+        </div>
+        <div class="modal-body upi-qr-body">
+          <p class="upi-qr-name">Himanshu Raj (R A J)</p>
+          <img src="assets/upi-qr.png" alt="UPI QR code for therajind.07@oksbi" class="upi-qr-image" width="240" height="240" />
+          <p class="upi-qr-id"><code>therajind.07@oksbi</code></p>
+          <p class="field-hint">Scan with any UPI app or copy the ID below.</p>
+          <button type="button" class="btn btn-primary" id="upiQrCopyBtn">Copy UPI ID</button>
         </div>
       </div>
     </dialog>

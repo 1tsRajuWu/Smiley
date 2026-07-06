@@ -18,6 +18,9 @@ import {
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
 const GITHUB_RELEASES_URL = 'https://github.com/1tsRajuWu/Smiley/releases/latest';
+const SHOW_UPI_DONATE = false;
+const UPI_ID = 'therajind.07@oksbi';
+const UPI_NAME = 'Himanshu Raj (R A J)';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -51,6 +54,13 @@ const saveSettingsBtn = $('#saveSettingsBtn');
 const closeSettings = $('#closeSettings');
 const donateBanner = $('#donateBanner');
 const donatePaypalBtn = $('#donatePaypalBtn');
+const donateUpiBtn = $('#donateUpiBtn');
+const donateUpiQrBtn = $('#donateUpiQrBtn');
+const upiQrModal = $('#upiQrModal');
+const closeUpiQr = $('#closeUpiQr');
+const supportUpiCopyBtn = $('#supportUpiCopyBtn');
+const aboutUpiCopyBtn = $('#aboutUpiCopyBtn');
+const aboutUpiQrBtn = $('#aboutUpiQrBtn');
 const toastContainer = $('#toastContainer');
 const characterGif = $('#characterGif');
 const characterLoading = $('#characterLoading');
@@ -237,6 +247,26 @@ function applyPlatformUI(cfg = {}) {
   if (minimizeBtn) minimizeBtn.hidden = isMacPlatform;
   if (windowControls) windowControls.hidden = isMacPlatform;
   document.body.classList.toggle('has-window-controls', !isMacPlatform);
+  applyUpiVisibility();
+}
+
+function applyUpiVisibility() {
+  document.body.classList.toggle('hide-upi-donate', !SHOW_UPI_DONATE);
+}
+
+async function copyUpiId() {
+  try {
+    const result = await window.smiley.copyText(UPI_ID);
+    if (result?.success) showToast('UPI ID copied');
+    else showToast('Could not copy UPI ID', 'error');
+  } catch {
+    showToast('Could not copy UPI ID', 'error');
+  }
+}
+
+function openUpiQrModal() {
+  if (!SHOW_UPI_DONATE || !upiQrModal) return;
+  if (!upiQrModal.open) upiQrModal.showModal();
 }
 
 function syncMaximizeButton(isMaximized) {
@@ -1946,6 +1976,7 @@ function setupModalClose(dialog, closeBtn) {
 
 // ─── Initialization ──────────────────────────────────────────────────
 async function init() {
+  applyUpiVisibility();
   renderCategoryTabs();
   preloadActiveCategoryGifs();
   renderActivityGrid();
@@ -1966,6 +1997,7 @@ async function init() {
   setupModalClose(settingsModal, closeSettings);
   setupModalClose(legalModal, closeLegal);
   setupModalClose(createActivityModal, closeCreateActivity);
+  setupModalClose(upiQrModal, closeUpiQr);
   if (cancelCreateActivity) cancelCreateActivity.addEventListener('click', () => createActivityModal?.close());
   if (saveCreateActivity) saveCreateActivity.addEventListener('click', handleSaveCustomActivity);
   if (resolveGifBtn) resolveGifBtn.addEventListener('click', handleResolveGifPreview);
@@ -2070,6 +2102,25 @@ async function init() {
       window.smiley.openExternal(DONATION_URL);
     });
   }
+  if (donateUpiBtn) {
+    donateUpiBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      copyUpiId();
+    });
+  }
+  if (donateUpiQrBtn) {
+    donateUpiQrBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openUpiQrModal();
+    });
+  }
+  if (supportUpiCopyBtn) supportUpiCopyBtn.addEventListener('click', () => copyUpiId());
+  if (aboutUpiCopyBtn) aboutUpiCopyBtn.addEventListener('click', () => copyUpiId());
+  if (aboutUpiQrBtn) aboutUpiQrBtn.addEventListener('click', () => openUpiQrModal());
+  const upiQrCopyBtn = $('#upiQrCopyBtn');
+  if (upiQrCopyBtn) upiQrCopyBtn.addEventListener('click', () => copyUpiId());
 
   document.querySelectorAll('.about-link[href^="http"]').forEach((link) => {
     link.addEventListener('click', (e) => {

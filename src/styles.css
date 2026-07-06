@@ -580,9 +580,24 @@ body.has-window-controls .app-header {
   flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
+.donate-banner-cta-upi {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--success) 85%, #fff), var(--success));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 28%, transparent);
+}
+.donate-banner-cta-qr {
+  min-width: 32px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
 .donate-banner-cta:hover {
   transform: scale(1.04);
   box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.donate-banner-cta-upi:hover {
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--success) 35%, transparent);
 }
 .donate-banner:hover .donate-banner-cta {
   transform: scale(1.04);
@@ -790,6 +805,25 @@ body.has-window-controls .app-header {
 .about-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 16px; }
 .about-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-xs); color: var(--text); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
 .about-link:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-1px); background: rgba(255,255,255,0.06); }
+.about-link-btn {
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  font-family: inherit;
+}
+.support-upi-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.upi-qr-body { text-align: center; padding-bottom: 8px; }
+.upi-qr-name { font-weight: 700; margin: 0 0 12px; }
+.upi-qr-image {
+  width: min(240px, 100%);
+  height: auto;
+  border-radius: var(--radius-xs);
+  background: #fff;
+  padding: 8px;
+  margin: 0 auto 12px;
+  display: block;
+}
+.upi-qr-id { margin: 0 0 8px; font-size: 0.9rem; }
 .about-legal { margin: 12px 0; font-size: 0.78rem; }
 .about-legal a { color: var(--accent); text-decoration: none; cursor: pointer; }
 .about-legal a:hover { text-decoration: underline; }
@@ -862,6 +896,16 @@ body.has-window-controls .app-header {
 .update-banner-actions { display: flex; align-items: center; gap: var(--gap-sm); flex-shrink: 0; }
 .update-banner .btn { padding: 6px 12px; font-size: 0.78rem; white-space: nowrap; }
 .update-banner #updateBannerText { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+
+body.hide-upi-donate .donate-banner-cta-upi,
+body.hide-upi-donate .donate-banner-cta-qr,
+body.hide-upi-donate .support-upi-actions,
+body.hide-upi-donate .field-hint:has(#supportUpiId),
+body.hide-upi-donate #aboutUpiCopyBtn,
+body.hide-upi-donate #aboutUpiQrBtn,
+body.hide-upi-donate #upiQrModal {
+  display: none !important;
+}
 
 /* Responsive */
 @media (max-width: 900px) {
