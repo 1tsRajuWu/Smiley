@@ -1,28 +1,33 @@
 ---
 name: Bug Report
-about: Report a bug to help improve Smiley
+about: Something broke? Tell me — I'll fix it.
 title: "[Bug] "
 labels: bug
 assignees: ''
 ---
 
-**Version:**
-<!-- e.g. 3.1.4 -->
+Hey! Thanks for taking the time to report this. The more detail you give, the faster I can squash it.
 
-**OS / Platform:**
-<!-- e.g. Windows 11, macOS 14, Android 14 -->
+**Smiley version:**
+<!-- Settings → About, or the footer in the app — e.g. 3.2.0 -->
+
+**OS:**
+<!-- e.g. Windows 11, macOS 15 (arm64), Ubuntu 24.04 -->
+
+**What were you trying to do?**
+<!-- One sentence is fine -->
 
 **Steps to reproduce:**
 1. 
 2. 
+3. 
 
-**Expected behavior:**
+**What you expected:**
 
+**What actually happened:**
 
-**Actual behavior:**
+**Screenshots / screen recording:**
+<!-- Drag and drop here — super helpful -->
 
-
-**Screenshots (if applicable):**
-
-
-**Additional context:**
+**Anything else?**
+<!-- Discord desktop or browser? Custom activity? Specific GIF URL? -->
