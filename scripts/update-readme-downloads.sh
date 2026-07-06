@@ -35,11 +35,9 @@ find_asset() {
 download_url_for() {
   local tag=$1
   local name=$2
-  if [[ "$tag" == "$latest_tag" ]]; then
-    echo "${latest_url}/download/${name}"
-  else
-    echo "${release_base}/${tag}/${name}"
-  fi
+  # Always use versioned URLs — /latest/download/ 404s when the newest tag is still
+  # publishing or missing Linux/Windows artifacts (common during CI).
+  echo "${release_base}/${tag}/${name}"
 }
 
 platform_for() {
@@ -121,6 +119,18 @@ add_platform "$mac_arm_line" "macOS Apple Silicon" "Apple_Silicon" "555555" "app
 add_platform "$mac_x64_line" "macOS Intel" "Intel" "555555" "apple" "white"
 add_platform "$linux_app_line" "Linux AppImage" "AppImage" "FCC624" "linux" "black"
 add_platform "$linux_deb_line" "Linux deb" ".deb" "E95420" "debian" "white"
+
+missing=0
+[[ -z "$win_line" ]] && echo "Warning: Windows installer not found in recent releases" >&2 && missing=$((missing + 1))
+[[ -z "$mac_arm_line" ]] && echo "Warning: macOS arm64 DMG not found" >&2 && missing=$((missing + 1))
+[[ -z "$mac_x64_line" ]] && echo "Warning: macOS Intel DMG not found" >&2 && missing=$((missing + 1))
+[[ -z "$linux_app_line" ]] && echo "Warning: Linux AppImage not found" >&2 && missing=$((missing + 1))
+[[ -z "$linux_deb_line" ]] && echo "Warning: Linux .deb not found" >&2 && missing=$((missing + 1))
+
+if [[ "$missing" -gt 0 ]]; then
+  echo "Skipping README update — latest releases are missing ${missing} platform(s). Re-run after CI finishes." >&2
+  exit 0
+fi
 
 if [[ -z "$table_rows" ]]; then
   echo "No user-facing assets found in recent releases" >&2
