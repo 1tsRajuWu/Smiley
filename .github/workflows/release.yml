@@ -111,10 +111,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md
+          git add README.md docs/ABOUT.md
           if git diff --staged --quiet; then
-            echo "README download counts unchanged"
+            echo "README download links unchanged"
           else
-            git commit -m "docs: update README download counts for latest release"
+            git commit -m "docs: update README download links for latest release"
             git push
           fi
