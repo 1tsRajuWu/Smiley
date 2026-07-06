@@ -26,10 +26,18 @@ Smiley ships with a bundled Discord Client ID. Download, run, pick something —
 
 ## Download (v2.1.10)
 
+## Low-end PC? Use Smiley Native (~25 MB)
+
+No Electron, no Chromium. Same Discord presence — lower RAM and faster startup. See [README-NATIVE.md](README-NATIVE.md).
+
+[Windows zip](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-win-x64.zip) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-arm64.zip) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-x64.zip) · [Linux](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-linux-x64.zip)
+
+---
+
 | Platform | File | Notes |
 |----------|------|-------|
 | **Windows** (installer) | [Smiley-Setup-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe) | Recommended. Start menu + desktop shortcut. |
-| **Windows** (portable) | [Smiley-Portable-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) | No install — run from anywhere. |
+| **Windows** Portable (no install) | [Smiley-Portable-2.1.10.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) | No install — run from anywhere. |
 | **macOS** Apple Silicon | [Smiley-2.1.10-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg) | M1/M2/M3/M4. [Install help](#installing-smiley) |
 | **macOS** Intel | [Smiley-2.1.10-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg) | Pre-2020 Intel. [Install help](#installing-smiley) |
 | **Linux** AppImage | [Smiley-2.1.10.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage) | `chmod +x` then run. Most distros. |
@@ -37,7 +45,7 @@ Smiley ships with a bundled Discord Client ID. Download, run, pick something —
 
 **One-click buttons**
 
-[Windows installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe) · [Windows portable](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg) · [Linux AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage) · [Linux .deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.deb)
+[Windows installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Setup-2.1.10.exe) · [Portable (no install)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Portable-2.1.10.exe) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-arm64.dmg) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10-x64.dmg) · [Linux AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.AppImage) · [Linux .deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-2.1.10.deb)
 
 ---
 

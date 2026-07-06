@@ -36,6 +36,16 @@ dotnet run
 
 ## Build installers
 
+### All platforms (zip for GitHub releases)
+
+```bash
+chmod +x build-native-all.sh
+./build-native-all.sh
+```
+
+Output: `dist-native/Smiley-Native-<version>-<rid>.zip` for `win-x64`, `osx-arm64`, `osx-x64`, `linux-x64`.
+
+
 ### macOS (.app / optional .dmg)
 
 ```bash
