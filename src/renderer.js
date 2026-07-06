@@ -39,6 +39,7 @@ const legalBody = $('#legalBody');
 const closeLegal = $('#closeLegal');
 const tosLink = $('#tosLink');
 const privacyLink = $('#privacyLink');
+const licenseLink = $('#licenseLink');
 
 // Settings refs
 const settingsTabs = document.querySelectorAll('.settings-tab');
@@ -582,14 +583,22 @@ function setupDragDrop() {
 
 // ─── Legal Modal ─────────────────────────────────────────────────────
 async function showLegal(type) {
-  const titles = { tos: 'Terms of Service', privacy: 'Privacy Policy' };
-  const files = { tos: '../ToS.md', privacy: '../PRIVACY.md' };
+  const titles = { license: 'License Agreement', tos: 'Terms of Service', privacy: 'Privacy Policy' };
+  const files = { license: '../LICENSE', tos: '../ToS.md', privacy: '../PRIVACY.md' };
   legalTitle.textContent = titles[type] || 'Legal';
   legalBody.innerHTML = '<p>Loading...</p>';
   legalModal.showModal();
   try {
     const res = await fetch(files[type]);
     const text = await res.text();
+    if (type === 'license') {
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      legalBody.innerHTML = `<div class="legal-content"><pre class="legal-plain">${escaped}</pre></div>`;
+      return;
+    }
     let html = text
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -810,6 +819,7 @@ async function init() {
     });
   }
 
+  if (licenseLink) licenseLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('license'); });
   if (tosLink) tosLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('tos'); });
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
 

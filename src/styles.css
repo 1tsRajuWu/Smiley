@@ -493,6 +493,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .legal-content strong { color: var(--text); }
 .legal-content table { width: 100%; border-collapse: collapse; margin: 10px 0; }
 .legal-content td { padding: 6px 10px; border: 1px solid var(--border); font-size: 0.78rem; }
+.legal-plain { white-space: pre-wrap; font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; margin: 0; }
 
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; flex-shrink: 0; }
 

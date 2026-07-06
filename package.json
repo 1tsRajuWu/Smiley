@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "Discord Rich Presence with animated anime GIFs",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -122,7 +122,8 @@
           "target": "AppImage",
           "arch": [
             "x64"
-          ]
+          ],
+          "license": "license.txt"
         },
         {
           "target": "deb",
@@ -145,7 +146,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Smiley",
-      "license": "LICENSE",
+      "license": "license.rtf",
       "artifactName": "Smiley-Setup-${version}.${ext}",
       "deleteAppDataOnUninstall": false
     },
@@ -172,7 +173,14 @@
         },
         {
           "x": 270,
-          "y": 340,
+          "y": 300,
+          "type": "file",
+          "path": "license.txt",
+          "name": "LICENSE.txt"
+        },
+        {
+          "x": 270,
+          "y": 360,
           "type": "file",
           "path": "INSTALL-MAC.txt",
           "name": "INSTALL.txt"
