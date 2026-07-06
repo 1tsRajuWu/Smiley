@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('smiley', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   saveConfig: (data) => ipcRenderer.invoke('save-config', data),
+  flushConfig: () => ipcRenderer.invoke('flush-config'),
   connectRpc: () => ipcRenderer.invoke('connect-rpc'),
   setActivity: (activity, isNewSession) => ipcRenderer.invoke('set-activity', activity, isNewSession),
   clearActivity: () => ipcRenderer.invoke('clear-activity'),

@@ -486,7 +486,19 @@ function sanitizeConfigPatch(data) {
       case 'autoInstallUpdates':
       case 'migrationNoticeShown':
       case 'installWarningShown':
+      case 'systemFocusEnabled':
+      case 'systemFocusMinimizeTray':
         out[key] = val === true;
+        break;
+      case 'uiVersion':
+        out.uiVersion = val === 'v1' ? 'v1' : 'v2';
+        break;
+      case 'systemFocusShortcutOn':
+      case 'systemFocusShortcutOff':
+        if (typeof val === 'string') {
+          const trimmed = val.trim().slice(0, 128);
+          out[key] = trimmed || DEFAULT_CONFIG[key];
+        }
         break;
       case 'customAnimation':
         out.customAnimation = typeof val === 'string' ? sanitizeFilename(val).slice(0, 100) : null;
@@ -2426,6 +2438,7 @@ function setupIPC() {
   });
 
   ipcMain.handle('save-config', async (_, data) => {
+    // Settings save must not run macOS Focus shortcuts — only activity selection does (syncSystemFocus).
     saveConfig(data);
     applyLaunchAtLogin();
     registerGlobalHotkey();
@@ -2433,6 +2446,12 @@ function setupIPC() {
     updateTrayMenu();
     if (config.autoConnect !== false && !rpcClient) return connectRPC();
     return { connected: !!rpcClient };
+  });
+
+  ipcMain.handle('flush-config', async () => {
+    await flushRendererPendingConfig();
+    flushConfigToDisk();
+    return { success: true };
   });
 
   ipcMain.handle('connect-rpc', () => connectRPC());

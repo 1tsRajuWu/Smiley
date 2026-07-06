@@ -1158,11 +1158,6 @@ function openSettings(tab = 'general') {
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
-    if (systemFocusToggle) systemFocusToggle.checked = cfg.systemFocusEnabled === true;
-    if (systemFocusShortcutOn) systemFocusShortcutOn.value = cfg.systemFocusShortcutOn || 'Smiley Focus On';
-    if (systemFocusShortcutOff) systemFocusShortcutOff.value = cfg.systemFocusShortcutOff || 'Smiley Focus Off';
-    if (systemFocusMinimizeToggle) systemFocusMinimizeToggle.checked = cfg.systemFocusMinimizeTray === true;
-    if (systemFocusShortcutFields) systemFocusShortcutFields.hidden = cfg.systemFocusEnabled !== true;
 
     applyPlatformUI(cfg);
 
@@ -1267,10 +1262,14 @@ function collectPendingConfigForFlush() {
     theme: currentSettings.theme || 'dark',
     uiVersion: currentSettings.uiVersion === 'v1' ? 'v1' : 'v2',
     activityGifChoice: activityGifChoices,
-    customWallpaper: wallpaperSettings.filename
-      ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
-      : null,
   };
+  if (wallpaperSettings.filename) {
+    patch.customWallpaper = {
+      filename: wallpaperSettings.filename,
+      blur: wallpaperSettings.blur,
+      dim: wallpaperSettings.dim,
+    };
+  }
   if (settingsModal?.open) {
     Object.assign(patch, buildSettingsPayload());
   }
@@ -2115,7 +2114,10 @@ async function init() {
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   if (systemFocusToggle) {
     systemFocusToggle.addEventListener('change', () => {
-      if (systemFocusShortcutFields) systemFocusShortcutFields.hidden = !systemFocusToggle.checked;
+      if (systemFocusShortcutFields) {
+        const isMac = currentSettings.isMac === true;
+        systemFocusShortcutFields.hidden = !isMac || !systemFocusToggle.checked;
+      }
     });
   }
   if (openSystemFocusSettingsBtn) {
