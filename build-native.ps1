@@ -1,4 +1,6 @@
 #Requires -Version 5.1
+# DEPRECATED (v3.0.0+): Smiley.Native is no longer shipped in releases.
+# Local development only — do not use for publishing.
 $ErrorActionPreference = "Stop"
 Set-Location "$PSScriptRoot\Smiley.Native"
 

@@ -1,6 +1,6 @@
 # Releasing Smiley.Native
 
-> **Deprecated (v2.1.12+)** — Smiley.Native is no longer published in GitHub Releases. Use the main Electron app release workflow in [RELEASING.md](./RELEASING.md). This doc is kept for historical reference.
+> **Deprecated (v3.0.0+)** — Smiley.Native is no longer published in GitHub Releases. Use the main Electron app release workflow in [RELEASING.md](./RELEASING.md). This doc is kept for historical reference.
 
 The .NET native app is **~25MB** and recommended for low-end PCs. It does not use electron-updater — users get update notifications via GitHub Releases API.
 

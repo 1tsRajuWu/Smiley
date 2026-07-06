@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# DEPRECATED (v3.0.0+): Smiley.Native is no longer shipped in releases.
+# Local development only — do not use for publishing.
 set -euo pipefail
 cd "$(dirname "$0")/Smiley.Native"
 

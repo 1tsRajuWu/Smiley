@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEPRECATED (v2.1.12+): Smiley.Native is no longer shipped in releases.
+# DEPRECATED (v3.0.0+): Smiley.Native is no longer shipped in releases.
 # This script is kept for local development only — do not use for publishing.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"

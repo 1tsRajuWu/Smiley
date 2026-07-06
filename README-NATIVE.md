@@ -1,12 +1,8 @@
 # ⚡ Smiley Native (.NET / Avalonia)
 
-> **Deprecated (v2.1.12+)** — Smiley.Native is no longer offered for download. Use the main **[Electron app](README.md)** instead. The `Smiley.Native/` source remains in the repo for development reference only.
+> **Deprecated (v3.0.0+)** — Smiley.Native is no longer offered for download. Use the main **[Electron app](README.md)** instead. The `Smiley.Native/` source remains in the repo for development reference only.
 
-**Lightweight alternative to the Electron app** — recommended for low-end PCs.
-
-No Chromium. No Electron. Same Discord Rich Presence, way less RAM and disk space.
-
-👉 **Download the main app:** [README.md](README.md) · [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
+Former lightweight alternative (.NET / Avalonia). Historical dev docs are commented out below.
 
 ---
 
@@ -124,3 +120,5 @@ Discord Rich Presence **requires the desktop Discord client**. Mobile apps canno
 ## Which app to use?
 
 Use **Smiley (Electron)** — the only supported desktop app. See [README.md](README.md).
+
+-->
