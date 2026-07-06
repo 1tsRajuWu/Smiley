@@ -13,10 +13,13 @@ Notarization will remove this step when we have a Developer certificate. See [do
 ## Method A — Right-click Open (easiest)
 
 1. Download the `.dmg` for your Mac ([Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)) — ARM64 for Apple Silicon, x64 for Intel.
-2. Open the DMG and drag **Smiley** into **Applications**.
-3. Open **Applications**, **right-click Smiley → Open** (do **not** double-click).
-4. Click **Open** in the dialog that appears.
-5. After the first successful launch, double-click works forever.
+2. Open the DMG and drag **Smiley** **once** into the **Applications** folder alias (on the right). Do not drag the Applications icon itself, and do not drag multiple times — each drag adds another copy.
+3. **Eject** the DMG (right-click the mounted disk → Eject). The app on the disk image is not your installed copy.
+4. Open **Applications**, **right-click Smiley → Open** (do **not** double-click).
+5. Click **Open** in the dialog that appears.
+6. After the first successful launch, double-click works forever.
+
+**See multiple Smiley apps?** Delete extras (`Smiley 2`, `Smiley 3`, …) in Applications and keep only `/Applications/Smiley.app`. You likely dragged more than once or ran from the DMG without ejecting.
 
 ---
 
@@ -65,6 +68,9 @@ No. Inspect the source, build yourself with `npm run build:mac`, or compare chec
 
 **DMG install sheet**  
 The `.dmg` includes **INSTALL.txt** with a short version of Method A.
+
+**Why do I have 2–3 Smiley apps in Applications?**  
+Each drag from the DMG adds a copy (`Smiley.app`, `Smiley 2.app`, …). Drag **once**, eject the DMG, and delete any extras. Keep only `/Applications/Smiley.app`. Do not run Smiley from the mounted disk image after copying.
 
 ---
 

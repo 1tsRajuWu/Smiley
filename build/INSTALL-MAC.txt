@@ -7,14 +7,26 @@ macOS may show: "Smiley Not Opened — Apple could not verify..."
 The app is safe and open source:
 https://github.com/1tsRajuWu/Smiley
 
+INSTALL (do this once)
+----------------------
+
+1. Open the DMG
+2. Drag Smiley ONCE to the Applications folder (the alias on the right)
+   — do NOT drag the Applications icon itself
+   — do NOT drag multiple times (each drag adds another copy)
+3. Eject the DMG (right-click the disk → Eject)
+4. Open Applications → RIGHT-CLICK Smiley → Open (do NOT double-click)
+5. Click Open in the dialog
+6. After that, double-click works forever
+
+Multiple Smiley apps in Applications?
+  Delete extras (Smiley 2, Smiley 3, …) and keep only:
+  /Applications/Smiley.app
+
 HOW TO OPEN (first time only)
 -----------------------------
 
-1. Drag Smiley into Applications (arrow →)
-2. Open Applications
-3. RIGHT-CLICK Smiley → Open  (do NOT double-click)
-4. Click Open in the dialog
-5. After that, double-click works forever
+See steps 4–6 above.
 
 Still blocked?
   Terminal:  xattr -cr /Applications/Smiley.app

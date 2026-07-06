@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "2.1.11",
+  "version": "2.1.12",
   "description": "Discord Rich Presence with animated anime GIFs",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -22,6 +22,7 @@
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux",
     "build:all": "electron-builder --mac --win --linux",
+    "build:compat": "electron-builder --mac --win --linux",
     "publish": "electron-builder --publish always",
     "release:tag": "node -e \"const v=require('./package.json').version; console.log('Tag with: git tag v'+v+' && git push origin main --tags')\"",
     "postinstall": "electron-builder install-app-deps"
@@ -68,8 +69,9 @@
     "afterSign": "scripts/afterSign-mac.js",
     "mac": {
       "identity": "-",
-      "minimumSystemVersion": "10.15.0",
+      "minimumSystemVersion": "11.0.0",
       "category": "public.app-category.social-networking",
+      "artifactName": "Smiley-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "dmg",
@@ -97,8 +99,7 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "ia32"
+            "x64"
           ]
         },
         {
@@ -149,6 +150,8 @@
     "dmg": {
       "title": "Smiley ${version}",
       "artifactName": "Smiley-${version}-${arch}.${ext}",
+      "writeUpdateInfo": false,
+      "iconSize": 80,
       "window": {
         "width": 540,
         "height": 420
@@ -156,7 +159,8 @@
       "contents": [
         {
           "x": 130,
-          "y": 200
+          "y": 200,
+          "type": "file"
         },
         {
           "x": 410,

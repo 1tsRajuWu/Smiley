@@ -32,6 +32,29 @@ function ensureDir(p) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
 
+/** True when the app is running from a mounted DMG (not yet installed to /Applications). */
+function isRunningFromDmg() {
+  if (process.platform !== 'darwin' || !isPackaged) return false;
+  try {
+    return app.getAppPath().includes('/Volumes/');
+  } catch (_) {
+    return false;
+  }
+}
+
+function getInstallLocationWarning() {
+  if (isRunningFromDmg()) {
+    return 'Drag Smiley to the Applications folder once, then open it from Applications — not from this disk image.';
+  }
+  try {
+    const bundlePath = app.getAppPath();
+    if (!bundlePath.startsWith('/Applications' + path.sep)) {
+      return 'Move Smiley to /Applications and launch it from there for updates and auto-launch to work correctly.';
+    }
+  } catch (_) {}
+  return null;
+}
+
 // ─── Encryption (OS-level safeStorage + AES fallback) ────────────────
 function encryptConfig(plainObj) {
   try {
@@ -686,9 +709,20 @@ function isUpdateReadyToInstall() {
 
 function installPendingUpdate() {
   if (!isUpdateReadyToInstall()) return false;
+  if (process.platform === 'darwin' && isRunningFromDmg()) {
+    sendUpdateStatus({
+      ok: false,
+      status: 'error',
+      error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
+      expected: true,
+    });
+    return false;
+  }
   try {
     app.isQuitting = true;
-    getAutoUpdater().quitAndInstall(false, true);
+    // macOS: don't force-run after install — avoids Squirrel spawning a second copy
+    const forceRunAfter = process.platform !== 'darwin';
+    getAutoUpdater().quitAndInstall(false, forceRunAfter);
     return true;
   } catch (err) {
     console.error('[updater] quitAndInstall failed:', err.message);
@@ -704,6 +738,7 @@ function setupAutoUpdater() {
     const autoUpdater = getAutoUpdater();
     autoUpdater.autoDownload = isPackaged;
     autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.autoRunAppAfterInstall = false;
     autoUpdater.allowPrerelease = false;
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
@@ -888,6 +923,12 @@ function setupIPC() {
   });
 
   ipcMain.handle('install-update', () => {
+    if (process.platform === 'darwin' && isRunningFromDmg()) {
+      return {
+        success: false,
+        error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
+      };
+    }
     if (!isUpdateReadyToInstall()) {
       return {
         success: false,
@@ -1005,8 +1046,21 @@ app.whenReady().then(async () => {
   setupAutoUpdater();
   registerGlobalHotkey();
 
+  const installWarning = getInstallLocationWarning();
+  if (installWarning && mainWindow) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'Install Smiley to Applications',
+        message: 'Smiley is running from the installer disk image.',
+        detail: `${installWarning}\n\nIf you already see multiple Smiley apps, delete the extras and keep only /Applications/Smiley.app.`,
+        buttons: ['OK'],
+      });
+    });
+  }
+
   // Check for updates after 5s (installed app only)
-  if (isPackaged) {
+  if (isPackaged && !isRunningFromDmg()) {
     setTimeout(() => checkForUpdates(false), 5000);
   }
 

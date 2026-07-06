@@ -24,27 +24,29 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 ## ⬇️ Download
 
-**Current release: v2.1.11** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
+**Current release: v2.1.12** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
+
+> **System requirements:** macOS 11+, Windows 10 (1809+) / 11, Linux Ubuntu 20.04+. Apple Silicon Macs (M1–**M5**) use the **arm64** DMG. Details: **[docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)**.
 
 ### 🪟 Windows
 
 | | Download | Notes |
 |---|----------|-------|
-| **Installer** (recommended) | [**Smiley-Setup-2.1.11.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-Setup-2.1.11.exe) | Start menu + desktop shortcut |
-| **Portable** | [**Smiley-Portable-2.1.11.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-Portable-2.1.11.exe) | No install — run from anywhere |
+| **Installer** (recommended) | [**Smiley-Setup-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Setup-2.1.12.exe) | Start menu + desktop shortcut |
+| **Portable** | [**Smiley-Portable-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Portable-2.1.12.exe) | No install — run from anywhere |
 
-[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-Setup-2.1.11.exe)
-[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-Portable-2.1.11.exe)
+[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Setup-2.1.12.exe)
+[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Portable-2.1.12.exe)
 
 ### 🍎 macOS
 
 | Chip | Download |
 |------|----------|
-| **Apple Silicon** (M1/M2/M3/M4) | [**Smiley-2.1.11-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11-arm64.dmg) |
-| **Intel** (pre-2020 Macs) | [**Smiley-2.1.11-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11-x64.dmg) |
+| **Apple Silicon** (M1/M2/M3/M4) | [**Smiley-2.1.12-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-arm64.dmg) |
+| **Intel** (pre-2020 Macs) | [**Smiley-2.1.12-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-x64.dmg) |
 
-[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11-arm64.dmg)
-[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11-x64.dmg)
+[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-arm64.dmg)
+[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-x64.dmg)
 
 > macOS might block the first launch — that's Gatekeeper, not a virus. See [Installing → macOS](#-macos) below.
 
@@ -52,11 +54,11 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 | Format | Download | Notes |
 |--------|----------|-------|
-| **AppImage** | [**Smiley-2.1.11.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11.AppImage) | Works on most distros — `chmod +x` then run |
-| **.deb** | [**Smiley-2.1.11.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11.deb) | Debian / Ubuntu / Mint |
+| **AppImage** | [**Smiley-2.1.12.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.AppImage) | Works on most distros — `chmod +x` then run |
+| **.deb** | [**Smiley-2.1.12.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.deb) | Debian / Ubuntu / Mint |
 
-[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11.AppImage)
-[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-2.1.11.deb)
+[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.AppImage)
+[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.deb)
 
 ### ⚡ Smiley.Native — for low-end PCs (~25 MB)
 
@@ -64,10 +66,10 @@ No Electron. No Chromium. Same Discord presence, way less RAM. Perfect if the fu
 
 | Platform | Download |
 |----------|----------|
-| Windows | [**Smiley-Native-2.1.10-win-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-win-x64.zip) |
-| macOS ARM | [**Smiley-Native-2.1.10-osx-arm64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-arm64.zip) |
-| macOS Intel | [**Smiley-Native-2.1.10-osx-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-x64.zip) |
-| Linux | [**Smiley-Native-2.1.10-linux-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-linux-x64.zip) |
+| Windows | [**Smiley-Native-2.1.12-win-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-win-x64.zip) |
+| macOS ARM | [**Smiley-Native-2.1.12-osx-arm64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-osx-arm64.zip) |
+| macOS Intel | [**Smiley-Native-2.1.12-osx-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-osx-x64.zip) |
+| Linux | [**Smiley-Native-2.1.12-linux-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-linux-x64.zip) |
 
 👉 Full details: **[README-NATIVE.md](README-NATIVE.md)**
 
@@ -152,12 +154,12 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 
 ### 🪟 Windows
 
-1. Download [**Smiley-Setup-2.1.11.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-Setup-2.1.11.exe)
+1. Download [**Smiley-Setup-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Setup-2.1.12.exe)
 2. Run the installer
 3. If **SmartScreen** pops up → **More info** → **Run anyway** (app isn't code-signed yet — it's safe, [source is here](https://github.com/1tsRajuWu/Smiley))
 4. Launch from Start or desktop shortcut. Discord desktop must be open.
 
-**Portable?** Grab [**Smiley-Portable-2.1.11.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.11/Smiley-Portable-2.1.11.exe) and double-click. No install needed.
+**Portable?** Grab [**Smiley-Portable-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Portable-2.1.12.exe) and double-click. No install needed.
 
 ---
 
@@ -166,16 +168,15 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 Works on Sonoma, Sequoia, Tahoe, and earlier.
 
 1. Download the `.dmg` for your chip — **ARM64** for Apple Silicon, **x64** for Intel
-2. Open the DMG → drag **Smiley** into **Applications**
-3. Launch Smiley (see below if macOS blocks it)
+2. Open the DMG → drag **Smiley once** into the **Applications** folder alias (on the right). Do not drag the Applications icon itself.
+3. **Eject** the DMG after copying
+4. Launch Smiley from **Applications** (see below if macOS blocks it)
 
 The DMG includes **INSTALL.txt** with the same steps. More detail: [INSTALL-MAC.md](INSTALL-MAC.md)
+
 #### Multiple Smiley apps in Applications?
 
-Each DMG ships **one** **Smiley.app** (separate **ARM64** and **x64** downloads — not a universal/fat build). Drag **once** into **Applications**. If Finder created **Smiley 2.app** or you installed an older build, delete the extras and keep a single **Smiley.app**.
-
-
-
+Each DMG contains **one** `Smiley.app` (separate **arm64** and **x64** DMGs — not a universal build). If you see **Smiley 2**, **Smiley 3**, or more, you dragged more than once or ran from the mounted DMG without ejecting. Delete the extras and keep only `/Applications/Smiley.app`.
 #### 🛡️ Gatekeeper says "can't verify"?
 
 macOS might show:
@@ -223,14 +224,14 @@ From a cloned repo: `./scripts/install-mac.sh /Applications/Smiley.app`
 **AppImage** (most distros):
 
 ```bash
-chmod +x Smiley-2.1.11.AppImage
-./Smiley-2.1.11.AppImage
+chmod +x Smiley-2.1.12.AppImage
+./Smiley-2.1.12.AppImage
 ```
 
 **Debian / Ubuntu (.deb):**
 
 ```bash
-sudo dpkg -i Smiley-2.1.11.deb
+sudo dpkg -i Smiley-2.1.12.deb
 ```
 
 Launch from your app menu. Discord must be the **desktop** client — not web-only.
