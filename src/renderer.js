@@ -109,6 +109,8 @@ const autoConnectToggle = $('#autoConnectToggle');
 const minimizeTrayToggle = $('#minimizeTrayToggle');
 const autoCheckUpdatesToggle = $('#autoCheckUpdatesToggle');
 const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
+const shareInstallStatsField = $('#shareInstallStatsField');
+const shareInstallStatsToggle = $('#shareInstallStatsToggle');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
@@ -292,6 +294,12 @@ function applyPlatformUI(cfg = {}) {
   }
   const autoInstallField = autoInstallUpdatesToggle?.closest('.toggle-field');
   if (autoInstallField) autoInstallField.hidden = isMacPlatform && macInAppUpdates;
+  if (shareInstallStatsField) {
+    shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
+  }
+  if (shareInstallStatsToggle) {
+    shareInstallStatsToggle.checked = cfg.shareAnonymousInstallStats === true;
+  }
   syncSystemFocusUI(cfg);
   applyUpiVisibility();
 }
@@ -1164,6 +1172,8 @@ function openSettings(tab = 'general') {
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
     if (autoInstallUpdatesToggle) autoInstallUpdatesToggle.checked = cfg.autoInstallUpdates !== false;
+    if (shareInstallStatsToggle) shareInstallStatsToggle.checked = cfg.shareAnonymousInstallStats === true;
+    if (shareInstallStatsField) shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
     showTimerToggle.checked = cfg.showTimer !== false;
     animationsToggle.checked = cfg.animationsEnabled !== false;
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
@@ -1251,6 +1261,7 @@ function buildSettingsPayload() {
     minimizeToTray: minimizeTrayToggle.checked,
     autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
     autoInstallUpdates: autoInstallUpdatesToggle?.checked !== false,
+    shareAnonymousInstallStats: shareInstallStatsToggle?.checked === true,
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
     theme: currentSettings.theme || 'dark',

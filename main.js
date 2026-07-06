@@ -11,6 +11,10 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const pkg = require('./package.json');
+const {
+  loadRegistryConfig,
+  registerAnonymousInstall,
+} = require('./src/install-registry');
 
 function getRPC() {
   return require('discord-rpc');
@@ -253,7 +257,7 @@ function isAllowedExternalUrl(url) {
 const CONFIG_PATCH_KEYS = new Set([
   'theme', 'uiVersion', 'showTimer', 'animationsEnabled', 'customAnimation', 'customWallpaper',
   'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
-  'autoCheckUpdates', 'autoInstallUpdates', 'recentActivities', 'favoriteActivities',
+  'autoCheckUpdates', 'autoInstallUpdates', 'shareAnonymousInstallStats', 'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'migrationNoticeShown', 'installWarningShown',
   'systemFocusEnabled', 'systemFocusShortcutOn', 'systemFocusShortcutOff', 'systemFocusMinimizeTray',
 ]);
@@ -275,6 +279,7 @@ const DEFAULT_CONFIG = {
   hotkeyEnabled: true,
   autoCheckUpdates: true,
   autoInstallUpdates: true,
+  shareAnonymousInstallStats: false,
   recentActivities: [],
   favoriteActivities: [],
   customActivities: [],
@@ -490,6 +495,7 @@ function sanitizeConfigPatch(data) {
       case 'hotkeyEnabled':
       case 'autoCheckUpdates':
       case 'autoInstallUpdates':
+      case 'shareAnonymousInstallStats':
       case 'migrationNoticeShown':
       case 'installWarningShown':
       case 'systemFocusEnabled':
@@ -1333,6 +1339,26 @@ function broadcastStatus(immediate = false) {
     broadcastTimer = null;
     send();
   }, 1500);
+}
+
+// ─── Anonymous install registry (opt-in, legal-minimal) ───────────────
+async function maybeRegisterAnonymousInstall() {
+  if (!isPackaged) return;
+  if (config.shareAnonymousInstallStats !== true) return;
+  if (!loadRegistryConfig(__dirname)) return;
+  try {
+    const result = await registerAnonymousInstall({
+      rootDir: __dirname,
+      userDataDir: app.getPath('userData'),
+      appVersion: APP_VERSION,
+      platform: process.platform,
+      arch: process.arch,
+    });
+    if (result.success) console.log('[registry] anonymous install recorded');
+    else if (result.error) console.warn('[registry]', result.error);
+  } catch (err) {
+    console.warn('[registry]', err.message);
+  }
 }
 
 // ─── Auto Updater ────────────────────────────────────────────────────
@@ -2728,6 +2754,8 @@ function setupIPC() {
     hotkey: GLOBAL_HOTKEY,
     autoCheckUpdates: config.autoCheckUpdates !== false,
     autoInstallUpdates: config.autoInstallUpdates !== false,
+    shareAnonymousInstallStats: config.shareAnonymousInstallStats === true,
+    installRegistryConfigured: !!loadRegistryConfig(__dirname),
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
@@ -2767,6 +2795,9 @@ function setupIPC() {
     registerGlobalHotkey();
     applyUpdaterSettings();
     updateTrayMenu();
+    if (config.shareAnonymousInstallStats === true) {
+      maybeRegisterAnonymousInstall();
+    }
     if (config.autoConnect !== false && !rpcClient) return connectRPC();
     return { connected: !!rpcClient };
   });
@@ -3198,6 +3229,10 @@ app.whenReady().then(async () => {
   // Auto-check for updates shortly after launch (installed NSIS/dmg builds only)
   if (isPackaged && !isRunningFromDmg() && !isPortableBuild() && config.autoCheckUpdates !== false) {
     setImmediate(() => checkForUpdates(false, true));
+  }
+
+  if (isPackaged && config.shareAnonymousInstallStats === true) {
+    setImmediate(() => maybeRegisterAnonymousInstall());
   }
 
   if (config.autoConnect !== false) {

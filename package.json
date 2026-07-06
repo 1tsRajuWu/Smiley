@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-    "version": "4.1.11",
+    "version": "4.1.12",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -67,6 +67,7 @@
       "build/icon-tray-32.png",
       "config.example.json",
       "discord.app.json",
+      "downloads.registry.json",
       "LICENSE",
       "ToS.md",
       "PRIVACY.md"

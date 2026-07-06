@@ -8,5 +8,6 @@
   "autoConnect": true,
   "minimizeToTray": true,
   "customActivities": [],
-  "activityGifChoice": {}
+  "activityGifChoice": {},
+  "shareAnonymousInstallStats": false
 }

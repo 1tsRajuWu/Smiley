@@ -4,6 +4,7 @@ dist-native/
 config.json
 config.secure
 discord.app.json
+downloads.registry.json
 Smiley.Native/bin/
 Smiley.Native/obj/
 .DS_Store
