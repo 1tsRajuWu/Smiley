@@ -1,6 +1,6 @@
 {
   "name": "smiley-mobile",
-  "version": "4.0.9",
+  "version": "4.0.10",
   "private": true,
   "description": "Smiley v4.0.0 — Capacitor companion for Android & iOS",
   "scripts": {

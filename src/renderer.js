@@ -39,8 +39,6 @@ const categoryTabs = $('#categoryTabs');
 const activityGrid = $('#activityGrid');
 const gifPickerSection = $('#gifPickerSection');
 const gifPickerStrip = $('#gifPickerStrip');
-const gifPickerMyGifs = $('#gifPickerMyGifs');
-const gifPickerMyStrip = $('#gifPickerMyStrip');
 const searchInput = $('#searchInput');
 const settingsBtn = $('#settingsBtn');
 const minimizeBtn = $('#minimizeBtn');
@@ -389,37 +387,6 @@ function getPreferredGifUrl(activity) {
   return null;
 }
 
-function collectMyGifs() {
-  const seen = new Set();
-  const items = [];
-
-  for (const ca of customActivitiesConfig) {
-    if (isValidDiscordImageUrl(ca.gifUrl) && !seen.has(ca.gifUrl)) {
-      seen.add(ca.gifUrl);
-      items.push({
-        id: `custom:${ca.gifUrl}`,
-        label: `${ca.emoji || '✨'} ${ca.details}`,
-        url: ca.gifUrl,
-        previewOnly: false,
-      });
-    }
-  }
-
-  for (const anim of customAnimations) {
-    if (!anim?.dataUrl || seen.has(anim.dataUrl)) continue;
-    seen.add(anim.dataUrl);
-    items.push({
-      id: `custom-anim:${anim.name}`,
-      label: anim.name,
-      url: anim.dataUrl,
-      previewOnly: !isValidDiscordImageUrl(anim.dataUrl),
-    });
-  }
-
-  return items;
-}
-
-
 function canLoadPickerThumb(url) {
   if (!url || typeof url !== 'string') return false;
   if (/^https?:\/\//i.test(url)) return true;
@@ -512,8 +479,6 @@ function renderGifPicker(activity) {
   if (!activity?.isCustom) {
     gifPickerSection.hidden = true;
     gifPickerStrip.innerHTML = '';
-    if (gifPickerMyStrip) gifPickerMyStrip.innerHTML = '';
-    if (gifPickerMyGifs) gifPickerMyGifs.hidden = true;
     return;
   }
 
@@ -522,24 +487,11 @@ function renderGifPicker(activity) {
   });
 
   const selectedId = getSavedGifChoiceId(activity);
-  const myGifs = collectMyGifs().filter((g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id));
-  gifPickerSection.hidden = presetOptions.length === 0 && myGifs.length === 0;
+  gifPickerSection.hidden = presetOptions.length === 0;
   gifPickerStrip.innerHTML = presetOptions.map((o) => renderGifOptionButton(o, selectedId)).join('');
-
-  if (gifPickerMyGifs && gifPickerMyStrip) {
-    if (myGifs.length) {
-      gifPickerMyGifs.hidden = false;
-      gifPickerMyStrip.innerHTML = myGifs.map((o) => renderGifOptionButton(o, selectedId)).join('');
-      bindGifPickerStrip(gifPickerMyStrip, activity, onGifOptionSelect);
-    } else {
-      gifPickerMyGifs.hidden = true;
-      gifPickerMyStrip.innerHTML = '';
-    }
-  }
 
   bindGifPickerStrip(gifPickerStrip, activity, onGifOptionSelect);
   bindGifPickerThumbFallbacks(gifPickerStrip, activity);
-  bindGifPickerThumbFallbacks(gifPickerMyStrip, activity);
 }
 
 function scheduleSaveGifChoices() {
@@ -550,19 +502,17 @@ function scheduleSaveGifChoices() {
 }
 
 function updateGifPickerSelection(choiceId) {
-  [gifPickerStrip, gifPickerMyStrip].forEach((strip) => {
-    if (!strip) return;
-    strip.querySelectorAll('.gif-option.selected').forEach((el) => {
-      el.classList.remove('selected');
-      el.setAttribute('aria-selected', 'false');
-    });
-    if (!choiceId) return;
-    const btn = strip.querySelector(`.gif-option[data-choice="${CSS.escape(choiceId)}"]`);
-    if (btn) {
-      btn.classList.add('selected');
-      btn.setAttribute('aria-selected', 'true');
-    }
+  if (!gifPickerStrip) return;
+  gifPickerStrip.querySelectorAll('.gif-option.selected').forEach((el) => {
+    el.classList.remove('selected');
+    el.setAttribute('aria-selected', 'false');
   });
+  if (!choiceId) return;
+  const btn = gifPickerStrip.querySelector(`.gif-option[data-choice="${CSS.escape(choiceId)}"]`);
+  if (btn) {
+    btn.classList.add('selected');
+    btn.setAttribute('aria-selected', 'true');
+  }
 }
 
 function markGridSelection(id) {

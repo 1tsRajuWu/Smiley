@@ -633,7 +633,6 @@ body.has-window-controls .app-header {
 .gif-picker-section[hidden] { display: none !important; }
 .gif-picker-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
 .gif-picker-label { margin: 0; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
-.gif-picker-sublabel { margin: 10px 0 6px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
 .gif-picker-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; scrollbar-color: var(--text-dim) transparent; }
 .gif-picker-strip::-webkit-scrollbar { height: 4px; }
 .gif-picker-strip::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 2px; }
