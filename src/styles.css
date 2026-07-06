@@ -580,6 +580,19 @@ body.has-window-controls .app-header {
   flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
+.donate-banner-cta-github {
+  background: linear-gradient(135deg, #db61a2, #bf3989);
+  color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, #db61a2 35%, transparent);
+}
+.donate-banner-cta-github:hover {
+  box-shadow: 0 4px 14px color-mix(in srgb, #db61a2 45%, transparent);
+}
+.donate-banner:hover .donate-banner-cta-github {
+  transform: translateY(-1px);
+}
+.support-donate-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.support-donate-sep { opacity: 0.5; }
 .donate-banner-cta-upi {
   background: linear-gradient(135deg, color-mix(in srgb, var(--success) 85%, #fff), var(--success));
   box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 28%, transparent);

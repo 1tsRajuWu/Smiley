@@ -17,6 +17,7 @@ Raj wanted Discord status to feel alive — not a static line of text. Smiley is
 | **GitHub** | [github.com/1tsRajuWu](https://github.com/1tsRajuWu) |
 | **Main project** | [Smiley](https://github.com/1tsRajuWu/Smiley) — Discord Rich Presence with anime GIFs |
 | **PayPal** | [paypal.me/1tsRaj](https://paypal.me/1tsRaj) |
+| **GitHub Sponsors** | [github.com/sponsors/1tsRajuWu](https://github.com/sponsors/1tsRajuWu) |
 
 If Smiley has made your Discord profile more fun, a donation genuinely helps keep development going.
 
@@ -75,6 +76,7 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 - **Bug reports:** [Open an issue](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug)
 - **Reviews & feedback:** [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review)
 - **PayPal:** [paypal.me/1tsRaj](https://paypal.me/1tsRaj)
+- **GitHub Sponsors:** [💖 Sponsor on GitHub](https://github.com/sponsors/1tsRajuWu)
 - **All issues:** [github.com/1tsRajuWu/Smiley/issues](https://github.com/1tsRajuWu/Smiley/issues)
 
 ---

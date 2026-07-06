@@ -58,6 +58,7 @@ Built Smiley solo because Discord status deserved live GIFs, not static text. Fu
 
 [![author](https://img.shields.io/badge/Author-Raj%20(1tsRajuWu)-5865F2?style=flat-square&logo=github)](https://github.com/1tsRajuWu)
 [![paypal](https://img.shields.io/badge/Support-PayPal-00457C?style=flat-square&logo=paypal&logoColor=white)](https://paypal.me/1tsRaj)
+[![sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=flat-square&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/1tsRajuWu)
 
 > Repo maintainers: set GitHub Topics for discoverability → [docs/SETUP-GITHUB.md](docs/SETUP-GITHUB.md)
 
@@ -223,6 +224,8 @@ If Smiley's made your Discord profile more fun:
 
 **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)** — seriously, it helps.
 
+**[💖 Sponsor on GitHub](https://github.com/sponsors/1tsRajuWu)** — monthly support helps keep Smiley free.
+
 ---
 
 ## 🐛 Found a bug?
@@ -289,7 +292,7 @@ Full details: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [NOTICE](NOTICE) · 
 
 Made with ♥ by [**Raj (1tsRajuWu)**](https://github.com/1tsRajuWu) · [About](docs/ABOUT.md) · [llms.txt](llms.txt)
 
-[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [⭐ Review](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj)
+[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [⭐ Review](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj) · [💖 Sponsor](https://github.com/sponsors/1tsRajuWu)
 
 Enjoying Smiley? [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review)
 
