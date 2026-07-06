@@ -115,7 +115,7 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 **[Download Smiley](https://1tsrajuwu.github.io/Smiley/)** — pick your platform (Windows, macOS, Linux). [All releases →](https://github.com/1tsRajuWu/Smiley/releases)
 
 <!-- DOWNLOADS_START -->
-**Latest: v4.1.0** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.1.0)
+**Latest: v4.0.10** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.10)
 
 **Total downloads (latest release):** 0 · [live stats on Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 
