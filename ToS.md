@@ -1,22 +1,32 @@
 # Terms of Service
 
-**Raj (@1tsRaj)** — last updated 6 July 2026 (v4.1.13)
+**Raj (@1tsRaj)** — last updated 8 July 2026 (v5.0.4)
 
 ## The basics
 
 By downloading, installing, or using Smiley you agree to these Terms and our [Privacy Policy](PRIVACY.md). If you do not agree, do not use the app.
 
-Smiley talks to the Discord desktop app over the local IPC API. It does not read your login, messages, or account credentials.
+Smiley talks to the Discord desktop app over the local IPC API. It does **not** read your login token, username, password, messages, or account credentials. Only Rich Presence text you choose is sent to Discord.
+
+## Security & encryption
+
+Smiley uses industry-standard encryption to protect your data:
+
+- **Local storage:** Settings, window position, and install ID are encrypted at rest (AES-256-GCM).
+- **Exports:** Settings exports use passphrase-based end-to-end encryption (E2EE). You are responsible for your export passphrase.
+- **Network:** Remote requests use HTTPS/TLS. Install tracking data is transmitted securely but is **not** E2EE — the server can read it. See [SECURITY.md](SECURITY.md).
+
+You agree not to attempt to bypass, disable, or tamper with Smiley's security controls except via the provided opt-out for install tracking.
 
 ## Data collection
 
-Smiley collects **install and usage data by default**, including a device-generated install ID, platform, app version, user-agent string, timestamps, and your **public IP address** (recorded server-side when the app contacts our database). See [PRIVACY.md](PRIVACY.md) for full details, retention, and how to **opt out** in Settings.
+Smiley collects **install and usage data by default**, including a device-generated install ID, platform, app version, user-agent string, timestamps, and your **public IP address** (recorded server-side when the app contacts our database over HTTPS). See [PRIVACY.md](PRIVACY.md) for full details, retention, and how to **opt out** in Settings.
 
 Using Smiley constitutes acceptance of this collection unless you disable it via the opt-out toggle.
 
 ## Your Discord app
 
-Official releases include a bundled Discord Application Client ID. If you build from source, you supply your own from the [Discord Developer Portal](https://discord.com/developers/applications). Keep it private. Smiley stores config on your machine only.
+Official releases include a bundled Discord Application Client ID. If you build from source, you supply your own from the [Discord Developer Portal](https://discord.com/developers/applications). Keep it private. Smiley stores config on your machine only, encrypted locally.
 
 ## Don't
 
@@ -25,6 +35,7 @@ Official releases include a bundled Discord Application Client ID. If you build 
 - Reverse-engineer or distribute modified builds
 - Use Smiley for anything illegal
 - Attempt to interfere with install tracking systems beyond the provided opt-out
+- Attempt to exploit, hack, or attack Smiley, its infrastructure, or other users
 
 Unauthorized copies violate copyright. See [LEGAL.md](LEGAL.md).
 
@@ -38,7 +49,7 @@ PayPal tips are optional. They don't unlock features or create any obligation.
 
 ## Warranty
 
-Smiley is provided as-is. No guarantee it'll work with every Discord update.
+Smiley is provided as-is. No guarantee it'll work with every Discord update. No guarantee of absolute security against all threats — see [SECURITY.md](SECURITY.md) threat model.
 
 ## Liability
 

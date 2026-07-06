@@ -455,7 +455,7 @@ body.has-window-controls .app-header {
 .character-container { width: 180px; height: 180px; position: relative; display: flex; align-items: center; justify-content: center; }
 
 /* GIF Character */
-.character-gif { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); opacity: 0; transition: opacity 0.4s ease; }
+.character-gif { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); opacity: 0; transition: opacity 0.4s ease; }
 .character-gif-loaded { opacity: 1; }
 .character-loading { display: none; flex-direction: column; align-items: center; gap: 8px; color: var(--text-muted); font-size: 0.8rem; }
 .loading-spinner { font-size: 1.5rem; animation: spin 1.5s linear infinite; }
@@ -471,11 +471,11 @@ body.has-window-controls .app-header {
 .discord-card-glow { position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, var(--card-glow,transparent), transparent 70%); opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
 .discord-card.active .discord-card-glow { opacity: 1; }
 .discord-card-inner { display: flex; gap: 16px; padding: 16px; position: relative; align-items: center; }
-.discord-art { width: 64px; height: 64px; border-radius: 12px; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; transition: var(--transition); }
+.discord-art { width: 64px; height: 64px; border-radius: 12px; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; transition: var(--transition); position: relative; }
 .discord-card.active .discord-art { animation: artPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes artPop { 0%{transform:scale(0.8)} 100%{transform:scale(1)} }
-.discord-art-emoji { font-size: 1.8rem; animation: float 3s ease-in-out infinite; }
-.discord-art-gif { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; opacity: 0; transition: opacity 0.3s ease; }
+.discord-art-emoji { font-size: 1.8rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; animation: float 3s ease-in-out infinite; }
+.discord-art-gif { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 10px; opacity: 0; transition: opacity 0.3s ease; }
 .discord-art-gif.loaded { opacity: 1; }
 .discord-art:has(.discord-art-gif.loaded) .discord-art-emoji { display: none; }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
@@ -715,7 +715,7 @@ body.has-window-controls .app-header {
 .footer-link:hover { text-decoration: underline; }
 
 /* Modal */
-.modal { border: none; padding: 0; background: transparent; max-width: 520px; width: calc(100% - 40px); border-radius: var(--radius); }
+.modal { border: none; padding: 0; background: transparent; max-width: 520px; width: calc(100% - 40px); border-radius: var(--radius); margin: auto; position: fixed; inset: 0; height: fit-content; max-height: calc(100% - 48px); }
 .modal-wide { max-width: 640px; }
 .modal::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
 .modal-content { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; -webkit-app-region: no-drag; }
@@ -917,6 +917,7 @@ body.hide-upi-donate .donate-banner-cta-upi,
 body.hide-upi-donate .donate-banner-cta-qr,
 body.hide-upi-donate .support-upi-actions,
 body.hide-upi-donate .field-hint:has(#supportUpiId),
+body.hide-upi-donate .settings-callout-text:has(#supportUpiId),
 body.hide-upi-donate #aboutUpiCopyBtn,
 body.hide-upi-donate #aboutUpiQrBtn,
 body.hide-upi-donate #upiQrModal {

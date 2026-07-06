@@ -31,3 +31,8 @@ THIRD-PARTY CONTENT
 Anime GIFs are sourced from public APIs (waifu.pics, nekos.best, Tenor) and
 remain subject to their respective terms. The Smiley application code, design,
 UI, and branding are proprietary and not open source.
+
+SECURITY & E2EE
+---------------
+Smiley encrypts local settings (AES-256-GCM) and supports passphrase-based
+end-to-end encrypted exports. All remote requests use HTTPS. See SECURITY.md.

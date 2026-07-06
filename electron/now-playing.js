@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 // Now playing — system media detection (Spotify, Apple Music, YT Music, …)
-// Uses platform-native bindings when available; shell fallbacks otherwise.
+// macOS: JXA + MediaRemote (works on 15.4+) with AppleScript fallback.
+// Windows/Linux: native bindings or shell fallbacks.
 // ═══════════════════════════════════════════════════════════════════════
 const { execFile } = require('child_process');
 const fs = require('fs');
@@ -9,8 +10,9 @@ const { promisify } = require('util');
 
 const execFileAsync = promisify(execFile);
 
+const MAC_JXA_SCRIPT = path.join(__dirname, 'now-playing-mac.jxa.js');
+
 const NATIVE_PACKAGES = {
-  darwin: ['node-nowplaying-darwin-universal'],
   win32: [
     'node-nowplaying-win32-x64-msvc',
     'node-nowplaying-win32-arm64-msvc',
@@ -23,19 +25,39 @@ const NATIVE_PACKAGES = {
   ],
 };
 
-function loadNativeNowPlaying() {
-  const packages = NATIVE_PACKAGES[process.platform];
-  if (!packages) return null;
+function tryLoadBinding(candidatePath) {
+  if (!candidatePath || !fs.existsSync(candidatePath)) return null;
+  try {
+    const binding = require(candidatePath);
+    if (binding?.NowPlaying) return binding.NowPlaying;
+  } catch (_) {}
+  return null;
+}
 
+function loadNativeNowPlaying() {
+  if (process.platform === 'darwin') return null;
+
+  const candidates = [];
+  const bundledDir = path.join(__dirname, 'native');
+  if (fs.existsSync(bundledDir)) {
+    for (const file of fs.readdirSync(bundledDir)) {
+      if (file.endsWith('.node')) candidates.push(path.join(bundledDir, file));
+    }
+  }
+
+  const packages = NATIVE_PACKAGES[process.platform] || [];
   for (const pkgName of packages) {
     try {
       const pkgJson = require.resolve(`${pkgName}/package.json`);
       const dir = path.dirname(pkgJson);
       const nodeFile = fs.readdirSync(dir).find((f) => f.endsWith('.node'));
-      if (!nodeFile) continue;
-      const binding = require(path.join(dir, nodeFile));
-      if (binding?.NowPlaying) return binding.NowPlaying;
+      if (nodeFile) candidates.push(path.join(dir, nodeFile));
     } catch (_) {}
+  }
+
+  for (const candidate of candidates) {
+    const loaded = tryLoadBinding(candidate);
+    if (loaded) return loaded;
   }
   return null;
 }
@@ -52,15 +74,15 @@ function normalizeTrack(raw) {
   const title = String(raw.title || raw.trackName || raw.name || '').trim();
   const artist = normalizeArtist(raw.artist || raw.artists);
   const album = String(raw.album || '').trim();
-  const isPlaying = raw.isPlaying !== false && raw.status !== 'Paused' && raw.playerState !== 'Paused';
+  const isPlaying = raw.isPlaying !== false
+    && raw.status !== 'Paused'
+    && raw.playerState !== 'Paused';
   const device = String(raw.device || raw.source || raw.app || '').trim() || null;
   let artworkUrl = null;
 
   const thumb = raw.thumbnail || raw.artworkUrl || raw.artwork;
-  if (typeof thumb === 'string') {
-    if (thumb.startsWith('https://') || thumb.startsWith('http://')) {
-      artworkUrl = thumb;
-    }
+  if (typeof thumb === 'string' && /^https?:\/\//i.test(thumb)) {
+    artworkUrl = thumb;
   }
   if (!artworkUrl && typeof raw.url === 'string' && /^https?:\/\//i.test(raw.url)) {
     artworkUrl = raw.url;
@@ -91,36 +113,55 @@ function trackSignature(track) {
   ].join('\0');
 }
 
+async function pollMacJXA() {
+  if (!fs.existsSync(MAC_JXA_SCRIPT)) return null;
+  try {
+    const { stdout } = await execFileAsync(
+      'osascript',
+      ['-l', 'JavaScript', MAC_JXA_SCRIPT],
+      { timeout: 5000 },
+    );
+    const line = String(stdout || '').trim();
+    if (!line) return null;
+    const data = JSON.parse(line);
+    return normalizeTrack(data);
+  } catch {
+    return null;
+  }
+}
+
 async function pollMacAppleScript() {
   const script = `
-    set output to ""
-    try
-      tell application "System Events"
-        set spotifyRunning to exists (processes where name is "Spotify")
-        set musicRunning to exists (processes where name is "Music")
-      end tell
-      if spotifyRunning then
-        tell application "Spotify"
-          if player state is playing then
-            set t to current track
-            set output to "Spotify|" & name of t & "|" & artist of t & "|" & album of t & "|playing"
-          end if
-        end tell
+set output to ""
+try
+  tell application "System Events"
+    set spotifyRunning to exists (processes where name is "Spotify")
+    set musicRunning to exists (processes where name is "Music")
+  end tell
+  if spotifyRunning then
+    tell application "Spotify"
+      set ps to player state as string
+      if ps is "playing" or ps is "paused" then
+        set t to current track
+        set output to "Spotify|" & name of t & "|" & artist of t & "|" & album of t & "|" & ps
       end if
-      if output is "" and musicRunning then
-        tell application "Music"
-          if player state is playing then
-            set t to current track
-            set output to "Music|" & name of t & "|" & artist of t & "|" & album of t & "|playing"
-          end if
-        end tell
+    end tell
+  end if
+  if output is "" and musicRunning then
+    tell application "Music"
+      set ps to player state as string
+      if ps is "playing" or ps is "paused" then
+        set t to current track
+        set output to "Music|" & name of t & "|" & artist of t & "|" & album of t & "|" & ps
       end if
-    end try
-    return output
-  `;
+    end tell
+  end if
+end try
+return output
+`;
 
   try {
-    const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: 4000 });
+    const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: 5000 });
     const line = String(stdout || '').trim();
     if (!line) return null;
     const [source, title, artist, album, status] = line.split('|');
@@ -128,7 +169,6 @@ async function pollMacAppleScript() {
       title,
       artist,
       album,
-      source,
       device: source,
       isPlaying: status === 'playing',
     });
@@ -137,15 +177,27 @@ async function pollMacAppleScript() {
   }
 }
 
+async function pollMacNowPlaying() {
+  const jxa = await pollMacJXA();
+  if (jxa) return jxa;
+  return pollMacAppleScript();
+}
+
 async function pollLinuxPlayerctl() {
-  const script = `playerctl -s metadata --format '{{playerName}}|{{status}}|{{title}}|{{artist}}|{{album}}' 2>/dev/null | head -1`;
+  const script = "playerctl -s metadata --format '{{playerName}}|{{status}}|{{title}}|{{artist}}|{{album}}' 2>/dev/null | head -1";
   try {
     const { stdout } = await execFileAsync('bash', ['-lc', script], { timeout: 4000 });
     const line = String(stdout || '').trim();
     if (!line) return null;
     const [device, status, title, artist, album] = line.split('|');
-    if (status !== 'Playing') return null;
-    return normalizeTrack({ title, artist, album, device, isPlaying: true });
+    if (!title) return null;
+    return normalizeTrack({
+      title,
+      artist,
+      album,
+      device,
+      isPlaying: status === 'Playing',
+    });
   } catch {
     return null;
   }
@@ -166,9 +218,9 @@ $session = $manager.GetCurrentSession()
 if ($null -eq $session) { exit 0 }
 $props = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.MediaProperties.MusicDisplayProperties])
 $playback = $session.GetPlaybackInfo()
-if ($playback.PlaybackStatus -ne 'Playing') { exit 0 }
+$status = [string]$playback.PlaybackStatus
 $app = $session.SourceAppUserModelId
-Write-Output ($app + '|' + $props.Title + '|' + $props.Artist + '|' + $props.AlbumTitle)
+Write-Output ($app + '|' + $status + '|' + $props.Title + '|' + $props.Artist + '|' + $props.AlbumTitle)
 `;
   try {
     const { stdout } = await execFileAsync(
@@ -178,21 +230,28 @@ Write-Output ($app + '|' + $props.Title + '|' + $props.Artist + '|' + $props.Alb
     );
     const line = String(stdout || '').trim();
     if (!line) return null;
-    const [device, title, artist, album] = line.split('|');
-    return normalizeTrack({ title, artist, album, device, isPlaying: true });
+    const [device, status, title, artist, album] = line.split('|');
+    if (!title) return null;
+    return normalizeTrack({
+      title,
+      artist,
+      album,
+      device,
+      isPlaying: status === 'Playing',
+    });
   } catch {
     return null;
   }
 }
 
-async function pollFallbackTrack() {
-  if (process.platform === 'darwin') return pollMacAppleScript();
+async function pollCurrentTrack() {
+  if (process.platform === 'darwin') return pollMacNowPlaying();
   if (process.platform === 'linux') return pollLinuxPlayerctl();
   if (process.platform === 'win32') return pollWindowsMedia();
   return null;
 }
 
-function createNowPlayingService({ onUpdate, pollIntervalMs = 3000 } = {}) {
+function createNowPlayingService({ onUpdate, pollIntervalMs = 2000 } = {}) {
   const NativeNowPlaying = loadNativeNowPlaying();
   let nativePlayer = null;
   let pollTimer = null;
@@ -200,7 +259,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 3000 } = {}) {
   let running = false;
 
   const emit = (raw) => {
-    const track = normalizeTrack(raw);
+    const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
     const sig = trackSignature(track);
     if (sig === lastSignature) return;
     lastSignature = sig;
@@ -210,9 +269,17 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 3000 } = {}) {
   const pollOnce = async () => {
     if (!running) return;
     try {
-      const track = await pollFallbackTrack();
+      const track = await pollCurrentTrack();
       emit(track);
-    } catch (_) {}
+    } catch (err) {
+      if (process.env.SMILEY_DEV) console.warn('[now-playing] poll failed:', err.message);
+    }
+  };
+
+  const startPolling = async () => {
+    await pollOnce();
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollOnce, pollIntervalMs);
   };
 
   return {
@@ -226,15 +293,15 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 3000 } = {}) {
         try {
           nativePlayer = new NativeNowPlaying((event) => emit(event));
           await nativePlayer.subscribe();
+          await startPolling();
           return;
         } catch (err) {
           nativePlayer = null;
-          if (process.env.SMILEY_DEV) console.warn('[now-playing] native subscribe failed:', err.message);
+          console.warn('[now-playing] native subscribe failed, using polling:', err.message);
         }
       }
 
-      await pollOnce();
-      pollTimer = setInterval(pollOnce, pollIntervalMs);
+      await startPolling();
     },
     async stop() {
       running = false;
@@ -257,4 +324,6 @@ module.exports = {
   createNowPlayingService,
   normalizeTrack,
   trackSignature,
+  loadNativeNowPlaying,
+  pollCurrentTrack,
 };

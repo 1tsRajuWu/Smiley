@@ -86,6 +86,7 @@ const tosLink = $('#tosLink');
 const privacyLink = $('#privacyLink');
 const licenseLink = $('#licenseLink');
 const legalInfoLink = $('#legalInfoLink');
+const securityLink = $('#securityLink');
 const footerLicense = $('#footerLicense');
 const footerTos = $('#footerTos');
 const footerPrivacy = $('#footerPrivacy');
@@ -174,6 +175,7 @@ let sessionStart = null;
 let timerInterval = null;
 let searchQuery = '';
 let currentSettings = {};
+let pendingSettingsRevert = null;
 let customAnimations = [];
 let activeCustomAnimation = null;
 let currentGifUrl = null;
@@ -427,16 +429,17 @@ function updateFooterShortcuts(mac = isMacPlatform) {
 }
 
 function scheduleDeferredWork(fn) {
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(() => fn(), { timeout: 2500 });
-  } else {
-    setTimeout(fn, 0);
-  }
+  setTimeout(fn, 0);
+}
+
+function getSelectedUIVersion() {
+  const checked = document.querySelector('input[name="uiVersion"]:checked');
+  return checked?.value === 'v1' ? 'v1' : 'v2';
 }
 
 function applyUIVersion(version = 'v2') {
   const uiVersion = version === 'v1' ? 'v1' : 'v2';
-  document.body.dataset.uiVersion = uiVersion;
+  document.documentElement.dataset.uiVersion = uiVersion;
   if (uiStylesheet) {
     uiStylesheet.href = uiVersion === 'v1' ? 'styles-v1.css' : 'styles-v2.css';
   }
@@ -447,6 +450,15 @@ function applyUIVersion(version = 'v2') {
     const input = opt.querySelector('input[type="radio"]');
     if (input) input.checked = active;
   });
+}
+
+function revertUnsavedAppearanceSettings() {
+  if (!pendingSettingsRevert) return;
+  const snap = pendingSettingsRevert;
+  pendingSettingsRevert = null;
+  applyTheme(snap.theme);
+  applyUIVersion(snap.uiVersion);
+  void applyWallpaper(snap.wallpaper);
 }
 
 function applyPlatformUI(cfg = {}) {
@@ -762,7 +774,7 @@ function scheduleSaveGifChoices() {
   clearTimeout(saveGifChoiceTimer);
   saveGifChoiceTimer = setTimeout(() => {
     void window.smiley.saveConfig({ activityGifChoice: activityGifChoices });
-  }, 400);
+  }, 0);
 }
 
 function updateGifPickerSelection(choiceId) {
@@ -1366,7 +1378,11 @@ async function selectActivity(id) {
     showToast('Update queued (Discord rate limit)', 'success');
   } else if (result?.success !== false) {
     presencePaused = false;
-    showToast(`Status set: ${activity.details}`);
+    if (activity.id === 'listening' && currentSettings.musicNowPlaying !== false) {
+      showToast('Now playing sync on — play music in any app', 'success');
+    } else {
+      showToast(`Status set: ${activity.details}`);
+    }
     if (!isReselect) startTimer(Date.now());
     setupRotateFavorites();
   }
@@ -1445,6 +1461,16 @@ function openSettings(tab = 'general') {
     });
     applyUIVersion(cfg.uiVersion || 'v2');
 
+    pendingSettingsRevert = {
+      theme: cfg.theme || 'dark',
+      uiVersion: cfg.uiVersion === 'v1' ? 'v1' : 'v2',
+      wallpaper: {
+        filename: cfg.customWallpaper?.filename || null,
+        blur: Number(cfg.customWallpaper?.blur) || 0,
+        dim: Number(cfg.customWallpaper?.dim) || 0,
+      },
+    };
+
     switchSettingsTab(tab);
 
     if (tab === 'advanced') refreshStorageInfo();
@@ -1522,7 +1548,7 @@ function buildSettingsPayload() {
     musicNowPlaying: musicNowPlayingToggle?.checked !== false,
     musicNowPlayingAlbumArt: musicNowPlayingAlbumArtToggle?.checked !== false,
     theme: currentSettings.theme || 'dark',
-    uiVersion: currentSettings.uiVersion === 'v1' ? 'v1' : 'v2',
+    uiVersion: settingsModal?.open ? getSelectedUIVersion() : (currentSettings.uiVersion === 'v1' ? 'v1' : 'v2'),
     customAnimation: activeCustomAnimation ? 'custom' : null,
     launchAtLogin: launchAtLoginToggle?.checked === true,
     hotkeyEnabled: hotkeyToggle?.checked !== false,
@@ -1539,7 +1565,7 @@ function buildSettingsPayload() {
 function collectPendingConfigForFlush() {
   const patch = {
     theme: currentSettings.theme || 'dark',
-    uiVersion: currentSettings.uiVersion === 'v1' ? 'v1' : 'v2',
+    uiVersion: settingsModal?.open ? getSelectedUIVersion() : (currentSettings.uiVersion === 'v1' ? 'v1' : 'v2'),
     activityGifChoice: activityGifChoices,
   };
   if (wallpaperSettings.filename) {
@@ -1569,6 +1595,7 @@ async function handleSaveSettings(e) {
   rotateFavoritesSettings = newSettings.rotateFavorites;
 
   const result = await window.smiley.saveConfig(newSettings);
+  pendingSettingsRevert = null;
   settingsModal.close();
 
   applyTheme(newSettings.theme);
@@ -1976,12 +2003,14 @@ async function showLegal(type) {
     tos: 'Terms of Service',
     privacy: 'Privacy Policy',
     legal: 'Legal Information',
+    security: 'Security & E2EE',
   };
   const files = {
     license: '../LICENSE',
     tos: '../ToS.md',
     privacy: '../PRIVACY.md',
     legal: '../LEGAL.md',
+    security: '../SECURITY.md',
   };
   legalTitle.textContent = titles[type] || 'Legal';
   legalBody.innerHTML = '<p>Loading...</p>';
@@ -2289,7 +2318,21 @@ function handleUpdateStatus(data) {
       break;
     case 'up-to-date':
       updateCheckingToastShown = false;
-      if (data.silent) break;
+      if (data.silent) {
+        hideUpdateBanner();
+        setUpdateBannerProgress(0, false);
+        updateState = {
+          downloaded: false,
+          manualInstall: false,
+          dismissed: false,
+          percent: 0,
+          version: null,
+          dmgDownloading: false,
+          dmgReady: false,
+        };
+        syncUpdateBannerButtons();
+        break;
+      }
       hideUpdateBanner();
       setUpdateBannerProgress(0, false);
       showToast('You are on the latest version!');
@@ -2532,7 +2575,7 @@ async function init() {
     searchDebounceTimer = setTimeout(() => {
       searchQuery = e.target.value;
       renderActivityGrid();
-    }, 150);
+    }, 0);
   });
 
   settingsTabs.forEach((tab) => {
@@ -2552,6 +2595,16 @@ async function init() {
     opt.addEventListener('click', () => {
       applyUIVersion(opt.dataset.uiVersion || 'v2');
     });
+    const input = opt.querySelector('input[type="radio"]');
+    if (input) {
+      input.addEventListener('change', () => {
+        if (input.checked) applyUIVersion(input.value);
+      });
+    }
+  });
+
+  settingsModal?.addEventListener('close', () => {
+    revertUnsavedAppearanceSettings();
   });
 
   if (uploadWallpaperBtn) uploadWallpaperBtn.addEventListener('click', handleUploadWallpaper);
@@ -2615,6 +2668,14 @@ async function init() {
 
   if (licenseLink) licenseLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('license'); });
   if (legalInfoLink) legalInfoLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('legal'); });
+  if (securityLink) securityLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('security'); });
+  document.querySelectorAll('.legal-link[data-legal]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const type = el.getAttribute('data-legal');
+      if (type) showLegal(type);
+    });
+  });
   if (tosLink) tosLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('tos'); });
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
   if (footerLicense) footerLicense.addEventListener('click', (e) => { e.preventDefault(); showLegal('license'); });
@@ -2651,30 +2712,52 @@ async function init() {
 
   if (exportSettingsBtn) {
     exportSettingsBtn.addEventListener('click', async () => {
-      const result = await window.smiley.exportSettings();
+      const passphrase = window.prompt(
+        'Choose an export passphrase (min. 8 characters).\nYour settings are encrypted end-to-end — only you can decrypt this file.',
+        '',
+      );
+      if (passphrase === null) return;
+      const result = await window.smiley.exportSettings({ passphrase });
       if (result.canceled) return;
-      if (result.success) showToast('Settings exported');
-      else showToast(result.error || 'Export failed', 'error');
+      if (result.success) {
+        showToast(result.encrypted ? 'Settings exported (E2EE encrypted)' : 'Settings exported');
+      } else {
+        showToast(result.error || 'Export failed', 'error');
+      }
     });
   }
 
   if (importSettingsBtn) {
     importSettingsBtn.addEventListener('click', async () => {
-      const result = await window.smiley.importSettings();
-      if (result.canceled) return;
-      if (result.success) {
-        showToast('Settings imported — reopen Settings to review');
-        await loadCustomActivitiesConfig();
-        const freshCfg = await window.smiley.getConfig();
-        activityProfiles = freshCfg.activityProfiles || [];
-        rotateFavoritesSettings = freshCfg.rotateFavorites || { enabled: false, intervalMinutes: 15 };
-        sessionStats = freshCfg.sessionStats || {};
-        favoriteIds = freshCfg.favoriteActivities || [];
-        renderCategoryTabs();
-        renderActivityGrid();
-        setupRotateFavorites();
-        openSettings('advanced');
-      } else showToast(result.error || 'Import failed', 'error');
+      let passphrase = '';
+      const attemptImport = async () => {
+        const result = await window.smiley.importSettings(passphrase ? { passphrase } : {});
+        if (result.canceled) return;
+        if (result.needsPassphrase) {
+          passphrase = window.prompt('Enter the export passphrase for this .smiley file', '') || '';
+          if (!passphrase) {
+            showToast('Import canceled — passphrase required', 'error');
+            return;
+          }
+          return attemptImport();
+        }
+        if (result.success) {
+          showToast('Settings imported — reopen Settings to review');
+          await loadCustomActivitiesConfig();
+          const freshCfg = await window.smiley.getConfig();
+          activityProfiles = freshCfg.activityProfiles || [];
+          rotateFavoritesSettings = freshCfg.rotateFavorites || { enabled: false, intervalMinutes: 15 };
+          sessionStats = freshCfg.sessionStats || {};
+          favoriteIds = freshCfg.favoriteActivities || [];
+          renderCategoryTabs();
+          renderActivityGrid();
+          setupRotateFavorites();
+          openSettings('advanced');
+        } else {
+          showToast(result.error || 'Import failed', 'error');
+        }
+      };
+      await attemptImport();
     });
   }
 

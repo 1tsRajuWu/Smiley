@@ -4,8 +4,10 @@ Smiley’s **main process** entry point is still **`main.js` at the repo root** 
 
 | File | Purpose |
 |------|---------|
-| `install-registry.js` | Re-exports `src/install-registry.js` — default-on install/usage tracking (Supabase) |
+| `security.js` | AES-256-GCM encryption — local data at rest + passphrase E2EE exports |
+| `install-registry.js` | Default-on install/usage tracking (Supabase over HTTPS) |
 | `now-playing.js` | System media detection (Spotify, Apple Music, YouTube Music, …) |
+| `now-playing-mac.jxa.js` | macOS JXA script — reads system Now Playing via MediaRemote (15.4+) |
 | `music-sync.js` | Keeps Discord presence in sync while **Listening to music** is active |
 
 ## Reading `main.js` (≈3,300 lines)
@@ -15,7 +17,7 @@ Open root **`main.js`** and use the table of contents at the top. Sections are l
 | Section (search in main.js) | What it does |
 |-----------------------------|--------------|
 | Constants | App name, paths, hotkey, version |
-| Encryption | AES-256-GCM for saved config |
+| Encryption | AES-256-GCM via `electron/security.js` — config, window state, install ID, E2EE exports |
 | Config | Load/save `config.json` in user data folder |
 | State | `mainWindow`, `tray`, `rpcClient`, etc. |
 | Window State | Remember size/position between launches |

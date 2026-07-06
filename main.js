@@ -23,6 +23,20 @@ const {
   registerInstall,
 } = require('./electron/install-registry');
 const { createMusicSync } = require('./electron/music-sync');
+const {
+  encryptJson,
+  decryptJson,
+  writeSecureJson,
+  readSecureJson,
+  migratePlaintextFile,
+  encryptExport,
+  decryptExport,
+  secureUnlink,
+  stripSensitiveFields,
+  sanitizeNowPlayingTrack,
+  sanitizeActivitySnapshot,
+  redactForLog,
+} = require('./electron/security');
 
 function getRPC() {
   return require('discord-rpc');
@@ -104,50 +118,48 @@ function getInstallLocationWarning() {
   return null;
 }
 
-// ─── Encryption (AES-256-GCM, no OS keychain) ──────────────────────
-const CONFIG_CIPHER_SALT = 'smiley-salt-v1';
-
-function getConfigCipherKey() {
-  return crypto.scryptSync(app.getPath('userData'), CONFIG_CIPHER_SALT, 32);
+// ─── Encryption (AES-256-GCM — see electron/security.js & SECURITY.md) ─
+function getUserDataRoot() {
+  return app.getPath('userData');
 }
 
 function encryptConfig(plainObj) {
-  try {
-    const json = JSON.stringify(plainObj);
-    const key = getConfigCipherKey();
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-    let encrypted = cipher.update(json, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
-    return { v: 1, iv: iv.toString('base64'), data: encrypted, tag: cipher.getAuthTag().toString('base64') };
-  } catch (e) {
-    console.error('[encrypt]', e.message);
-    return { v: 0, data: JSON.stringify(plainObj) };
-  }
+  return encryptJson(plainObj, getUserDataRoot());
 }
 
 function decryptConfig(encryptedObj) {
-  try {
-    if (!encryptedObj || typeof encryptedObj.v !== 'number') {
-      return encryptedObj || {};
-    }
-    if (encryptedObj.v === 2) {
-      // Legacy OS keychain format — intentionally not migrated (avoids keychain prompt)
-      return { __keychainMigration: true };
-    }
-    if (encryptedObj.v === 1) {
-      const key = getConfigCipherKey();
-      const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(encryptedObj.iv, 'base64'));
-      decipher.setAuthTag(Buffer.from(encryptedObj.tag, 'base64'));
-      let decrypted = decipher.update(encryptedObj.data, 'base64', 'utf8');
-      decrypted += decipher.final('utf8');
-      return JSON.parse(decrypted);
-    }
-    return JSON.parse(encryptedObj.data || '{}');
-  } catch (e) {
-    console.error('[decrypt]', e.message);
-    return {};
+  return decryptJson(encryptedObj, getUserDataRoot());
+}
+
+const WINDOW_STATE_SECURE = 'window-state.secure';
+const WINDOW_STATE_LEGACY = 'window-state.json';
+
+function migrateWindowStateIfNeeded() {
+  const userData = getUserDataRoot();
+  const securePath = getUserDataPath(WINDOW_STATE_SECURE);
+  const legacyPath = getUserDataPath(WINDOW_STATE_LEGACY);
+  if (fs.existsSync(securePath)) return;
+  migratePlaintextFile(legacyPath, securePath, userData);
+}
+
+function readWindowStateFile() {
+  migrateWindowStateIfNeeded();
+  const userData = getUserDataRoot();
+  const securePath = getUserDataPath(WINDOW_STATE_SECURE);
+  const legacyPath = getUserDataPath(WINDOW_STATE_LEGACY);
+  const fromSecure = readSecureJson(securePath, userData);
+  if (fromSecure && typeof fromSecure === 'object') return fromSecure;
+  if (fs.existsSync(legacyPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
+    } catch (_) {}
   }
+  return null;
+}
+
+function writeWindowStateFile(state) {
+  writeSecureJson(getUserDataPath(WINDOW_STATE_SECURE), state, getUserDataRoot());
+  secureUnlink(getUserDataPath(WINDOW_STATE_LEGACY));
 }
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -242,7 +254,11 @@ function isCachedMacUpdateInstallable() {
     return false;
   }
   const ver = resolveUpdateVersion();
-  return !!ver && compareReleaseVersions(ver, APP_VERSION) > 0;
+  if (!ver || compareReleaseVersions(ver, APP_VERSION) <= 0) {
+    clearMacUpdaterArtifacts();
+    return false;
+  }
+  return true;
 }
 
 function getGithubReleasesApiUrl() {
@@ -494,6 +510,9 @@ const MAX_ACTIVITY_PROFILES = 8;
 const MAX_PROFILE_ACTIVITIES = 10;
 const MAX_COPY_TEXT_LEN = 2000;
 const MAX_IMPORT_BYTES = 512 * 1024;
+/** 0 = apply Discord presence updates immediately (no client-side throttle). */
+const PRESENCE_UPDATE_COOLDOWN_MS = 0;
+const STATUS_BROADCAST_DEBOUNCE_MS = 0;
 
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
@@ -567,13 +586,13 @@ function loadConfig() {
         delete config.clientId;
         return;
       }
-      config = normalizeInstallTrackingConfig({ ...DEFAULT_CONFIG, ...decrypted });
+      config = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...decrypted }));
       delete config.clientId;
       return;
     }
     if (fs.existsSync(legacyPath)) {
       const old = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
-      config = normalizeInstallTrackingConfig({ ...DEFAULT_CONFIG, ...old });
+      config = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...old }));
       delete config.clientId;
       fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
       try { fs.unlinkSync(legacyPath); } catch (_) {}
@@ -581,7 +600,7 @@ function loadConfig() {
     }
     if (fs.existsSync(EXAMPLE_CONFIG)) {
       const example = JSON.parse(fs.readFileSync(EXAMPLE_CONFIG, 'utf8'));
-      config = normalizeInstallTrackingConfig({ ...DEFAULT_CONFIG, ...example });
+      config = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...example }));
       delete config.clientId;
       fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
       return;
@@ -698,7 +717,7 @@ function flushConfigToDisk() {
 }
 
 function saveConfig(data) {
-  const { clientId: _c, donationUrl: _d, ...safeData } = data || {};
+  const { clientId: _c, donationUrl: _d, ...safeData } = stripSensitiveFields(data || {});
   const patch = sanitizeConfigPatch(safeData);
   config = { ...config, ...patch, donationUrl: DONATION_URL };
   flushConfigToDisk();
@@ -858,8 +877,7 @@ function sanitizeIncomingActivity(activity) {
   if (!activity || typeof activity !== 'object') return null;
   const details = sanitizeActivityText(activity.details);
   if (!details) return null;
-  return {
-    ...activity,
+  const safe = {
     id: typeof activity.id === 'string' ? activity.id.slice(0, 64) : undefined,
     details,
     state: sanitizeActivityText(activity.state),
@@ -868,7 +886,21 @@ function sanitizeIncomingActivity(activity) {
     largeImageUrl: typeof activity.largeImageUrl === 'string' ? activity.largeImageUrl.slice(0, 2048) : undefined,
     fallbackGif: typeof activity.fallbackGif === 'string' ? activity.fallbackGif.slice(0, 2048) : undefined,
     category: typeof activity.category === 'string' ? activity.category.slice(0, 32) : undefined,
+    emoji: typeof activity.emoji === 'string' ? activity.emoji.slice(0, 8) : undefined,
   };
+  if (Array.isArray(activity.buttons)) {
+    safe.buttons = activity.buttons.slice(0, 2).map((btn) => {
+      if (!btn || typeof btn !== 'object') return null;
+      const label = sanitizeActivityText(btn.label, 32);
+      const url = typeof btn.url === 'string' ? btn.url.slice(0, 2048) : '';
+      if (!label || !url || !isAllowedExternalUrl(url)) return null;
+      return { label, url };
+    }).filter(Boolean);
+  }
+  if (activity.musicTrack) {
+    safe.musicTrack = sanitizeNowPlayingTrack(activity.musicTrack);
+  }
+  return stripSensitiveFields(safe);
 }
 
 // ─── State ───────────────────────────────────────────────────────────
@@ -890,7 +922,7 @@ function getMusicSync() {
       schedulePresenceUpdate,
       sendToRenderer: (track) => {
         if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('now-playing-update', track);
+          mainWindow.webContents.send('now-playing-update', sanitizeNowPlayingTrack(track));
         }
       },
       updateTrayMenu,
@@ -943,7 +975,11 @@ async function resumePresence() {
   sessionStart = prevStart || Date.now();
   const result = await applyPresence(activity);
   if (result?.success && activity?.id === 'listening' && config.musicNowPlaying !== false) {
-    getMusicSync().start(activity);
+    getMusicSync().start({
+      ...activity,
+      id: 'listening',
+      details: 'Listening to music',
+    });
   }
   return result;
 }
@@ -996,7 +1032,6 @@ function normalizeWindowState(state = {}) {
 }
 
 function getWindowState() {
-  const statePath = getUserDataPath('window-state.json');
   const portableFirstRun = isPortableBuild() && !fs.existsSync(getUserDataPath(PORTABLE_INIT_MARKER));
   let state;
 
@@ -1006,9 +1041,7 @@ function getWindowState() {
       fs.writeFileSync(getUserDataPath(PORTABLE_INIT_MARKER), new Date().toISOString());
     } catch (_) {}
   } else {
-    try {
-      if (fs.existsSync(statePath)) state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-    } catch (_) {}
+    state = readWindowStateFile();
     state = state || config.windowState || { ...DEFAULT_CONFIG.windowState };
   }
 
@@ -1056,8 +1089,8 @@ function hideMainWindowToTray() {
 function resetWindowPosition() {
   const state = normalizeWindowState({ ...DEFAULT_CONFIG.windowState });
   try {
-    const statePath = getUserDataPath('window-state.json');
-    if (fs.existsSync(statePath)) fs.unlinkSync(statePath);
+    secureUnlink(getUserDataPath(WINDOW_STATE_SECURE));
+    secureUnlink(getUserDataPath(WINDOW_STATE_LEGACY));
   } catch (_) {}
   saveConfig({ windowState: { width: state.width, height: state.height } });
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -1095,7 +1128,7 @@ function saveWindowState() {
       y: bounds.y,
       maximized: mainWindow.isMaximized(),
     };
-    fs.writeFileSync(getUserDataPath('window-state.json'), JSON.stringify(state, null, 2));
+    writeWindowStateFile(state);
     saveConfig({ windowState: state });
   } catch (_) {}
 }
@@ -1497,6 +1530,8 @@ function updateTrayIcon(category) {
 }
 
 // ─── Discord RPC ─────────────────────────────────────────────────────
+// Smiley never reads or stores Discord login tokens, usernames, email, or messages.
+// RPC uses local IPC with the public Application Client ID only (not a user/bot token).
 async function connectRPC() {
   const clientId = getClientId();
   if (!clientId) {
@@ -1513,7 +1548,11 @@ async function connectRPC() {
     const timeout = setTimeout(() => {
       resolve({ connected: false, error: 'Discord not responding — is it open?' });
     }, 8000);
-    rpcClient.once('ready', () => { clearTimeout(timeout); resolve({ connected: true }); });
+    rpcClient.once('ready', () => {
+      clearTimeout(timeout);
+      // Intentionally ignore any user/account fields from the RPC client.
+      resolve({ connected: true });
+    });
     rpcClient.login({ clientId }).catch((err) => {
       clearTimeout(timeout);
       resolve({ connected: false, error: err.message || 'Could not connect to Discord' });
@@ -1591,6 +1630,9 @@ async function applyPresence(activity) {
 async function schedulePresenceUpdate(activity, isNewSession) {
   const safeActivity = sanitizeIncomingActivity(activity);
   if (!safeActivity) return { success: false, error: 'Invalid activity' };
+
+  handleMusicSyncForActivity(safeActivity);
+
   if (isNewSession) sessionStart = Date.now();
   pendingUpdate = safeActivity;
   if (updateTimer) {
@@ -1609,8 +1651,12 @@ async function schedulePresenceUpdate(activity, isNewSession) {
   updateTimer = setTimeout(async () => {
     updateTimer = null;
     if (pendingUpdate) await run();
-  }, 15000);
+  }, PRESENCE_UPDATE_COOLDOWN_MS);
 
+  return result || { success: true };
+}
+
+function handleMusicSyncForActivity(safeActivity) {
   if (safeActivity.id === 'listening' && config.musicNowPlaying !== false) {
     if (safeActivity.details === 'Listening to music') {
       getMusicSync().start(safeActivity);
@@ -1618,8 +1664,6 @@ async function schedulePresenceUpdate(activity, isNewSession) {
   } else if (safeActivity.id !== 'listening') {
     getMusicSync().stop();
   }
-
-  return result || { success: true };
 }
 
 async function clearPresence() {
@@ -1649,16 +1693,19 @@ function broadcastStatus(immediate = false) {
   const send = () => {
     mainWindow.webContents.send('rpc-status', {
       connected: !!rpcClient,
-      activity: currentActivity,
+      activity: sanitizeActivitySnapshot(currentActivity),
       sessionStart,
       donationUrl: DONATION_URL,
       settings: {
         theme: config.theme || 'dark',
+        uiVersion: config.uiVersion === 'v1' ? 'v1' : 'v2',
         showTimer: config.showTimer !== false,
         animationsEnabled: config.animationsEnabled !== false,
         customAnimation: config.customAnimation || null,
         minimizeToTray: config.minimizeToTray !== false,
         autoConnect: config.autoConnect !== false,
+        musicNowPlaying: config.musicNowPlaying !== false,
+        musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
         donationUrl: DONATION_URL,
       },
       version: APP_VERSION,
@@ -1678,7 +1725,7 @@ function broadcastStatus(immediate = false) {
   broadcastTimer = setTimeout(() => {
     broadcastTimer = null;
     send();
-  }, 1500);
+  }, STATUS_BROADCAST_DEBOUNCE_MS);
 }
 
 // ─── Install registry (default-on; opt-out in Settings) ─────────────
@@ -2041,6 +2088,18 @@ function getMacAppBundlePath() {
   return null;
 }
 
+/** Prefer /Applications/Smiley.app so updates land where Launch Services expects. */
+function getMacInstallTargetPath() {
+  if (process.platform !== 'darwin') return null;
+  const canonical = path.join('/Applications', `${APP_DISPLAY_NAME}.app`);
+  const running = getMacAppBundlePath();
+  if (running?.startsWith('/Applications' + path.sep)) return running;
+  try {
+    if (fs.existsSync(canonical)) return canonical;
+  } catch (_) {}
+  return running;
+}
+
 function findZipInDirectory(dir) {
   if (!dir || !fs.existsSync(dir)) return null;
   const infoPath = path.join(dir, 'update-info.json');
@@ -2119,14 +2178,51 @@ function shellQuoteForBash(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
-function writeMacUpdateInstallerScript({ zipPath, installPath, logPath, parentPid }) {
+function getMacUpdaterCacheCleanupPaths() {
+  return [...new Set([
+    ...getUpdaterCacheCandidates(),
+    getShipItCacheDir(),
+    getMacUpdateDownloadDir(),
+  ])];
+}
+
+function clearMacUpdaterArtifacts() {
+  updateDownloaded = false;
+  pendingUpdateVersion = null;
+  lastDownloadPercent = 0;
+  macDmgDownloadedPath = null;
+  for (const dir of getMacUpdaterCacheCleanupPaths()) {
+    removePathSync(dir);
+  }
+}
+
+function pruneStaleMacUpdateCache() {
+  if (!isMacInAppUpdater()) return false;
+  const zipPath = getMacDownloadedZipPath();
+  if (!zipPath) return false;
+  const ver = resolveUpdateVersion();
+  if (!ver || compareReleaseVersions(ver, APP_VERSION) <= 0) {
+    appendUpdaterLog(`Pruning stale updater cache (cached=${ver || 'unknown'}, app=${APP_VERSION})`);
+    clearMacUpdaterArtifacts();
+    return true;
+  }
+  return false;
+}
+
+function writeMacUpdateInstallerScript({ zipPath, installPath, logPath, parentPid, cacheDirs = [] }) {
   const scriptPath = path.join(app.getPath('temp'), 'smiley-mac-update-installer.sh');
+  const cacheDirLines = (cacheDirs || [])
+    .filter(Boolean)
+    .map((dir) => `CACHE_DIRS+=(${shellQuoteForBash(dir)})`)
+    .join('\n');
   const script = `#!/bin/bash
 set -euo pipefail
 LOG=${shellQuoteForBash(logPath)}
 ZIP=${shellQuoteForBash(zipPath)}
 INSTALL=${shellQuoteForBash(installPath)}
 PARENT_PID=${Number(parentPid) || 0}
+CACHE_DIRS=()
+${cacheDirLines}
 
 log() { echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") $*" >> "$LOG"; }
 
@@ -2171,6 +2267,18 @@ ditto "$NEW_APP" "$INSTALL"
 log "Stripping quarantine attributes"
 xattr -cr "$INSTALL" 2>>"$LOG" || true
 
+INSTALLED_VER=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - "$INSTALL/Contents/Info.plist" 2>/dev/null || true)
+log "Installed bundle version: \${INSTALLED_VER:-unknown}"
+
+log "Clearing updater caches"
+rm -f "$ZIP" 2>>"$LOG" || true
+for CACHE_DIR in "\${CACHE_DIRS[@]}"; do
+  if [ -n "$CACHE_DIR" ] && [ -e "$CACHE_DIR" ]; then
+    log "Removing cache: $CACHE_DIR"
+    rm -rf "$CACHE_DIR" 2>>"$LOG" || true
+  fi
+done
+
 log "Launching updated app"
 open "$INSTALL"
 
@@ -2193,10 +2301,14 @@ function installMacUpdate() {
     };
   }
 
-  const installPath = getMacAppBundlePath();
+  const installPath = getMacInstallTargetPath();
   if (!installPath) {
     appendUpdaterLog('Could not determine app bundle path');
     return { success: false, error: 'Could not find Smiley.app location.', fallback: true };
+  }
+  const runningPath = getMacAppBundlePath();
+  if (runningPath && path.resolve(runningPath) !== path.resolve(installPath)) {
+    appendUpdaterLog(`Installing to ${installPath} (running from ${runningPath})`);
   }
 
   const zipPath = getMacDownloadedZipPath();
@@ -2221,6 +2333,7 @@ function installMacUpdate() {
       installPath,
       logPath,
       parentPid: process.pid,
+      cacheDirs: getMacUpdaterCacheCleanupPaths(),
     });
     appendUpdaterLog(`Spawning installer: ${scriptPath} -> ${installPath}`);
     const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
@@ -2560,6 +2673,7 @@ function setupAutoUpdater() {
       updateDownloaded = false;
       lastDownloadPercent = 0;
       clearDownloadStallTimer();
+      pruneStaleMacUpdateCache();
       const payload = {
         status: 'up-to-date',
         version: info?.version || APP_VERSION,
@@ -2668,6 +2782,7 @@ function setupAutoUpdater() {
     console.error('[updater] setup failed:', err.message);
   }
   if (isMacInAppUpdater()) {
+    pruneStaleMacUpdateCache();
     notifyMacCachedUpdateIfReady();
   }
 }
@@ -3129,7 +3244,10 @@ function getUserDataEssentialPaths() {
   return [
     getUserDataPath('config.secure'),
     getUserDataPath('config.json'),
-    getUserDataPath('window-state.json'),
+    getUserDataPath(WINDOW_STATE_SECURE),
+    getUserDataPath(WINDOW_STATE_LEGACY),
+    getUserDataPath('install-id.secure'),
+    getUserDataPath('install-id'),
     getUserDataPath('custom-activities'),
     getUserDataPath('custom-animations'),
     getUserDataPath('wallpapers'),
@@ -3235,6 +3353,7 @@ function setupIPC() {
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
+    activityGifChoice: config.activityGifChoice || {},
     activityProfiles: config.activityProfiles || [],
     rotateFavorites: config.rotateFavorites || { enabled: false, intervalMinutes: 15 },
     sessionStats: config.sessionStats || {},
@@ -3298,7 +3417,11 @@ function setupIPC() {
     schedulePresenceUpdate(activity, isNewSession)
   );
   ipcMain.handle('clear-activity', () => clearPresence());
-  ipcMain.handle('get-status', () => ({ connected: !!rpcClient, activity: currentActivity, sessionStart }));
+  ipcMain.handle('get-status', () => ({
+    connected: !!rpcClient,
+    activity: sanitizeActivitySnapshot(currentActivity),
+    sessionStart,
+  }));
 
   ipcMain.handle('check-for-updates', async () => {
     try {
@@ -3634,18 +3757,31 @@ function setupIPC() {
     app.quit();
   });
 
-  ipcMain.handle('export-settings', async () => {
+  ipcMain.handle('export-settings', async (_, { passphrase } = {}) => {
     if (!mainWindow) return { canceled: true };
+    const pass = typeof passphrase === 'string' ? passphrase.trim() : '';
+    if (pass.length < 8) {
+      return { success: false, error: 'Export passphrase must be at least 8 characters' };
+    }
     const result = await dialog.showSaveDialog(mainWindow, {
-      title: 'Export Smiley Settings',
-      defaultPath: 'smiley-settings.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }],
+      title: 'Export Smiley Settings (E2EE)',
+      defaultPath: 'smiley-settings.smiley',
+      filters: [
+        { name: 'Encrypted Smiley Settings', extensions: ['smiley'] },
+        { name: 'JSON (legacy)', extensions: ['json'] },
+      ],
     });
     if (result.canceled || !result.filePath) return { canceled: true };
-    const exportData = { ...config };
+    const exportData = stripSensitiveFields({ ...config });
     delete exportData.clientId;
-    fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2));
-    return { success: true, path: result.filePath };
+    const isLegacyJson = result.filePath.toLowerCase().endsWith('.json');
+    if (isLegacyJson) {
+      fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2));
+    } else {
+      const envelope = encryptExport(exportData, pass);
+      fs.writeFileSync(result.filePath, JSON.stringify(envelope, null, 2));
+    }
+    return { success: true, path: result.filePath, encrypted: !isLegacyJson };
   });
 
   ipcMain.handle('reset-window-position', () => resetWindowPosition());
@@ -3654,20 +3790,33 @@ function setupIPC() {
 
   ipcMain.handle('clear-cache', async () => clearAppCache());
 
-  ipcMain.handle('import-settings', async () => {
+  ipcMain.handle('import-settings', async (_, { passphrase } = {}) => {
     if (!mainWindow) return { canceled: true };
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Import Smiley Settings',
-      filters: [{ name: 'JSON', extensions: ['json'] }],
+      filters: [
+        { name: 'Smiley Settings', extensions: ['smiley', 'json'] },
+      ],
       properties: ['openFile'],
     });
     if (result.canceled || !result.filePaths[0]) return { canceled: true };
     try {
-      const stat = fs.statSync(result.filePaths[0]);
+      const filePath = result.filePaths[0];
+      const stat = fs.statSync(filePath);
       if (stat.size > MAX_IMPORT_BYTES) {
         return { success: false, error: 'Settings file too large' };
       }
-      const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
+      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      let imported;
+      if (raw?.type === 'smiley-export') {
+        const pass = typeof passphrase === 'string' ? passphrase.trim() : '';
+        if (!pass) {
+          return { success: false, error: 'Passphrase required for encrypted export', needsPassphrase: true };
+        }
+        imported = stripSensitiveFields(decryptExport(raw, pass));
+      } else {
+        imported = stripSensitiveFields(raw);
+      }
       if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
         return { success: false, error: 'Invalid settings file' };
       }
@@ -3680,7 +3829,10 @@ function setupIPC() {
       updateTrayMenu();
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.message || 'Invalid settings file' };
+      const msg = err.message?.includes('passphrase') || err.message?.includes('decipher')
+        ? 'Wrong passphrase or corrupted export file'
+        : (err.message || 'Invalid settings file');
+      return { success: false, error: msg };
     }
   });
 }
@@ -3720,7 +3872,7 @@ function scheduleInitialRpcConnect() {
   }
 
   const run = () => connectRPC().then(notify);
-  deferAfterWindowShown(() => setTimeout(run, 50));
+  deferAfterWindowShown(() => setImmediate(run));
 }
 
 // ─── App Lifecycle ───────────────────────────────────────────────────

@@ -19,8 +19,13 @@ This document summarizes your rights and restrictions when using Smiley. The ful
 - **Claim Smiley as your own work** or imply endorsement by the author
 - **Sell, sublicense, or use commercially** — including bundling with paid products or services
 - **Create derivative works** for public distribution (modified builds, repackaged installers, etc.)
+- **Bypass or tamper with** Smiley's encryption, security controls, or install-tracking opt-out
 
-Unauthorized forks and clones violate copyright and trademark rights. They may also be unsafe if tampered with.
+Unauthorized forks and clones violate copyright and trademark rights. They may also be unsafe if tampered with — unofficial builds may lack E2EE protections.
+
+## Security & privacy
+
+Smiley encrypts local settings and supports passphrase-based E2EE exports. See [SECURITY.md](SECURITY.md) and [PRIVACY.md](PRIVACY.md).
 
 ## Trademark
 
@@ -54,5 +59,6 @@ For permission to use, modify, or redistribute Smiley:
 
 - [LICENSE](LICENSE) — Proprietary software license
 - [NOTICE](NOTICE) — Copyright and trademark notice
-- [Terms of Service](ToS.md) — includes default install/usage data collection
-- [Privacy Policy](PRIVACY.md) — full disclosure of collected fields and opt-out
+- [Terms of Service](ToS.md) — includes default install/usage data collection and security terms
+- [Privacy Policy](PRIVACY.md) — full disclosure of collected fields, E2EE, and opt-out
+- [Security & E2EE](SECURITY.md) — encryption details and threat model

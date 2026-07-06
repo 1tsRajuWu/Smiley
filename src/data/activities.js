@@ -209,7 +209,7 @@ export const ACTIVITY_CATEGORIES = [
       {
         id: 'listening',
         details: 'Listening to music',
-        state: 'Vibing 🎧',
+        state: 'Shows your song 🎵',
         emoji: '🎧',
         nekosEndpoint: 'dance',
         largeImageKey: 'music',

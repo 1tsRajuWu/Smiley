@@ -170,9 +170,9 @@ Smiley is **not open source**. Source is visible for transparency — not licens
 | Download official releases for personal use | Fork, clone, mirror, rebrand |
 | Report bugs via Issues | Commercial use without permission |
 
-Full terms: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [Privacy](PRIVACY.md) · [Terms](ToS.md)
+Full terms: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [Privacy](PRIVACY.md) · [Terms](ToS.md) · [Security & E2EE](SECURITY.md)
 
-Using Smiley means you accept our Terms and default install/usage reporting (opt out in Settings). See [PRIVACY.md](PRIVACY.md).
+Using Smiley means you accept our Terms and default install/usage reporting (opt out in Settings). Settings are encrypted locally; exports use passphrase E2EE. See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 </details>
 

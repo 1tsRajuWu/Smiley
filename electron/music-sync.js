@@ -62,7 +62,7 @@ function createMusicSync({
       return {
         ...base,
         details: 'Listening to music',
-        state: base.state || 'Vibing 🎧',
+        state: base.state || 'Shows your song 🎵',
         musicTrack: null,
       };
     }
@@ -75,7 +75,7 @@ function createMusicSync({
     } else {
       state = artist
         ? (album ? `${artist} — ${album}` : `by ${artist}`)
-        : (base.state || 'Vibing 🎧');
+        : (base.state || 'Shows your song 🎵');
     }
 
     const activity = {
@@ -108,22 +108,32 @@ function createMusicSync({
     lastTrackSignature = signature;
 
     const config = getConfig();
-    const requestId = ++artworkRequestId;
-    const artworkUrl = await resolveArtwork(track, config);
-    if (requestId !== artworkRequestId) return;
-
-    const activity = buildPresenceActivity(track, artworkUrl);
+    const activity = buildPresenceActivity(track, null);
     if (!activity) return;
 
     await schedulePresenceUpdate(activity, false);
     sendToRenderer?.(track);
     updateTrayMenu?.();
+
+    if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return;
+
+    const requestId = ++artworkRequestId;
+    const artworkUrl = await resolveArtwork(track, config);
+    if (requestId !== artworkRequestId || !artworkUrl) return;
+
+    const withArt = buildPresenceActivity(track, artworkUrl);
+    if (withArt) await schedulePresenceUpdate(withArt, false);
   }
 
   function ensureRunning() {
-    if (service) return;
-    service = createNowPlayingService({ onUpdate: handleTrackUpdate, pollIntervalMs: 3000 });
-    service.start().catch(() => {});
+    if (service) {
+      service.stop().catch(() => {});
+      service = null;
+    }
+    service = createNowPlayingService({ onUpdate: handleTrackUpdate, pollIntervalMs: 0 });
+    service.start().catch((err) => {
+      console.warn('[music-sync] failed to start:', err.message);
+    });
   }
 
   function start(templateActivity) {
@@ -140,7 +150,7 @@ function createMusicSync({
     activityTemplate = {
       ...templateActivity,
       details: 'Listening to music',
-      state: templateActivity.state || 'Vibing 🎧',
+      state: templateActivity.state || 'Shows your song 🎵',
     };
     lastTrackSignature = '';
     ensureRunning();
