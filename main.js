@@ -410,10 +410,9 @@ function registerGlobalHotkey() {
     globalShortcut.register(GLOBAL_HOTKEY, () => {
       if (!mainWindow) return;
       if (mainWindow.isVisible()) {
-        mainWindow.hide();
+        hideMainWindowToTray();
       } else {
-        mainWindow.show();
-        mainWindow.focus();
+        showMainWindow();
       }
     });
   } catch (err) {
@@ -686,9 +685,20 @@ function markFirstWindowShown() {
 
 function showMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (process.platform === 'darwin' && app.dock) {
+    try { app.dock.show(); } catch (_) {}
+  }
   if (mainWindow.isMinimized()) mainWindow.restore();
   if (!mainWindow.isVisible()) mainWindow.show();
   mainWindow.focus();
+}
+
+function hideMainWindowToTray() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.hide();
+  if (process.platform === 'darwin' && app.dock) {
+    try { app.dock.hide(); } catch (_) {}
+  }
 }
 
 function resetWindowPosition() {
@@ -707,8 +717,10 @@ function resetWindowPosition() {
 }
 
 function notifyTrayOnlyStartup() {
-  if (!tray || process.platform !== 'win32') return;
-  const body = 'Smiley is running in the system tray. Double-click the tray icon to open.';
+  if (!tray) return;
+  const body = process.platform === 'darwin'
+    ? 'Smiley is in the menu bar. Click the tray icon to open.'
+    : 'Smiley is running in the system tray. Double-click the tray icon to open.';
   try {
     if (Notification.isSupported()) {
       new Notification({ title: 'Smiley', body }).show();
@@ -977,6 +989,7 @@ function createWindow() {
       showMainWindow();
       markFirstWindowShown();
     } else {
+      hideMainWindowToTray();
       notifyTrayOnlyStartup();
     }
     if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -993,7 +1006,7 @@ function createWindow() {
           await flushRendererPendingConfig();
           saveWindowState();
           flushConfigToDisk();
-          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+          if (mainWindow && !mainWindow.isDestroyed()) hideMainWindowToTray();
         } finally {
           closingToTray = false;
         }
@@ -1035,16 +1048,15 @@ function updateTrayMenu() {
   const recentItems = (config.recentActivities || []).map((item) => ({
     label: `${item.details}${item.state ? ` — ${item.state}` : ''}`,
     click: () => {
-      if (mainWindow) {
-        mainWindow.show();
-        mainWindow.focus();
+      showMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('select-activity', item.id);
       }
     },
   }));
 
   const template = [
-    { label: 'Show Smiley', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
+    { label: 'Show Smiley', click: () => showMainWindow() },
     { type: 'separator' },
     { label: currentActivity ? `Status: ${currentActivity.details}` : 'No status set', enabled: false },
     { label: sessionLabel, enabled: false },
@@ -1054,7 +1066,7 @@ function updateTrayMenu() {
       ? [{ label: 'Recent Activities', submenu: recentItems }, { type: 'separator' }]
       : []),
     { label: 'Check for Updates', click: () => checkForUpdates(true) },
-    { label: 'Settings', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('open-settings'); } } },
+    { label: 'Settings', click: () => { showMainWindow(); if (mainWindow) mainWindow.webContents.send('open-settings'); } },
     { type: 'separator' },
     { label: 'Donate', click: () => shell.openExternal(DONATION_URL) },
     { type: 'separator' },
@@ -1216,7 +1228,7 @@ async function enableSystemFocus() {
   const result = await runMacShortcut(shortcutOn);
   if (result.success) systemFocusActive = true;
   if (config.systemFocusMinimizeTray && mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.hide();
+    hideMainWindowToTray();
   }
   return result;
 }
@@ -3091,7 +3103,7 @@ function setupIPC() {
       await flushRendererPendingConfig();
       saveWindowState();
       flushConfigToDisk();
-      mainWindow.hide();
+      hideMainWindowToTray();
       return;
     }
     app.isQuitting = true;
