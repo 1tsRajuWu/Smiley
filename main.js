@@ -147,6 +147,15 @@ function loadDiscordClientId() {
 
 const BUNDLED_CLIENT_ID = loadDiscordClientId();
 const DONATION_URL = 'https://paypal.me/1tsRaj';
+const GITHUB_REPO_URL =
+  String(pkg.homepage || pkg.repository?.url || 'https://github.com/1tsRajuWu/Smiley')
+    .replace(/\.git$/, '')
+    .trim();
+const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
+const DEFAULT_RPC_BUTTONS = [
+  { label: 'Download Smiley', url: GITHUB_RELEASES_URL },
+  { label: 'GitHub', url: GITHUB_REPO_URL },
+];
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
   theme: 'dark',
@@ -715,7 +724,9 @@ function buildActivityPayload(activity) {
   }
 
   // No small_image — invalid asset keys show the bot logo as an overlay
-  if (activity.buttons?.length) payload.buttons = activity.buttons.slice(0, 2);
+  payload.buttons = activity.buttons?.length
+    ? activity.buttons.slice(0, 2)
+    : DEFAULT_RPC_BUTTONS;
   return payload;
 }
 

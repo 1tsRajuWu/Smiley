@@ -135,6 +135,7 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 - Large profile image = live GIF from [nekos.best](https://nekos.best) & [waifu.pics](https://waifu.pics) (SFW APIs)
 - HTTPS fallbacks if an API is slow — no more `?` placeholder on Discord
 - Upload your own GIF/image in Settings → Animations (PNG, JPG, GIF, WebP, SVG — max 5 MB)
+- **Download button** on your Discord presence card — friends can jump straight to [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 
 **🎨 Appearance**
 - 11 themes: Dark, Midnight, Ocean, Sakura, **Low Light** (OLED black), Sunset, Forest, Lavender, Cyber, Coffee, Rose
