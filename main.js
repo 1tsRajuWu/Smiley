@@ -1,5 +1,5 @@
 const os = require('os');
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -477,8 +477,12 @@ function getIconCandidates() {
     const scale = screen.getPrimaryDisplay()?.scaleFactor || 1;
     const traySize = scale > 1 ? 32 : 16;
     candidates.push(path.join(buildDir, `icon-tray-${traySize}.png`));
+    const themedTray = nativeTheme.shouldUseDarkColors ? 'icon-light.png' : 'icon-dark.png';
+    candidates.push(path.join(buildDir, themedTray));
+    candidates.push(path.join(buildDir, 'icon-transparent.png'));
     candidates.push(path.join(buildDir, 'icon.ico'));
   }
+  candidates.push(path.join(buildDir, 'icon-transparent.png'));
   candidates.push(path.join(buildDir, 'icon.png'));
   if (isPackaged && process.resourcesPath) {
     const resBuild = path.join(process.resourcesPath, 'build');
@@ -486,11 +490,25 @@ function getIconCandidates() {
       const scale = screen.getPrimaryDisplay()?.scaleFactor || 1;
       const traySize = scale > 1 ? 32 : 16;
       candidates.push(path.join(resBuild, `icon-tray-${traySize}.png`));
+      const themedTray = nativeTheme.shouldUseDarkColors ? 'icon-light.png' : 'icon-dark.png';
+      candidates.push(path.join(resBuild, themedTray));
+      candidates.push(path.join(resBuild, 'icon-transparent.png'));
       candidates.push(path.join(resBuild, 'icon.ico'));
     }
+    candidates.push(path.join(resBuild, 'icon-transparent.png'));
     candidates.push(path.join(resBuild, 'icon.png'));
   }
   return candidates;
+}
+
+function getThemedTrayIconPath() {
+  const buildDir = path.join(__dirname, 'build');
+  const name = nativeTheme.shouldUseDarkColors ? 'icon-light.png' : 'icon-dark.png';
+  const themed = path.join(buildDir, name);
+  if (fs.existsSync(themed)) return themed;
+  const transparent = path.join(buildDir, 'icon-transparent.png');
+  if (fs.existsSync(transparent)) return transparent;
+  return path.join(buildDir, 'icon.png');
 }
 
 function loadNativeIcon() {
@@ -568,8 +586,22 @@ function generateTrayIcon(color) {
 
 function getTrayIconFromApp() {
   const size = getTrayIconSize();
-  const img = loadNativeIcon();
-  if (img) {
+  let iconPath = null;
+  if (process.platform === 'win32') {
+    iconPath = getThemedTrayIconPath();
+    if (isPackaged && process.resourcesPath) {
+      const resThemed = path.join(
+        process.resourcesPath,
+        'build',
+        nativeTheme.shouldUseDarkColors ? 'icon-light.png' : 'icon-dark.png',
+      );
+      if (fs.existsSync(resThemed)) iconPath = resThemed;
+    }
+  }
+  const img = iconPath && fs.existsSync(iconPath)
+    ? nativeImage.createFromPath(iconPath)
+    : loadNativeIcon();
+  if (img && !img.isEmpty()) {
     const { width, height } = img.getSize();
     if (width === size && height === size) return img;
     const resized = img.resize({ width: size, height: size });
@@ -1478,6 +1510,12 @@ app.whenReady().then(async () => {
   applyLaunchAtLogin();
   createWindow();
   createTray();
+  nativeTheme.on('updated', () => {
+    if (!tray || process.platform !== 'win32') return;
+    try {
+      if (currentTrayIcon === 'default') tray.setImage(getTrayIconFromApp());
+    } catch (_) {}
+  });
   setupIPC();
   setupAutoUpdater();
   registerGlobalHotkey();

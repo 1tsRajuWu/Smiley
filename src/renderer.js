@@ -634,9 +634,34 @@ async function handleSaveSettings(e) {
   }
 }
 
+const DARK_UI_THEMES = new Set([
+  'dark', 'midnight', 'ocean', 'sakura', 'lowlight', 'sunset',
+  'forest', 'lavender', 'cyber', 'coffee', 'rose',
+]);
+
+const brandLogoImg = $('#brandLogoImg');
+const aboutLogoImg = $('#aboutLogoImg');
+
+function prefersDarkScheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function isDarkUI() {
+  const theme = appEl?.dataset?.theme || 'dark';
+  return DARK_UI_THEMES.has(theme);
+}
+
+function updateBrandIcon() {
+  const useLightIcon = isDarkUI() || prefersDarkScheme();
+  const src = useLightIcon ? 'assets/icon-light.png' : 'assets/icon-dark.png';
+  if (brandLogoImg) brandLogoImg.src = src;
+  if (aboutLogoImg) aboutLogoImg.src = src;
+}
+
 function applyTheme(theme) {
   appEl.dataset.theme = theme || 'dark';
   currentSettings.theme = theme || 'dark';
+  updateBrandIcon();
 }
 
 async function applyWallpaper(wallpaper = wallpaperSettings) {
@@ -1299,6 +1324,9 @@ async function init() {
 
   const timerEl = $('#previewTimer');
   if (timerEl) timerEl.style.display = cfg.showTimer !== false ? '' : 'none';
+
+  updateBrandIcon();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBrandIcon);
 }
 
 init();

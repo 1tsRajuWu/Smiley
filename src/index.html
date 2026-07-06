@@ -8,6 +8,8 @@
       content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com;"
     />
     <title>Smiley</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png" />
+    <link rel="apple-touch-icon" href="assets/icon-192.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -16,7 +18,7 @@
       <header class="app-header header">
         <div class="header-brand brand">
           <div class="brand-icon" id="brandIcon" aria-hidden="true">
-            <img src="assets/icon.png" alt="" width="40" height="40" class="brand-logo" />
+            <img src="assets/icon-light.png" alt="" width="40" height="40" class="brand-logo" id="brandLogoImg" />
           </div>
           <div>
             <h1>Smiley</h1>
@@ -116,7 +118,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v3.1.8</span>
+        <span class="footer-version" id="footerVersion">Smiley v3.1.9</span>
         <a href="#" class="footer-link" id="footerBugReport">Report a bug</a>
         <span class="footer-hint" id="footerShortcuts"></span>
       </footer>
@@ -252,7 +254,7 @@
           <div class="settings-panel" data-panel="about">
             <div class="about-section">
               <div class="about-logo">
-                <img src="assets/icon.png" alt="Smiley" width="72" height="72" class="about-logo-img" />
+                <img src="assets/icon-light.png" alt="Smiley" width="72" height="72" class="about-logo-img" id="aboutLogoImg" />
               </div>
               <h3 id="aboutVersion">Smiley</h3>
               <p class="about-desc">Discord Rich Presence with animated anime characters and beautiful UI.</p>

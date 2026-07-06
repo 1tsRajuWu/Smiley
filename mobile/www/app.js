@@ -1,5 +1,5 @@
 /**
- * Smiley Mobile — activity companion (v3.1.8)
+ * Smiley Mobile — activity companion (v3.1.9)
  * No Discord RPC on mobile; preview GIFs + copy status for desktop use.
  */
 import { Capacitor } from '@capacitor/core';
@@ -13,7 +13,7 @@ import { resolveDiscordImageUrl, getActivityFallbackUrls } from './discord-image
 
 const STORAGE_KEY = 'smiley-mobile-settings';
 const FAVORITES_KEY = 'smiley-mobile-favorites';
-const VERSION = '3.1.8';
+const VERSION = '3.1.9';
 const RELEASES_URL = 'https://github.com/1tsRajuWu/Smiley/releases/latest';
 const BUG_REPORT_REPO = 'https://github.com/1tsRajuWu/Smiley/issues/new';
 
@@ -149,12 +149,22 @@ async function saveFavorites() {
   await storageSet(FAVORITES_KEY, JSON.stringify([...state.favorites]));
 }
 
+const DARK_UI_THEMES = new Set(['dark', 'midnight', 'ocean', 'sakura', 'lowlight']);
+
+function updateBrandIcon() {
+  const img = document.getElementById('brandLogoImg');
+  if (!img) return;
+  const useLight = DARK_UI_THEMES.has(state.theme) || window.matchMedia('(prefers-color-scheme: dark)').matches;
+  img.src = useLight ? 'assets/icon-light.png' : 'assets/icon-dark.png';
+}
+
 function applyTheme() {
   els.app.dataset.theme = state.theme;
   els.animationsToggle.checked = state.animations;
   els.themeOptions.querySelectorAll('.theme-chip').forEach((chip) => {
     chip.classList.toggle('active', chip.dataset.theme === state.theme);
   });
+  updateBrandIcon();
 }
 
 function toast(message, type = 'success') {
@@ -424,6 +434,7 @@ async function init() {
   await initNativeShell();
   await loadSettings();
   applyTheme();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBrandIcon);
   renderBottomNav();
   renderActivities();
   bindEvents();

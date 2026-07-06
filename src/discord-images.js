@@ -8,7 +8,7 @@ const FETCH_TIMEOUT_MS = 6000;
 const DISCORD_IMAGE_MAX_LEN = 512;
 const FETCH_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'Smiley/3.1.8 (Discord Rich Presence)',
+  'User-Agent': 'Smiley/3.1.9 (Discord Rich Presence)',
 };
 
 /** Per-category API config — nekos GIF endpoint + waifu still fallback */

@@ -332,7 +332,6 @@ body[data-platform="darwin"] .app-header {
 .brand-icon { animation: logoBounce 4s ease-in-out infinite; flex-shrink: 0; }
 .brand-logo {
   width: 40px; height: 40px; object-fit: contain; display: block;
-  border-radius: 11px;
   filter: drop-shadow(0 2px 12px rgba(255,255,255,0.08)) drop-shadow(0 0 20px rgba(122,162,247,0.15));
   transition: filter 0.3s ease, transform 0.3s ease;
 }
@@ -574,7 +573,7 @@ body[data-platform="darwin"] #minimizeBtn { display: none; }
 /* About */
 .about-section { text-align: center; padding: 10px 0; }
 .about-logo { margin-bottom: 14px; }
-.about-logo-img { border-radius: 16px; filter: drop-shadow(0 4px 20px rgba(0,0,0,0.4)); }
+.about-logo-img { filter: drop-shadow(0 4px 20px rgba(0,0,0,0.4)); }
 .about-section h3 { font-size: 1.1rem; margin-bottom: 6px; }
 .about-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
 .about-links { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }

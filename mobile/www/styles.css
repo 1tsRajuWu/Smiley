@@ -65,7 +65,7 @@ html, body {
 }
 
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-logo { border-radius: 10px; }
+.brand-logo { object-fit: contain; }
 .brand h1 { font-size: 1.15rem; font-weight: 700; }
 .tagline { font-size: 0.72rem; color: var(--text-muted); }
 
