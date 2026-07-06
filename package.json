@@ -56,6 +56,9 @@
       "src/**/*",
       "!src/**/*.map",
       "build/icon.png",
+      "build/icon.ico",
+      "build/icon-tray-16.png",
+      "build/icon-tray-32.png",
       "config.example.json",
       "discord.app.json",
       "LICENSE",
@@ -96,6 +99,7 @@
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
+      "icon": "build/icon.ico",
       "verifyUpdateCodeSignature": false,
       "target": [
         {

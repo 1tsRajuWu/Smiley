@@ -422,31 +422,131 @@ function saveWindowState() {
 }
 
 // ─── Tray Icons ──────────────────────────────────────────────────────
-function generateTrayIcon(color) {
-  const size = 64;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <rect width="${size}" height="${size}" rx="14" fill="#1a1b26"/>
-    <circle cx="32" cy="32" r="22" fill="${color}"/>
-    <circle cx="26" cy="28" r="5" fill="#1a1b26"/><circle cx="38" cy="28" r="5" fill="#1a1b26"/>
-    <ellipse cx="32" cy="40" rx="6" ry="4" fill="#1a1b26"/>
-  </svg>`;
-  return nativeImage.createFromBuffer(Buffer.from(svg)).resize({ width: 16, height: 16 });
-}
-
 const TRAY_COLORS = {
   food: '#f7768e', gaming: '#7aa2f7', chill: '#9ece6a',
   work: '#bb9af7', social: '#ff9e64', default: '#7aa2f7',
 };
 
+function getIconCandidates() {
+  const buildDir = path.join(__dirname, 'build');
+  const candidates = [];
+  if (process.platform === 'win32') {
+    const scale = screen.getPrimaryDisplay()?.scaleFactor || 1;
+    const traySize = scale > 1 ? 32 : 16;
+    candidates.push(path.join(buildDir, `icon-tray-${traySize}.png`));
+    candidates.push(path.join(buildDir, 'icon.ico'));
+  }
+  candidates.push(path.join(buildDir, 'icon.png'));
+  if (isPackaged && process.resourcesPath) {
+    const resBuild = path.join(process.resourcesPath, 'build');
+    if (process.platform === 'win32') {
+      const scale = screen.getPrimaryDisplay()?.scaleFactor || 1;
+      const traySize = scale > 1 ? 32 : 16;
+      candidates.push(path.join(resBuild, `icon-tray-${traySize}.png`));
+      candidates.push(path.join(resBuild, 'icon.ico'));
+    }
+    candidates.push(path.join(resBuild, 'icon.png'));
+  }
+  return candidates;
+}
+
+function loadNativeIcon() {
+  for (const iconPath of getIconCandidates()) {
+    if (!fs.existsSync(iconPath)) continue;
+    const img = nativeImage.createFromPath(iconPath);
+    if (!img.isEmpty()) return img;
+  }
+  return null;
+}
+
+function getTrayIconSize() {
+  if (process.platform !== 'win32') return 16;
+  const scale = screen.getPrimaryDisplay()?.scaleFactor || 1;
+  return scale > 1 ? 32 : 16;
+}
+
+function createColoredTrayBitmap(color, size, opaqueBackground) {
+  const buf = Buffer.alloc(size * size * 4);
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = size / 2 - 1;
+  const bg = { r: 0x1a, g: 0x1b, b: 0x26 };
+  const hex = (color || TRAY_COLORS.default).replace('#', '');
+  const cr = parseInt(hex.slice(0, 2), 16);
+  const cg = parseInt(hex.slice(2, 4), 16);
+  const cb = parseInt(hex.slice(4, 6), 16);
+  const faceR = radius * 0.7;
+  const eyeR = Math.max(1, size * 0.08);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const dx = x - cx + 0.5;
+      const dy = y - cy + 0.5;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      let r = bg.r;
+      let g = bg.g;
+      let b = bg.b;
+      let a = opaqueBackground ? 255 : 0;
+
+      if (dist <= radius) {
+        a = 255;
+        if (dist <= faceR) {
+          r = cr;
+          g = cg;
+          b = cb;
+          const leftEye = Math.hypot(x - (cx - faceR * 0.3), y - (cy - faceR * 0.2)) <= eyeR;
+          const rightEye = Math.hypot(x - (cx + faceR * 0.3), y - (cy - faceR * 0.2)) <= eyeR;
+          const mouth = Math.abs(y - (cy + faceR * 0.35)) < Math.max(1, size * 0.06)
+            && Math.abs(x - cx) < faceR * 0.35;
+          if (leftEye || rightEye || mouth) {
+            r = bg.r;
+            g = bg.g;
+            b = bg.b;
+          }
+        }
+      }
+      buf[i] = r;
+      buf[i + 1] = g;
+      buf[i + 2] = b;
+      buf[i + 3] = a;
+    }
+  }
+  return nativeImage.createFromBuffer(buf, { width: size, height: size });
+}
+
+function generateTrayIcon(color) {
+  const size = getTrayIconSize();
+  if (process.platform === 'win32') {
+    return getTrayIconFromApp();
+  }
+  return createColoredTrayBitmap(color, size, false);
+}
+
+function getTrayIconFromApp() {
+  const size = getTrayIconSize();
+  const img = loadNativeIcon();
+  if (img) {
+    const { width, height } = img.getSize();
+    if (width === size && height === size) return img;
+    const resized = img.resize({ width: size, height: size });
+    if (!resized.isEmpty()) return resized;
+  }
+  return createColoredTrayBitmap(TRAY_COLORS.default, size, process.platform === 'win32');
+}
+
 function getDefaultTrayIcon() {
-  return generateTrayIcon(TRAY_COLORS.default);
+  return getTrayIconFromApp();
 }
 
 function getAppIcon() {
-  const iconPath = path.join(__dirname, 'build', 'icon.png');
-  if (fs.existsSync(iconPath)) {
-    const img = nativeImage.createFromPath(iconPath);
-    if (!img.isEmpty()) return img;
+  const img = loadNativeIcon();
+  if (img) {
+    if (process.platform === 'win32') {
+      const { width, height } = img.getSize();
+      if (width > 256 || height > 256) return img.resize({ width: 256, height: 256 });
+    }
+    return img;
   }
   return getDefaultTrayIcon();
 }
@@ -506,7 +606,7 @@ function createWindow() {
 
 // ─── Tray ────────────────────────────────────────────────────────────
 function createTray() {
-  const icon = getAppIcon().resize({ width: 16, height: 16 });
+  const icon = getTrayIconFromApp();
   tray = new Tray(icon);
   tray.setToolTip('Smiley — Discord Rich Presence');
   updateTrayMenu();
@@ -556,7 +656,13 @@ function updateTrayIcon(category) {
   const type = category || 'default';
   if (currentTrayIcon === type) return;
   currentTrayIcon = type;
-  try { tray.setImage(generateTrayIcon(TRAY_COLORS[type] || TRAY_COLORS.default)); } catch (_) {}
+  try {
+    if (process.platform === 'win32') {
+      tray.setImage(getTrayIconFromApp());
+    } else {
+      tray.setImage(generateTrayIcon(TRAY_COLORS[type] || TRAY_COLORS.default));
+    }
+  } catch (_) {}
 }
 
 // ─── Discord RPC ─────────────────────────────────────────────────────
@@ -1208,6 +1314,9 @@ function setupIPC() {
 
 // ─── App Lifecycle ───────────────────────────────────────────────────
 app.whenReady().then(async () => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.smiley.rpc');
+  }
   Menu.setApplicationMenu(null);
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
