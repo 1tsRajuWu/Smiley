@@ -439,6 +439,10 @@
           <h2>By country</h2>
           <div id="countryChart"></div>
         </div>
+        <div class="card" style="margin-top:0">
+          <h2>By city</h2>
+          <div id="cityChart"></div>
+        </div>
       </div>
 
       <div class="card" id="detailPanel" hidden>
@@ -467,7 +471,9 @@
                 <th data-sort="locale">Locale</th>
                 <th data-sort="timezone">Timezone</th>
                 <th data-sort="ip_address">IP</th>
+                <th data-sort="city">City</th>
                 <th data-sort="country_code">Country</th>
+                <th data-sort="isp">ISP</th>
                 <th data-sort="launch_count">Launches</th>
                 <th data-sort="first_seen_at">First seen</th>
                 <th>Install ID</th>
@@ -710,6 +716,17 @@
       return p || '—';
     }
 
+    function rowCountryLabel(r) {
+      if (r.country_name && r.country_code) return `${r.country_code} · ${r.country_name}`;
+      return r.country_code || r.country_name || '—';
+    }
+
+    function geoChartEntries(rows, key) {
+      const entries = countBy(rows, key);
+      const hasData = entries.some(([k]) => k && k !== '(unknown)');
+      return hasData ? entries.slice(0, 12) : [['(no geo yet)', rows.length]];
+    }
+
     function renderSummary(data) {
       const total = data.length;
       const active7 = data.filter((r) => daysAgo(r.last_seen_at, 7)).length;
@@ -737,7 +754,8 @@
       if (q) {
         list = list.filter((r) =>
           [r.install_id, r.platform, r.arch, r.app_version, r.os_version, r.electron_version,
-            r.locale, r.timezone, r.channel, r.ip_address, r.country_code, r.region, r.user_agent]
+            r.locale, r.timezone, r.geo_timezone, r.channel, r.ip_address,
+            r.country_code, r.country_name, r.region, r.region_name, r.city, r.isp, r.user_agent]
             .some((v) => String(v || '').toLowerCase().includes(q))
         );
       }
@@ -773,11 +791,14 @@
         ['App version', row.app_version],
         ['Electron', row.electron_version],
         ['Locale', row.locale],
-        ['Timezone', row.timezone],
+        ['Device timezone', row.timezone],
         ['Channel', row.channel],
         ['IP address', row.ip_address],
-        ['Country', row.country_code],
-        ['Region', row.region],
+        ['Country', row.country_name ? `${row.country_name} (${row.country_code || '?'})` : row.country_code],
+        ['Region', row.region_name || row.region],
+        ['City', row.city],
+        ['ISP', row.isp],
+        ['IP timezone', row.geo_timezone],
         ['Launch count', row.launch_count ?? 1],
         ['Consent version', row.consent_version],
         ['First seen', formatDate(row.first_seen_at)],
@@ -802,7 +823,9 @@
           <td>${r.locale || '—'}</td>
           <td class="muted" title="${r.timezone || ''}">${(r.timezone || '—').slice(0, 14)}</td>
           <td class="mono">${r.ip_address || '—'}</td>
-          <td>${r.country_code || '—'}${r.region ? ` <span class="muted">(${r.region})</span>` : ''}</td>
+          <td title="${r.country_name || ''}">${r.city || '—'}</td>
+          <td>${rowCountryLabel(r)}</td>
+          <td class="muted" title="${r.isp || ''}">${(r.isp || '—').slice(0, 18)}</td>
           <td>${r.launch_count ?? 1}</td>
           <td class="muted">${formatDate(r.first_seen_at)}</td>
           <td class="mono muted" title="${r.install_id}">${(r.install_id || '').slice(0, 8)}…</td>
@@ -823,7 +846,8 @@
       const list = getFilteredRows();
       const cols = [
         'install_id', 'platform', 'arch', 'os_version', 'app_version', 'electron_version',
-        'locale', 'timezone', 'channel', 'ip_address', 'country_code', 'region',
+        'locale', 'timezone', 'geo_timezone', 'channel', 'ip_address',
+        'country_code', 'country_name', 'region', 'region_name', 'city', 'isp',
         'launch_count', 'user_agent', 'consent_version', 'first_seen_at', 'last_seen_at',
       ];
       const escape = (v) => {
@@ -861,9 +885,8 @@
         renderBarChart($('platformChart'), countBy(rows, 'platform').map(([k, v]) => [platformLabel(k), v]));
         renderBarChart($('versionChart'), countBy(rows, 'app_version'));
         renderBarChart($('archChart'), countBy(rows, 'arch'));
-        const countryEntries = countBy(rows, 'country_code');
-        const hasGeo = countryEntries.some(([k]) => k && k !== '(unknown)');
-        renderBarChart($('countryChart'), hasGeo ? countryEntries : [['(no geo yet)', rows.length]]);
+        renderBarChart($('countryChart'), geoChartEntries(rows, 'country_code'));
+        renderBarChart($('cityChart'), geoChartEntries(rows, 'city'));
         selectedId = null;
         renderDetail(null);
         renderTable();

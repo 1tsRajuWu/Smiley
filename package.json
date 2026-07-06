@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "5.0.4",
+  "version": "5.0.5",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -34,7 +34,7 @@
     "publish": "electron-builder --publish always",
     "release:tag": "node -e \"const v=require('./package.json').version; console.log('Tag with: git tag v'+v+' && git push origin main --tags')\"",
     "update-readme-downloads": "bash scripts/update-readme-downloads.sh",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps && node scripts/install-now-playing-native.js"
   },
   "dependencies": {
     "discord-rpc": "^4.0.1",
@@ -68,6 +68,7 @@
       "main.js",
       "preload.js",
       "electron/**/*",
+      "electron/native/**/*.node",
       "src/**/*",
       "!src/**/*.map",
       "build/icon.png",
@@ -82,7 +83,10 @@
       "downloads.registry.json",
       "LICENSE",
       "ToS.md",
-      "PRIVACY.md"
+      "PRIVACY.md",
+      "SECURITY.md",
+      "LEGAL.md",
+      "NOTICE"
     ],
     "publish": {
       "provider": "github",

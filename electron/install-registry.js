@@ -1,18 +1,25 @@
 /**
- * Install registry — default-on usage tracking (see PRIVACY.md, ToS.md).
+ * Install registry — default-on usage tracking (see PRIVACY.md, ToS.md, SECURITY.md).
  * Upserts install_id, platform, version, user agent on each launch when enabled.
- * IP address is captured server-side by Supabase/Postgres from request headers.
+ * All requests use HTTPS (TLS). IP address is captured server-side from request headers.
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
+const {
+  readSecureJson,
+  writeSecureJson,
+  migratePlaintextFile,
+  isTlsUrl,
+} = require('./security');
 
 const INSTALL_ID_FILE = 'install-id';
+const INSTALL_ID_SECURE = 'install-id.secure';
 
 /** Bump when Privacy Policy / ToS change materially. */
-const CONSENT_VERSION = '2026-07-07';
+const CONSENT_VERSION = '2026-07-08';
 
 let registrationPromise = null;
 
@@ -29,6 +36,7 @@ function loadRegistryConfig(rootDir) {
     const supabaseAnonKey = String(data.supabaseAnonKey || '').trim();
     if (!supabaseUrl || !supabaseAnonKey) return null;
     if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) return null;
+    if (!isTlsUrl(supabaseUrl)) return null;
     return { supabaseUrl, supabaseAnonKey };
   } catch {
     return null;
@@ -36,16 +44,26 @@ function loadRegistryConfig(rootDir) {
 }
 
 function getOrCreateInstallId(userDataDir) {
-  const idPath = path.join(userDataDir, INSTALL_ID_FILE);
-  try {
-    if (fs.existsSync(idPath)) {
-      const existing = fs.readFileSync(idPath, 'utf8').trim();
-      if (/^[0-9a-f-]{36}$/i.test(existing)) return existing;
-    }
-  } catch (_) {}
+  const securePath = path.join(userDataDir, INSTALL_ID_SECURE);
+  const legacyPath = path.join(userDataDir, INSTALL_ID_FILE);
+
+  if (!fs.existsSync(securePath) && fs.existsSync(legacyPath)) {
+    migratePlaintextFile(legacyPath, securePath, userDataDir, (raw) => {
+      const id = raw.trim();
+      return /^[0-9a-f-]{36}$/i.test(id) ? { value: id } : null;
+    });
+  }
+
+  const stored = readSecureJson(securePath, userDataDir);
+  const existing = stored?.value ? String(stored.value).trim() : '';
+  if (/^[0-9a-f-]{36}$/i.test(existing)) return existing;
+
   const id = crypto.randomUUID();
   try {
-    fs.writeFileSync(idPath, id, 'utf8');
+    writeSecureJson(securePath, { value: id }, userDataDir);
+    if (fs.existsSync(legacyPath)) {
+      try { fs.unlinkSync(legacyPath); } catch (_) {}
+    }
   } catch (_) {}
   return id;
 }
@@ -68,28 +86,33 @@ function buildSupabaseHeaders(anonKey) {
   return headers;
 }
 
-function postJson(url, headers, body, method = 'POST') {
+function requestJson(url, { method = 'GET', headers = {}, body = null, timeout = 15000 } = {}) {
   return new Promise((resolve, reject) => {
+    if (!isTlsUrl(url)) {
+      reject(new Error('Registry requires HTTPS'));
+      return;
+    }
     const parsed = new URL(url);
     const lib = parsed.protocol === 'http:' ? http : https;
-    const payload = JSON.stringify(body);
+    const payload = body != null ? JSON.stringify(body) : null;
+    const reqHeaders = { ...headers };
+    if (payload != null) {
+      reqHeaders['Content-Type'] = 'application/json';
+      reqHeaders['Content-Length'] = Buffer.byteLength(payload);
+    }
     const req = lib.request(
       url,
-      {
-        method,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payload),
-        },
-        timeout: 15000,
-      },
+      { method, headers: reqHeaders, timeout },
       (res) => {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
         res.on('end', () => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve({ ok: true, status: res.statusCode });
+            try {
+              resolve(data ? JSON.parse(data) : {});
+            } catch {
+              resolve({});
+            }
           } else {
             const err = new Error(`Registry HTTP ${res.statusCode}`);
             err.statusCode = res.statusCode;
@@ -104,9 +127,41 @@ function postJson(url, headers, body, method = 'POST') {
       req.destroy();
       reject(new Error('Registry timeout'));
     });
-    req.write(payload);
+    if (payload != null) req.write(payload);
     req.end();
   });
+}
+
+function postJson(url, headers, body, method = 'POST') {
+  return requestJson(url, { method, headers, body });
+}
+
+const GEO_LOOKUP_URL = 'https://ipwho.is/';
+
+function mapGeoToRow(geo) {
+  if (!geo?.success) return null;
+  return {
+    country_code: geo.country_code ? String(geo.country_code).slice(0, 8).toUpperCase() : null,
+    country_name: geo.country ? String(geo.country).slice(0, 64) : null,
+    region: geo.region_code ? String(geo.region_code).slice(0, 16) : (geo.region ? String(geo.region).slice(0, 64) : null),
+    region_name: geo.region ? String(geo.region).slice(0, 64) : null,
+    city: geo.city ? String(geo.city).slice(0, 64) : null,
+    isp: geo.connection?.isp ? String(geo.connection.isp).slice(0, 128) : null,
+    geo_timezone: geo.timezone?.id ? String(geo.timezone.id).slice(0, 64) : null,
+  };
+}
+
+async function enrichInstallGeo(registry, installId, headers) {
+  try {
+    const geo = await requestJson(GEO_LOOKUP_URL, { timeout: 8000 });
+    const patch = mapGeoToRow(geo);
+    if (!patch) return { skipped: true, reason: 'geo-lookup-failed' };
+    const endpoint = `${registry.supabaseUrl}/rest/v1/installs?install_id=eq.${encodeURIComponent(installId)}`;
+    await postJson(endpoint, headers, patch, 'PATCH');
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
 function buildInstallRow({
@@ -187,6 +242,7 @@ async function registerInstall({
         const { install_id: _id, ...patchBody } = row;
         await postJson(patchUrl, headers, patchBody, 'PATCH');
       }
+      await enrichInstallGeo(registry, installId, headers);
       return { success: true, installId };
     } catch (err) {
       return { success: false, error: err.message };
@@ -207,4 +263,5 @@ module.exports = {
   getOrCreateInstallId,
   buildUserAgent,
   buildInstallRow,
+  mapGeoToRow,
 };

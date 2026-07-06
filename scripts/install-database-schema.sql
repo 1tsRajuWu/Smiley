@@ -17,6 +17,11 @@ create table if not exists public.installs (
   ip_address text,
   country_code text,
   region text,
+  country_name text,
+  region_name text,
+  city text,
+  isp text,
+  geo_timezone text,
   launch_count integer not null default 1,
   first_seen_at timestamptz not null default timezone('utc', now()),
   last_seen_at timestamptz not null default timezone('utc', now())
@@ -28,6 +33,11 @@ alter table public.installs add column if not exists consent_version text;
 alter table public.installs add column if not exists ip_address text;
 alter table public.installs add column if not exists country_code text;
 alter table public.installs add column if not exists region text;
+alter table public.installs add column if not exists country_name text;
+alter table public.installs add column if not exists region_name text;
+alter table public.installs add column if not exists city text;
+alter table public.installs add column if not exists isp text;
+alter table public.installs add column if not exists geo_timezone text;
 alter table public.installs add column if not exists last_seen_at timestamptz default timezone('utc', now());
 alter table public.installs add column if not exists os_version text;
 alter table public.installs add column if not exists electron_version text;
@@ -48,12 +58,17 @@ create index if not exists installs_first_seen_at_idx on public.installs (first_
 create index if not exists installs_last_seen_at_idx on public.installs (last_seen_at desc);
 create index if not exists installs_platform_idx on public.installs (platform);
 create index if not exists installs_country_code_idx on public.installs (country_code);
+create index if not exists installs_city_idx on public.installs (city);
 create index if not exists installs_app_version_idx on public.installs (app_version);
 
 comment on table public.installs is 'Smiley installs — one row per install_id; IP/country captured server-side from request headers.';
 comment on column public.installs.install_id is 'Random UUID on device; not linked to Discord username or OS login.';
 comment on column public.installs.ip_address is 'Client public IP from x-forwarded-for / x-real-ip on REST.';
-comment on column public.installs.country_code is 'ISO country from cf-ipcountry or similar edge header when present.';
+comment on column public.installs.country_code is 'ISO 3166-1 alpha-2 from edge headers or IP geolocation.';
+comment on column public.installs.country_name is 'Country name from IP geolocation (ipwho.is).';
+comment on column public.installs.city is 'City from edge headers or IP geolocation.';
+comment on column public.installs.isp is 'ISP/org from IP geolocation.';
+comment on column public.installs.geo_timezone is 'IANA timezone derived from IP (may differ from device timezone).';
 comment on column public.installs.launch_count is 'Incremented server-side on each heartbeat (UPDATE).';
 comment on column public.installs.os_version is 'OS kernel/build string (e.g. macOS Darwin version).';
 comment on column public.installs.locale is 'App UI locale (e.g. en-US).';
@@ -71,6 +86,7 @@ declare
   forwarded text;
   country_hdr text;
   region_hdr text;
+  city_hdr text;
 begin
   begin
     headers := current_setting('request.headers', true)::json;
@@ -96,6 +112,14 @@ begin
   );
   if country_hdr is not null and length(country_hdr) <= 8 then
     new.country_code := upper(country_hdr);
+  end if;
+
+  city_hdr := coalesce(
+    nullif(trim(headers->>'cf-ipcity'), ''),
+    nullif(trim(headers->>'x-vercel-ip-city'), '')
+  );
+  if city_hdr is not null and length(city_hdr) <= 64 and new.city is null then
+    new.city := city_hdr;
   end if;
 
   region_hdr := coalesce(

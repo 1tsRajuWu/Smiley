@@ -18,8 +18,12 @@ Track **installed and active Smiley users**. Disclosed in [PRIVACY.md](../PRIVAC
 | `user_agent` | `Smiley/5.0.4 Electron/…` | Device |
 | `consent_version` | `2026-07-07` | Device (PP/ToS version) |
 | `ip_address` | `203.0.113.42` | **Server** (`x-forwarded-for` / `x-real-ip`) |
-| `country_code` | `IN` | **Server** (`cf-ipcountry` / edge headers) |
-| `region` | `MH` | **Server** (`cf-region` when present) |
+| `country_code` | `IN` | IP geolocation + edge headers |
+| `country_name` | `India` | IP geolocation ([ipwho.is](https://ipwho.is)) |
+| `region` / `region_name` | `MH` / `Maharashtra` | IP geolocation |
+| `city` | `Mumbai` | IP geolocation + edge headers |
+| `isp` | `Reliance Jio` | IP geolocation |
+| `geo_timezone` | `Asia/Kolkata` | IP geolocation (separate from device `timezone`) |
 | `launch_count` | `12` | **Server** (increments each heartbeat) |
 | `first_seen_at` | UTC timestamp | Server |
 | `last_seen_at` | UTC timestamp | Server (each launch) |
@@ -100,9 +104,10 @@ limit 20;
 
 ## IP and geography
 
-IP and country/region are set **in Postgres** from `current_setting('request.headers')` on each REST insert/update. No client-side IP lookup.
+1. **Server-side (Supabase trigger):** `ip_address` from `x-forwarded-for`; `country_code` / `city` from Cloudflare-style headers when present.
+2. **IP lookup (app):** After each heartbeat, Smiley calls [ipwho.is](https://ipwho.is) over HTTPS (your public IP only) and patches `country_name`, `city`, `region`, `isp`, `geo_timezone`.
 
-Country appears when Supabase/Cloudflare sends `cf-ipcountry` (or similar) on the request.
+Re-run [scripts/install-database-schema.sql](../scripts/install-database-schema.sql) after updates to add geo columns.
 
 ## GitHub download counts
 
