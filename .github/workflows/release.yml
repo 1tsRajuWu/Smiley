@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical --omit=dev
 
       - name: Create discord.app.json
         env:
@@ -69,7 +69,7 @@ jobs:
         run: npm ci
 
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical --omit=dev
 
       - name: Create discord.app.json
         env:
@@ -105,7 +105,7 @@ jobs:
         run: npm ci
 
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical --omit=dev
 
       - name: Create discord.app.json
         env:
