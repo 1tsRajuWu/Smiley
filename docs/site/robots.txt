@@ -2,5 +2,6 @@
 User-agent: *
 Allow: /
 Disallow: /stats.html
+Disallow: /stats-auth.json
 
 Sitemap: https://1tsrajuwu.github.io/Smiley/

@@ -27,6 +27,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create stats dashboard auth config
+        env:
+          STATS_DASHBOARD_PASSWORD: ${{ secrets.STATS_DASHBOARD_PASSWORD }}
+        run: |
+          if [ -n "$STATS_DASHBOARD_PASSWORD" ]; then
+            HASH=$(node -e "const c=require('crypto');console.log(c.createHash('sha256').update(process.env.STATS_DASHBOARD_PASSWORD).digest('hex'))")
+            printf '%s\n' "{\"passwordHash\":\"$HASH\"}" > docs/site/stats-auth.json
+            echo "Stats dashboard password gate enabled"
+          else
+            printf '%s\n' '{"passwordHash":""}' > docs/site/stats-auth.json
+            echo "STATS_DASHBOARD_PASSWORD not set — stats page will stay locked"
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

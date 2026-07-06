@@ -63,9 +63,11 @@ Or locally: `cp downloads.registry.example.json downloads.registry.json` and fil
 
 Release workflow log must say **`Install registry configured`**.
 
-### 4. View installs
+### 4. View installs (maintainer only)
 
-**Web dashboard:** [stats.html](https://1tsrajuwu.github.io/Smiley/stats.html) — secret/service_role key. Click a row for full details.
+**Web dashboard:** password-protected — not linked from the public download page. Set a GitHub secret `STATS_DASHBOARD_PASSWORD`, redeploy Pages, then open `stats.html` on your Pages site. You still need your Supabase **secret key** after unlocking.
+
+Do **not** share the dashboard URL or password publicly.
 
 **SQL examples:**
 

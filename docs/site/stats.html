@@ -372,6 +372,21 @@
 </head>
 <body>
   <div class="page">
+    <section id="gateSection" class="card" style="max-width:420px;margin:4rem auto 0;">
+      <h1 style="font-size:1.35rem;margin-bottom:0.35rem;">Restricted access</h1>
+      <p class="subtitle" style="margin-bottom:1rem;">Maintainer only. This page is not linked from the public site.</p>
+      <div class="field">
+        <label for="gatePassword">Dashboard password</label>
+        <input type="password" id="gatePassword" placeholder="Enter password" autocomplete="current-password">
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn btn-primary" id="gateUnlockBtn">Unlock</button>
+      </div>
+      <div id="gateError" class="error-box hidden"></div>
+      <p id="gateDisabled" class="warn-box hidden" style="margin-top:1rem;">Dashboard locked — set <code>STATS_DASHBOARD_PASSWORD</code> in GitHub repo secrets and redeploy Pages.</p>
+    </section>
+
+    <div id="adminApp" class="hidden">
     <div class="header-row">
       <div>
         <h1>Install database</h1>
@@ -466,20 +481,112 @@
     </section>
 
     <p class="footer-note">
-      Setup guide: <a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/INSTALL-DATABASE.md" target="_blank" rel="noopener">docs/INSTALL-DATABASE.md</a>
+      Maintainer setup: <a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/INSTALL-DATABASE.md" target="_blank" rel="noopener">docs/INSTALL-DATABASE.md</a>
+      · <button type="button" class="btn btn-secondary btn-sm" id="gateLockBtn" style="margin-left:0.5rem;">Lock</button>
     </p>
+    </div>
   </div>
 
   <script>
     const STORAGE_URL = 'smiley_stats_url';
     const STORAGE_KEY = 'smiley_stats_service_key';
+    const STORAGE_GATE = 'smiley_stats_gate_v1';
 
     let rows = [];
     let sortKey = 'last_seen_at';
     let sortDir = 'desc';
     let selectedId = null;
+    let authConfig = { passwordHash: '' };
+    let gateFailCount = 0;
 
     const $ = (id) => document.getElementById(id);
+
+    async function sha256Hex(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function showGateError(msg) {
+      const el = $('gateError');
+      if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function setAdminVisible(unlocked) {
+      $('gateSection').classList.toggle('hidden', unlocked);
+      $('adminApp').classList.toggle('hidden', !unlocked);
+      if (unlocked) sessionStorage.setItem(STORAGE_GATE, '1');
+      else sessionStorage.removeItem(STORAGE_GATE);
+    }
+
+    async function loadAuthConfig() {
+      try {
+        const res = await fetch('stats-auth.json', { cache: 'no-store' });
+        if (!res.ok) return { passwordHash: '' };
+        return await res.json();
+      } catch {
+        return { passwordHash: '' };
+      }
+    }
+
+    async function tryUnlockGate() {
+      showGateError('');
+      if (!authConfig.passwordHash) {
+        $('gateDisabled').classList.remove('hidden');
+        return;
+      }
+      $('gateDisabled').classList.add('hidden');
+      const pass = $('gatePassword').value;
+      if (!pass) {
+        showGateError('Enter the dashboard password.');
+        return;
+      }
+      gateFailCount += 1;
+      if (gateFailCount > 5) {
+        showGateError('Too many attempts. Wait a minute and try again.');
+        $('gateUnlockBtn').disabled = true;
+        setTimeout(() => { $('gateUnlockBtn').disabled = false; gateFailCount = 0; }, 60000);
+        return;
+      }
+      const hash = await sha256Hex(pass);
+      if (hash !== authConfig.passwordHash) {
+        showGateError('Wrong password.');
+        return;
+      }
+      $('gatePassword').value = '';
+      setAdminVisible(true);
+      if (loadCredentials()) loadDashboard();
+    }
+
+    async function initGate() {
+      authConfig = await loadAuthConfig();
+      if (!authConfig.passwordHash) {
+        $('gateDisabled').classList.remove('hidden');
+        $('gateUnlockBtn').disabled = true;
+        return;
+      }
+      if (sessionStorage.getItem(STORAGE_GATE) === '1') {
+        setAdminVisible(true);
+        if (loadCredentials()) loadDashboard();
+      }
+    }
+
+    $('gateUnlockBtn').addEventListener('click', tryUnlockGate);
+    $('gatePassword').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') tryUnlockGate();
+    });
+    $('gateLockBtn').addEventListener('click', () => {
+      clearCredentials();
+      rows = [];
+      selectedId = null;
+      setAdminVisible(false);
+      $('dashboardSection').classList.add('hidden');
+      $('loginSection').classList.remove('hidden');
+      showLoginError('');
+    });
+
+    initGate();
 
     function loadCredentials() {
       const url = sessionStorage.getItem(STORAGE_URL);
@@ -806,7 +913,7 @@
       });
     });
 
-    if (loadCredentials()) loadDashboard();
+    // initGate() runs on load; Supabase auto-connect only after gate unlock
   </script>
 </body>
 </html>

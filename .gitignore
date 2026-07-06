@@ -1,10 +1,12 @@
 node_modules/
+electron/native/*.node
 dist/
 dist-native/
 config.json
 config.secure
 discord.app.json
 downloads.registry.json
+docs/site/stats-auth.json
 Smiley.Native/bin/
 Smiley.Native/obj/
 .DS_Store
