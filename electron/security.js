@@ -256,12 +256,18 @@ function stripSensitiveFields(value, depth = 0) {
 
 function sanitizeNowPlayingTrack(track) {
   if (!track || typeof track !== 'object') return null;
+  const progressMs = Math.max(0, Math.min(Number(track.progressMs) || 0, 86400000));
+  const durationMs = Math.max(0, Math.min(Number(track.durationMs) || 0, 86400000));
   return {
     title: typeof track.title === 'string' ? track.title.slice(0, 256) : '',
     artist: typeof track.artist === 'string' ? track.artist.slice(0, 256) : '',
     album: typeof track.album === 'string' ? track.album.slice(0, 256) : '',
     isPlaying: track.isPlaying !== false,
     device: typeof track.device === 'string' ? track.device.slice(0, 64) : null,
+    progressMs,
+    durationMs,
+    updatedAt: Number.isFinite(Number(track.updatedAt)) ? Number(track.updatedAt) : Date.now(),
+    playbackRate: Number.isFinite(Number(track.playbackRate)) ? Number(track.playbackRate) : 1,
     artworkUrl: typeof track.artworkUrl === 'string' && /^https:\/\//i.test(track.artworkUrl)
       ? track.artworkUrl.slice(0, 2048)
       : null,

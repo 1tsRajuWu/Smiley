@@ -900,6 +900,13 @@ function sanitizeIncomingActivity(activity) {
   if (activity.musicTrack) {
     safe.musicTrack = sanitizeNowPlayingTrack(activity.musicTrack);
   }
+  if (activity.musicTimestamps && typeof activity.musicTimestamps === 'object') {
+    const start = Number(activity.musicTimestamps.startTimestamp);
+    const end = Number(activity.musicTimestamps.endTimestamp);
+    if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+      safe.musicTimestamps = { startTimestamp: start, endTimestamp: end };
+    }
+  }
   return stripSensitiveFields(safe);
 }
 
@@ -919,10 +926,12 @@ function getMusicSync() {
   if (!musicSync) {
     musicSync = createMusicSync({
       getConfig: () => config,
-      schedulePresenceUpdate,
-      sendToRenderer: (track) => {
+      applyPresence,
+      sendToRenderer: (track, artworkUrl) => {
         if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('now-playing-update', sanitizeNowPlayingTrack(track));
+          const safe = sanitizeNowPlayingTrack(track);
+          if (safe && artworkUrl) safe.artworkUrl = artworkUrl;
+          mainWindow.webContents.send('now-playing-update', safe);
         }
       },
       updateTrayMenu,
@@ -1564,9 +1573,15 @@ async function buildActivityPayload(activity) {
   const payload = {
     details: activity.details,
     state: activity.state || undefined,
-    startTimestamp: sessionStart || Date.now(),
     instance: false,
   };
+
+  if (activity.musicTimestamps?.startTimestamp && activity.musicTimestamps?.endTimestamp) {
+    payload.startTimestamp = activity.musicTimestamps.startTimestamp;
+    payload.endTimestamp = activity.musicTimestamps.endTimestamp;
+  } else {
+    payload.startTimestamp = sessionStart || Date.now();
+  }
 
   // Discord shows the app/bot logo when the image key is missing or invalid.
   // Always use a direct HTTPS GIF URL resolved for this activity.
@@ -1658,8 +1673,13 @@ async function schedulePresenceUpdate(activity, isNewSession) {
 
 function handleMusicSyncForActivity(safeActivity) {
   if (safeActivity.id === 'listening' && config.musicNowPlaying !== false) {
-    if (safeActivity.details === 'Listening to music') {
-      getMusicSync().start(safeActivity);
+    const sync = getMusicSync();
+    if (!sync.getTemplate()) {
+      sync.start({
+        ...safeActivity,
+        id: 'listening',
+        details: 'Listening to music',
+      });
     }
   } else if (safeActivity.id !== 'listening') {
     getMusicSync().stop();

@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 /**
- * Backfill country/city/ISP from ipwho.is for all installs (maintainer script).
- * Requires service role / secret key via SUPABASE_SERVICE_KEY or first arg.
- *
- * Usage:
- *   SUPABASE_SERVICE_KEY=sb_secret_… node scripts/backfill-install-geo.js
+ * Backfill geo fields from ipwho.is (works with partial schema).
+ * SUPABASE_SERVICE_KEY=sb_secret_… node scripts/backfill-install-geo.js
  */
 const https = require('https');
 
@@ -20,7 +17,7 @@ function request(url, { method = 'GET', body = null } = {}) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const payload = body ? JSON.stringify(body) : null;
-    const headers = { apikey: SERVICE_KEY, 'Content-Type': 'application/json' };
+    const headers = { apikey: SERVICE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
     if (SERVICE_KEY.startsWith('eyJ')) headers.Authorization = `Bearer ${SERVICE_KEY}`;
     if (payload) headers['Content-Length'] = Buffer.byteLength(payload);
 
@@ -31,9 +28,9 @@ function request(url, { method = 'GET', body = null } = {}) {
         res.on('data', (c) => { data += c; });
         res.on('end', () => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            try { resolve(data ? JSON.parse(data) : {}); } catch { resolve(data); }
+            try { resolve(data ? JSON.parse(data) : {}); } catch { resolve(data || {}); }
           } else {
-            reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
+            reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 400)}`));
           }
         });
       },
@@ -44,47 +41,56 @@ function request(url, { method = 'GET', body = null } = {}) {
   });
 }
 
-function mapGeo(geo) {
+function mapGeo(geo, columns) {
   if (!geo?.success) return null;
-  return {
-    country_code: geo.country_code ? String(geo.country_code).slice(0, 8).toUpperCase() : null,
-    country_name: geo.country ? String(geo.country).slice(0, 64) : null,
-    region: geo.region_code ? String(geo.region_code).slice(0, 16) : null,
-    region_name: geo.region ? String(geo.region).slice(0, 64) : null,
-    city: geo.city ? String(geo.city).slice(0, 64) : null,
-    isp: geo.connection?.isp ? String(geo.connection.isp).slice(0, 128) : null,
-    geo_timezone: geo.timezone?.id ? String(geo.timezone.id).slice(0, 64) : null,
-  };
+  const patch = {};
+  if (columns.has('country_code') && geo.country_code) {
+    patch.country_code = String(geo.country_code).slice(0, 8).toUpperCase();
+  }
+  if (columns.has('region')) {
+    const r = columns.has('region_name') ? geo.region : (geo.region || geo.region_code);
+    if (r) patch.region = String(r).slice(0, 64);
+  }
+  if (columns.has('country_name') && geo.country) patch.country_name = String(geo.country).slice(0, 64);
+  if (columns.has('region_name') && geo.region) patch.region_name = String(geo.region).slice(0, 64);
+  if (columns.has('city') && geo.city) patch.city = String(geo.city).slice(0, 64);
+  if (columns.has('isp') && geo.connection?.isp) patch.isp = String(geo.connection.isp).slice(0, 128);
+  if (columns.has('geo_timezone') && geo.timezone?.id) patch.geo_timezone = String(geo.timezone.id).slice(0, 64);
+  return Object.keys(patch).length ? patch : null;
 }
 
-function fetchGeoForIp(ip) {
-  if (!ip || ip.startsWith('127.') || ip === '::1') {
-    return request('https://ipwho.is/');
-  }
-  return request(`https://ipwho.is/${encodeURIComponent(ip)}`);
+function fetchGeo(ip) {
+  const path = ip && !ip.startsWith('127.') ? `https://ipwho.is/${encodeURIComponent(ip)}` : 'https://ipwho.is/';
+  return request(path);
+}
+
+async function detectColumns() {
+  const sample = await request(`${SUPABASE_URL}/rest/v1/installs?select=*&limit=1`);
+  const row = Array.isArray(sample) && sample[0] ? sample[0] : {};
+  return new Set(Object.keys(row));
 }
 
 async function main() {
+  const columns = await detectColumns();
+  console.log('Columns:', [...columns].join(', '));
+
+  const selectCols = ['install_id', 'ip_address', 'country_code', 'region'];
+  if (columns.has('country_name')) selectCols.push('country_name');
+  if (columns.has('city')) selectCols.push('city');
+
   const rows = await request(
-    `${SUPABASE_URL}/rest/v1/installs?select=install_id,ip_address,country_name,city&order=last_seen_at.desc`,
+    `${SUPABASE_URL}/rest/v1/installs?select=${selectCols.join(',')}&order=last_seen_at.desc`,
   );
-  if (!Array.isArray(rows)) {
-    console.error('Unexpected response:', rows);
-    process.exit(1);
-  }
-  console.log(`Found ${rows.length} install(s).`);
+  if (!Array.isArray(rows)) throw new Error('Expected array of installs');
 
   let updated = 0;
   for (const row of rows) {
-    if (row.country_name && row.city) {
-      console.log(`Skip ${row.install_id.slice(0, 8)}… (already has geo)`);
-      continue;
-    }
     try {
-      const geo = await fetchGeoForIp(row.ip_address);
-      const patch = mapGeo(geo);
-      if (!patch) {
-        console.warn(`No geo for ${row.install_id.slice(0, 8)}…`);
+      const geo = await fetchGeo(row.ip_address);
+      const patch = mapGeo(geo, columns);
+      if (!patch) continue;
+      if (row.country_code && patch.country_code === row.country_code && !patch.city) {
+        console.log(`Skip ${row.install_id.slice(0, 8)}…`);
         continue;
       }
       await request(
@@ -92,16 +98,14 @@ async function main() {
         { method: 'PATCH', body: patch },
       );
       updated += 1;
-      console.log(`Updated ${row.install_id.slice(0, 8)}… → ${patch.country_name || patch.country_code}, ${patch.city || '—'}`);
-      await new Promise((r) => setTimeout(r, 400));
+      const label = patch.country_name || patch.country_code || '?';
+      console.log(`Updated ${row.install_id.slice(0, 8)}… → ${label}, ${patch.city || patch.region || '—'}`);
+      await new Promise((r) => setTimeout(r, 350));
     } catch (err) {
-      console.warn(`Failed ${row.install_id.slice(0, 8)}…:`, err.message);
+      console.warn(`${row.install_id.slice(0, 8)}…: ${err.message}`);
     }
   }
-  console.log(`Done. Updated ${updated} row(s).`);
+  console.log(`Done. Updated ${updated}/${rows.length} row(s).`);
 }
 
-main().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+main().catch((e) => { console.error(e.message); process.exit(1); });

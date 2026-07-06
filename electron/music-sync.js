@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════
-// Music sync — updates Discord presence while "Listening to music" is active
+// Music sync — instant Discord + UI updates while "Listening to music"
 // ═══════════════════════════════════════════════════════════════════════
-const { createNowPlayingService, trackSignature } = require('./now-playing');
+const { createNowPlayingService, trackMetaSignature, getLiveProgress } = require('./now-playing');
 
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
@@ -13,21 +13,42 @@ function truncate(text, max = DISCORD_TEXT_LIMIT) {
   return `${value.slice(0, max - 1)}…`;
 }
 
+function formatClock(ms) {
+  const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
+
 function isMusicSyncEnabled(config) {
   return config?.musicNowPlaying !== false;
 }
 
+function buildMusicTimestamps(track) {
+  if (!track?.isPlaying || !track.durationMs) return null;
+  const { progressMs, durationMs } = getLiveProgress(track);
+  if (durationMs <= 0) return null;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const progressSec = Math.floor(progressMs / 1000);
+  const durationSec = Math.floor(durationMs / 1000);
+  return {
+    startTimestamp: nowSec - progressSec,
+    endTimestamp: nowSec - progressSec + durationSec,
+  };
+}
+
 function createMusicSync({
   getConfig,
-  schedulePresenceUpdate,
+  applyPresence,
   sendToRenderer,
   updateTrayMenu,
   isPaused,
 }) {
   let service = null;
   let activityTemplate = null;
-  let lastTrackSignature = '';
+  let lastMetaSignature = '';
   let artworkRequestId = 0;
+  let lastArtworkKey = '';
 
   async function fetchItunesArtwork(title, artist) {
     const cacheKey = `${title}\0${artist}`.toLowerCase();
@@ -47,10 +68,20 @@ function createMusicSync({
     }
   }
 
+  function getArtworkCacheKey(track) {
+    if (!track?.title) return '';
+    return `${track.title}\0${track.artist || ''}`.toLowerCase();
+  }
+
+  function getCachedArtwork(track) {
+    const key = getArtworkCacheKey(track);
+    if (!key || !artworkCache.has(key)) return null;
+    return artworkCache.get(key);
+  }
+
   async function resolveArtwork(track, config) {
     if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return null;
     if (track.artworkUrl) return track.artworkUrl;
-    if (!track.title) return null;
     return fetchItunesArtwork(track.title, track.artist);
   }
 
@@ -64,32 +95,47 @@ function createMusicSync({
         details: 'Listening to music',
         state: base.state || 'Shows your song 🎵',
         musicTrack: null,
+        musicTimestamps: null,
       };
     }
 
     const artist = track.artist ? truncate(track.artist) : '';
     const album = track.album ? truncate(track.album) : '';
+    const { progressMs, durationMs } = getLiveProgress(track);
+    const timeLabel = durationMs > 0
+      ? `${formatClock(progressMs)} / ${formatClock(durationMs)}`
+      : formatClock(progressMs);
+
     let state;
     if (!track.isPlaying) {
-      state = artist ? `Paused · ${artist}` : 'Paused';
-    } else {
       state = artist
-        ? (album ? `${artist} — ${album}` : `by ${artist}`)
-        : (base.state || 'Shows your song 🎵');
+        ? `Paused · ${timeLabel} · ${artist}`
+        : `Paused · ${timeLabel}`;
+    } else if (artist && album) {
+      state = truncate(`${artist} — ${album} · ${timeLabel}`);
+    } else if (artist) {
+      state = truncate(`by ${artist} · ${timeLabel}`);
+    } else {
+      state = truncate(timeLabel);
     }
 
     const activity = {
       ...base,
       details: truncate(track.title),
-      state: truncate(state),
-      largeImageText: album || artist || base.largeImageText || 'Music',
+      state,
+      largeImageText: truncate(album || artist || track.title),
       musicTrack: {
         title: track.title,
         artist: track.artist,
         album: track.album,
         device: track.device,
         isPlaying: track.isPlaying,
+        progressMs,
+        durationMs,
+        updatedAt: track.updatedAt,
+        artworkUrl: artworkUrl || track.artworkUrl || null,
       },
+      musicTimestamps: buildMusicTimestamps(track),
     };
 
     if (artworkUrl) {
@@ -100,29 +146,42 @@ function createMusicSync({
     return activity;
   }
 
+  async function pushPresence(track, artworkUrl) {
+    const activity = buildPresenceActivity(track, artworkUrl);
+    if (!activity) return;
+    await applyPresence(activity);
+    sendToRenderer?.(track, artworkUrl || getCachedArtwork(track));
+    updateTrayMenu?.();
+  }
+
   async function handleTrackUpdate(track) {
     if (!activityTemplate || isPaused?.()) return;
 
-    const signature = trackSignature(track);
-    if (signature === lastTrackSignature) return;
-    lastTrackSignature = signature;
+    const metaSig = trackMetaSignature(track);
+    const metaChanged = metaSig !== lastMetaSignature;
+    if (metaChanged) lastMetaSignature = metaSig;
 
     const config = getConfig();
-    const activity = buildPresenceActivity(track, null);
-    if (!activity) return;
+    const cacheKey = getArtworkCacheKey(track);
+    let artworkUrl = track?.artworkUrl || getCachedArtwork(track);
 
-    await schedulePresenceUpdate(activity, false);
-    sendToRenderer?.(track);
-    updateTrayMenu?.();
+    if (metaChanged) {
+      await pushPresence(track, artworkUrl);
 
-    if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return;
+      if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return;
+      if (artworkUrl) return;
 
-    const requestId = ++artworkRequestId;
-    const artworkUrl = await resolveArtwork(track, config);
-    if (requestId !== artworkRequestId || !artworkUrl) return;
+      const requestId = ++artworkRequestId;
+      lastArtworkKey = cacheKey;
+      resolveArtwork(track, config).then((url) => {
+        if (requestId !== artworkRequestId || !url) return;
+        if (lastArtworkKey !== cacheKey) return;
+        pushPresence(track, url).catch(() => {});
+      }).catch(() => {});
+      return;
+    }
 
-    const withArt = buildPresenceActivity(track, artworkUrl);
-    if (withArt) await schedulePresenceUpdate(withArt, false);
+    sendToRenderer?.(track, artworkUrl);
   }
 
   function ensureRunning() {
@@ -130,7 +189,10 @@ function createMusicSync({
       service.stop().catch(() => {});
       service = null;
     }
-    service = createNowPlayingService({ onUpdate: handleTrackUpdate, pollIntervalMs: 0 });
+    service = createNowPlayingService({
+      onUpdate: handleTrackUpdate,
+      pollIntervalMs: 500,
+    });
     service.start().catch((err) => {
       console.warn('[music-sync] failed to start:', err.message);
     });
@@ -152,7 +214,8 @@ function createMusicSync({
       details: 'Listening to music',
       state: templateActivity.state || 'Shows your song 🎵',
     };
-    lastTrackSignature = '';
+    lastMetaSignature = '';
+    lastArtworkKey = '';
     ensureRunning();
   }
 
@@ -161,10 +224,11 @@ function createMusicSync({
       service.stop().catch(() => {});
       service = null;
     }
-    lastTrackSignature = '';
+    lastMetaSignature = '';
+    lastArtworkKey = '';
     artworkRequestId += 1;
     if (resetTemplate) activityTemplate = null;
-    sendToRenderer?.(null);
+    sendToRenderer?.(null, null);
   }
 
   function getTemplate() {
@@ -174,7 +238,12 @@ function createMusicSync({
   function getCurrentTrackLabel() {
     const track = activityTemplate?.musicTrack;
     if (!track?.title) return null;
-    return track.artist ? `${track.title} — ${track.artist}` : track.title;
+    const { progressMs, durationMs } = getLiveProgress(track);
+    const time = durationMs > 0
+      ? `${formatClock(progressMs)} / ${formatClock(durationMs)}`
+      : formatClock(progressMs);
+    const base = track.artist ? `${track.title} — ${track.artist}` : track.title;
+    return `${base} (${time})`;
   }
 
   return {
@@ -192,4 +261,4 @@ function createMusicSync({
   };
 }
 
-module.exports = { createMusicSync, LISTENING_ACTIVITY_ID };
+module.exports = { createMusicSync, LISTENING_ACTIVITY_ID, formatClock, getLiveProgress };

@@ -44,6 +44,10 @@ const previewGif = $('#previewGif');
 const previewDetails = $('#previewDetails');
 const previewState = $('#previewState');
 const previewNowPlaying = $('#previewNowPlaying');
+const previewTrackProgress = $('#previewTrackProgress');
+const previewTrackFill = $('#previewTrackFill');
+const previewTrackElapsed = $('#previewTrackElapsed');
+const previewTrackDuration = $('#previewTrackDuration');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -216,6 +220,8 @@ let updateCheckingToastShown = false;
 let lastUpdateActionToastKey = '';
 let lastUpdateActionToastAt = 0;
 let nowPlayingTrack = null;
+let nowPlayingArtworkUrl = null;
+let nowPlayingProgressTimer = null;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -945,6 +951,68 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
   });
 }
 
+function formatTrackClock(ms) {
+  const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
+
+function getLiveTrackProgress(track) {
+  if (!track) return { progressMs: 0, durationMs: 0 };
+  const durationMs = Math.max(0, Number(track.durationMs) || 0);
+  const base = Math.max(0, Number(track.progressMs) || 0);
+  if (!track.isPlaying) return { progressMs: base, durationMs };
+  const age = Math.max(0, Date.now() - (Number(track.updatedAt) || Date.now()));
+  const rate = Number(track.playbackRate) || 1;
+  const progressMs = durationMs > 0
+    ? Math.min(durationMs, base + Math.round(age * rate))
+    : base + Math.round(age * rate);
+  return { progressMs, durationMs };
+}
+
+function clearNowPlayingProgressTimer() {
+  if (nowPlayingProgressTimer) {
+    clearInterval(nowPlayingProgressTimer);
+    nowPlayingProgressTimer = null;
+  }
+}
+
+function updateNowPlayingProgressUi() {
+  if (!previewTrackProgress || !nowPlayingTrack?.title || selectedActivityId !== 'listening') {
+    if (previewTrackProgress) previewTrackProgress.hidden = true;
+    return;
+  }
+
+  const { progressMs, durationMs } = getLiveTrackProgress(nowPlayingTrack);
+  if (previewTrackElapsed) previewTrackElapsed.textContent = formatTrackClock(progressMs);
+  if (previewTrackDuration) {
+    previewTrackDuration.textContent = durationMs > 0 ? formatTrackClock(durationMs) : '--:--';
+  }
+  if (previewTrackFill) {
+    const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
+    previewTrackFill.style.width = `${pct}%`;
+  }
+  previewTrackProgress.hidden = false;
+}
+
+function applyNowPlayingArtwork(url) {
+  if (!url || selectedActivityId !== 'listening') return;
+  nowPlayingArtworkUrl = url;
+  previewEmoji.style.display = 'none';
+  previewGif.classList.remove('loaded');
+  previewGif.onload = () => {
+    previewGif.classList.add('loaded');
+    previewEmoji.style.display = 'none';
+  };
+  previewGif.onerror = () => {
+    previewGif.classList.remove('loaded');
+    previewGif.removeAttribute('src');
+    previewEmoji.style.display = '';
+  };
+  previewGif.src = url;
+}
+
 function applyNowPlayingPreview(activity) {
   if (!previewNowPlaying) return;
   const enabled = currentSettings.musicNowPlaying !== false;
@@ -953,6 +1021,11 @@ function applyNowPlayingPreview(activity) {
 
   if (track?.title) {
     previewDetails.textContent = track.title;
+    const { progressMs, durationMs } = getLiveTrackProgress(track);
+    const timeLabel = durationMs > 0
+      ? `${formatTrackClock(progressMs)} / ${formatTrackClock(durationMs)}`
+      : formatTrackClock(progressMs);
+
     if (track.isPlaying) {
       previewState.textContent = track.artist
         ? (track.album ? `${track.artist} — ${track.album}` : `by ${track.artist}`)
@@ -960,9 +1033,10 @@ function applyNowPlayingPreview(activity) {
     } else {
       previewState.textContent = track.artist ? `Paused · ${track.artist}` : 'Paused';
     }
+
     const hintParts = [];
     if (track.device) hintParts.push(track.device);
-    if (track.album && track.isPlaying) hintParts.push(track.album);
+    if (timeLabel) hintParts.push(timeLabel);
     if (!track.isPlaying) hintParts.push('Paused');
     const hint = hintParts.join(' · ');
     if (hint) {
@@ -972,8 +1046,15 @@ function applyNowPlayingPreview(activity) {
       previewNowPlaying.textContent = '';
       previewNowPlaying.hidden = true;
     }
+
+    updateNowPlayingProgressUi();
+    if (track.artworkUrl || nowPlayingArtworkUrl) {
+      applyNowPlayingArtwork(track.artworkUrl || nowPlayingArtworkUrl);
+    }
     return;
   }
+
+  if (previewTrackProgress) previewTrackProgress.hidden = true;
 
   if (activity) {
     previewDetails.textContent = activity.details;
@@ -981,6 +1062,7 @@ function applyNowPlayingPreview(activity) {
   }
   previewNowPlaying.textContent = '';
   previewNowPlaying.hidden = true;
+  if (previewTrackProgress) previewTrackProgress.hidden = true;
 }
 
 function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } = {}) {
@@ -997,6 +1079,8 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
       previewNowPlaying.textContent = '';
       previewNowPlaying.hidden = true;
     }
+    if (previewTrackProgress) previewTrackProgress.hidden = true;
+    clearNowPlayingProgressTimer();
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
@@ -1012,7 +1096,14 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
 
-  if (gifUrl && currentSettings.animationsEnabled !== false) {
+  const nowPlayingArt = activity?.id === 'listening'
+    && nowPlayingTrack?.title
+    && currentSettings.musicNowPlaying !== false
+    && (nowPlayingTrack.artworkUrl || nowPlayingArtworkUrl);
+
+  if (nowPlayingArt) {
+    applyNowPlayingArtwork(nowPlayingTrack.artworkUrl || nowPlayingArtworkUrl);
+  } else if (gifUrl && currentSettings.animationsEnabled !== false) {
     previewEmoji.style.display = 'none';
     previewGif.classList.remove('loaded');
     loadImageWithFallback(previewGif, [gifUrl, ...fallbackUrls], {
@@ -1409,6 +1500,8 @@ async function handleClear() {
   selectedActivityId = null;
   presencePaused = false;
   nowPlayingTrack = null;
+  nowPlayingArtworkUrl = null;
+  clearNowPlayingProgressTimer();
   clearRotateTimer();
   markGridSelection(null);
   lastRenderedGridKey = '';
@@ -2885,9 +2978,14 @@ async function init() {
 
   window.smiley.onNowPlayingUpdate((track) => {
     nowPlayingTrack = track;
+    if (track?.artworkUrl) nowPlayingArtworkUrl = track.artworkUrl;
     if (selectedActivityId !== 'listening') return;
     const activity = findActivity('listening');
     if (activity) applyNowPlayingPreview(activity);
+    clearNowPlayingProgressTimer();
+    if (track?.title) {
+      nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 1000);
+    }
   });
 
   window.smiley.onStatus((data) => {

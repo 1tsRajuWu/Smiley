@@ -90,6 +90,16 @@ function normalizeTrack(raw) {
 
   if (!title && !artist) return null;
 
+  const elapsedSec = Number(raw.elapsedSeconds ?? raw.elapsed ?? 0);
+  const durationSec = Number(raw.durationSeconds ?? raw.duration ?? 0);
+  let progressMs = Number(raw.progressMs || raw.trackProgress) || 0;
+  let durationMs = Number(raw.durationMs || raw.trackDuration) || 0;
+  if (!progressMs && elapsedSec > 0) progressMs = Math.round(elapsedSec * 1000);
+  if (!durationMs && durationSec > 0) durationMs = Math.round(durationSec * 1000);
+
+  // Always anchor live extrapolation to poll time — MR timestamp is song start, not sample time.
+  const updatedAt = Date.now();
+
   return {
     title: title || 'Unknown track',
     artist,
@@ -97,12 +107,39 @@ function normalizeTrack(raw) {
     isPlaying,
     device,
     artworkUrl,
-    progressMs: Number(raw.trackProgress || raw.progressMs) || 0,
-    durationMs: Number(raw.trackDuration || raw.durationMs) || 0,
+    progressMs,
+    durationMs,
+    updatedAt,
+    playbackRate: Number(raw.playbackRate) || (isPlaying ? 1 : 0),
+  };
+}
+
+function getLiveProgress(track) {
+  if (!track) return { progressMs: 0, durationMs: 0 };
+  const durationMs = Math.max(0, Number(track.durationMs) || 0);
+  const base = Math.max(0, Number(track.progressMs) || 0);
+  if (!track.isPlaying) return { progressMs: base, durationMs };
+  const age = Math.max(0, Date.now() - (Number(track.updatedAt) || Date.now()));
+  const rate = Number(track.playbackRate) || 1;
+  return {
+    progressMs: Math.min(durationMs || base + age, base + Math.round(age * rate)),
+    durationMs,
   };
 }
 
 function trackSignature(track) {
+  if (!track) return '';
+  return [
+    track.title,
+    track.artist,
+    track.album,
+    track.isPlaying ? '1' : '0',
+    track.device || '',
+    Math.floor((track.progressMs || 0) / 1000),
+  ].join('\0');
+}
+
+function trackMetaSignature(track) {
   if (!track) return '';
   return [
     track.title,
@@ -251,18 +288,22 @@ async function pollCurrentTrack() {
   return null;
 }
 
-function createNowPlayingService({ onUpdate, pollIntervalMs = 2000 } = {}) {
+function createNowPlayingService({ onUpdate, pollIntervalMs = 500 } = {}) {
   const NativeNowPlaying = loadNativeNowPlaying();
   let nativePlayer = null;
   let pollTimer = null;
-  let lastSignature = '';
+  let lastMetaSignature = '';
   let running = false;
+  const pollEveryMs = Math.max(250, pollIntervalMs || 500);
 
-  const emit = (raw) => {
+  const emit = (raw, { force = false } = {}) => {
     const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
-    const sig = trackSignature(track);
-    if (sig === lastSignature) return;
-    lastSignature = sig;
+    const metaSig = trackMetaSignature(track);
+    if (!force && metaSig === lastMetaSignature && track) {
+      onUpdate?.(track);
+      return;
+    }
+    if (metaSig !== lastMetaSignature) lastMetaSignature = metaSig;
     onUpdate?.(track);
   };
 
@@ -279,7 +320,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 2000 } = {}) {
   const startPolling = async () => {
     await pollOnce();
     if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(pollOnce, pollIntervalMs);
+    pollTimer = setInterval(pollOnce, pollEveryMs);
   };
 
   return {
@@ -287,7 +328,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 2000 } = {}) {
     async start() {
       if (running) return;
       running = true;
-      lastSignature = '';
+      lastMetaSignature = '';
 
       if (NativeNowPlaying) {
         try {
@@ -315,7 +356,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 2000 } = {}) {
         } catch (_) {}
         nativePlayer = null;
       }
-      lastSignature = '';
+      lastMetaSignature = '';
     },
   };
 }
@@ -324,6 +365,8 @@ module.exports = {
   createNowPlayingService,
   normalizeTrack,
   trackSignature,
+  trackMetaSignature,
+  getLiveProgress,
   loadNativeNowPlaying,
   pollCurrentTrack,
 };
