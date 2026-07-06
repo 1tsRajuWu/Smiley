@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('smiley', {
   getWallpaperPath: (filename) => ipcRenderer.invoke('get-wallpaper-path', filename),
   deleteWallpaper: (filename) => ipcRenderer.invoke('delete-wallpaper', filename),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  openSystemFocusSettings: () => ipcRenderer.invoke('open-system-focus-settings'),
   exportSettings: () => ipcRenderer.invoke('export-settings'),
   importSettings: () => ipcRenderer.invoke('import-settings'),
   toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),

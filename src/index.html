@@ -275,6 +275,28 @@
               <label class="toggle"><input type="checkbox" id="hotkeyToggle" checked /><span class="toggle-slider"></span></label>
             </div>
             <p class="field-hint" id="hotkeyHint">Shortcut: Cmd/Ctrl + Shift + S</p>
+            <div class="field system-focus-field" id="systemFocusField">
+              <span class="field-label">System Focus / Do Not Disturb</span>
+              <p class="field-hint" id="systemFocusHint" style="margin:0 0 10px;">
+                macOS: create two Shortcuts with a <strong>Set Focus</strong> action, then enter their names below.
+                Smiley runs them when you pick Deep focus, Sleeping, or In a meeting.
+              </p>
+              <div class="field toggle-field" style="margin-bottom:10px;">
+                <span class="field-label">Enable with focus activities</span>
+                <label class="toggle"><input type="checkbox" id="systemFocusToggle" /><span class="toggle-slider"></span></label>
+              </div>
+              <div class="field" id="systemFocusShortcutFields" hidden>
+                <label class="field-label" for="systemFocusShortcutOn">Focus On shortcut name (macOS)</label>
+                <input type="text" id="systemFocusShortcutOn" class="field-input" placeholder="Smiley Focus On" maxlength="128" />
+                <label class="field-label" for="systemFocusShortcutOff" style="margin-top:10px;display:block;">Focus Off shortcut name (macOS)</label>
+                <input type="text" id="systemFocusShortcutOff" class="field-input" placeholder="Smiley Focus Off" maxlength="128" />
+                <div class="field toggle-field" style="margin-top:10px;">
+                  <span class="field-label">Minimize to tray when enabling</span>
+                  <label class="toggle"><input type="checkbox" id="systemFocusMinimizeToggle" /><span class="toggle-slider"></span></label>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="openSystemFocusSettingsBtn" style="margin-top:8px;">Open system Focus settings</button>
+            </div>
             <div class="field" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
               <button type="button" class="btn btn-secondary" id="exportSettingsBtn">Export settings</button>
               <button type="button" class="btn btn-secondary" id="importSettingsBtn">Import settings</button>

@@ -1,4 +1,5 @@
 const os = require('os');
+const { execFile } = require('child_process');
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -207,6 +208,7 @@ const CONFIG_PATCH_KEYS = new Set([
   'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
   'autoCheckUpdates', 'autoInstallUpdates', 'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'migrationNoticeShown', 'installWarningShown',
+  'systemFocusEnabled', 'systemFocusShortcutOn', 'systemFocusShortcutOff', 'systemFocusMinimizeTray',
 ]);
 const MAX_COPY_TEXT_LEN = 2000;
 const MAX_IMPORT_BYTES = 512 * 1024;
@@ -232,8 +234,14 @@ const DEFAULT_CONFIG = {
   activityGifChoice: {},
   migrationNoticeShown: false,
   installWarningShown: false,
+  systemFocusEnabled: false,
+  systemFocusShortcutOn: 'Smiley Focus On',
+  systemFocusShortcutOff: 'Smiley Focus Off',
+  systemFocusMinimizeTray: false,
 };
+const DEFAULT_SYSTEM_FOCUS_ACTIVITIES = ['focus', 'sleeping', 'meeting'];
 let config = { ...DEFAULT_CONFIG };
+let systemFocusActive = false;
 let configMigrationNotice = null;
 
 function loadConfig() {
@@ -1034,6 +1042,83 @@ async function applyPresence(activity) {
   }
 }
 
+function isSystemFocusActivity(activity) {
+  if (!activity?.id) return false;
+  return DEFAULT_SYSTEM_FOCUS_ACTIVITIES.includes(activity.id);
+}
+
+function runMacShortcut(name) {
+  const trimmed = typeof name === 'string' ? name.trim().slice(0, 128) : '';
+  if (!trimmed) return Promise.resolve({ success: false, error: 'No shortcut name configured' });
+  return new Promise((resolve) => {
+    execFile('shortcuts', ['run', trimmed], { timeout: 15000 }, (err) => {
+      if (err) {
+        try {
+          shell.openExternal(`shortcuts://run-shortcut?name=${encodeURIComponent(trimmed)}`);
+          resolve({ success: true, method: 'url' });
+        } catch (urlErr) {
+          resolve({ success: false, error: err.message || urlErr.message });
+        }
+        return;
+      }
+      resolve({ success: true, method: 'cli' });
+    });
+  });
+}
+
+function openSystemFocusSettings() {
+  try {
+    if (process.platform === 'darwin') {
+      shell.openExternal('x-apple.systempreferences:com.apple.Focus-Settings.extension');
+      return { success: true };
+    }
+    if (process.platform === 'win32') {
+      shell.openExternal('ms-settings:quiethours');
+      return { success: true };
+    }
+    if (process.platform === 'linux') {
+      shell.openExternal('gnome-control-center notifications');
+      return { success: true };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+  return { success: false, error: 'Unsupported platform' };
+}
+
+async function enableSystemFocus() {
+  if (process.platform !== 'darwin') return { success: false, skipped: true };
+  const shortcutOn = config.systemFocusShortcutOn || DEFAULT_CONFIG.systemFocusShortcutOn;
+  const result = await runMacShortcut(shortcutOn);
+  if (result.success) systemFocusActive = true;
+  if (config.systemFocusMinimizeTray && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.hide();
+  }
+  return result;
+}
+
+async function disableSystemFocus() {
+  if (!systemFocusActive) return { success: true, skipped: true };
+  if (process.platform !== 'darwin') {
+    systemFocusActive = false;
+    return { success: false, skipped: true };
+  }
+  const shortcutOff = config.systemFocusShortcutOff || DEFAULT_CONFIG.systemFocusShortcutOff;
+  const result = await runMacShortcut(shortcutOff);
+  systemFocusActive = false;
+  return result;
+}
+
+async function syncSystemFocus(activity, isNewSession) {
+  if (!config.systemFocusEnabled) return;
+  const isFocus = activity && isSystemFocusActivity(activity);
+  if (isFocus && isNewSession) {
+    await enableSystemFocus();
+  } else if (!isFocus && systemFocusActive) {
+    await disableSystemFocus();
+  }
+}
+
 async function schedulePresenceUpdate(activity, isNewSession) {
   const safeActivity = sanitizeIncomingActivity(activity);
   if (!safeActivity) return { success: false, error: 'Invalid activity' };
@@ -1050,6 +1135,7 @@ async function schedulePresenceUpdate(activity, isNewSession) {
   };
 
   const result = await run();
+  await syncSystemFocus(safeActivity, isNewSession);
   updateTimer = setTimeout(async () => {
     updateTimer = null;
     if (pendingUpdate) await run();
@@ -1061,6 +1147,7 @@ async function schedulePresenceUpdate(activity, isNewSession) {
 async function clearPresence() {
   pendingUpdate = null;
   if (updateTimer) { clearTimeout(updateTimer); updateTimer = null; }
+  await syncSystemFocus(null, true);
   currentActivity = null;
   sessionStart = null;
   updateTrayIcon('default');
@@ -1829,6 +1916,10 @@ function setupIPC() {
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
     customWallpaper: config.customWallpaper || null,
+    systemFocusEnabled: config.systemFocusEnabled === true,
+    systemFocusShortcutOn: config.systemFocusShortcutOn || DEFAULT_CONFIG.systemFocusShortcutOn,
+    systemFocusShortcutOff: config.systemFocusShortcutOff || DEFAULT_CONFIG.systemFocusShortcutOff,
+    systemFocusMinimizeTray: config.systemFocusMinimizeTray === true,
     isMac: process.platform === 'darwin',
     macAdHocUpdates: process.platform === 'darwin',
     releasesUrl: GITHUB_RELEASES_URL,
@@ -2097,6 +2188,8 @@ function setupIPC() {
   });
 
   ipcMain.handle('delete-wallpaper', (_, filename) => deleteWallpaperFile(filename));
+
+  ipcMain.handle('open-system-focus-settings', () => openSystemFocusSettings());
 
   ipcMain.handle('open-external', (_, url) => {
     try {
