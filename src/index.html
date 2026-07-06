@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https://api.waifu.pics https://cdn.waifu.im https://i.waifu.pics https://media.tenor.com; connect-src 'self' https://api.waifu.pics https://raw.githubusercontent.com;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://api.waifu.pics;"
     />
     <title>Smiley</title>
     <link rel="stylesheet" href="styles.css" />
@@ -16,20 +16,7 @@
       <header class="header">
         <div class="brand">
           <div class="brand-icon" id="brandIcon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" width="40" height="40">
-              <defs>
-                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#7aa2f7;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#bb9af7;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#logoGrad)" />
-              <circle cx="19" cy="20" r="4" fill="#1a1b26" /><circle cx="19" cy="19" r="1.5" fill="#fff" />
-              <circle cx="29" cy="20" r="4" fill="#1a1b26" /><circle cx="29" cy="19" r="1.5" fill="#fff" />
-              <path d="M16 30 Q24 38 32 30" stroke="#1a1b26" stroke-width="2.5" fill="none" stroke-linecap="round" />
-              <circle cx="14" cy="32" r="2" fill="#f7768e" opacity="0.6" />
-              <circle cx="34" cy="32" r="2" fill="#f7768e" opacity="0.6" />
-            </svg>
+            <img src="assets/icon.png" alt="" width="40" height="40" class="brand-icon-img" />
           </div>
           <div>
             <h1>Smiley</h1>
@@ -110,7 +97,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v2.0</span>
+        <span class="footer-version" id="footerVersion">Smiley v2.0.1</span>
         <span class="footer-hint">Updates rate-limited to ~15s by Discord</span>
       </footer>
     </div>
@@ -130,11 +117,10 @@
         </div>
         <div class="modal-body">
           <div class="settings-panel active" data-panel="general">
-            <label class="field">
-              <span class="field-label">Discord Application Client ID</span>
-              <input type="password" id="clientIdInput" placeholder="123456789012345678" pattern="[0-9]+" required />
-              <span class="field-hint">Create a free app at <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a> → copy Application ID</span>
-            </label>
+            <div class="field" style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-xs);padding:12px 14px;">
+              <span class="field-label" style="color:var(--accent);">🔒 Discord Connected</span>
+              <p class="field-hint" style="margin:0;">Smiley is pre-configured — just pick an activity and go!</p>
+            </div>
             <label class="field">
               <span class="field-label">Donation link</span>
               <input type="url" id="donationInput" placeholder="https://paypal.me/you" />
@@ -187,12 +173,16 @@
                 <svg viewBox="0 0 48 48" width="64" height="64">
                   <defs><linearGradient id="aboutLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#7aa2f7;stop-opacity:1" /><stop offset="100%" style="stop-color:#bb9af7;stop-opacity:1" /></linearGradient></defs>
                   <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#aboutLogoGrad)" />
-                  <circle cx="19" cy="20" r="4" fill="#1a1b26" /><circle cx="19" cy="19" r="1.5" fill="#fff" />
-                  <circle cx="29" cy="20" r="4" fill="#1a1b26" /><circle cx="29" cy="19" r="1.5" fill="#fff" />
-                  <path d="M16 30 Q24 38 32 30" stroke="#1a1b26" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                  <ellipse cx="17" cy="20" rx="5" ry="6" fill="#1a1b26" />
+                  <ellipse cx="17" cy="18" rx="2.5" ry="3" fill="#fff" />
+                  <ellipse cx="31" cy="20" rx="5" ry="6" fill="#1a1b26" />
+                  <ellipse cx="31" cy="18" rx="2.5" ry="3" fill="#fff" />
+                  <path d="M18 32 Q24 38 30 32" stroke="#1a1b26" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                  <ellipse cx="13" cy="28" rx="3" ry="2" fill="#f7768e" opacity="0.5" />
+                  <ellipse cx="35" cy="28" rx="3" ry="2" fill="#f7768e" opacity="0.5" />
                 </svg>
               </div>
-              <h3>Smiley v2.0</h3>
+              <h3>Smiley v2.0.1</h3>
               <p class="about-desc">Discord Rich Presence with animated anime characters and beautiful UI.</p>
               <div class="about-links">
                 <a class="about-link" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener"><span>💝</span> Support on PayPal</a>

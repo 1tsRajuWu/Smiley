@@ -44,7 +44,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 10px; -webkit-app-region: drag; }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-icon { animation: logoBounce 3s ease-in-out infinite; }
-.brand-icon svg { filter: drop-shadow(0 2px 8px rgba(122,162,247,0.3)); }
+.brand-icon-img { border-radius: 10px; filter: drop-shadow(0 2px 8px rgba(122,162,247,0.3)); }
 @keyframes logoBounce { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-3px) scale(1.05)} }
 .brand h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; background: linear-gradient(135deg,var(--accent),#bb9af7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 .tagline { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }

@@ -18,9 +18,8 @@ const searchInput = $('#searchInput');
 const settingsBtn = $('#settingsBtn');
 const minimizeBtn = $('#minimizeBtn');
 const settingsModal = $('#settingsModal');
-const settingsForm = $('#settingsForm');
+const saveSettingsBtn = $('#saveSettingsBtn');
 const closeSettings = $('#closeSettings');
-const clientIdInput = $('#clientIdInput');
 const donationInput = $('#donationInput');
 const donateBanner = $('#donateBanner');
 const toastContainer = $('#toastContainer');
@@ -99,7 +98,20 @@ function startTimer(start) {
   timerInterval = setInterval(tick, 1000);
 }
 
-// ─── GIF Loading (async, with proper sequencing) ─────────────────────
+function discordImageForActivity(activity, gifUrl) {
+  const url =
+    (gifUrl && /^https?:\/\//i.test(gifUrl) ? gifUrl : null) ||
+    activity.fallbackGif ||
+    null;
+  if (url) {
+    return {
+      largeImageUrl: url,
+      largeImageText: activity.largeImageText || activity.details,
+      fallbackGif: activity.fallbackGif,
+    };
+  }
+  return { fallbackGif: activity.fallbackGif };
+}
 async function resolveGifUrl(category) {
   if (activeCustomAnimation) return { url: activeCustomAnimation, source: 'Custom' };
 
@@ -271,13 +283,13 @@ async function selectActivity(id) {
   // Update preview (includes async GIF loading)
   await updatePreview(activity);
 
+  // Pass HTTPS GIF URLs to Discord; local/data URLs fall back to uploaded asset keys
+  const imageFields = discordImageForActivity(activity, currentGifUrl);
   const rpcPayload = {
     details: activity.details,
     state: activity.state,
-    largeImageKey: activity.largeImageKey,
-    largeImageText: activity.largeImageText,
-    smallImageKey: 'smiley',
-    smallImageText: 'Smiley',
+    category: activity.category,
+    ...imageFields,
   };
 
   const result = await window.smiley.setActivity(rpcPayload, !isReselect);
@@ -305,7 +317,6 @@ async function handleClear() {
 function openSettings(tab = 'general') {
   window.smiley.getConfig().then((cfg) => {
     currentSettings = { ...cfg };
-    clientIdInput.value = cfg.clientId || '';
     donationInput.value = cfg.donationUrl || 'https://paypal.me/1tsRaj';
     autoConnectToggle.checked = cfg.autoConnect !== false;
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
@@ -331,17 +342,10 @@ function switchSettingsTab(tabId) {
 }
 
 async function handleSaveSettings(e) {
-  e.preventDefault();
-  const clientId = clientIdInput.value.trim();
+  if (e) e.preventDefault();
   const donationUrl = donationInput.value.trim() || 'https://paypal.me/1tsRaj';
 
-  if (!/^\d+$/.test(clientId)) {
-    showToast('Client ID must be numeric', 'error');
-    return;
-  }
-
   const newSettings = {
-    clientId,
     donationUrl,
     autoConnect: autoConnectToggle.checked,
     minimizeToTray: minimizeTrayToggle.checked,
@@ -464,21 +468,19 @@ function setupDragDrop() {
 // ─── Legal Modal ─────────────────────────────────────────────────────
 async function showLegal(type) {
   const titles = { tos: 'Terms of Service', privacy: 'Privacy Policy' };
-  const files = { tos: 'ToS.md', privacy: 'PRIVACY.md' };
+  const files = { tos: '../ToS.md', privacy: '../PRIVACY.md' };
   legalTitle.textContent = titles[type] || 'Legal';
   legalBody.innerHTML = '<p>Loading...</p>';
   legalModal.showModal();
   try {
     const res = await fetch(files[type]);
     const text = await res.text();
-    // Better markdown to HTML
     let html = text
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')
       .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Simple table handling
     if (html.includes('|')) {
       const lines = html.split('<br>');
       const processed = lines.map((line) => {
@@ -519,7 +521,7 @@ async function init() {
   settingsBtn.addEventListener('click', () => openSettings('general'));
   minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
   closeSettings.addEventListener('click', () => settingsModal.close());
-  settingsForm.addEventListener('submit', handleSaveSettings);
+  if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
 
   searchInput.addEventListener('input', (e) => {
@@ -559,7 +561,7 @@ async function init() {
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
   if (closeLegal) closeLegal.addEventListener('click', () => legalModal.close());
 
-  // Check for Updates button (inside settings modal)
+  // Check for Updates button
   const checkUpdateBtn = $('#checkUpdateBtn');
   if (checkUpdateBtn) {
     checkUpdateBtn.addEventListener('click', () => {
@@ -591,10 +593,7 @@ async function init() {
 
   window.smiley.onInitialConnect((result) => {
     if (result.connected) setConnectionStatus(true);
-    else {
-      setConnectionStatus(false, result.error);
-      if (result.error?.includes('Client ID')) setTimeout(() => openSettings('general'), 500);
-    }
+    else setConnectionStatus(false, result.error);
   });
 
   window.smiley.onOpenSettings(() => openSettings('general'));
@@ -607,9 +606,9 @@ async function init() {
   if (cfg.version) footerVersion.textContent = `Smiley v${cfg.version}`;
   if (cfg.donationUrl) donateBanner.href = cfg.donationUrl;
 
+  // Prompt setup when Client ID is missing
   if (!cfg.hasValidClientId) {
-    setConnectionStatus(false, 'Set your Client ID');
-    setTimeout(() => openSettings('general'), 800);
+    setConnectionStatus(false, 'Discord not configured');
   }
 
   // Restore previous activity

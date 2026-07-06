@@ -7,8 +7,9 @@ const { autoUpdater } = require('electron-updater');
 
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 const EXAMPLE_CONFIG = path.join(__dirname, 'config.example.json');
+const DISCORD_APP_CONFIG = path.join(__dirname, 'discord.app.json');
 
 function getUserDataPath(...segments) {
   return path.join(app.getPath('userData'), ...segments);
@@ -65,8 +66,25 @@ function decryptConfig(encryptedObj) {
 }
 
 // ─── Config ──────────────────────────────────────────────────────────
+// Client ID is baked into discord.app.json at build time — not user-editable
+function loadDiscordClientId() {
+  try {
+    if (fs.existsSync(DISCORD_APP_CONFIG)) {
+      const appConfig = JSON.parse(fs.readFileSync(DISCORD_APP_CONFIG, 'utf8'));
+      const id = String(appConfig.clientId || '').trim();
+      if (id && id !== 'YOUR_DISCORD_APPLICATION_CLIENT_ID' && /^\d+$/.test(id)) {
+        return id;
+      }
+    }
+  } catch (err) {
+    console.error('[loadDiscordClientId]', err.message);
+  }
+  const fromEnv = String(process.env.DISCORD_CLIENT_ID || '').trim();
+  return /^\d+$/.test(fromEnv) ? fromEnv : '';
+}
+
+const BUNDLED_CLIENT_ID = loadDiscordClientId();
 const DEFAULT_CONFIG = {
-  clientId: '',
   donationUrl: 'https://paypal.me/1tsRaj',
   theme: 'dark',
   showTimer: true,
@@ -76,7 +94,6 @@ const DEFAULT_CONFIG = {
   autoConnect: true,
   minimizeToTray: true,
 };
-
 let config = { ...DEFAULT_CONFIG };
 
 function loadConfig() {
@@ -87,11 +104,13 @@ function loadConfig() {
       const raw = JSON.parse(fs.readFileSync(securePath, 'utf8'));
       const decrypted = decryptConfig(raw);
       config = { ...DEFAULT_CONFIG, ...decrypted };
+      delete config.clientId;
       return;
     }
     if (fs.existsSync(legacyPath)) {
       const old = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
       config = { ...DEFAULT_CONFIG, ...old };
+      delete config.clientId;
       fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
       try { fs.unlinkSync(legacyPath); } catch (_) {}
       return;
@@ -99,6 +118,7 @@ function loadConfig() {
     if (fs.existsSync(EXAMPLE_CONFIG)) {
       const example = JSON.parse(fs.readFileSync(EXAMPLE_CONFIG, 'utf8'));
       config = { ...DEFAULT_CONFIG, ...example };
+      delete config.clientId;
       fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
       return;
     }
@@ -108,8 +128,13 @@ function loadConfig() {
   config = { ...DEFAULT_CONFIG };
 }
 
+function getClientId() {
+  return BUNDLED_CLIENT_ID;
+}
+
 function saveConfig(data) {
-  config = { ...config, ...data };
+  const { clientId: _ignored, ...safeData } = data || {};
+  config = { ...config, ...safeData };
   try {
     const securePath = getUserDataPath('config.secure');
     fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
@@ -174,6 +199,15 @@ function getDefaultTrayIcon() {
   return generateTrayIcon(TRAY_COLORS.default);
 }
 
+function getAppIcon() {
+  const iconPath = path.join(__dirname, 'build', 'icon.png');
+  if (fs.existsSync(iconPath)) {
+    const img = nativeImage.createFromPath(iconPath);
+    if (!img.isEmpty()) return img;
+  }
+  return getDefaultTrayIcon();
+}
+
 // ─── Window ──────────────────────────────────────────────────────────
 function createWindow() {
   const state = getWindowState();
@@ -196,7 +230,7 @@ function createWindow() {
       webSecurity: true,
       experimentalFeatures: false,
     },
-    icon: getDefaultTrayIcon(),
+    icon: getAppIcon(),
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
@@ -221,7 +255,8 @@ function createWindow() {
 
 // ─── Tray ────────────────────────────────────────────────────────────
 function createTray() {
-  tray = new Tray(getDefaultTrayIcon());
+  const icon = getAppIcon().resize({ width: 16, height: 16 });
+  tray = new Tray(icon);
   tray.setToolTip('Smiley — Discord Rich Presence');
   updateTrayMenu();
   tray.on('double-click', () => {
@@ -258,21 +293,22 @@ function updateTrayIcon(category) {
 
 // ─── Discord RPC ─────────────────────────────────────────────────────
 async function connectRPC() {
-  if (!config.clientId || config.clientId === 'YOUR_DISCORD_APPLICATION_CLIENT_ID') {
-    return { connected: false, error: 'Set your Client ID in Settings' };
+  const clientId = getClientId();
+  if (!clientId) {
+    return { connected: false, error: 'App not configured — set Client ID in discord.app.json before building' };
   }
   if (rpcClient) {
     try { await rpcClient.destroy(); } catch (_) {}
     rpcClient = null;
   }
-  RPC.register(config.clientId);
+  RPC.register(clientId);
   rpcClient = new RPC.Client({ transport: 'ipc' });
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
       resolve({ connected: false, error: 'Discord not responding — is it open?' });
     }, 8000);
     rpcClient.once('ready', () => { clearTimeout(timeout); resolve({ connected: true }); });
-    rpcClient.login({ clientId: config.clientId }).catch((err) => {
+    rpcClient.login({ clientId }).catch((err) => {
       clearTimeout(timeout);
       resolve({ connected: false, error: err.message || 'Could not connect to Discord' });
     });
@@ -286,14 +322,21 @@ function buildActivityPayload(activity) {
     startTimestamp: sessionStart || Date.now(),
     instance: false,
   };
-  if (activity.largeImageKey) {
-    payload.largeImageKey = activity.largeImageKey;
+
+  // Discord shows the app/bot logo when the image key is missing or invalid.
+  // Always use a direct HTTPS GIF URL for the large image (animated on Discord).
+  const imageUrl =
+    activity.largeImageUrl ||
+    activity.discordImageUrl ||
+    (activity.largeImageKey && /^https?:\/\//i.test(activity.largeImageKey) ? activity.largeImageKey : null) ||
+    activity.fallbackGif;
+
+  if (imageUrl) {
+    payload.largeImageKey = imageUrl;
     payload.largeImageText = activity.largeImageText || activity.details;
   }
-  if (activity.smallImageKey) {
-    payload.smallImageKey = activity.smallImageKey;
-    payload.smallImageText = activity.smallImageText || 'Smiley';
-  }
+
+  // No small_image — invalid asset keys show the bot logo as an overlay
   if (activity.buttons?.length) payload.buttons = activity.buttons.slice(0, 2);
   return payload;
 }
@@ -317,7 +360,7 @@ async function applyPresence(activity) {
   }
 }
 
-function schedulePresenceUpdate(activity, isNewSession) {
+async function schedulePresenceUpdate(activity, isNewSession) {
   if (isNewSession) sessionStart = Date.now();
   pendingUpdate = activity;
   if (updateTimer) return { success: true, queued: true };
@@ -326,16 +369,17 @@ function schedulePresenceUpdate(activity, isNewSession) {
     const toApply = pendingUpdate;
     pendingUpdate = null;
     updateTimer = null;
-    if (toApply) await applyPresence(toApply);
+    if (toApply) return applyPresence(toApply);
+    return { success: true };
   };
 
-  run();
-  updateTimer = setTimeout(() => {
+  const result = await run();
+  updateTimer = setTimeout(async () => {
     updateTimer = null;
-    if (pendingUpdate) run();
+    if (pendingUpdate) await run();
   }, 15000);
 
-  return { success: true };
+  return result || { success: true };
 }
 
 async function clearPresence() {
@@ -358,7 +402,7 @@ function broadcastStatus() {
     connected: !!rpcClient,
     activity: currentActivity,
     sessionStart,
-    clientId: config.clientId,
+    // clientId intentionally hidden from UI
     donationUrl: config.donationUrl,
     settings: {
       theme: config.theme || 'dark',
@@ -377,6 +421,9 @@ function broadcastStatus() {
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+
+  if (isDev) return;
 
   autoUpdater.on('checking-for-update', () => {
     if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'checking' });
@@ -483,9 +530,8 @@ function imageToDataUrl(filePath) {
 // ─── IPC ─────────────────────────────────────────────────────────────
 function setupIPC() {
   ipcMain.handle('get-config', () => ({
-    clientId: config.clientId || '',
+    hasValidClientId: !!getClientId(),
     donationUrl: config.donationUrl || 'https://paypal.me/1tsRaj',
-    hasValidClientId: !!(config.clientId && config.clientId !== 'YOUR_DISCORD_APPLICATION_CLIENT_ID'),
     theme: config.theme || 'dark',
     showTimer: config.showTimer !== false,
     animationsEnabled: config.animationsEnabled !== false,
@@ -496,20 +542,15 @@ function setupIPC() {
   }));
 
   ipcMain.handle('save-config', async (_, data) => {
-    if (data.clientId !== undefined && data.clientId && !/^\d+$/.test(data.clientId)) {
-      return { connected: false, error: 'Client ID must be numeric' };
-    }
     saveConfig(data);
-    if (data.clientId !== undefined && rpcClient) {
-      try { await rpcClient.destroy(); } catch (_) {}
-      rpcClient = null;
-    }
-    if (data.clientId !== undefined) return connectRPC();
+    if (config.autoConnect !== false && !rpcClient) return connectRPC();
     return { connected: !!rpcClient };
   });
 
   ipcMain.handle('connect-rpc', () => connectRPC());
-  ipcMain.handle('set-activity', (_, activity, isNewSession = true) => schedulePresenceUpdate(activity, isNewSession));
+  ipcMain.handle('set-activity', async (_, activity, isNewSession = true) =>
+    schedulePresenceUpdate(activity, isNewSession)
+  );
   ipcMain.handle('clear-activity', () => clearPresence());
   ipcMain.handle('get-status', () => ({ connected: !!rpcClient, activity: currentActivity, sessionStart }));
 
@@ -545,8 +586,11 @@ function setupIPC() {
   ipcMain.handle('delete-custom-animation', (_, name) => {
     const dir = getCustomAnimationsDir();
     const safeName = sanitizeFilename(name);
-    const filePath = path.join(dir, safeName);
-    if (!filePath.startsWith(dir)) return { success: false, error: 'Invalid path' };
+    const filePath = path.resolve(path.join(dir, safeName));
+    const resolvedDir = path.resolve(dir);
+    if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) {
+      return { success: false, error: 'Invalid path' };
+    }
     try {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       return { success: true };
@@ -593,6 +637,11 @@ app.whenReady().then(async () => {
         mainWindow.webContents.send('initial-connect', result);
       });
     }
+  } else if (mainWindow) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      broadcastStatus();
+      mainWindow.webContents.send('initial-connect', { connected: false, error: null });
+    });
   }
 });
 
