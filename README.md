@@ -166,7 +166,7 @@ Smiley ships with a bundled Client ID. You don't touch the Developer Portal.
 
 ## 🔧 Troubleshooting
 
-**Mac (ad-hoc signed):** in-app restart updates often fail — download the latest **DMG** from [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) for major updates.
+**Mac (ad-hoc signed):** Smiley does **not** auto-install on macOS — when an update is available, use **Get update** or download the latest **DMG** from [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases/latest), drag into Applications, and relaunch. If you still see a code-signature error, you are on an older build — install the DMG once manually to get v4.1.1+.
 
 <details>
 <summary><strong>macOS says it "can't verify" Smiley</strong></summary>
@@ -194,13 +194,26 @@ v4.0 onward ships the **installer only** on Windows. Portable builds were droppe
 </details>
 
 <details>
-<summary><strong>Mac in-app update didn't work</strong></summary>
+<summary><strong>Mac in-app update / code signature error</strong></summary>
 
-Smiley is **ad-hoc signed** (no Apple Developer ID yet). macOS Squirrel **ShipIt** validates code signatures when installing zip updates — ad-hoc builds usually fail with a "code signature … did not pass validation" error on **Restart**.
+Smiley is **ad-hoc signed** (no Apple Developer ID yet). macOS Squirrel **ShipIt** validates code signatures when installing zip updates — ad-hoc builds fail with errors like *"code signature … did not pass validation"* if you click **Restart** on an old version.
 
-**What to do:** download the latest **DMG** from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) and drag into Applications. The app will show a **Get update** button instead of Restart when it detects this.
+**v4.1.1+** checks for updates but **never downloads or installs** zip updates on Mac — you get a **Get update** button that opens GitHub Releases.
 
-Auto-update on macOS also needs the **.zip** artifact in the release (not just the DMG). If the download stalls, use the DMG manually.
+**One-time fix if you're stuck on an old version:**
+
+1. Quit Smiley completely (Cmd+Q).
+2. Download the latest **DMG** for your Mac ([Apple Silicon arm64](https://github.com/1tsRajuWu/Smiley/releases/latest) or Intel x64) from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
+3. Open the DMG, drag **Smiley** into **Applications** (replace the existing app).
+4. Right-click → **Open** the first time if Gatekeeper blocks it.
+5. Relaunch from Applications — future updates use **Get update** + DMG, not Restart.
+
+Optional cleanup if ShipIt errors persist after upgrading:
+
+```bash
+rm -rf ~/Library/Caches/com.smiley.rpc.ShipIt
+xattr -cr /Applications/Smiley.app
+```
 </details>
 
 <details>

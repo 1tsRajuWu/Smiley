@@ -1129,15 +1129,28 @@ function applyUpdaterSettings() {
   if (!isPackaged) return;
   try {
     const autoUpdater = getAutoUpdater();
-    autoUpdater.autoDownload = true;
-    // macOS ad-hoc: ShipIt always rejects in-app install — manual DMG download only
+    // macOS ad-hoc: never download/install zip — Squirrel ShipIt rejects ad-hoc signatures
     if (process.platform === 'darwin') {
+      autoUpdater.autoDownload = false;
       autoUpdater.autoInstallOnAppQuit = false;
     } else {
+      autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
     }
     autoUpdater.autoRunAppAfterInstall = false;
   } catch (_) {}
+}
+
+function guardMacUpdaterQuitAndInstall() {
+  if (process.platform !== 'darwin') return;
+  const autoUpdater = getAutoUpdater();
+  if (autoUpdater.__macQuitAndInstallGuarded) return;
+  autoUpdater.__macQuitAndInstallGuarded = true;
+  autoUpdater.quitAndInstall = () => {
+    console.warn('[updater] quitAndInstall blocked on macOS — install via DMG from GitHub Releases');
+    const payload = buildManualInstallPayload();
+    sendUpdateStatus(payload);
+  };
 }
 
 function clearDownloadStallTimer() {
@@ -1170,7 +1183,7 @@ function buildManualInstallPayload(version = pendingUpdateVersion) {
   return {
     ok: false,
     status: 'manual-install-required',
-    message: `Update ready — download ${verLabel} from GitHub (Mac builds install via DMG).`,
+    message: `Update ${verLabel} is available — download the DMG from GitHub and drag into Applications.`,
     version: version || null,
     releasesUrl: GITHUB_RELEASES_URL,
     expected: true,
@@ -1178,16 +1191,20 @@ function buildManualInstallPayload(version = pendingUpdateVersion) {
 }
 
 function isUpdateSignatureError(msg) {
+  const lower = String(msg || '').toLowerCase();
   return (
-    msg.includes('not signed') ||
-    msg.includes('invalid_signature') ||
-    msg.includes('signature verification') ||
-    msg.includes('signed by the application owner') ||
-    msg.includes('code signature') ||
-    msg.includes('did not pass validation') ||
-    msg.includes('code requirement') ||
-    msg.includes('satisfy specified code requirement') ||
-    msg.includes('shipit')
+    lower.includes('not signed') ||
+    lower.includes('invalid_signature') ||
+    lower.includes('signature verification') ||
+    lower.includes('signed by the application owner') ||
+    lower.includes('code signature') ||
+    lower.includes('did not pass validation') ||
+    lower.includes('code requirement') ||
+    lower.includes('satisfy specified code requirement') ||
+    lower.includes('shipit') ||
+    lower.includes('notariz') ||
+    lower.includes('codesign') ||
+    (lower.includes('signed') && (lower.includes('fail') || lower.includes('invalid') || lower.includes('requirement')))
   );
 }
 
@@ -1383,6 +1400,7 @@ function setupAutoUpdater() {
   try {
     const autoUpdater = getAutoUpdater();
     applyUpdaterSettings();
+    guardMacUpdaterQuitAndInstall();
     autoUpdater.allowPrerelease = false;
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
@@ -1404,20 +1422,20 @@ function setupAutoUpdater() {
       finishUpdateCheck();
       silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
-      if (updateDownloaded && pendingUpdateVersion === info.version) {
-        if (isMacAdHocUpdater()) {
-          const payload = buildManualInstallPayload(info.version);
-          sendUpdateStatus(payload);
-          resolveManualUpdate(payload);
-        } else {
-          sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
-          resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
-        }
-        return;
-      }
       updateDownloaded = false;
       lastDownloadPercent = 0;
       clearDownloadStallTimer();
+      if (isMacAdHocUpdater()) {
+        const payload = buildManualInstallPayload(info.version);
+        sendUpdateStatus(payload);
+        resolveManualUpdate(payload);
+        return;
+      }
+      if (updateDownloaded && pendingUpdateVersion === info.version) {
+        sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        return;
+      }
       const payload = { status: 'available', version: info.version, percent: 0 };
       sendUpdateStatus(payload);
       resolveManualUpdate({ ok: true, status: 'available', version: info.version });
@@ -1440,6 +1458,7 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('download-progress', (progress) => {
+      if (isMacAdHocUpdater()) return;
       lastDownloadPercent = Math.min(99, Math.round(progress.percent || 0));
       resetDownloadStallTimer();
       sendUpdateStatus({
@@ -1474,8 +1493,8 @@ function setupAutoUpdater() {
       updateDownloaded = false;
       lastDownloadPercent = 0;
       const formatted = formatUpdateError(err, failedVersion);
-      // Suppress raw ShipIt / code-signature errors — always manual DMG on macOS
-      if (isMacAdHocUpdater() && (isUpdateSignatureError(String(err?.message || '')) || formatted.status === 'error')) {
+      // macOS: never surface raw ShipIt / signature errors — manual DMG only
+      if (isMacAdHocUpdater()) {
         const payload = buildManualInstallPayload(failedVersion);
         sendUpdateStatus(payload);
         resolveManualUpdate(payload);

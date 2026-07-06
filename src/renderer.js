@@ -259,6 +259,8 @@ function applyPlatformUI(cfg = {}) {
   document.body.classList.toggle('has-window-controls', !isMacPlatform);
   if (updateRestartBtn) updateRestartBtn.hidden = isMacPlatform;
   if (updateGetBtn) updateGetBtn.hidden = !isMacPlatform;
+  const autoInstallField = autoInstallUpdatesToggle?.closest('.toggle-field');
+  if (autoInstallField) autoInstallField.hidden = isMacPlatform;
   applyUpiVisibility();
 }
 
@@ -1633,23 +1635,26 @@ function isUpdateSignatureError(msg) {
     lower.includes('invalid_signature') ||
     lower.includes('not signed') ||
     lower.includes('signed by the application owner') ||
-    lower.includes('shipit')
+    lower.includes('shipit') ||
+    lower.includes('notariz') ||
+    lower.includes('codesign') ||
+    (lower.includes('signed') && (lower.includes('fail') || lower.includes('invalid') || lower.includes('requirement')))
   );
 }
 
 function buildManualUpdateMessage(version) {
   return version
-    ? `Update couldn't install automatically. Download v${version} from GitHub.`
-    : "Update couldn't install automatically. Download the latest version from GitHub.";
+    ? `Update v${version} is ready — download the DMG from GitHub.`
+    : 'Update available — download the latest DMG from GitHub.';
 }
 
 function syncUpdateBannerButtons() {
-  const macManual = macAdHocUpdates && (updateState.downloaded || updateState.manualInstall);
+  const macManual = macAdHocUpdates && (updateState.version || updateState.downloaded || updateState.manualInstall);
   if (updateGetBtn) {
     updateGetBtn.disabled = !macManual;
     updateGetBtn.title = macManual
       ? 'Download the DMG from GitHub (Mac updates install manually)'
-      : 'Available after update is detected';
+      : 'Available when an update is detected';
   }
   if (!updateRestartBtn || macAdHocUpdates) return;
   updateRestartBtn.disabled = !updateState.downloaded;
@@ -1677,6 +1682,14 @@ function handleUpdateStatus(data) {
       break;
     case 'available':
       updateCheckingToastShown = false;
+      if (macAdHocUpdates) {
+        handleUpdateStatus({
+          ...data,
+          status: 'manual-install-required',
+          message: buildManualUpdateMessage(data.version),
+        });
+        break;
+      }
       updateState = { downloaded: false, manualInstall: false, dismissed: false, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       showToast(`Update v${data.version} available! Downloading...`);
@@ -1684,6 +1697,7 @@ function handleUpdateStatus(data) {
       updateBanner?.classList.add('visible');
       break;
     case 'downloading':
+      if (macAdHocUpdates) break;
       updateState.downloaded = false;
       updateState.percent = data.percent ?? updateState.percent;
       if (updateState.dismissed) break;
@@ -2052,6 +2066,10 @@ async function init() {
   if (updateRestartBtn) {
     updateRestartBtn.disabled = true;
     updateRestartBtn.addEventListener('click', async () => {
+      if (macAdHocUpdates) {
+        window.smiley.openExternal(releasesUrl);
+        return;
+      }
       if (!updateState.downloaded) {
         showToast('Download still in progress — try again when ready', 'error');
         return;
