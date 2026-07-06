@@ -22,6 +22,7 @@ const {
   loadRegistryConfig,
   registerInstall,
 } = require('./electron/install-registry');
+const { createMusicSync } = require('./electron/music-sync');
 
 function getRPC() {
   return require('discord-rpc');
@@ -191,6 +192,205 @@ function normalizeReleaseVersion(version) {
   return ver;
 }
 
+function compareReleaseVersions(a, b) {
+  const parse = (version) => normalizeReleaseVersion(version)
+    .split(/[-+]/)[0]
+    .split('.')
+    .map((part) => parseInt(part, 10) || 0);
+  const av = parse(a);
+  const bv = parse(b);
+  const len = Math.max(av.length, bv.length);
+  for (let i = 0; i < len; i += 1) {
+    const diff = (av[i] || 0) - (bv[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+function extractVersionFromZipPath(zipPath) {
+  if (!zipPath) return '';
+  const base = path.basename(zipPath, '.zip');
+  const withArch = base.match(/^Smiley-(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)-(?:arm64|x64|mac|universal)$/i);
+  if (withArch) return normalizeReleaseVersion(withArch[1]);
+  const plain = base.match(/^Smiley-(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)$/i);
+  if (plain) return normalizeReleaseVersion(plain[1]);
+  try {
+    const infoPath = path.join(path.dirname(zipPath), 'update-info.json');
+    if (fs.existsSync(infoPath)) {
+      const info = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
+      const fromInfo = normalizeReleaseVersion(info?.version);
+      if (fromInfo) return fromInfo;
+    }
+  } catch (_) {}
+  return '';
+}
+
+function resolveUpdateVersion(explicitVersion) {
+  const fromExplicit = normalizeReleaseVersion(explicitVersion);
+  if (fromExplicit) return fromExplicit;
+  const fromPending = normalizeReleaseVersion(pendingUpdateVersion);
+  if (fromPending) return fromPending;
+  return extractVersionFromZipPath(getMacDownloadedZipPath());
+}
+
+function isCachedMacUpdateInstallable() {
+  const zipPath = getMacDownloadedZipPath();
+  if (!zipPath) return false;
+  try {
+    if (fs.statSync(zipPath).size <= 1024 * 1024) return false;
+  } catch {
+    return false;
+  }
+  const ver = resolveUpdateVersion();
+  return !!ver && compareReleaseVersions(ver, APP_VERSION) > 0;
+}
+
+function getGithubReleasesApiUrl() {
+  try {
+    const parsed = new URL(GITHUB_REPO_URL);
+    if (parsed.hostname.replace(/^www\./, '') !== 'github.com') return null;
+    const parts = parsed.pathname.replace(/^\/+|\/+$/g, '').split('/');
+    if (parts.length < 2) return null;
+    return `https://api.github.com/repos/${parts[0]}/${parts[1]}/releases/latest`;
+  } catch {
+    return null;
+  }
+}
+
+function isMacMetadataMissingError(err) {
+  const msg = String(err?.message || err || '').toLowerCase();
+  return (
+    msg.includes('latest-mac.yml') ||
+    msg.includes('latest.yml') ||
+    msg.includes('latest-linux.yml') ||
+    (msg.includes('404') && (msg.includes('mac') || msg.includes('release')))
+  );
+}
+
+function httpGetJson(url, { maxRedirects = 5, timeout = 15000 } = {}) {
+  return new Promise((resolve, reject) => {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      reject(new Error('Invalid URL'));
+      return;
+    }
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (host !== 'api.github.com' && host !== 'github.com') {
+      reject(new Error('Host not allowed'));
+      return;
+    }
+    const lib = parsed.protocol === 'http:' ? require('http') : require('https');
+    const req = lib.get(
+      url,
+      {
+        headers: {
+          'User-Agent': `Smiley/${APP_VERSION}`,
+          Accept: 'application/vnd.github+json',
+        },
+        timeout,
+      },
+      (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && maxRedirects > 0) {
+          const next = res.headers.location.startsWith('http')
+            ? res.headers.location
+            : new URL(res.headers.location, url).href;
+          httpGetJson(next, { maxRedirects: maxRedirects - 1, timeout }).then(resolve).catch(reject);
+          return;
+        }
+        let body = '';
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > 512000) {
+            req.destroy();
+            reject(new Error('Response too large'));
+          }
+        });
+        res.on('end', () => resolve({ status: res.statusCode, body, finalUrl: url }));
+      },
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timed out'));
+    });
+  });
+}
+
+async function checkMacUpdateViaGithubApi() {
+  const apiUrl = getGithubReleasesApiUrl();
+  if (!apiUrl) {
+    return { ok: false, status: 'error', error: 'Could not resolve GitHub releases API URL.' };
+  }
+  const { status, body } = await httpGetJson(apiUrl);
+  if (status !== 200) {
+    return {
+      ok: false,
+      status: 'no-release',
+      message: 'No update on GitHub yet — download the latest installer from github.com/1tsRajuWu/Smiley/releases',
+      expected: true,
+    };
+  }
+  let release;
+  try {
+    release = JSON.parse(body);
+  } catch {
+    return { ok: false, status: 'error', error: 'Could not parse GitHub release info.' };
+  }
+  const ver = normalizeReleaseVersion(release?.tag_name);
+  if (!ver) {
+    return { ok: false, status: 'error', error: 'Could not parse release version from GitHub.' };
+  }
+  if (compareReleaseVersions(ver, APP_VERSION) <= 0) {
+    return { ok: true, status: 'up-to-date', version: APP_VERSION };
+  }
+  pendingUpdateVersion = ver;
+  if (isCachedMacUpdateInstallable()) {
+    updateDownloaded = true;
+    lastDownloadPercent = 100;
+    const payload = buildMacUpdateReadyPayload(ver);
+    sendUpdateStatus(payload);
+    return { ok: true, status: 'downloaded', version: ver };
+  }
+  sendUpdateStatus({
+    status: 'available',
+    version: ver,
+    percent: 0,
+    macInApp: true,
+  });
+  const download = await downloadMacUpdateZip(ver);
+  if (download.success) {
+    return { ok: true, status: 'downloaded', version: ver };
+  }
+  return {
+    ok: true,
+    status: 'available',
+    version: ver,
+    message: download.error || 'Update available — click Install update to download.',
+  };
+}
+
+async function tryMacGithubReleaseFallback() {
+  if (!isMacInAppUpdater()) return null;
+  try {
+    return await checkMacUpdateViaGithubApi();
+  } catch (err) {
+    appendUpdaterLog(`GitHub API fallback failed: ${err.message}`);
+    return null;
+  }
+}
+
+function notifyMacCachedUpdateIfReady() {
+  if (!isMacInAppUpdater() || !isCachedMacUpdateInstallable()) return false;
+  const ver = resolveUpdateVersion();
+  pendingUpdateVersion = ver;
+  updateDownloaded = true;
+  lastDownloadPercent = 100;
+  sendUpdateStatus(buildMacUpdateReadyPayload(ver));
+  return true;
+}
+
 function buildMacDmgDownloadUrl(version) {
   const ver = normalizeReleaseVersion(version);
   const arch = getMacDmgArch();
@@ -238,7 +438,7 @@ function isAllowedGithubDownloadUrl(url) {
 const MAC_ADHOC_DISTRIBUTION = true;
 const MAC_IN_APP_UPDATES = process.platform === 'darwin';
 const DEFAULT_RPC_BUTTONS = [
-  { label: 'Download Smiley', url: GITHUB_REPO_URL },
+  { label: 'Download', url: GITHUB_REPO_URL },
 ];
 // SSRF guard — only fetch GIFs from known CDNs
 const ALLOWED_GIF_HOSTS = [
@@ -288,7 +488,7 @@ const CONFIG_PATCH_KEYS = new Set([
   'autoCheckUpdates', 'autoInstallUpdates', 'installTrackingEnabled', 'shareAnonymousInstallStats',
   'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'activityProfiles', 'rotateFavorites', 'sessionStats',
-  'migrationNoticeShown', 'installWarningShown',
+  'migrationNoticeShown', 'installWarningShown', 'musicNowPlaying', 'musicNowPlayingAlbumArt',
 ]);
 const MAX_ACTIVITY_PROFILES = 8;
 const MAX_PROFILE_ACTIVITIES = 10;
@@ -320,6 +520,8 @@ const DEFAULT_CONFIG = {
   sessionStats: {},
   migrationNoticeShown: false,
   installWarningShown: false,
+  musicNowPlaying: true,
+  musicNowPlayingAlbumArt: true,
 };
 let config = { ...DEFAULT_CONFIG };
 let configMigrationNotice = null;
@@ -541,6 +743,8 @@ function sanitizeConfigPatch(data) {
       case 'autoInstallUpdates':
       case 'migrationNoticeShown':
       case 'installWarningShown':
+      case 'musicNowPlaying':
+      case 'musicNowPlayingAlbumArt':
         out[key] = val === true;
         break;
       case 'installTrackingEnabled':
@@ -677,6 +881,24 @@ let updateTimer = null;
 let sessionStart = null;
 let currentTrayIcon = 'default';
 let pausedPresenceSnapshot = null;
+let musicSync = null;
+
+function getMusicSync() {
+  if (!musicSync) {
+    musicSync = createMusicSync({
+      getConfig: () => config,
+      schedulePresenceUpdate,
+      sendToRenderer: (track) => {
+        if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('now-playing-update', track);
+        }
+      },
+      updateTrayMenu,
+      isPaused: isPresencePaused,
+    });
+  }
+  return musicSync;
+}
 
 function recordSessionStatsForActivity(activityId, startedAt) {
   if (!activityId || !startedAt) return;
@@ -707,6 +929,7 @@ async function pausePresence() {
   if (rpcClient) {
     try { await rpcClient.clearActivity(); } catch (_) {}
   }
+  getMusicSync().stop();
   broadcastStatus(true);
   return { success: true };
 }
@@ -718,7 +941,11 @@ async function resumePresence() {
   const { activity, sessionStart: prevStart } = pausedPresenceSnapshot;
   pausedPresenceSnapshot = null;
   sessionStart = prevStart || Date.now();
-  return applyPresence(activity);
+  const result = await applyPresence(activity);
+  if (result?.success && activity?.id === 'listening' && config.musicNowPlaying !== false) {
+    getMusicSync().start(activity);
+  }
+  return result;
 }
 
 function isPresencePaused() {
@@ -1210,6 +1437,12 @@ function updateTrayMenu() {
     { label: 'Show Smiley', click: () => showMainWindow() },
     { type: 'separator' },
     { label: currentActivity ? `Status: ${currentActivity.details}` : (pausedPresenceSnapshot ? 'Paused' : 'No status set'), enabled: false },
+    ...(currentActivity?.musicTrack?.title
+      ? [{ label: `♪ ${currentActivity.musicTrack.title}${currentActivity.musicTrack.artist ? ` — ${currentActivity.musicTrack.artist}` : ''}`, enabled: false }]
+      : []),
+    ...(currentActivity?.musicTrack?.device
+      ? [{ label: `via ${currentActivity.musicTrack.device}`, enabled: false }]
+      : []),
     { label: sessionLabel, enabled: false },
     { label: 'Clear Presence', click: () => clearPresence(), enabled: !!currentActivity },
     ...(pausedPresenceSnapshot
@@ -1378,6 +1611,14 @@ async function schedulePresenceUpdate(activity, isNewSession) {
     if (pendingUpdate) await run();
   }, 15000);
 
+  if (safeActivity.id === 'listening' && config.musicNowPlaying !== false) {
+    if (safeActivity.details === 'Listening to music') {
+      getMusicSync().start(safeActivity);
+    }
+  } else if (safeActivity.id !== 'listening') {
+    getMusicSync().stop();
+  }
+
   return result || { success: true };
 }
 
@@ -1390,6 +1631,7 @@ async function clearPresence() {
   pausedPresenceSnapshot = null;
   currentActivity = null;
   sessionStart = null;
+  getMusicSync().stop();
   updateTrayIcon('default');
   updateTrayMenu();
   if (rpcClient) {
@@ -1655,11 +1897,15 @@ async function downloadMacUpdateZip(version) {
 
   const existingZip = getMacDownloadedZipPath();
   if (existingZip) {
-    updateDownloaded = true;
-    lastDownloadPercent = 100;
-    const payload = buildMacUpdateReadyPayload(ver);
-    sendUpdateStatus(payload);
-    return { success: true, ...payload };
+    const zipVer = resolveUpdateVersion(ver);
+    if (zipVer && compareReleaseVersions(zipVer, APP_VERSION) > 0) {
+      pendingUpdateVersion = zipVer;
+      updateDownloaded = true;
+      lastDownloadPercent = 100;
+      const payload = buildMacUpdateReadyPayload(zipVer);
+      sendUpdateStatus(payload);
+      return { success: true, ...payload };
+    }
   }
 
   const destPath = getMacZipPathForVersion(ver);
@@ -1987,7 +2233,8 @@ function installMacUpdate() {
 }
 
 function buildMacUpdateReadyPayload(version = pendingUpdateVersion) {
-  const ver = normalizeReleaseVersion(version) || null;
+  const ver = resolveUpdateVersion(version);
+  if (!ver) return null;
   return {
     ok: true,
     status: 'downloaded',
@@ -2147,6 +2394,16 @@ async function checkForUpdates(manual = false, silent = false) {
       finishUpdateCheck();
       silentUpdateCheck = false;
       console.error('[updater]', err.message);
+      if (isMacInAppUpdater() && isMacMetadataMissingError(err)) {
+        const fallback = await tryMacGithubReleaseFallback();
+        if (fallback) {
+          sendUpdateStatus(fallback.status === 'up-to-date'
+            ? { status: 'up-to-date', version: fallback.version || APP_VERSION }
+            : fallback);
+          resolveManualUpdate(fallback);
+          return fallback;
+        }
+      }
       const formatted = formatUpdateError(err);
       sendUpdateStatus(formatted);
       resolveManualUpdate(formatted);
@@ -2161,6 +2418,17 @@ async function checkForUpdates(manual = false, silent = false) {
     finishUpdateCheck();
     silentUpdateCheck = false;
     console.error('[updater]', err.message);
+    if (isMacInAppUpdater() && isMacMetadataMissingError(err)) {
+      const fallback = await tryMacGithubReleaseFallback();
+      if (fallback) {
+        if (!silent) {
+          sendUpdateStatus(fallback.status === 'up-to-date'
+            ? { status: 'up-to-date', version: fallback.version || APP_VERSION, silent }
+            : fallback);
+        }
+        return fallback;
+      }
+    }
     const formatted = formatUpdateError(err);
     if (!silent) sendUpdateStatus(formatted);
     return formatted;
@@ -2168,11 +2436,11 @@ async function checkForUpdates(manual = false, silent = false) {
 }
 
 function isUpdateReadyToInstall() {
-  if (!isPackaged || !pendingUpdateVersion) return false;
+  if (!isPackaged) return false;
   if (process.platform === 'darwin') {
-    return !!getMacDownloadedZipPath();
+    return isCachedMacUpdateInstallable();
   }
-  if (!updateDownloaded) return false;
+  if (!pendingUpdateVersion || !updateDownloaded) return false;
   const helper = getAutoUpdater().downloadedUpdateHelper;
   if (helper?.file || helper?.packageFile) return true;
   return false;
@@ -2255,9 +2523,10 @@ function setupAutoUpdater() {
         resolveManualUpdate({ ok: true, status: 'available', version: info.version });
         getAutoUpdater().downloadUpdate().catch(async (err) => {
           appendUpdaterLog(`Mac downloadUpdate failed: ${err.message}`);
-          if (isUpdateSignatureError(err?.message) && getMacDownloadedZipPath()) {
+          if (isUpdateSignatureError(err?.message) && isCachedMacUpdateInstallable()) {
             updateDownloaded = true;
-            sendUpdateStatus(buildMacUpdateReadyPayload(info.version));
+            const payload = buildMacUpdateReadyPayload(info.version);
+            if (payload) sendUpdateStatus(payload);
             return;
           }
           const fallback = await downloadMacUpdateZip(info.version);
@@ -2317,8 +2586,10 @@ function setupAutoUpdater() {
       lastDownloadPercent = 100;
       if (isMacInAppUpdater()) {
         const payload = buildMacUpdateReadyPayload(info.version);
-        sendUpdateStatus(payload);
-        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        if (payload) {
+          sendUpdateStatus(payload);
+          resolveManualUpdate({ ok: true, status: 'downloaded', version: payload.version });
+        }
       } else {
         sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
         resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
@@ -2333,22 +2604,38 @@ function setupAutoUpdater() {
       const failedVersion = pendingUpdateVersion;
       updateDownloaded = false;
       lastDownloadPercent = 0;
+      if (isMacInAppUpdater() && isMacMetadataMissingError(err)) {
+        tryMacGithubReleaseFallback().then((fallback) => {
+          if (fallback) {
+            resolveManualUpdate(fallback);
+            return;
+          }
+          const formatted = formatUpdateError(err, failedVersion);
+          sendUpdateStatus(formatted);
+          resolveManualUpdate(formatted);
+        });
+        return;
+      }
       const formatted = formatUpdateError(err, failedVersion);
       if (isMacInAppUpdater() && isUpdateSignatureError(err?.message)) {
         appendUpdaterLog(`Suppressed signature error: ${err?.message || err}`);
-        if (getMacDownloadedZipPath()) {
+        if (isCachedMacUpdateInstallable()) {
           updateDownloaded = true;
-          const payload = buildMacUpdateReadyPayload(failedVersion);
-          sendUpdateStatus(payload);
-          resolveManualUpdate({ ok: true, status: 'downloaded', version: failedVersion });
+          const payload = buildMacUpdateReadyPayload();
+          if (payload) {
+            sendUpdateStatus(payload);
+            resolveManualUpdate({ ok: true, status: 'downloaded', version: payload.version });
+          }
         }
         return;
       }
-      if (isMacInAppUpdater() && getMacDownloadedZipPath()) {
+      if (isMacInAppUpdater() && isCachedMacUpdateInstallable()) {
         updateDownloaded = true;
-        const payload = buildMacUpdateReadyPayload(failedVersion);
-        sendUpdateStatus(payload);
-        resolveManualUpdate({ ok: true, status: 'downloaded', version: failedVersion });
+        const payload = buildMacUpdateReadyPayload();
+        if (payload) {
+          sendUpdateStatus(payload);
+          resolveManualUpdate({ ok: true, status: 'downloaded', version: payload.version });
+        }
         return;
       }
       if (isMacInAppUpdater()) {
@@ -2376,6 +2663,9 @@ function setupAutoUpdater() {
     });
   } catch (err) {
     console.error('[updater] setup failed:', err.message);
+  }
+  if (isMacInAppUpdater()) {
+    notifyMacCachedUpdateIfReady();
   }
 }
 
@@ -2925,6 +3215,7 @@ function setupIPC() {
     hasValidClientId: !!getClientId(),
     donationUrl: DONATION_URL,
     theme: config.theme || 'dark',
+    uiVersion: config.uiVersion === 'v1' ? 'v1' : 'v2',
     showTimer: config.showTimer !== false,
     animationsEnabled: config.animationsEnabled !== false,
     customAnimation: config.customAnimation || null,
@@ -2944,6 +3235,8 @@ function setupIPC() {
     activityProfiles: config.activityProfiles || [],
     rotateFavorites: config.rotateFavorites || { enabled: false, intervalMinutes: 15 },
     sessionStats: config.sessionStats || {},
+    musicNowPlaying: config.musicNowPlaying !== false,
+    musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
     presencePaused: isPresencePaused(),
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
@@ -2974,7 +3267,12 @@ function setupIPC() {
   });
 
   ipcMain.handle('save-config', async (_, data) => {
+    const prevMusicSync = config.musicNowPlaying !== false;
     saveConfig(data);
+    const nextMusicSync = config.musicNowPlaying !== false;
+    if (prevMusicSync !== nextMusicSync) {
+      getMusicSync().handleConfigChange(nextMusicSync);
+    }
     applyLaunchAtLogin();
     registerGlobalHotkey();
     applyUpdaterSettings();
@@ -3018,6 +3316,9 @@ function setupIPC() {
           error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
         };
       }
+      if (!pendingUpdateVersion) {
+        pendingUpdateVersion = resolveUpdateVersion() || null;
+      }
       if (!isUpdateReadyToInstall()) {
         if (!pendingUpdateVersion) {
           return {
@@ -3053,7 +3354,8 @@ function setupIPC() {
           };
         }
         updateDownloaded = true;
-        sendUpdateStatus(buildMacUpdateReadyPayload(pendingUpdateVersion));
+        const readyPayload = buildMacUpdateReadyPayload(pendingUpdateVersion);
+        if (readyPayload) sendUpdateStatus(readyPayload);
       }
       const result = installMacUpdate();
       if (result.success) return result;
@@ -3479,6 +3781,7 @@ app.on('activate', () => {
 app.on('before-quit', async () => {
   app.isQuitting = true;
   globalShortcut.unregisterAll();
+  if (musicSync) await musicSync.stop();
   await flushRendererPendingConfig();
   saveWindowState();
   flushConfigToDisk();

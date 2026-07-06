@@ -5,6 +5,8 @@ Smiley’s **main process** entry point is still **`main.js` at the repo root** 
 | File | Purpose |
 |------|---------|
 | `install-registry.js` | Re-exports `src/install-registry.js` — default-on install/usage tracking (Supabase) |
+| `now-playing.js` | System media detection (Spotify, Apple Music, YouTube Music, …) |
+| `music-sync.js` | Keeps Discord presence in sync while **Listening to music** is active |
 
 ## Reading `main.js` (≈3,300 lines)
 

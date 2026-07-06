@@ -470,8 +470,8 @@ body.has-window-controls .app-header {
 .discord-card.active { border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
 .discord-card-glow { position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, var(--card-glow,transparent), transparent 70%); opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
 .discord-card.active .discord-card-glow { opacity: 1; }
-.discord-card-inner { display: flex; gap: 14px; padding: 14px; position: relative; align-items: center; }
-.discord-art { width: 56px; height: 56px; border-radius: 12px; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; transition: var(--transition); }
+.discord-card-inner { display: flex; gap: 16px; padding: 16px; position: relative; align-items: center; }
+.discord-art { width: 64px; height: 64px; border-radius: 12px; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; transition: var(--transition); }
 .discord-card.active .discord-art { animation: artPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes artPop { 0%{transform:scale(0.8)} 100%{transform:scale(1)} }
 .discord-art-emoji { font-size: 1.8rem; animation: float 3s ease-in-out infinite; }
@@ -480,9 +480,10 @@ body.has-window-controls .app-header {
 .discord-art:has(.discord-art-gif.loaded) .discord-art-emoji { display: none; }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
 .discord-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.discord-app-name { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 3px; }
+.discord-app-name { display: none; }
 .discord-details { font-size: 0.9rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: var(--transition); }
 .discord-state { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.discord-now-playing { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .discord-timer { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); opacity: 0; transform: translateY(4px); transition: var(--transition); }
 .discord-card.active .discord-timer { opacity: 1; transform: translateY(0); }
 .session-badge { margin-left: 4px; font-size: 0.68rem; color: var(--text-muted); background: var(--bg-elevated); padding: 1px 6px; border-radius: 4px; }
