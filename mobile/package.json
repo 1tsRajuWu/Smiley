@@ -1,9 +1,10 @@
 {
   "name": "smiley-mobile",
-  "version": "3.1.4",
+  "version": "3.1.8",
   "private": true,
-  "description": "Smiley — Capacitor Android companion app",
+  "description": "Smiley v3.1.8 — Capacitor companion for Android & iOS",
   "scripts": {
+    "icons:android": "npx capacitor-assets generate --android --iconBackgroundColor '#1a1b26' --splashBackgroundColor '#0f1117'",
     "build:www": "node scripts/build-www.js",
     "build": "npm run build:www && vite build",
     "dev": "npm run build:www && vite",
@@ -27,6 +28,7 @@
     "@capacitor/status-bar": "^6.0.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.2.0",
     "typescript": "~5.7.0",
     "vite": "^6.0.0"
