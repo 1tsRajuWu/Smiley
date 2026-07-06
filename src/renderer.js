@@ -1795,35 +1795,35 @@ function setUpdateBannerProgress(percent, visible = true) {
 }
 
 function syncUpdateBannerButtons() {
-  const macDmgFallback = isMacPlatform && (
-    updateState.dmgReady || updateState.dmgDownloading || updateState.manualInstall
-  ) && !updateState.downloaded;
   if (updateDownloadBtn) {
-    updateDownloadBtn.hidden = !isMacPlatform || (!macDmgFallback && macInAppUpdates);
-    if (updateState.dmgReady) {
-      updateDownloadBtn.textContent = 'Open downloaded file';
-      updateDownloadBtn.disabled = false;
-      updateDownloadBtn.title = buildMacInstallInstructions();
-    } else if (updateState.dmgDownloading) {
-      updateDownloadBtn.textContent = `Downloading… ${updateState.percent}%`;
-      updateDownloadBtn.disabled = true;
-      updateDownloadBtn.title = 'Download in progress';
-    } else {
-      updateDownloadBtn.textContent = 'Download DMG';
-      updateDownloadBtn.disabled = !macDmgFallback;
-      updateDownloadBtn.title = macDmgFallback
-        ? 'Fallback: download the DMG installer from GitHub'
-        : 'Available if in-app install fails';
+    // Mac in-app updates: one button only (like Windows) — no DMG fallback in the UI.
+    updateDownloadBtn.hidden = !isMacPlatform || macInAppUpdates || !(
+      updateState.dmgReady || updateState.dmgDownloading || updateState.manualInstall
+    );
+    if (!updateDownloadBtn.hidden) {
+      if (updateState.dmgReady) {
+        updateDownloadBtn.textContent = 'Open downloaded file';
+        updateDownloadBtn.disabled = false;
+      } else if (updateState.dmgDownloading) {
+        updateDownloadBtn.textContent = `Downloading… ${updateState.percent}%`;
+        updateDownloadBtn.disabled = true;
+      } else {
+        updateDownloadBtn.textContent = 'Download update';
+        updateDownloadBtn.disabled = !updateState.manualInstall;
+      }
     }
   }
   if (!updateRestartBtn) return;
   updateRestartBtn.hidden = false;
   if (macInAppUpdates && isMacPlatform) {
-    updateRestartBtn.disabled = !updateState.downloaded;
+    const busy = !!updateState.version && !updateState.downloaded;
+    updateRestartBtn.disabled = false;
     updateRestartBtn.textContent = updateState.downloaded ? 'Install update' : 'Install update';
     updateRestartBtn.title = updateState.downloaded
       ? 'Smiley will restart with the new version'
-      : 'Available after download completes';
+      : busy
+        ? 'Download in progress — click to install when ready'
+        : 'Install the available update';
     return;
   }
   updateRestartBtn.disabled = !updateState.downloaded;
@@ -1834,6 +1834,25 @@ function syncUpdateBannerButtons() {
 }
 
 function showMacUpdateAvailable(data) {
+  if (macInAppUpdates) {
+    updateState = {
+      downloaded: false,
+      manualInstall: false,
+      dismissed: false,
+      percent: 0,
+      version: data.version || null,
+      dmgDownloading: false,
+      dmgReady: false,
+    };
+    setUpdateBannerProgress(0, true);
+    syncUpdateBannerButtons();
+    if (updateBannerText) {
+      const ver = data.version ? `v${data.version}` : 'update';
+      updateBannerText.textContent = `Downloading ${ver}… 0%`;
+    }
+    updateBanner?.classList.add('visible');
+    return;
+  }
   updateState = {
     downloaded: false,
     manualInstall: true,
@@ -2383,16 +2402,18 @@ async function init() {
     });
   }
   if (updateRestartBtn) {
-    updateRestartBtn.disabled = true;
     updateRestartBtn.addEventListener('click', async () => {
       if (macInAppUpdates && isMacPlatform) {
-        if (!updateState.downloaded) {
-          showToast('Download still in progress — try again when ready', 'error');
+        if (!updateState.version) {
+          showToast('No update found — check for updates first.', 'error');
           return;
         }
+        updateRestartBtn.disabled = true;
         const result = await window.smiley.installUpdate();
-        if (!result?.success) {
-          showToast(result?.error || 'Could not install update. Try Download DMG.', 'error');
+        updateRestartBtn.disabled = false;
+        syncUpdateBannerButtons();
+        if (!result?.success && result?.error) {
+          showToast(result.error, 'error');
         }
         return;
       }

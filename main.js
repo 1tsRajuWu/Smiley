@@ -1596,35 +1596,78 @@ function getMacAppBundlePath() {
   return null;
 }
 
+function findZipInDirectory(dir) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  const infoPath = path.join(dir, 'update-info.json');
+  if (fs.existsSync(infoPath)) {
+    try {
+      const info = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
+      if (info?.fileName) {
+        const zipPath = path.join(dir, info.fileName);
+        if (fs.existsSync(zipPath)) return zipPath;
+      }
+    } catch (_) {}
+  }
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const zips = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.zip'));
+    if (zips.length === 1) return path.join(dir, zips[0].name);
+    if (zips.length > 1) {
+      const sorted = zips
+        .map((entry) => path.join(dir, entry.name))
+        .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+      return sorted[0];
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const nested = findZipInDirectory(path.join(dir, entry.name));
+      if (nested) return nested;
+    }
+  } catch (_) {}
+  return null;
+}
+
 function getMacDownloadedZipPath() {
   try {
     const autoUpdater = getAutoUpdater();
     const helper = autoUpdater.downloadedUpdateHelper;
     if (helper?.file && fs.existsSync(helper.file)) return helper.file;
     if (helper?.packageFile && fs.existsSync(helper.packageFile)) return helper.packageFile;
-    const pendingDir = helper?.cacheDirForPendingUpdate || path.join(getUpdaterCacheDir(), 'pending');
-    if (fs.existsSync(pendingDir)) {
-      const infoPath = path.join(pendingDir, 'update-info.json');
-      if (fs.existsSync(infoPath)) {
-        try {
-          const info = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
-          if (info?.fileName) {
-            const zipPath = path.join(pendingDir, info.fileName);
-            if (fs.existsSync(zipPath)) return zipPath;
-          }
-        } catch (_) {}
-      }
-      try {
-        const zips = fs.readdirSync(pendingDir).filter((f) => f.endsWith('.zip'));
-        if (zips.length === 1) return path.join(pendingDir, zips[0]);
-      } catch (_) {}
+
+    const pendingDirs = new Set();
+    if (helper?.cacheDirForPendingUpdate) pendingDirs.add(helper.cacheDirForPendingUpdate);
+    for (const cacheRoot of getUpdaterCacheCandidates()) {
+      pendingDirs.add(path.join(cacheRoot, 'pending'));
+      pendingDirs.add(cacheRoot);
     }
-    const cachedZip = path.join(getUpdaterCacheDir(), 'update.zip');
-    if (fs.existsSync(cachedZip)) return cachedZip;
+
+    for (const dir of pendingDirs) {
+      const zipPath = findZipInDirectory(dir);
+      if (zipPath) return zipPath;
+    }
   } catch (err) {
     appendUpdaterLog(`getMacDownloadedZipPath failed: ${err.message}`);
   }
   return null;
+}
+
+function waitForMacDownloadedZip(timeoutMs = 120000) {
+  const started = Date.now();
+  return new Promise((resolve) => {
+    const tick = () => {
+      const zipPath = getMacDownloadedZipPath();
+      if (zipPath) {
+        resolve(zipPath);
+        return;
+      }
+      if (Date.now() - started >= timeoutMs) {
+        resolve(null);
+        return;
+      }
+      setTimeout(tick, 500);
+    };
+    tick();
+  });
 }
 
 function shellQuoteForBash(value) {
@@ -1717,9 +1760,11 @@ function installMacUpdate() {
     return { success: false, error: 'Update is not ready to install. Wait for the download to finish.', fallback: true };
   }
 
-  const cacheRoot = path.resolve(getUpdaterCacheDir());
   const resolvedZip = path.resolve(zipPath);
-  if (!resolvedZip.startsWith(cacheRoot + path.sep)) {
+  const allowedRoots = getUpdaterCacheCandidates()
+    .map((dir) => path.resolve(dir))
+    .filter((dir) => resolvedZip === dir || resolvedZip.startsWith(dir + path.sep));
+  if (!allowedRoots.length) {
     appendUpdaterLog(`Rejected zip outside updater cache: ${resolvedZip}`);
     return { success: false, error: 'Invalid update cache path.', fallback: true };
   }
@@ -1940,9 +1985,14 @@ function isUpdateReadyToInstall() {
 function installPendingUpdate() {
   if (isMacInAppUpdater()) {
     const result = installMacUpdate();
-    if (!result.success && result.fallback) {
-      const payload = buildManualInstallPayload();
-      sendUpdateStatus(payload);
+    if (!result.success && result.error) {
+      sendUpdateStatus({
+        ok: false,
+        status: 'error',
+        error: result.error,
+        version: pendingUpdateVersion || null,
+        expected: true,
+      });
     }
     return result.success;
   }
@@ -2007,6 +2057,21 @@ function setupAutoUpdater() {
         };
         sendUpdateStatus(payload);
         resolveManualUpdate({ ok: true, status: 'available', version: info.version });
+        getAutoUpdater().downloadUpdate().catch((err) => {
+          appendUpdaterLog(`Mac downloadUpdate failed: ${err.message}`);
+          if (isUpdateSignatureError(err?.message) && getMacDownloadedZipPath()) {
+            updateDownloaded = true;
+            sendUpdateStatus(buildMacUpdateReadyPayload(info.version));
+            return;
+          }
+          sendUpdateStatus({
+            ok: false,
+            status: 'error',
+            error: 'Could not download update. Check your connection and try again.',
+            version: info.version,
+            expected: true,
+          });
+        });
         return;
       }
       if (updateDownloaded && pendingUpdateVersion === info.version) {
@@ -2089,7 +2154,13 @@ function setupAutoUpdater() {
         return;
       }
       if (isMacInAppUpdater()) {
-        const payload = buildManualInstallPayload(failedVersion);
+        const payload = {
+          ok: false,
+          status: 'error',
+          error: 'Could not download update. Check your connection and try Check for updates again.',
+          version: failedVersion || null,
+          expected: true,
+        };
         sendUpdateStatus(payload);
         resolveManualUpdate(payload);
         return;
@@ -2466,7 +2537,18 @@ function clearChromiumCaches() {
 }
 
 function getUpdaterCacheDir() {
-  return path.join(getAppCacheDir(), app.getName());
+  return path.join(getAppCacheDir(), `${app.getName()}-updater`);
+}
+
+function getUpdaterCacheCandidates() {
+  const base = getAppCacheDir();
+  const names = [
+    `${app.getName()}-updater`,
+    app.getName(),
+    'smiley-rpc-updater',
+    'com.smiley.rpc-updater',
+  ];
+  return [...new Set(names.map((name) => path.join(base, name)))];
 }
 
 function getShipItCacheDir() {
@@ -2474,17 +2556,24 @@ function getShipItCacheDir() {
 }
 
 function cleanStaleUpdaterCache({ force = false } = {}) {
-  if (!force && updateDownloaded && pendingUpdateVersion) {
+  if (!force && (updateDownloaded || pendingUpdateVersion || getMacDownloadedZipPath())) {
     return { skipped: true, reason: 'pending-install' };
   }
-  const dir = getUpdaterCacheDir();
-  if (!fs.existsSync(dir)) return { cleared: false };
-  removePathSync(dir);
-  if (!force) {
+  let cleared = false;
+  for (const dir of getUpdaterCacheCandidates()) {
+    if (!fs.existsSync(dir)) continue;
+    const pendingDir = path.join(dir, 'pending');
+    if (fs.existsSync(pendingDir) && findZipInDirectory(pendingDir)) {
+      continue;
+    }
+    removePathSync(dir);
+    cleared = true;
+  }
+  if (cleared && !force) {
     updateDownloaded = false;
     pendingUpdateVersion = null;
   }
-  return { cleared: true };
+  return { cleared };
 }
 
 function cleanOrphanedWallpapers() {
@@ -2702,24 +2791,46 @@ function setupIPC() {
           error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
         };
       }
-      if (isUpdateReadyToInstall()) {
-        const result = installMacUpdate();
-        if (result.success) return result;
-        if (result.fallback) {
-          const ver = pendingUpdateVersion;
-          const destPath = macDmgDownloadedPath || (ver ? getMacDmgPathForVersion(ver) : null);
-          if (isValidDownloadedDmg(destPath)) return openMacDownloadedDmg(ver);
-          return downloadMacUpdateDmg(ver);
+      if (!isUpdateReadyToInstall()) {
+        if (!pendingUpdateVersion) {
+          return {
+            success: false,
+            error: 'No update found. Click Check for updates first.',
+          };
         }
-        return result;
+        try {
+          sendUpdateStatus({
+            status: 'downloading',
+            percent: lastDownloadPercent || 0,
+            version: pendingUpdateVersion,
+            macInApp: true,
+          });
+          await getAutoUpdater().downloadUpdate();
+        } catch (err) {
+          appendUpdaterLog(`downloadUpdate on install failed: ${err.message}`);
+          if (!isUpdateSignatureError(err?.message) || !getMacDownloadedZipPath()) {
+            return {
+              success: false,
+              error: 'Could not download update. Check your connection and try again.',
+            };
+          }
+        }
+        const zipPath = await waitForMacDownloadedZip();
+        if (!zipPath) {
+          return {
+            success: false,
+            error: 'Update download is taking too long. Try Check for updates again in a moment.',
+          };
+        }
+        updateDownloaded = true;
+        sendUpdateStatus(buildMacUpdateReadyPayload(pendingUpdateVersion));
       }
-      try {
-        await getAutoUpdater().downloadUpdate();
-        return { success: true, status: 'downloading', version: pendingUpdateVersion || null };
-      } catch (err) {
-        appendUpdaterLog(`downloadUpdate on install failed: ${err.message}`);
-        return downloadMacUpdateDmg(pendingUpdateVersion);
-      }
+      const result = installMacUpdate();
+      if (result.success) return result;
+      return {
+        success: false,
+        error: result.error || 'Could not install update. Make sure Smiley is in /Applications.',
+      };
     }
     if (process.platform === 'darwin' && isRunningFromDmg()) {
       return {
