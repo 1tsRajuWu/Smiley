@@ -12,7 +12,7 @@ public sealed class WaifuApiService
     private static readonly HttpClient Http = new()
     {
         Timeout = TimeSpan.FromSeconds(6),
-        DefaultRequestHeaders = { { "User-Agent", "Smiley-Native/2.1.9" } },
+        DefaultRequestHeaders = { { "User-Agent", "Smiley-Native/2.1.10" } },
     };
 
     private static readonly ConcurrentDictionary<string, string> SessionCache = new();
