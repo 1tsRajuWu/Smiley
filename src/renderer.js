@@ -1785,7 +1785,7 @@ async function init() {
   if (closeWindowBtn) closeWindowBtn.addEventListener('click', () => window.smiley.closeWindow());
   if (window.smiley.onWindowMaximized) {
     window.smiley.onWindowMaximized((isMaximized) => syncMaximizeButton(isMaximized));
-    window.smiley.isWindowMaximized?.().then((max) => syncMaximizeButton(!!max));
+    window.smiley.isWindowMaximized?.().then((result) => syncMaximizeButton(!!result?.isMaximized));
   }
   setupModalClose(settingsModal, closeSettings);
   setupModalClose(legalModal, closeLegal);
