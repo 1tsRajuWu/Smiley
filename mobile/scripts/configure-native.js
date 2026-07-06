@@ -48,10 +48,14 @@ function patchIos() {
     console.log('ios/ not found — run: npx cap add ios');
     return;
   }
+  const version = appVersion();
+  const versionCode = versionCodeFromSemver(version);
   let pbx = fs.readFileSync(pbxPath, 'utf8');
   pbx = pbx.replace(/IPHONEOS_DEPLOYMENT_TARGET = [\d.]+;/g, 'IPHONEOS_DEPLOYMENT_TARGET = 16.0;');
+  pbx = pbx.replace(/MARKETING_VERSION = [\d.]+;/g, `MARKETING_VERSION = ${version};`);
+  pbx = pbx.replace(/CURRENT_PROJECT_VERSION = \d+;/g, `CURRENT_PROJECT_VERSION = ${versionCode};`);
   fs.writeFileSync(pbxPath, pbx);
-  console.log('iOS: deployment target 16.0');
+  console.log(`iOS: deployment target 16.0, version ${version} (${versionCode})`);
 }
 
 patchAndroid();

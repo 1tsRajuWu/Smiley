@@ -43,6 +43,7 @@ copyFile(path.join(ROOT, 'build/icon-192.png'), path.join(WWW, 'assets/icon-192.
 copyFile(path.join(ROOT, 'build/icon-512.png'), path.join(WWW, 'assets/icon-512.png'));
 
 const version = require(path.join(ROOT, 'package.json')).version;
+
 const wwwIndex = path.join(WWW, 'index.html');
 if (fs.existsSync(wwwIndex)) {
   let html = fs.readFileSync(wwwIndex, 'utf8');
@@ -52,6 +53,18 @@ if (fs.existsSync(wwwIndex)) {
   );
   fs.writeFileSync(wwwIndex, html);
   console.log(`  ✓ mobile/www/index.html (v${version})`);
+}
+
+const wwwApp = path.join(WWW, 'app.js');
+if (fs.existsSync(wwwApp)) {
+  let appJs = fs.readFileSync(wwwApp, 'utf8');
+  appJs = appJs.replace(
+    /\/\*\*[\s\S]*?Smiley Mobile — activity companion \(v[\d.]+\)/,
+    `/**\n * Smiley Mobile — activity companion (v${version})`
+  );
+  appJs = appJs.replace(/const VERSION = '[^']*';/, `const VERSION = '${version}';`);
+  fs.writeFileSync(wwwApp, appJs);
+  console.log(`  ✓ mobile/www/app.js (v${version})`);
 }
 
 console.log('Done.');
