@@ -1,8 +1,6 @@
-# Smiley Mobile — paused
+# Smiley Mobile — development paused
 
-**Paused — not distributed.** Mobile builds are not published on GitHub Releases. Smiley is desktop-only for now (Windows, macOS, Linux).
-
-The `mobile/` folder remains for local development. Do not link to this from the main README.
+**Development paused — not listed on the main README.** The `mobile/` folder and Android project remain in the repo for local development. CI may still attach `Smiley-*-android-debug.apk` to GitHub Releases on tag, but the landing page does not link to it.
 
 ## Background
 

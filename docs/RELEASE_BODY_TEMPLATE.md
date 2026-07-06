@@ -33,3 +33,8 @@ Discord Rich Presence with animated anime characters — by [@1tsRaj](https://gi
 ---
 
 **Full changelog:** see commit history between tags.
+
+<!--
+Optional (dev builds only — do not advertise on README):
+- Android APK: `Smiley-{VERSION}-android-debug.apk` — uploaded by CI on tag; companion app, no Rich Presence
+-->

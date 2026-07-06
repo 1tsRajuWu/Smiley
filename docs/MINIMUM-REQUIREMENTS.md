@@ -11,6 +11,12 @@ Smiley ships two desktop apps: **Smiley (Electron)** and **Smiley.Native** (.NET
 | **Linux (Electron)** | Ubuntu **20.04+** / Debian 10+ / Fedora 32+ (glibc 2.28+) | x64 | `Smiley-{version}.AppImage` or `Smiley-{version}.deb` |
 | **Low-end (Native)** | Windows/Linux same as Electron; macOS **14 Sonoma+** (.NET 10) | x64, arm64 (Mac) | `Smiley-Native-{version}-{rid}.zip` |
 
+<!--
+Mobile (development paused — not listed on main README):
+| **Android (companion)** | Android **8.0+** (API 26) | arm64, armeabi-v7a | `Smiley-{version}-android-debug.apk` (dev/CI only, not advertised)
+See mobile/README.md for local build instructions.
+-->
+
 ## Which file for your device?
 
 | Device | App | Download artifact |
