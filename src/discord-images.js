@@ -8,7 +8,7 @@ const FETCH_TIMEOUT_MS = 6000;
 const DISCORD_IMAGE_MAX_LEN = 512;
 const FETCH_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'Smiley/3.2.0 (Discord Rich Presence)',
+  'User-Agent': 'Smiley/3.2.1 (Discord Rich Presence)',
 };
 
 /** Per-category API config — nekos GIF endpoint + waifu still fallback */
@@ -137,47 +137,39 @@ export const VERIFIED_FALLBACKS = {
   shopping: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif',
 };
 
-/** Curated SFW Tenor/Giphy GIFs per activity (user-provided + verified HTTP 200) */
+/** Curated SFW Tenor GIFs per activity (media.tenor.com — verified HTTP 200) */
 export const ACTIVITY_TENOR_FALLBACKS = {
-  'eating-pizza': 'https://media1.tenor.com/m/i-xS-A_DTCEAAAAC/pizza-food.gif',
+  'eating-pizza': 'https://media.tenor.com/i-xS-A_DTCEAAAAM/pizza-food.gif',
   'eating-sushi': 'https://media.tenor.com/KE361QFenNcAAAAM/anime-refei%C3%A7%C3%A3o-jap%C3%A3o-comida.gif',
-  'eating-ramen': 'https://media1.tenor.com/m/nwM1UzOjtAoAAAAC/anime-naruto.gif',
-  'eating-burger':
-    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExYXd4Y3ZlODF5NjI4aG9qanB0YjV5YzQ3Z2ZwNDgweW9rZjFzbGY3diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/aW9HiiooRmdwdG0bPc/giphy.gif',
-  'eating-tacos': 'https://media1.tenor.com/m/tz1kb3yen6wAAAAC/uwu-taco.gif',
-  'eating-snacks': 'https://media1.tenor.com/m/DtK1un8uLS0AAAAC/himouto-umaru-chan.gif',
-  cooking:
-    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3VlZXQyeWQ0MnRhOXlyYnpscjYzYXJ1OTg5djEzcXphZjM0cnY2cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/p0dFF6nzn1DZKKyNdo/giphy.gif',
-  'eating-dessert': 'https://media1.tenor.com/m/DQDtfEaDA5AAAAAC/cake-eat.gif',
-  gaming: 'https://media1.tenor.com/m/9tbKJeCFPaUAAAAC/konata-gaming.gif',
-  ranked: 'https://media1.tenor.com/m/IwyNIipPItQAAAAC/anime-naruto.gif',
-  coop: 'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExOTNsbWV1ZzV6Yzk1eHFsYWtlbmZqMTB6NjkxNnVhZWxybjc3cTFxMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qCr3LLomOJUfGUYOZx/giphy.gif',
-  retro: 'https://media1.tenor.com/m/pqzUICCf7XYAAAAC/potz-power.gif',
-  speedrun: 'https://media1.tenor.com/m/NazVGclCYHEAAAAC/agnes-tachyon-tachyon.gif',
-  'vr-gaming': 'https://media1.tenor.com/m/hvmj5kz64Q4AAAAC/boxing-oculus.gif',
-  sleeping: 'https://media1.tenor.com/m/lptw_sFe1DYAAAAC/sleep-anime.gif',
-  napping: 'https://media1.tenor.com/m/y-nFVMnj_g4AAAAC/d4dj-d4dj-petit-mix.gif',
+  'eating-ramen': 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif',
+  'eating-burger': 'https://media.tenor.com/uk9xO0xpWoIAAAAM/burger-eating.gif',
+  'eating-tacos': 'https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif',
+  'eating-snacks': 'https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif',
+  cooking: 'https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif',
+  'eating-dessert': 'https://media.tenor.com/DTRz6D1e5ZEAAAAM/eating-dessert-happily.gif',
+  gaming: 'https://media.tenor.com/9tbKJeCFPaUAAAAd/konata-gaming.gif',
+  ranked: 'https://media.tenor.com/o52AZQZ_PloAAAAM/kick-anime.gif',
+  coop: 'https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif',
+  retro: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif',
+  speedrun: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif',
+  'vr-gaming': 'https://media.tenor.com/qIvEeou-1FIAAAAM/play-network-anime-girl.gif',
+  sleeping: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif',
+  napping: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif',
   reading: 'https://media.tenor.com/rJxGy9CYwHoAAAAM/anime-read.gif',
-  listening: 'https://media1.tenor.com/m/FhCrIhUtPmoAAAAC/headphones-listening-to-music.gif',
-  meditating: 'https://media1.tenor.com/m/hnlwW6KsH1sAAAAC/kanna-kamui.gif',
-  bath: 'https://media1.tenor.com/m/hnlz1koTh6gAAAAC/ba12.gif',
-  studying:
-    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTI1dmpjNDZ6bGJpd2s0OWg2ZThtaGk3ZGNka2x4a3Rrb3kxMWZsaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/6XX4V0O8a0xdS/giphy.gif',
-  meeting:
-    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExOG9oaWNyZnRnY3pwa3ZudXE3cXlsam42c203dm0wdXJ4YnVqa2E2OSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WyZ1D8gXF7QQsRkXw5/giphy.gif',
-  focus: 'https://media1.tenor.com/m/t8rp6pY-Wl8AAAAC/typing-anime-coding.gif',
+  listening: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif',
+  meditating: 'https://media.tenor.com/H2TduYuD5S0AAAAM/anime-miss-kobayashis-dragon-maid.gif',
+  bath: 'https://media.tenor.com/M3nkdB81tkQAAAAM/virgin-road-anime-relaxed.gif',
+  studying: 'https://media.tenor.com/etfl8OlhPIYAAAAM/studying-anime-girl.gif',
+  meeting: 'https://media.tenor.com/_9W9bVa4AHgAAAAM/wavi-anime.gif',
+  focus: 'https://media.tenor.com/qhe3ahMJ_i0AAAAM/anime-anime-pat.gif',
   designing: 'https://media.tenor.com/zoWI1vGHkecAAAAM/good-morning-marin-kitagawa.gif',
-  writing: 'https://media1.tenor.com/m/EL7zfInn_vsAAAAC/taking-notes-noting.gif',
-  streaming:
-    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcXpueTE0dHJuMHU2ZWcycG1ocXNmYXkxMWp4cnBuMzJubHJxZjJxNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2Y7tZMmIpwV6Lnc5QC/giphy.gif',
-  watching:
-    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWNlcHU0bnF3ODFvZXN4d3V3MjYzbXh3cmt5djg2dThsbmt3dTM2aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/p55iGp1XppSv4WiV2y/giphy.gif',
-  traveling:
-    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeW53NGliMGVmMDB0N3l2eXd4MngybHFzbmI1eG94Z3dqZ3QwbGJiYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6YfXCRvjzATblkJy/giphy.gif',
-  gym: 'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZWZhanI0aDI0eHlnYW54eWo5amVpM3V5aTdhenp6eWVnNmtyemxveCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ZJ25E2hJ5IpfvgkxYE/giphy.gif',
-  partying: 'https://media1.tenor.com/m/uRlxzRNgp2MAAAAC/anime-girl.gif',
-  shopping:
-    'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjN3aXA4N3BzcnUxMXI3bHk3ZmgwMWdkb2h0N3R4d2lmdHBwbzdidiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WgRsfKIC2WbJDpyLB7/giphy.gif',
+  writing: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif',
+  streaming: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif',
+  watching: 'https://media.tenor.com/P8jCycbR6k8AAAAM/yosuke-tickets.gif',
+  traveling: 'https://media.tenor.com/gPjII19ICdIAAAAM/road-road-trip-move-dragon-ball-anime-tyan-vibe-car.gif',
+  gym: 'https://media.tenor.com/0weeqPoyCWIAAAAM/how-heavy-are-the-dumbbells-that-you-lift-dumbbell-nan-kilo-moteru.gif',
+  partying: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif',
+  shopping: 'https://media.tenor.com/9M34adQOtNwAAAAM/shopping-hi.gif',
 };
 
 /** Session cache — keyed by activity.id */

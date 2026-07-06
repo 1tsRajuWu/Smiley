@@ -173,6 +173,7 @@ const DEFAULT_CONFIG = {
   recentActivities: [],
   favoriteActivities: [],
   customActivities: [],
+  activityGifChoice: {},
   migrationNoticeShown: false,
   installWarningShown: false,
 };
@@ -504,23 +505,59 @@ function getIconCandidates() {
   return candidates;
 }
 
+function getAppIconCandidates() {
+  const buildDir = path.join(__dirname, 'build');
+  const candidates = [];
+  if (process.platform === 'win32') {
+    candidates.push(path.join(buildDir, 'icon.ico'));
+  }
+  candidates.push(path.join(buildDir, 'icon.png'));
+  const themed = nativeTheme.shouldUseDarkColors ? 'icon-light.png' : 'icon-dark.png';
+  candidates.push(path.join(buildDir, themed));
+  candidates.push(path.join(buildDir, 'icon-transparent.png'));
+  if (isPackaged && process.resourcesPath) {
+    const resBuild = path.join(process.resourcesPath, 'build');
+    if (process.platform === 'win32') {
+      candidates.push(path.join(resBuild, 'icon.ico'));
+    }
+    candidates.push(path.join(resBuild, 'icon.png'));
+    candidates.push(path.join(resBuild, themed));
+    candidates.push(path.join(resBuild, 'icon-transparent.png'));
+  }
+  return candidates;
+}
+
+function hasVisiblePixels(img) {
+  if (!img || img.isEmpty()) return false;
+  const { width, height } = img.getSize();
+  if (!width || !height) return false;
+  const sample = width > 64 || height > 64 ? img.resize({ width: 64, height: 64 }) : img;
+  const bitmap = sample.toBitmap();
+  for (let i = 3; i < bitmap.length; i += 4) {
+    if (bitmap[i] > 0) return true;
+  }
+  return false;
+}
+
+function loadNativeIcon(candidates = getIconCandidates()) {
+  for (const iconPath of candidates) {
+    if (!fs.existsSync(iconPath)) continue;
+    const img = nativeImage.createFromPath(iconPath);
+    if (!img.isEmpty() && hasVisiblePixels(img)) return img;
+  }
+  return null;
+}
+
 function getThemedTrayIconPath() {
   const buildDir = path.join(__dirname, 'build');
   const name = nativeTheme.shouldUseDarkColors ? 'icon-light.png' : 'icon-dark.png';
-  const themed = path.join(buildDir, name);
-  if (fs.existsSync(themed)) return themed;
-  const transparent = path.join(buildDir, 'icon-transparent.png');
-  if (fs.existsSync(transparent)) return transparent;
-  return path.join(buildDir, 'icon.png');
-}
-
-function loadNativeIcon() {
-  for (const iconPath of getIconCandidates()) {
+  for (const candidate of [name, 'icon-transparent.png', 'icon.png']) {
+    const iconPath = path.join(buildDir, candidate);
     if (!fs.existsSync(iconPath)) continue;
     const img = nativeImage.createFromPath(iconPath);
-    if (!img.isEmpty()) return img;
+    if (hasVisiblePixels(img)) return iconPath;
   }
-  return null;
+  return path.join(buildDir, 'icon.png');
 }
 
 function getTrayIconSize() {
@@ -618,7 +655,7 @@ function getDefaultTrayIcon() {
 }
 
 function getAppIcon() {
-  const img = loadNativeIcon();
+  const img = loadNativeIcon(getAppIconCandidates());
   if (img) {
     if (process.platform === 'win32') {
       const { width, height } = img.getSize();
