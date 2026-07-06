@@ -372,20 +372,21 @@ function resolveChoiceToUrl(activityId, choiceId) {
 }
 
 function getSavedGifChoiceId(activity) {
-  if (!activity) return null;
+  if (!activity?.isCustom) return null;
   const saved = activityGifChoices[activity.id];
   if (saved) return saved;
-  if (activity.isCustom && isValidDiscordImageUrl(activity.gifUrl)) {
+  if (isValidDiscordImageUrl(activity.gifUrl)) {
     return `custom:${activity.gifUrl}`;
   }
-  return getDefaultGifChoiceId(activity.id);
+  return null;
 }
 
 function getPreferredGifUrl(activity) {
-  if (!activity) return null;
+  if (!activity?.isCustom) return null;
   const saved = activityGifChoices[activity.id];
-  if (!saved) return null;
-  return resolveChoiceToUrl(activity.id, saved);
+  if (saved) return resolveChoiceToUrl(activity.id, saved);
+  if (isValidDiscordImageUrl(activity.gifUrl)) return activity.gifUrl;
+  return null;
 }
 
 function collectMyGifs() {
@@ -418,11 +419,6 @@ function collectMyGifs() {
   return items;
 }
 
-/** My GIFs row only belongs on the My Activities tab or when a custom activity is selected. */
-function shouldShowMyGifsSection(activity) {
-  if (!activity) return false;
-  return activeCategory === 'custom' || activity.isCustom === true || String(activity.id).startsWith('custom-');
-}
 
 function canLoadPickerThumb(url) {
   if (!url || typeof url !== 'string') return false;
@@ -513,7 +509,7 @@ function bindGifPickerStrip(strip, activity, onSelect) {
 function renderGifPicker(activity) {
   if (!gifPickerSection || !gifPickerStrip) return;
 
-  if (!activity) {
+  if (!activity?.isCustom) {
     gifPickerSection.hidden = true;
     gifPickerStrip.innerHTML = '';
     if (gifPickerMyStrip) gifPickerMyStrip.innerHTML = '';
@@ -522,24 +518,11 @@ function renderGifPicker(activity) {
   }
 
   const presetOptions = getActivityGifOptions(activity.id, {
-    activityGifUrl: activity.isCustom ? activity.gifUrl : null,
+    activityGifUrl: activity.gifUrl,
   });
-  if (activity.isCustom && isValidDiscordImageUrl(activity.gifUrl)) {
-    const hasOwn = presetOptions.some((o) => o.url === activity.gifUrl);
-    if (!hasOwn) {
-      presetOptions.unshift({
-        id: `custom:${activity.gifUrl}`,
-        label: 'Activity GIF',
-        url: activity.gifUrl,
-      });
-    }
-  }
 
   const selectedId = getSavedGifChoiceId(activity);
-  const showMyGifs = shouldShowMyGifsSection(activity);
-  const myGifs = showMyGifs
-    ? collectMyGifs().filter((g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id))
-    : [];
+  const myGifs = collectMyGifs().filter((g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id));
   gifPickerSection.hidden = presetOptions.length === 0 && myGifs.length === 0;
   gifPickerStrip.innerHTML = presetOptions.map((o) => renderGifOptionButton(o, selectedId)).join('');
 
@@ -644,9 +627,7 @@ async function resolveGifUrl(activity, { bustCache = false } = {}) {
 
 function scheduleNekosPreviewRefresh(activity, hintUrl, generation) {
   if (!activity?.id || activity.isCustom) return;
-  const choiceId = activityGifChoices[activity.id];
-  const wantsNekos = choiceId?.endsWith('-nekos') || isNekosBestUrl(hintUrl);
-  if (!wantsNekos) return;
+  if (!isNekosBestUrl(hintUrl)) return;
 
   fetchNekosGifForActivity(activity.id, hintUrl)
     .then((fresh) => {
@@ -1696,19 +1677,19 @@ function buildManualUpdateMessage(version) {
 }
 
 function syncUpdateBannerButtons() {
-  if (!updateRestartBtn) return;
   const macManual = macAdHocUpdates && (updateState.downloaded || updateState.manualInstall);
-  updateRestartBtn.disabled = !macManual && !updateState.downloaded;
-  if (macManual) {
-    updateRestartBtn.textContent = 'Get update';
-    updateRestartBtn.title =
-      'Download the DMG from GitHub (auto-restart unavailable on unsigned Mac builds)';
-  } else {
-    updateRestartBtn.textContent = 'Restart';
-    updateRestartBtn.title = updateState.downloaded
-      ? 'Restart to install update'
-      : 'Available after download completes';
+  if (updateGetBtn) {
+    updateGetBtn.disabled = !macManual;
+    updateGetBtn.title = macManual
+      ? 'Download the DMG from GitHub (Mac updates install manually)'
+      : 'Available after update is detected';
   }
+  if (!updateRestartBtn || macAdHocUpdates) return;
+  updateRestartBtn.disabled = !updateState.downloaded;
+  updateRestartBtn.textContent = 'Restart';
+  updateRestartBtn.title = updateState.downloaded
+    ? 'Restart to install update'
+    : 'Available after download completes';
 }
 
 function handleUpdateStatus(data) {
@@ -1755,6 +1736,14 @@ function handleUpdateStatus(data) {
       showToast('You are on the latest version!');
       break;
     case 'downloaded':
+      if (macAdHocUpdates) {
+        handleUpdateStatus({
+          ...data,
+          status: 'manual-install-required',
+          message: buildManualUpdateMessage(data.version),
+        });
+        break;
+      }
       updateCheckingToastShown = false;
       updateState.downloaded = true;
       updateState.manualInstall = false;
@@ -1781,7 +1770,7 @@ function handleUpdateStatus(data) {
       updateState = { downloaded: false, manualInstall: false, dismissed: true, percent: 0, version: null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
-      showToast(data.error || 'Update download stalled. Try again later.', 'error');
+      showToast('Update download stalled. Try again later or download from GitHub.', 'error');
       break;
     case 'unsigned-update':
     case 'manual-install-required':
@@ -1816,18 +1805,14 @@ function handleUpdateStatus(data) {
       syncUpdateBannerButtons();
       hideUpdateBanner();
       if (data.expected) {
-        const friendly = data.message || data.error || 'Update check unavailable.';
-        if (isUpdateSignatureError(friendly)) {
+        const friendly = data.message || 'Update check unavailable.';
+        if (macAdHocUpdates || isUpdateSignatureError(String(data.error || data.message || ''))) {
           showUpdateActionToast(buildManualUpdateMessage(data.version), {
             url: data.releasesUrl || releasesUrl,
           });
         } else {
           showToast(friendly);
         }
-      } else if (isUpdateSignatureError(String(data.error || data.message || ''))) {
-        showUpdateActionToast(buildManualUpdateMessage(data.version), {
-          url: data.releasesUrl || releasesUrl,
-        });
       } else {
         showUpdateActionToast(buildManualUpdateMessage(data.version), {
           url: data.releasesUrl || releasesUrl,
@@ -2086,32 +2071,23 @@ async function init() {
       hideUpdateBanner();
     });
   }
+  if (updateGetBtn) {
+    updateGetBtn.addEventListener('click', () => {
+      window.smiley.openExternal(releasesUrl);
+    });
+  }
   if (updateRestartBtn) {
     updateRestartBtn.disabled = true;
     updateRestartBtn.addEventListener('click', async () => {
-      if (macAdHocUpdates && (updateState.manualInstall || updateState.downloaded)) {
-        window.smiley.openExternal(releasesUrl);
-        return;
-      }
       if (!updateState.downloaded) {
         showToast('Download still in progress — try again when ready', 'error');
         return;
       }
       const result = await window.smiley.installUpdate();
       if (!result?.success) {
-        if (result?.status === 'manual-install-required') {
-          showUpdateActionToast(result.message || buildManualUpdateMessage(result.version), {
-            url: result.releasesUrl || releasesUrl,
-          });
-        } else if (isUpdateSignatureError(String(result?.error || ''))) {
-          showUpdateActionToast(buildManualUpdateMessage(result.version), {
-            url: result.releasesUrl || releasesUrl,
-          });
-        } else {
-          showUpdateActionToast(buildManualUpdateMessage(result?.version), {
-            url: result.releasesUrl || releasesUrl,
-          });
-        }
+        showUpdateActionToast(buildManualUpdateMessage(result?.version), {
+          url: result?.releasesUrl || releasesUrl,
+        });
       }
     });
   }

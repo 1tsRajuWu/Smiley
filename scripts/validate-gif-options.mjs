@@ -5,12 +5,13 @@ const urlToActivities = new Map();
 
 for (const [activityId, url] of Object.entries(ACTIVITY_TENOR_FALLBACKS)) {
   if (!url || typeof url !== 'string') {
-    errors.push(`${activityId}: missing fallback URL`);
+    errors.push(`${activityId}: missing Tenor fallback URL`);
     continue;
   }
+  if (!/^https:\/\//i.test(url)) errors.push(`${activityId}: URL must be HTTPS`);
+  if (url.length > 512) errors.push(`${activityId}: URL too long (${url.length})`);
   if (!urlToActivities.has(url)) urlToActivities.set(url, []);
   urlToActivities.get(url).push(activityId);
-  if (url.length > 512) errors.push(`${activityId}: URL too long (${url.length})`);
 }
 
 const crossDupes = [...urlToActivities.entries()].filter(([, acts]) => acts.length > 1);
@@ -28,4 +29,4 @@ if (errors.length) {
   console.error('VALIDATION FAILED:\n' + errors.join('\n'));
   process.exit(1);
 }
-console.log(`OK — ${Object.keys(ACTIVITY_TENOR_FALLBACKS).length} activities, one curated GIF each.`);
+console.log(`OK — 31 activities, ${Object.keys(ACTIVITY_TENOR_FALLBACKS).length} curated Tenor URLs.`);
