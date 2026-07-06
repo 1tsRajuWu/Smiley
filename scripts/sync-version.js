@@ -25,6 +25,15 @@ function patchFile(filePath, patchFn) {
   console.log(`  ✓ ${path.relative(ROOT, filePath)} → v${version}`);
 }
 
+function patchLockfile(filePath) {
+  patchFile(filePath, (json) => {
+    const lock = JSON.parse(json);
+    lock.version = version;
+    if (lock.packages?.['']) lock.packages[''].version = version;
+    return `${JSON.stringify(lock, null, 2)}\n`;
+  });
+}
+
 console.log(`Syncing all platforms to v${version}…`);
 
 patchFile(path.join(ROOT, 'src/index.html'), (html) =>
@@ -38,6 +47,21 @@ patchFile(mobilePkgPath, (json) => {
   pkg.description = `Smiley v${version} — Capacitor companion for Android & iOS`;
   return `${JSON.stringify(pkg, null, 2)}\n`;
 });
+
+patchLockfile(path.join(ROOT, 'package-lock.json'));
+patchLockfile(path.join(ROOT, 'mobile/package-lock.json'));
+
+for (const doc of ['PRIVACY.md', 'ToS.md', 'SECURITY.md']) {
+  patchFile(path.join(ROOT, doc), (text) =>
+    text.replace(/(\*\*Raj \(@1tsRaj\)\*\* — last updated \d+ \w+ \d+ \(v)[\d.]+(\))/g, `$1${version}$2`)
+  );
+}
+
+patchFile(path.join(ROOT, 'docs/INSTALL-DATABASE.md'), (text) =>
+  text
+    .replace(/(`app_version` \| `)[\d.]+(` \| Device)/g, `$1${version}$2`)
+    .replace(/(`user_agent` \| `Smiley\/)[\d.]+( Electron\/…` \| Device)/g, `$1${version}$2`)
+);
 
 execFileSync('node', ['mobile/scripts/build-www.js'], { cwd: ROOT, stdio: 'inherit' });
 execFileSync('node', ['mobile/scripts/configure-native.js'], { cwd: ROOT, stdio: 'inherit' });
