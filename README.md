@@ -217,6 +217,27 @@ xattr -cr /Applications/Smiley.app
 </details>
 
 <details>
+<summary><strong>App data folder keeps growing</strong></summary>
+
+Smiley stores settings beside Chromium’s browser cache (GIF previews, web assets). Over time that cache can grow to hundreds of MB.
+
+**In the app (v4.1.2+):** Settings → Advanced → **Clear cache**. This removes browser cache, old update downloads, and orphaned temp files — **not** your settings, custom activities, or saved GIFs.
+
+Smiley also runs automatic cleanup once per day (orphaned wallpapers, stale updater files, and browser cache over ~150 MB).
+
+**Manual paths** (if needed):
+
+| OS | Smiley data folder |
+|----|-------------------|
+| macOS | `~/Library/Application Support/Smiley` |
+| Windows | `%APPDATA%\Smiley` |
+| Linux | `~/.config/Smiley` |
+
+Updater downloads may also sit in your system cache folder (`~/Library/Caches/Smiley` on Mac, `%LOCALAPPDATA%\Smiley` on Windows). **Clear cache** in Settings removes these when safe.
+
+</details>
+
+<details>
 <summary><strong>Discord shows "Disconnected"</strong></summary>
 
 Discord **desktop** running? Not set to Invisible? Restart Discord, then Smiley.

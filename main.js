@@ -1,6 +1,6 @@
 const os = require('os');
 const { execFile } = require('child_process');
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -501,6 +501,13 @@ let currentTrayIcon = 'default';
 // ─── Window State ────────────────────────────────────────────────────
 const FIRST_SHOW_MARKER = '.first-window-shown';
 const PORTABLE_INIT_MARKER = '.portable-initialized';
+const CACHE_MAINTENANCE_MARKER = '.cache-maintenance';
+const CACHE_MAINTENANCE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const CHROMIUM_CACHE_MAX_BYTES = 150 * 1024 * 1024;
+const CHROMIUM_CACHE_DIRS = [
+  'Cache', 'Code Cache', 'GPUCache', 'DawnCache', 'DawnGraphiteCache',
+  'DawnWebGPUCache', 'ShaderCache', 'blob_storage',
+];
 
 function normalizeWindowState(state = {}) {
   const width = Math.max(900, Math.min(state.width || 1100, 4000));
@@ -1896,6 +1903,214 @@ function broadcastConfigChanged(extra = {}) {
   });
 }
 
+// ─── Storage & cache cleanup ─────────────────────────────────────────
+function getAppCacheDir() {
+  const homedir = os.homedir();
+  if (process.platform === 'win32') {
+    return process.env.LOCALAPPDATA || path.join(homedir, 'AppData', 'Local');
+  }
+  if (process.platform === 'darwin') {
+    return path.join(homedir, 'Library', 'Caches');
+  }
+  return process.env.XDG_CACHE_HOME || path.join(homedir, '.cache');
+}
+
+function getPathSizeSync(targetPath) {
+  if (!targetPath || !fs.existsSync(targetPath)) return 0;
+  try {
+    const stat = fs.statSync(targetPath);
+    if (stat.isFile()) return stat.size;
+    if (!stat.isDirectory()) return 0;
+    let total = 0;
+    for (const entry of fs.readdirSync(targetPath, { withFileTypes: true })) {
+      const child = path.join(targetPath, entry.name);
+      try {
+        if (entry.isDirectory()) total += getPathSizeSync(child);
+        else if (entry.isFile()) total += fs.statSync(child).size;
+      } catch (_) {}
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+function formatBytes(bytes) {
+  const n = Math.max(0, Number(bytes) || 0);
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function getChromiumCachePaths() {
+  return CHROMIUM_CACHE_DIRS.map((d) => getUserDataPath(d));
+}
+
+function removePathSync(targetPath) {
+  if (!targetPath || !fs.existsSync(targetPath)) return;
+  try {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+  } catch (err) {
+    console.warn('[cache] remove failed:', targetPath, err.message);
+  }
+}
+
+function clearChromiumCaches() {
+  for (const cachePath of getChromiumCachePaths()) {
+    removePathSync(cachePath);
+  }
+  try {
+    session.defaultSession?.clearCache().catch(() => {});
+  } catch (_) {}
+}
+
+function getUpdaterCacheDir() {
+  return path.join(getAppCacheDir(), app.getName());
+}
+
+function getShipItCacheDir() {
+  return path.join(getAppCacheDir(), 'com.smiley.rpc.ShipIt');
+}
+
+function cleanStaleUpdaterCache({ force = false } = {}) {
+  if (!force && updateDownloaded && pendingUpdateVersion) {
+    return { skipped: true, reason: 'pending-install' };
+  }
+  const dir = getUpdaterCacheDir();
+  if (!fs.existsSync(dir)) return { cleared: false };
+  removePathSync(dir);
+  if (!force) {
+    updateDownloaded = false;
+    pendingUpdateVersion = null;
+  }
+  return { cleared: true };
+}
+
+function cleanOrphanedWallpapers() {
+  const active = config.customWallpaper?.filename;
+  const dir = getWallpapersDir();
+  let removed = 0;
+  try {
+    for (const file of fs.readdirSync(dir)) {
+      if (file === active) continue;
+      try {
+        fs.unlinkSync(path.join(dir, file));
+        removed += 1;
+      } catch (_) {}
+    }
+  } catch (_) {}
+  return removed;
+}
+
+function cleanOrphanedCustomActivityFiles() {
+  const referenced = new Set(
+    (config.customActivities || [])
+      .map((a) => a.localFileName)
+      .filter(Boolean)
+      .map((f) => sanitizeFilename(f)),
+  );
+  const dir = getCustomActivitiesDir();
+  let removed = 0;
+  try {
+    for (const file of fs.readdirSync(dir)) {
+      if (referenced.has(sanitizeFilename(file))) continue;
+      try {
+        fs.unlinkSync(path.join(dir, file));
+        removed += 1;
+      } catch (_) {}
+    }
+  } catch (_) {}
+  return removed;
+}
+
+function getUserDataEssentialPaths() {
+  return [
+    getUserDataPath('config.secure'),
+    getUserDataPath('config.json'),
+    getUserDataPath('window-state.json'),
+    getUserDataPath('custom-activities'),
+    getUserDataPath('custom-animations'),
+    getUserDataPath('wallpapers'),
+    getUserDataPath(FIRST_SHOW_MARKER),
+    getUserDataPath(PORTABLE_INIT_MARKER),
+    getUserDataPath(CACHE_MAINTENANCE_MARKER),
+  ];
+}
+
+function getStorageInfo() {
+  const chromiumBytes = getChromiumCachePaths().reduce((sum, p) => sum + getPathSizeSync(p), 0);
+  const updaterBytes = getPathSizeSync(getUpdaterCacheDir());
+  const shipItBytes = process.platform === 'darwin' ? getPathSizeSync(getShipItCacheDir()) : 0;
+  const essentialsBytes = getUserDataEssentialPaths().reduce((sum, p) => sum + getPathSizeSync(p), 0);
+  const userDataBytes = getPathSizeSync(app.getPath('userData'));
+  const clearableBytes = chromiumBytes + updaterBytes + shipItBytes;
+  return {
+    userDataPath: app.getPath('userData'),
+    essentialsBytes,
+    chromiumBytes,
+    updaterBytes,
+    shipItBytes,
+    userDataBytes,
+    clearableBytes,
+    totalOnDiskBytes: userDataBytes + updaterBytes + shipItBytes,
+    formatted: {
+      essentials: formatBytes(essentialsBytes),
+      clearable: formatBytes(clearableBytes),
+      total: formatBytes(userDataBytes + updaterBytes + shipItBytes),
+      chromium: formatBytes(chromiumBytes),
+      updater: formatBytes(updaterBytes),
+      shipIt: formatBytes(shipItBytes),
+    },
+  };
+}
+
+async function clearAppCache({ forceUpdater = false } = {}) {
+  const before = getStorageInfo();
+  cleanOrphanedWallpapers();
+  cleanOrphanedCustomActivityFiles();
+  cleanStaleUpdaterCache({ force: forceUpdater });
+  clearChromiumCaches();
+  if (process.platform === 'darwin') {
+    removePathSync(getShipItCacheDir());
+  }
+  const after = getStorageInfo();
+  return {
+    success: true,
+    freedBytes: Math.max(0, before.clearableBytes - after.clearableBytes),
+    freedFormatted: formatBytes(Math.max(0, before.clearableBytes - after.clearableBytes)),
+    ...after,
+  };
+}
+
+function runStartupCacheMaintenance() {
+  const markerPath = getUserDataPath(CACHE_MAINTENANCE_MARKER);
+  let lastRun = 0;
+  try {
+    if (fs.existsSync(markerPath)) {
+      const parsed = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+      lastRun = Date.parse(parsed.lastRun) || 0;
+    }
+  } catch (_) {}
+  if (Date.now() - lastRun < CACHE_MAINTENANCE_INTERVAL_MS) return;
+
+  try {
+    cleanOrphanedWallpapers();
+    cleanOrphanedCustomActivityFiles();
+    cleanStaleUpdaterCache();
+    const chromiumBytes = getChromiumCachePaths().reduce((sum, p) => sum + getPathSizeSync(p), 0);
+    if (chromiumBytes > CHROMIUM_CACHE_MAX_BYTES) {
+      clearChromiumCaches();
+    }
+    if (process.platform === 'darwin') {
+      removePathSync(getShipItCacheDir());
+    }
+    fs.writeFileSync(markerPath, JSON.stringify({ lastRun: new Date().toISOString() }));
+  } catch (err) {
+    console.warn('[cache] startup maintenance failed:', err.message);
+  }
+}
+
 // ─── IPC ─────────────────────────────────────────────────────────────
 function setupIPC() {
   ipcMain.handle('get-config', () => ({
@@ -2239,6 +2454,10 @@ function setupIPC() {
 
   ipcMain.handle('reset-window-position', () => resetWindowPosition());
 
+  ipcMain.handle('get-storage-info', () => getStorageInfo());
+
+  ipcMain.handle('clear-cache', async () => clearAppCache());
+
   ipcMain.handle('import-settings', async () => {
     if (!mainWindow) return { canceled: true };
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -2281,6 +2500,7 @@ app.whenReady().then(async () => {
   ensureDir(getUserDataPath('custom-animations'));
   ensureDir(getUserDataPath('custom-activities'));
   ensureDir(getUserDataPath('wallpapers'));
+  runStartupCacheMaintenance();
   applyLaunchAtLogin();
   createWindow();
   createTray();

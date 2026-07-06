@@ -7,6 +7,7 @@ import {
   getActivityGifOptions,
   resolveGifChoiceUrl,
   clearActivityImageCacheEntry,
+  clearActivityImageCache,
   isValidDiscordImageUrl,
   isNekosBestUrl,
   fetchNekosGifForActivity,
@@ -120,6 +121,8 @@ const openSystemFocusSettingsBtn = $('#openSystemFocusSettingsBtn');
 const exportSettingsBtn = $('#exportSettingsBtn');
 const importSettingsBtn = $('#importSettingsBtn');
 const resetWindowBtn = $('#resetWindowBtn');
+const storageInfoText = $('#storageInfoText');
+const clearCacheBtn = $('#clearCacheBtn');
 const updateBanner = $('#updateBanner');
 const updateBannerText = $('#updateBannerText');
 const updateRestartBtn = $('#updateRestartBtn');
@@ -1167,6 +1170,8 @@ function openSettings(tab = 'general') {
 
     switchSettingsTab(tab);
 
+    if (tab === 'advanced') refreshStorageInfo();
+
     if (cfg.version) {
       footerVersion.textContent = `Smiley v${cfg.version}`;
       if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
@@ -1179,6 +1184,49 @@ function openSettings(tab = 'general') {
 function switchSettingsTab(tabId) {
   settingsTabs.forEach((t) => t.classList.toggle('active', t.dataset.tab === tabId));
   settingsPanels.forEach((p) => p.classList.toggle('active', p.dataset.panel === tabId));
+  if (tabId === 'advanced') refreshStorageInfo();
+}
+
+async function refreshStorageInfo() {
+  if (!storageInfoText || !window.smiley?.getStorageInfo) return;
+  storageInfoText.textContent = 'Calculating…';
+  try {
+    const info = await window.smiley.getStorageInfo();
+    const parts = [
+      `Settings & data: ${info.formatted?.essentials || '—'}`,
+      `Clearable cache: ${info.formatted?.clearable || '—'}`,
+    ];
+    if ((info.chromiumBytes || 0) > 0) parts.push(`Browser: ${info.formatted.chromium}`);
+    if ((info.updaterBytes || 0) > 0) parts.push(`Updates: ${info.formatted.updater}`);
+    if ((info.shipItBytes || 0) > 0) parts.push(`ShipIt: ${info.formatted.shipIt}`);
+    storageInfoText.textContent = parts.join(' · ');
+  } catch {
+    storageInfoText.textContent = 'Could not read storage info';
+  }
+}
+
+async function handleClearCache() {
+  if (!window.smiley?.clearCache) return;
+  const confirmed = window.confirm(
+    'Clear temporary cache files?\n\nThis removes browser cache and old update downloads. Your settings, activities, and custom GIFs are kept.',
+  );
+  if (!confirmed) return;
+  if (clearCacheBtn) clearCacheBtn.disabled = true;
+  try {
+    const result = await window.smiley.clearCache();
+    clearActivityImageCache();
+    if (result?.success) {
+      const freed = result.freedFormatted || 'cache';
+      showToast(`Cache cleared (${freed} freed)`, 'success');
+    } else {
+      showToast('Cache clear failed', 'error');
+    }
+    await refreshStorageInfo();
+  } catch {
+    showToast('Cache clear failed', 'error');
+  } finally {
+    if (clearCacheBtn) clearCacheBtn.disabled = false;
+  }
 }
 
 async function handleSaveSettings(e) {
@@ -2102,6 +2150,10 @@ async function init() {
       if (result?.success) showToast('Window position reset');
       else showToast(result?.error || 'Could not reset window', 'error');
     });
+  }
+
+  if (clearCacheBtn) {
+    clearCacheBtn.addEventListener('click', () => handleClearCache());
   }
 
   if (updateDismissBtn) {

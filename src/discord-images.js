@@ -243,6 +243,24 @@ export function getDefaultGifChoiceId() {
 
 /** Session cache — keyed by activity.id */
 const sessionImageCache = new Map();
+const SESSION_CACHE_MAX_ENTRIES = 64;
+const SESSION_CACHE_TTL_MS = 30 * 60 * 1000;
+const PRELOADED_URL_MAX = 80;
+
+function isDynamicCacheSource(source) {
+  if (!source || typeof source !== 'string') return false;
+  return source.includes('nekos.best') || source.includes('waifu.pics');
+}
+
+function trimSessionCache() {
+  if (sessionImageCache.size <= SESSION_CACHE_MAX_ENTRIES) return;
+  const entries = [...sessionImageCache.entries()].sort(
+    (a, b) => (a[1].cachedAt || 0) - (b[1].cachedAt || 0),
+  );
+  while (sessionImageCache.size > SESSION_CACHE_MAX_ENTRIES && entries.length) {
+    sessionImageCache.delete(entries.shift()[0]);
+  }
+}
 
 export function clearActivityImageCache() {
   sessionImageCache.clear();
@@ -433,6 +451,14 @@ function isValidCacheEntry(entry, activityId) {
 function readCache(activityId) {
   const cached = sessionImageCache.get(activityId);
   if (!cached) return null;
+  if (
+    cached.cachedAt &&
+    isDynamicCacheSource(cached.source) &&
+    Date.now() - cached.cachedAt > SESSION_CACHE_TTL_MS
+  ) {
+    sessionImageCache.delete(activityId);
+    return null;
+  }
   if (!isValidCacheEntry(cached, activityId)) {
     sessionImageCache.delete(activityId);
     return null;
@@ -441,9 +467,10 @@ function readCache(activityId) {
 }
 
 function cacheResult(activityId, result) {
-  const entry = { ...result, activityId };
+  const entry = { ...result, activityId, cachedAt: Date.now() };
   if (!isValidCacheEntry(entry, activityId)) return result;
   sessionImageCache.set(activityId, entry);
+  trimSessionCache();
   return entry;
 }
 
@@ -458,6 +485,7 @@ export function preloadImageUrls(urls) {
   for (const raw of urls) {
     const url = normalizeDiscordImageUrl(raw);
     if (!url || preloadedUrls.has(url)) continue;
+    if (preloadedUrls.size >= PRELOADED_URL_MAX) preloadedUrls.clear();
     preloadedUrls.add(url);
     const img = new Image();
     img.decoding = 'async';
