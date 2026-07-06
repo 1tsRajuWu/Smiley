@@ -12,7 +12,7 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 [![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](#download)
 [![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey?style=for-the-badge)](LICENSE)
 
-**[Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Smiley.Native](README-NATIVE.md) (lightweight)
+**[Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Smiley.Native](README-NATIVE.md) (lightweight)
 
 </div>
 
@@ -216,6 +216,8 @@ Discord <strong>desktop</strong> running? Not Invisible? Restart Discord, then S
 
 **Made by Raj**
 
-[Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Issues](https://github.com/1tsRajuWu/Smiley/issues)
+[Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Issues](https://github.com/1tsRajuWu/Smiley/issues)
+
+Enjoying Smiley? [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review)
 
 </div>
