@@ -15,41 +15,41 @@ by **Raj ([@1tsRaj](https://github.com/1tsRaj))**
 
 **Requires [Discord desktop](https://discord.com/download)** (not mobile). Pick your OS below.
 
-> **Always works:** **[Open latest release → Assets](https://github.com/1tsRajuWu/Smiley/releases/latest)** and download the file for your computer.  
-> Direct buttons below work after **v2.1.7** (or newer) is published on Releases. If a button 404s, use the Releases page.
+> **Current release:** **[v2.1.7 (pre-release) → Assets](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7)** — macOS `.dmg` installers are attached; Windows/Linux Electron builds are not on this release yet.  
+> Direct macOS buttons below use the **v2.1.7** tag URLs (GitHub `/releases/latest` does not point at pre-releases).
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases">
     <img src="https://img.shields.io/github/v/release/1tsRajuWu/Smiley?label=Download%20latest&style=for-the-badge" alt="Latest GitHub release" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-2.1.7.exe">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7">
     <img src="https://img.shields.io/badge/Windows%20Installer-Download-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Windows installer" />
   </a>
   &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Portable-2.1.7.exe">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7">
     <img src="https://img.shields.io/badge/Windows%20Portable-Download-5E5E5E?style=for-the-badge&logo=windows&logoColor=white" alt="Windows portable" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7-arm64.dmg">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7-arm64.dmg">
     <img src="https://img.shields.io/badge/macOS%20Apple%20Silicon-Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS Apple Silicon" />
   </a>
   &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7-x64.dmg">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7-x64.dmg">
     <img src="https://img.shields.io/badge/macOS%20Intel-Download-555555?style=for-the-badge&logo=apple&logoColor=white" alt="macOS Intel" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7.AppImage">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7">
     <img src="https://img.shields.io/badge/Linux%20AppImage-Download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux AppImage" />
   </a>
   &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7.deb">
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7">
     <img src="https://img.shields.io/badge/Linux%20.deb-Download-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Linux deb" />
   </a>
 </p>
@@ -58,18 +58,16 @@ by **Raj ([@1tsRaj](https://github.com/1tsRaj))**
 
 | Platform | File | Link |
 |----------|------|------|
-| Windows x64 | `Smiley-Setup-2.1.7.exe` | [Installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-Setup-2.1.7.exe) |
-| Windows x64 | `Smiley-Portable-2.1.7.exe` | [Portable](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-Portable-2.1.7.exe) |
 | macOS ARM | `Smiley-2.1.7-arm64.dmg` | [.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7-arm64.dmg) |
 | macOS Intel | `Smiley-2.1.7-x64.dmg` | [.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7-x64.dmg) |
-| Linux | `Smiley-2.1.7.AppImage` | [AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7.AppImage) |
-| Linux | `Smiley-2.1.7.deb` | [.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7.deb) |
+| macOS (auto-update) | `latest-mac.yml` | [metadata](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/latest-mac.yml) |
+| Windows / Linux | — | [v2.1.7 release assets](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7) (not uploaded yet) |
 
 > **macOS:** Right-click → **Open** if unsigned. **Windows:** **More info** → **Run anyway** if SmartScreen warns.
 
 ### Auto-updates
 
-Installed Smiley checks **GitHub Releases** on launch. Use **Settings → Check for Updates** anytime. Releases must include `latest-mac.yml` / `latest.yml` (uploaded automatically by CI).
+Installed Smiley checks **GitHub Releases** on launch. Use **Settings → Check for Updates** anytime. **v2.1.7** ships [`latest-mac.yml`](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/latest-mac.yml) for macOS; `latest.yml` / `latest-linux.yml` are added when Windows/Linux builds are uploaded.
 
 ### Publishing (maintainers)
 
@@ -96,10 +94,10 @@ For **low-end PCs** — same Discord presence, much smaller download. Native bui
 
 | Platform | File name | Download |
 |----------|-----------|----------|
-| **Windows x64** | `Smiley-Native-win-x64.zip` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/latest) |
-| **macOS Apple Silicon** | `Smiley-Native-osx-arm64.zip` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/latest) |
-| **macOS Intel** | `Smiley-Native-osx-x64.zip` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/latest) |
-| **Linux x64** | `Smiley-Native-linux-x64.tar.gz` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/latest) |
+| **Windows x64** | `Smiley-Native-win-x64.zip` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7) |
+| **macOS Apple Silicon** | `Smiley-Native-osx-arm64.zip` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7) |
+| **macOS Intel** | `Smiley-Native-osx-x64.zip` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7) |
+| **Linux x64** | `Smiley-Native-linux-x64.tar.gz` | [Releases → Assets](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.7) |
 
 ⚠️ Do not download Smiley from unofficial mirrors — they may be modified or unsafe.
 

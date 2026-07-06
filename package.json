@@ -37,7 +37,7 @@
   "build": {
     "appId": "com.smiley.rpc",
     "productName": "Smiley",
-    "copyright": "Copyright \u00a9 2025\u20132026 Raj (1tsRaj). All Rights Reserved.",
+    "copyright": "Copyright © 2025–2026 Raj (1tsRaj). All Rights Reserved.",
     "directories": {
       "output": "dist",
       "buildResources": "build"
