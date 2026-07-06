@@ -116,21 +116,16 @@ function createMusicSync({
     const artist = track.artist ? truncate(track.artist) : '';
     const album = track.album ? truncate(track.album) : '';
     const { progressMs, durationMs } = getLiveProgress(track);
-    const timeLabel = durationMs > 0
-      ? `${formatClock(progressMs)} / ${formatClock(durationMs)}`
-      : formatClock(progressMs);
 
     let state;
     if (!track.isPlaying) {
-      state = artist
-        ? `Paused · ${timeLabel} · ${artist}`
-        : `Paused · ${timeLabel}`;
+      state = artist ? `Paused · ${artist}` : 'Paused';
     } else if (artist && album) {
-      state = truncate(`${artist} — ${album} · ${timeLabel}`);
+      state = truncate(`${artist} — ${album}`);
     } else if (artist) {
-      state = truncate(`by ${artist} · ${timeLabel}`);
+      state = truncate(`by ${artist}`);
     } else {
-      state = truncate(timeLabel);
+      state = base.state || 'Shows your song 🎵';
     }
 
     const activity = {
@@ -306,12 +301,7 @@ function createMusicSync({
   function getCurrentTrackLabel() {
     const track = activityTemplate?.musicTrack;
     if (!track?.title) return null;
-    const { progressMs, durationMs } = getLiveProgress(track);
-    const time = durationMs > 0
-      ? `${formatClock(progressMs)} / ${formatClock(durationMs)}`
-      : formatClock(progressMs);
-    const base = track.artist ? `${track.title} — ${track.artist}` : track.title;
-    return `${base} (${time})`;
+    return track.artist ? `${track.title} — ${track.artist}` : track.title;
   }
 
   return {

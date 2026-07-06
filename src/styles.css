@@ -486,8 +486,7 @@ body.has-window-controls .app-header {
 .discord-now-playing { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .discord-track-progress { margin-top: 8px; }
 .discord-track-bar { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; }
-.discord-track-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #bb9af7); transition: width 0.35s linear; }
-.discord-track-times { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.68rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.discord-track-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #bb9af7); transition: width 1s linear; }
 .discord-timer { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); opacity: 0; transform: translateY(4px); transition: var(--transition); }
 .discord-card.active .discord-timer { opacity: 1; transform: translateY(0); }
 .session-badge { margin-left: 4px; font-size: 0.68rem; color: var(--text-muted); background: var(--bg-elevated); padding: 1px 6px; border-radius: 4px; }

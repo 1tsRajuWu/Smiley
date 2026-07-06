@@ -11,11 +11,11 @@ Track **installed and active Smiley users**. Disclosed in [PRIVACY.md](../PRIVAC
 | `arch` | `arm64` | Device |
 | `os_version` | `24.5.0` | Device (OS kernel/build) |
 | `electron_version` | `33.2.0` | Device |
-| `app_version` | `5.0.11` | Device |
+| `app_version` | `5.0.12` | Device |
 | `locale` | `en-US` | Device (app language) |
 | `timezone` | `Asia/Kolkata` | Device (IANA) |
 | `channel` | `release` | Device (`release` or `portable`) |
-| `user_agent` | `Smiley/5.0.11 Electron/…` | Device |
+| `user_agent` | `Smiley/5.0.12 Electron/…` | Device |
 | `consent_version` | `2026-07-07` | Device (PP/ToS version) |
 | `ip_address` | `203.0.113.42` | **Server** (`x-forwarded-for` / `x-real-ip`) |
 | `country_code` | `IN` | IP geolocation + edge headers |

@@ -45,9 +45,8 @@ const previewDetails = $('#previewDetails');
 const previewState = $('#previewState');
 const previewNowPlaying = $('#previewNowPlaying');
 const previewTrackProgress = $('#previewTrackProgress');
+const previewTrackBar = $('#previewTrackBar');
 const previewTrackFill = $('#previewTrackFill');
-const previewTrackElapsed = $('#previewTrackElapsed');
-const previewTrackDuration = $('#previewTrackDuration');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -968,13 +967,6 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
   });
 }
 
-function formatTrackClock(ms) {
-  const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${String(sec).padStart(2, '0')}`;
-}
-
 function getLiveTrackProgress(track) {
   if (!track) return { progressMs: 0, durationMs: 0 };
   const durationMs = Math.max(0, Number(track.durationMs) || 0);
@@ -1002,14 +994,9 @@ function updateNowPlayingProgressUi() {
   }
 
   const { progressMs, durationMs } = getLiveTrackProgress(nowPlayingTrack);
-  if (previewTrackElapsed) previewTrackElapsed.textContent = formatTrackClock(progressMs);
-  if (previewTrackDuration) {
-    previewTrackDuration.textContent = durationMs > 0 ? formatTrackClock(durationMs) : '--:--';
-  }
-  if (previewTrackFill) {
-    const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
-    previewTrackFill.style.width = `${pct}%`;
-  }
+  const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
+  if (previewTrackFill) previewTrackFill.style.width = `${pct}%`;
+  if (previewTrackBar) previewTrackBar.setAttribute('aria-valuenow', String(Math.round(pct)));
   previewTrackProgress.hidden = false;
 }
 
@@ -1038,10 +1025,6 @@ function applyNowPlayingPreview(activity) {
 
   if (track?.title) {
     previewDetails.textContent = track.title;
-    const { progressMs, durationMs } = getLiveTrackProgress(track);
-    const timeLabel = durationMs > 0
-      ? `${formatTrackClock(progressMs)} / ${formatTrackClock(durationMs)}`
-      : formatTrackClock(progressMs);
 
     if (track.isPlaying) {
       previewState.textContent = track.artist
@@ -1053,7 +1036,6 @@ function applyNowPlayingPreview(activity) {
 
     const hintParts = [];
     if (track.device) hintParts.push(track.device);
-    if (timeLabel) hintParts.push(timeLabel);
     if (!track.isPlaying) hintParts.push('Paused');
     const hint = hintParts.join(' · ');
     if (hint) {
@@ -3040,7 +3022,7 @@ async function init() {
     applyNowPlayingPreview(activity);
     clearNowPlayingProgressTimer();
     if (track?.title) {
-      nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 2000);
+      nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 1000);
     }
   });
 
