@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-    "version": "4.1.15",
+    "version": "4.1.16",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",

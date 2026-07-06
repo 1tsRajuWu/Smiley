@@ -335,7 +335,16 @@ function syncMaximizeButton(isMaximized) {
   maximizeBtn.setAttribute('aria-label', isMaximized ? 'Restore window' : 'Maximize window');
 }
 
+let lastErrorToastKey = '';
+let lastErrorToastAt = 0;
+
 function showToast(message, type = 'success') {
+  if (type === 'error') {
+    const now = Date.now();
+    if (message === lastErrorToastKey && now - lastErrorToastAt < 8000) return;
+    lastErrorToastKey = message;
+    lastErrorToastAt = now;
+  }
   const el = document.createElement('div');
   el.className = `toast ${type}`;
   el.textContent = message;
@@ -429,6 +438,9 @@ function resolveChoiceToUrl(activityId, choiceId) {
     const url = choiceId.slice(7);
     return url || null;
   }
+  if (choiceId.startsWith('local:')) {
+    return choiceId.slice(6) || null;
+  }
   return resolveGifChoiceUrl(activityId, choiceId);
 }
 
@@ -439,6 +451,9 @@ function getSavedGifChoiceId(activity) {
   if (isValidDiscordImageUrl(activity.gifUrl)) {
     return `custom:${activity.gifUrl}`;
   }
+  if (activity.localGifPath) {
+    return `local:${activity.localGifPath}`;
+  }
   return null;
 }
 
@@ -447,13 +462,14 @@ function getPreferredGifUrl(activity) {
   const saved = activityGifChoices[activity.id];
   if (saved) return resolveChoiceToUrl(activity.id, saved);
   if (isValidDiscordImageUrl(activity.gifUrl)) return activity.gifUrl;
-  return null;
+  return activity.localGifPath || null;
 }
 
 function canLoadPickerThumb(url) {
   if (!url || typeof url !== 'string') return false;
   if (/^https?:\/\//i.test(url)) return true;
   if (/^data:image\//i.test(url)) return true;
+  if (/^file:\/\//i.test(url)) return true;
   return false;
 }
 
@@ -547,6 +563,7 @@ function renderGifPicker(activity) {
 
   const presetOptions = getActivityGifOptions(activity.id, {
     activityGifUrl: activity.gifUrl,
+    activityLocalGifPath: activity.localGifPath,
   });
 
   const selectedId = getSavedGifChoiceId(activity);
@@ -596,7 +613,7 @@ async function onGifOptionSelect(activityId, choiceId) {
   const activity = findActivity(activityId);
   if (!activity || selectedActivityId !== activityId) return;
 
-  const instantUrl = resolveGifChoiceUrl(activityId, choiceId);
+  const instantUrl = resolveChoiceToUrl(activityId, choiceId);
   const fallbacks = getActivityFallbackUrls(activity);
   const instantDiscord =
     resolveDiscordRpcImageUrl(activity, instantUrl) || getTenorFallback(activity);
@@ -605,8 +622,9 @@ async function onGifOptionSelect(activityId, choiceId) {
   lastGifActivityId = activityId;
   currentGifUrl = instantUrl;
   currentDiscordImageUrl = instantDiscord;
+  const gifSource = choiceId.startsWith('local:') ? 'Uploaded GIF' : 'Chosen GIF';
   setPreviewDisplay(activity, instantUrl, fallbacks, { generation });
-  setCharacterDisplay(instantUrl, 'Chosen GIF', fallbacks, { generation, activity });
+  setCharacterDisplay(instantUrl, gifSource, fallbacks, { generation, activity });
 
   activityGifChoices = { ...activityGifChoices, [activityId]: choiceId };
   scheduleSaveGifChoices();

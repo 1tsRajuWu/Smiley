@@ -174,7 +174,11 @@ const GITHUB_REPO_URL =
     .replace(/\.git$/, '')
     .trim();
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
-const GITHUB_DOWNLOAD_HOSTS = new Set(['github.com', 'objects.githubusercontent.com']);
+const GITHUB_DOWNLOAD_HOSTS = new Set([
+  'github.com',
+  'objects.githubusercontent.com',
+  'release-assets.githubusercontent.com',
+]);
 const RELEASE_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
 function getMacDmgArch() {
@@ -191,6 +195,20 @@ function buildMacDmgDownloadUrl(version) {
   const ver = normalizeReleaseVersion(version);
   const arch = getMacDmgArch();
   return `${GITHUB_REPO_URL}/releases/download/v${ver}/Smiley-${ver}-${arch}.dmg`;
+}
+
+function buildMacZipDownloadUrl(version) {
+  const ver = normalizeReleaseVersion(version);
+  const arch = getMacDmgArch();
+  return `${GITHUB_REPO_URL}/releases/download/v${ver}/Smiley-${ver}-${arch}.zip`;
+}
+
+function getMacZipPathForVersion(version) {
+  const ver = normalizeReleaseVersion(version);
+  if (!ver) return null;
+  const dir = path.join(getUpdaterCacheDir(), 'pending');
+  ensureDir(dir);
+  return path.join(dir, `Smiley-${ver}-${getMacDmgArch()}.zip`);
 }
 
 function getMacUpdateDownloadDir() {
@@ -1484,6 +1502,63 @@ function isValidDownloadedDmg(filePath) {
   }
 }
 
+async function downloadMacUpdateZip(version) {
+  if (process.platform !== 'darwin') {
+    return { success: false, error: 'Mac-only feature' };
+  }
+  const ver = normalizeReleaseVersion(version || pendingUpdateVersion);
+  if (!ver) return { success: false, error: 'No update version available' };
+
+  const existingZip = getMacDownloadedZipPath();
+  if (existingZip) {
+    updateDownloaded = true;
+    lastDownloadPercent = 100;
+    const payload = buildMacUpdateReadyPayload(ver);
+    sendUpdateStatus(payload);
+    return { success: true, ...payload };
+  }
+
+  const destPath = getMacZipPathForVersion(ver);
+  if (destPath && fs.existsSync(destPath) && fs.statSync(destPath).size > 1024 * 1024) {
+    updateDownloaded = true;
+    lastDownloadPercent = 100;
+    const payload = buildMacUpdateReadyPayload(ver);
+    sendUpdateStatus(payload);
+    return { success: true, ...payload };
+  }
+
+  const url = buildMacZipDownloadUrl(ver);
+  sendUpdateStatus({
+    status: 'downloading',
+    version: ver,
+    percent: 0,
+    macInApp: true,
+  });
+
+  try {
+    await httpDownloadFile(url, destPath, (percent) => {
+      lastDownloadPercent = percent;
+      sendUpdateStatus({
+        status: 'downloading',
+        version: ver,
+        percent,
+        macInApp: true,
+      });
+    });
+    updateDownloaded = true;
+    lastDownloadPercent = 100;
+    const payload = buildMacUpdateReadyPayload(ver);
+    sendUpdateStatus(payload);
+    return { success: true, ...payload };
+  } catch (err) {
+    appendUpdaterLog(`Zip download failed: ${err.message}`);
+    return {
+      success: false,
+      error: 'Could not download update. Check your connection and try again.',
+    };
+  }
+}
+
 async function downloadMacUpdateDmg(version) {
   if (process.platform !== 'darwin') {
     return { success: false, error: 'Mac-only feature' };
@@ -2034,13 +2109,15 @@ function setupAutoUpdater() {
         };
         sendUpdateStatus(payload);
         resolveManualUpdate({ ok: true, status: 'available', version: info.version });
-        getAutoUpdater().downloadUpdate().catch((err) => {
+        getAutoUpdater().downloadUpdate().catch(async (err) => {
           appendUpdaterLog(`Mac downloadUpdate failed: ${err.message}`);
           if (isUpdateSignatureError(err?.message) && getMacDownloadedZipPath()) {
             updateDownloaded = true;
             sendUpdateStatus(buildMacUpdateReadyPayload(info.version));
             return;
           }
+          const fallback = await downloadMacUpdateZip(info.version);
+          if (fallback.success) return;
           sendUpdateStatus({
             ok: false,
             status: 'error',
@@ -2138,6 +2215,14 @@ function setupAutoUpdater() {
           version: failedVersion || null,
           expected: true,
         };
+        if (!getMacDownloadedZipPath()) {
+          downloadMacUpdateZip(failedVersion).then((fallback) => {
+            if (fallback.success) return;
+            sendUpdateStatus(payload);
+            resolveManualUpdate(payload);
+          });
+          return;
+        }
         sendUpdateStatus(payload);
         resolveManualUpdate(payload);
         return;
@@ -2283,6 +2368,19 @@ function getCustomActivitiesDir() {
   const dir = getUserDataPath('custom-activities');
   ensureDir(dir);
   return dir;
+}
+
+function enrichCustomActivity(entry) {
+  if (!entry || typeof entry !== 'object') return entry;
+  let localGifPath = entry.localGifPath || null;
+  if (entry.localFileName) {
+    const safeName = sanitizeFilename(entry.localFileName);
+    const filePath = path.join(getCustomActivitiesDir(), safeName);
+    if (fs.existsSync(filePath)) {
+      localGifPath = filePathToUrl(filePath);
+    }
+  }
+  return { ...entry, localGifPath };
 }
 
 function sanitizeActivityText(text, maxLen = CUSTOM_ACTIVITY_TEXT_MAX) {
@@ -2787,10 +2885,13 @@ function setupIPC() {
         } catch (err) {
           appendUpdaterLog(`downloadUpdate on install failed: ${err.message}`);
           if (!isUpdateSignatureError(err?.message) || !getMacDownloadedZipPath()) {
-            return {
-              success: false,
-              error: 'Could not download update. Check your connection and try again.',
-            };
+            const fallback = await downloadMacUpdateZip(pendingUpdateVersion);
+            if (!fallback.success) {
+              return {
+                success: false,
+                error: fallback.error || 'Could not download update. Check your connection and try again.',
+              };
+            }
           }
         }
         const zipPath = await waitForMacDownloadedZip();
@@ -2890,7 +2991,9 @@ function setupIPC() {
     } catch (err) { return { success: false, error: err.message }; }
   });
 
-  ipcMain.handle('get-custom-activities', () => config.customActivities || []);
+  ipcMain.handle('get-custom-activities', () =>
+    (config.customActivities || []).map(enrichCustomActivity),
+  );
 
   ipcMain.handle('resolve-gif-url', async (_, url) => {
     if (typeof url !== 'string') return { success: false, error: 'Invalid URL' };
@@ -2988,7 +3091,7 @@ function setupIPC() {
 
     saveConfig({ customActivities: activities });
     broadcastConfigChanged();
-    return { success: true, activity: entry };
+    return { success: true, activity: enrichCustomActivity(entry) };
   });
 
   ipcMain.handle('delete-custom-activity', (_, id) => {

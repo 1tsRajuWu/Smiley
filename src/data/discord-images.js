@@ -216,13 +216,21 @@ export async function fetchNekosGifForActivity(activityId, hintUrl = null) {
 }
 
 /** Custom-activity GIF picker options only (preset activities use ACTIVITY_TENOR_FALLBACKS). */
-export function getActivityGifOptions(activityId, { activityGifUrl = null } = {}) {
+export function getActivityGifOptions(activityId, { activityGifUrl = null, activityLocalGifPath = null } = {}) {
   const options = [];
   if (activityGifUrl && isValidDiscordImageUrl(activityGifUrl)) {
     options.push({
       id: `custom:${activityGifUrl}`,
       label: 'Activity GIF',
       url: activityGifUrl,
+    });
+  }
+  if (activityLocalGifPath && isPreviewImageUrl(activityLocalGifPath)) {
+    options.push({
+      id: `local:${activityLocalGifPath}`,
+      label: 'Uploaded GIF',
+      url: activityLocalGifPath,
+      previewOnly: true,
     });
   }
   return options;
