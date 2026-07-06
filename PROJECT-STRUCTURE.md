@@ -1,6 +1,13 @@
 # Smiley — Project structure (newbie guide)
 
-**New to the repo?** Start here before opening random files. This map explains what lives where and what you should (and should not) touch.
+**New to the repo?** Start here before opening random files.
+
+| Doc | Best for |
+|-----|----------|
+| **[docs/CODE-TOUR.md](docs/CODE-TOUR.md)** | Absolute beginners — what Electron is, step-by-step flow |
+| **This file** | Folder map and “which file do I edit?” |
+| [src/README.md](src/README.md) | UI folder (`src/`) |
+| [electron/README.md](electron/README.md) | Backend helpers + `main.js` section index |
 
 > **Quick link from README:** [README.md](README.md) is for users downloading the app. **This file** is for people reading or changing the code.
 
@@ -10,11 +17,11 @@
 
 | If you want to… | Open this first |
 |-----------------|-----------------|
-| Understand the whole app | This file, then `package.json` |
+| Understand the whole app | [docs/CODE-TOUR.md](docs/CODE-TOUR.md), then `package.json` |
 | Change the UI (buttons, layout, themes) | `src/index.html` → `src/renderer.js` → `src/styles-v2.css` |
-| Change Discord connection / tray / updates | `main.js` (Electron main process) |
-| Add or edit activity presets | `src/activities.js` |
-| Change GIF sources / image URLs | `src/discord-images.js` |
+| Change Discord connection / tray / updates | `main.js` (see [electron/README.md](electron/README.md)) |
+| Add or edit activity presets | `src/data/activities.js` |
+| Change GIF sources / image URLs | `src/data/discord-images.js` |
 | Build installers | `package.json` scripts + `build/` + `.github/workflows/release.yml` |
 | Run locally | [For developers](README.md#for-developers) in README |
 
@@ -33,45 +40,56 @@ npm start
 ```
 Project Smiley/
 ├── README.md                  # User-facing: download, features, quick start
-├── PROJECT-STRUCTURE.md         # ← You are here — code map for humans
+├── PROJECT-STRUCTURE.md       # ← You are here — code map for humans
+├── docs/
+│   └── CODE-TOUR.md           # Beginner walkthrough (start here if new to code)
 ├── package.json               # App version, npm scripts, electron-builder config
-├── package-lock.json
 │
 ├── main.js                    # Electron MAIN process (Node + Discord RPC)
-├── preload.js                 # Safe bridge between UI and main process
+├── preload.js                 # Safe bridge: window.smiley ↔ IPC
+│
+├── electron/                  # Backend modules loaded by main.js
+│   ├── README.md
+│   └── install-registry.js    # Optional anonymous install stats
 │
 ├── config.example.json        # Example user settings (theme, window size, etc.)
-├── discord.app.example.json   # Template: Discord Application Client ID (for builds)
+├── discord.app.example.json   # Template: Discord Application Client ID
 ├── discord.app.json           # Your real Client ID (gitignored — create locally)
 ├── manifest.json              # PWA-style metadata (icons, name)
 │
-├── src/                       # RENDERER — everything the user sees (see src/README.md)
+├── src/                       # RENDERER — everything the user sees
+│   ├── README.md
 │   ├── index.html
-│   ├── renderer.js
-│   ├── activities.js
-│   ├── discord-images.js
-│   ├── styles.css / styles-v1.css / styles-v2.css
-│   └── assets/                # Logos, icons, UPI QR, in-app images
+│   ├── renderer.js            # UI logic (search for // ─── sections ───)
+│   ├── activities.js          # Re-export → data/activities.js
+│   ├── discord-images.js      # Re-export → data/discord-images.js
+│   ├── data/                  # ← Edit activities & GIF logic here
+│   │   ├── activities.js
+│   │   ├── discord-images.js
+│   │   └── README.md
+│   ├── styles-v2.css          # Active UI theme
+│   ├── styles.css / styles-v1.css
+│   └── assets/                # Logos, icons, UPI QR
 │
 ├── build/                     # Icons, Mac entitlements, license RTF for installers
-├── scripts/                   # Icon generation, Mac signing, README download links
-├── docs/                      # Developer docs + docs/site/ (GitHub Pages download page)
+├── scripts/                   # Icons, Mac signing, native builds, README links
+├── docs/                      # Developer docs + docs/site/ (GitHub Pages)
 ├── .github/                   # CI (release, Pages, Android), issue templates
 │
 ├── mobile/                    # Android/iOS Capacitor app (separate from Electron)
-├── Smiley.Native/             # Optional native (.NET) build — see README-NATIVE.md
+├── Smiley.Native/             # Optional native (.NET) build — README-NATIVE.md
 │
-├── LICENSE, ToS.md, PRIVACY.md, LEGAL.md   # Legal (bundled in installers; keep at root)
-├── CONTRIBUTING.md, INSTALL-MAC.md, …       # Contributor / install notes
+├── LICENSE, ToS.md, PRIVACY.md, LEGAL.md
+├── CONTRIBUTING.md, INSTALL-MAC.md, …
 │
 ├── dist/                      # ⚠️ Build output — do not edit
 ├── dist-native/               # ⚠️ Native build output — do not edit
 └── node_modules/              # ⚠️ Dependencies — do not edit
 ```
 
-**Why `main.js` and `preload.js` stay at the root:** `package.json` points `"main": "main.js"` and electron-builder packs those exact paths. Moving them would break builds unless every reference is updated.
+**Why `main.js` and `preload.js` stay at the root:** `package.json` points `"main": "main.js"` and electron-builder packs those exact paths.
 
-**Why config JSON stays at the root:** Same reason — `main.js`, CI, and `electron-builder` `files` list expect `discord.app.json` and `config.example.json` here.
+**Why config JSON stays at the root:** `main.js`, CI, and electron-builder `files` list expect `discord.app.json` and `config.example.json` here.
 
 ---
 
@@ -79,21 +97,19 @@ Project Smiley/
 
 | File | What it does | When you edit it |
 |------|----------------|------------------|
-| `package.json` | Version, dependencies, `npm run` scripts, electron-builder packaging | New dependency, version bump, build settings |
-| `main.js` | Window, tray, Discord RPC, auto-update, IPC handlers, user config on disk | Backend behavior, Discord connection, file dialogs, shortcuts |
-| `preload.js` | Exposes `window.smiley.*` API to the UI (no direct Node in renderer) | New UI ↔ main features need a new IPC method here + in `main.js` |
-| `src/index.html` | App shell: header, activity grid, settings modal markup | Layout, new panels, accessibility |
-| `src/renderer.js` | UI logic: clicks, search, settings, calls `window.smiley` | Most feature work in the visible app |
-| `src/activities.js` | Activity categories and presets (Gaming, Coding, etc.) | New default activities or categories |
-| `src/discord-images.js` | GIF URLs, Tenor/Giphy/nekos fallbacks, image cache | Changing animations or image providers |
-| `src/styles-v2.css` | Active UI theme (v2) | Colors, spacing, responsive layout |
-| `src/styles.css` / `styles-v1.css` | Older themes (legacy / fallback) | Only if supporting old UI version |
-| `config.example.json` | Documented shape of user settings | New persisted user preference |
-| `discord.app.example.json` | Template for Discord app Client ID | Documenting setup for contributors |
-| `build/icon.*` | App icons for OS installers and tray | Rebrand / new icon (`npm run icons`) |
-| `.github/workflows/release.yml` | Tag → build Mac/Win/Linux → GitHub Releases | Release pipeline changes |
+| `package.json` | Version, dependencies, `npm run` scripts, packaging | New dependency, version bump, build settings |
+| `main.js` | Window, tray, Discord RPC, auto-update, IPC, config on disk | Backend behavior (see section TOC at top of file) |
+| `preload.js` | Exposes `window.smiley.*` to the UI | New UI ↔ main feature: add method here + handler in `main.js` |
+| `src/index.html` | App shell: header, activity grid, settings modal | Layout, new panels |
+| `src/renderer.js` | UI logic: clicks, search, settings | Most visible feature work |
+| `src/data/activities.js` | Activity categories and presets | New default activities |
+| `src/data/discord-images.js` | GIF URLs, API fallbacks, image cache | Changing animations or providers |
+| `src/styles-v2.css` | Active UI theme | Colors, spacing, layout |
+| `electron/install-registry.js` | Opt-in anonymous install counter | Registry / privacy behavior |
+| `config.example.json` | Documented shape of user settings | New persisted preference |
+| `build/icon.*` | App icons for installers and tray | Rebrand (`npm run icons`) |
 
-User settings at runtime are **not** in the repo. They live in the OS app data folder (see `main.js` → `getUserDataPath`).
+User settings at runtime live in the OS app data folder (see `main.js` → `getUserDataPath`).
 
 ---
 
@@ -116,14 +132,13 @@ User settings at runtime are **not** in the repo. They live in the OS app data f
              ▼
   ┌─────────────────────┐
   │  main.js            │  ipcMain handlers, tray, updates
-  │  discord-rpc        │  Rich Presence → Discord desktop client
+  │  discord-rpc        │  Rich Presence → Discord desktop
   └──────────┬──────────┘
-             │
              ▼
-       Discord shows your status + large image (GIF key/URL)
+       Discord shows your status + GIF
 ```
 
-**Supporting modules:** `src/activities.js` defines *what* you can pick; `src/discord-images.js` resolves *which image* to send for each activity.
+**Data modules:** `src/data/activities.js` = *what* you can pick; `src/data/discord-images.js` = *which image* to send.
 
 ---
 
@@ -131,11 +146,11 @@ User settings at runtime are **not** in the repo. They live in the OS app data f
 
 | Folder | Purpose |
 |--------|---------|
-| `scripts/` | `generate-icons.sh`, Mac `afterSign`, `update-readme-downloads.sh`, GIF validation |
-| `docs/` | `RELEASING.md`, `NOTARIZATION.md`, `MINIMUM-REQUIREMENTS.md`, `docs/site/` for Pages |
-| `mobile/` | Capacitor wrapper; `mobile/www/` is synced from desktop `src/` via `npm run build:mobile:www` |
-| `Smiley.Native/` | Experimental native desktop build — not the main Electron app |
-| `.github/` | `workflows/release.yml` (installers), `pages.yml` (download site), Android CI |
+| `scripts/` | `generate-icons.sh`, `build-native-*.sh`, Mac `afterSign`, README download links |
+| `docs/` | `CODE-TOUR.md`, `RELEASING.md`, `NOTARIZATION.md`, `docs/site/` for Pages |
+| `mobile/` | Capacitor app; sync from `src/data/` via `npm run build:mobile:www` |
+| `Smiley.Native/` | Lightweight native desktop — not the main Electron app |
+| `.github/` | Release CI, Pages, Android |
 
 ---
 
@@ -143,10 +158,9 @@ User settings at runtime are **not** in the repo. They live in the OS app data f
 
 | Path | Why |
 |------|-----|
-| `dist/`, `dist-native/` | Generated installers — run `npm run build` instead |
-| `node_modules/`, `mobile/node_modules/` | Run `npm install` / `npm ci` |
-| `discord.app.json` | Secret Client ID — never commit (listed in `.gitignore`) |
-| `config.json`, `config.secure` | Local user data paths (gitignored) |
+| `dist/`, `dist-native/` | Generated — run `npm run build` |
+| `node_modules/` | Run `npm install` |
+| `discord.app.json` | Secret Client ID — never commit |
 | `mobile/android/app/build/`, `.gradle/` | Android build cache |
 
 ---
@@ -154,22 +168,19 @@ User settings at runtime are **not** in the repo. They live in the OS app data f
 ## Common tasks
 
 **Add a new built-in activity**  
-Edit `src/activities.js` → optional GIF in `src/discord-images.js` → test with `npm start`.
+`src/data/activities.js` → optional GIF in `src/data/discord-images.js` → `npm start`.
 
 **Add a settings toggle**  
-`config.example.json` (docs) → save/load in `main.js` → expose via `preload.js` → UI in `src/renderer.js` + `src/index.html`.
+`config.example.json` → `main.js` → `preload.js` → `src/renderer.js` + `src/index.html`.
 
 **Ship a release**  
-Bump version in `package.json` → tag `vX.Y.Z` → CI in `.github/workflows/release.yml` builds and publishes. See `docs/RELEASING.md`.
-
-**Mobile**  
-See `mobile/README.md`. Desktop `src/` files are copied into `mobile/www/` by the build script; don’t hand-edit generated copies in `mobile/www/` for long-term changes.
+Bump `package.json` version → tag `vX.Y.Z` → see `docs/RELEASING.md`.
 
 ---
 
 ## More reading
 
-- [src/README.md](src/README.md) — renderer files in detail  
-- [docs/RELEASING.md](docs/RELEASING.md) — release checklist  
-- [README-NATIVE.md](README-NATIVE.md) — native (.NET) variant  
-- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute
+- [docs/CODE-TOUR.md](docs/CODE-TOUR.md) — beginner-friendly code walkthrough  
+- [src/README.md](src/README.md) · [src/data/README.md](src/data/README.md)  
+- [electron/README.md](electron/README.md)  
+- [README-NATIVE.md](README-NATIVE.md) — native (.NET) variant

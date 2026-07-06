@@ -2,7 +2,7 @@
 # DEPRECATED (v3.0.0+): Smiley.Native is no longer shipped in releases.
 # This script is kept for local development only — do not use for publishing.
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
 NATIVE="$ROOT/Smiley.Native"
 OUT_ROOT="$ROOT/dist-native"

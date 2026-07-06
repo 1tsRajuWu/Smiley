@@ -37,13 +37,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
-            node -e "const fs=require('fs');fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:process.env.SUPABASE_URL,supabaseAnonKey:process.env.SUPABASE_ANON_KEY}))"
-            echo "Install registry configured"
-          else
-            echo "SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build"
-          fi
+        run: node -e "const fs=require('fs');const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_ANON_KEY;if(u&&k){fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured')}else{console.log('SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build')}"
 
       - name: Build and publish (mac)
         env:
@@ -76,10 +70,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
-            node -e "const fs=require('fs');fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:process.env.SUPABASE_URL,supabaseAnonKey:process.env.SUPABASE_ANON_KEY}))"
-          fi
+        run: node -e "const fs=require('fs');const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_ANON_KEY;if(u&&k){fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured')}else{console.log('SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build')}"
 
       - name: Build and publish (win)
         env:
@@ -112,10 +103,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
-            node -e "const fs=require('fs');fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:process.env.SUPABASE_URL,supabaseAnonKey:process.env.SUPABASE_ANON_KEY}))"
-          fi
+        run: node -e "const fs=require('fs');const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_ANON_KEY;if(u&&k){fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured')}else{console.log('SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build')}"
 
       - name: Build and publish (linux)
         env:

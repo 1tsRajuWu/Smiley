@@ -79,8 +79,8 @@ dotnet run
 ### All platforms (zip for GitHub releases)
 
 ```bash
-chmod +x build-native-all.sh
-./build-native-all.sh
+chmod +x scripts/build-native-all.sh
+./scripts/build-native-all.sh
 ```
 
 Output: `dist-native/Smiley-Native-<version>-<rid>.zip` for `win-x64`, `osx-arm64`, `osx-x64`, `linux-x64`.
@@ -88,9 +88,9 @@ Output: `dist-native/Smiley-Native-<version>-<rid>.zip` for `win-x64`, `osx-arm6
 ### macOS (.app / optional .dmg)
 
 ```bash
-chmod +x build-native.sh
-./build-native.sh osx-arm64   # Apple Silicon
-./build-native.sh osx-x64     # Intel Mac
+chmod +x scripts/build-native.sh
+./scripts/build-native.sh osx-arm64   # Apple Silicon
+./scripts/build-native.sh osx-x64     # Intel Mac
 ```
 
 Output: `dist-native/osx-arm64/Smiley`
@@ -100,7 +100,7 @@ For `.dmg`, install [create-dmg](https://github.com/create-dmg/create-dmg) and r
 ### Windows (.exe)
 
 ```powershell
-.\build-native.ps1 win-x64
+.\scripts\build-native.ps1 win-x64
 ```
 
 Output: `dist-native/win-x64/Smiley.exe` (single file, self-contained)
@@ -108,7 +108,7 @@ Output: `dist-native/win-x64/Smiley.exe` (single file, self-contained)
 ### Linux
 
 ```bash
-./build-native.sh linux-x64
+./scripts/build-native.sh linux-x64
 ```
 
 ## Configuration

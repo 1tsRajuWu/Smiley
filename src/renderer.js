@@ -124,13 +124,6 @@ const uiStylesheet = $('#uiStylesheet');
 const launchAtLoginToggle = $('#launchAtLoginToggle');
 const hotkeyToggle = $('#hotkeyToggle');
 const hotkeyHint = $('#hotkeyHint');
-const systemFocusToggle = $('#systemFocusToggle');
-const systemFocusShortcutOn = $('#systemFocusShortcutOn');
-const systemFocusShortcutOff = $('#systemFocusShortcutOff');
-const systemFocusMinimizeToggle = $('#systemFocusMinimizeToggle');
-const systemFocusShortcutFields = $('#systemFocusShortcutFields');
-const systemFocusHint = $('#systemFocusHint');
-const openSystemFocusSettingsBtn = $('#openSystemFocusSettingsBtn');
 const exportSettingsBtn = $('#exportSettingsBtn');
 const importSettingsBtn = $('#importSettingsBtn');
 const resetWindowBtn = $('#resetWindowBtn');
@@ -305,32 +298,7 @@ function applyPlatformUI(cfg = {}) {
   if (shareInstallStatsToggle) {
     shareInstallStatsToggle.checked = cfg.installTrackingEnabled === false;
   }
-  syncSystemFocusUI(cfg);
   applyUpiVisibility();
-}
-
-function syncSystemFocusUI(cfg = {}) {
-  const osPlatform = cfg.osPlatform || (cfg.isMac ? 'darwin' : 'win32');
-  const isMac = osPlatform === 'darwin';
-  const enabled = cfg.systemFocusEnabled === true;
-  if (systemFocusToggle) {
-    systemFocusToggle.checked = enabled;
-    const toggleRow = systemFocusToggle.closest('.toggle-field');
-    if (toggleRow) toggleRow.hidden = !isMac;
-  }
-  if (systemFocusShortcutOn) systemFocusShortcutOn.value = cfg.systemFocusShortcutOn || 'Smiley Focus On';
-  if (systemFocusShortcutOff) systemFocusShortcutOff.value = cfg.systemFocusShortcutOff || 'Smiley Focus Off';
-  if (systemFocusMinimizeToggle) systemFocusMinimizeToggle.checked = cfg.systemFocusMinimizeTray === true;
-  if (systemFocusShortcutFields) systemFocusShortcutFields.hidden = !isMac || !enabled;
-  if (systemFocusHint) {
-    if (isMac) {
-      systemFocusHint.innerHTML = 'Create two Shortcuts with a <strong>Set Focus</strong> action (e.g. Do Not Disturb on/off), then enter their names below. Smiley runs them when you pick <strong>Deep focus</strong>, <strong>Sleeping</strong>, or <strong>In a meeting</strong>.';
-    } else if (osPlatform === 'win32') {
-      systemFocusHint.textContent = 'Windows does not expose a supported API to toggle Focus Assist from apps. Use the button below to open Focus Assist settings, or enable automatic rules (e.g. when playing a game).';
-    } else {
-      systemFocusHint.textContent = 'Linux has no cross-desktop API to toggle Do Not Disturb. Use the button below to open notification settings for your desktop environment.';
-    }
-  }
 }
 
 function applyUpiVisibility() {
@@ -923,7 +891,7 @@ function renderCategoryTabs() {
     (cat) => `
     <button class="category-tab${cat.id === activeCategory ? ' active' : ''}" data-category="${cat.id}"
       style="${cat.id === activeCategory ? `--tab-color: ${cat.color}` : ''}" role="tab" aria-selected="${cat.id === activeCategory}">
-      ${cat.emoji} ${cat.label}
+      <span class="category-tab-emoji" aria-hidden="true">${cat.emoji}</span><span class="category-tab-label">${cat.label}</span>
     </button>
   `
   ).join('');
@@ -970,7 +938,7 @@ function renderRecentChips() {
     .map((item) => {
       const act = findActivity(item.id);
       const emoji = act?.emoji || '⭐';
-      return `<button type="button" class="quick-chip" data-id="${escapeHtml(item.id)}" title="${escapeHtml(item.state || item.details)}">${emoji} ${escapeHtml(item.details)}</button>`;
+      return `<button type="button" class="quick-chip" data-id="${escapeHtml(item.id)}" title="${escapeHtml(item.state || item.details)}"><span class="quick-chip-emoji" aria-hidden="true">${emoji}</span><span class="quick-chip-label">${escapeHtml(item.details)}</span></button>`;
     })
     .join('');
   recentChips.querySelectorAll('.quick-chip').forEach((chip) => {
@@ -1276,10 +1244,6 @@ function buildSettingsPayload() {
     customAnimation: activeCustomAnimation ? 'custom' : null,
     launchAtLogin: launchAtLoginToggle?.checked === true,
     hotkeyEnabled: hotkeyToggle?.checked !== false,
-    systemFocusEnabled: systemFocusToggle?.checked === true,
-    systemFocusShortcutOn: systemFocusShortcutOn?.value?.trim() || 'Smiley Focus On',
-    systemFocusShortcutOff: systemFocusShortcutOff?.value?.trim() || 'Smiley Focus Off',
-    systemFocusMinimizeTray: systemFocusMinimizeToggle?.checked === true,
     customWallpaper: wallpaperSettings.filename
       ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
       : null,
@@ -2200,20 +2164,6 @@ async function init() {
     tab.addEventListener('click', () => setGifSourceTab(tab.dataset.source));
   });
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
-  if (systemFocusToggle) {
-    systemFocusToggle.addEventListener('change', () => {
-      if (systemFocusShortcutFields) {
-        const isMac = currentSettings.isMac === true;
-        systemFocusShortcutFields.hidden = !isMac || !systemFocusToggle.checked;
-      }
-    });
-  }
-  if (openSystemFocusSettingsBtn) {
-    openSystemFocusSettingsBtn.addEventListener('click', async () => {
-      const result = await window.smiley.openSystemFocusSettings();
-      if (!result?.success) showToast(result?.error || 'Could not open settings', 'error');
-    });
-  }
   clearBtn.addEventListener('click', handleClear);
   if (copyBtn) copyBtn.addEventListener('click', handleCopy);
 

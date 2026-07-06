@@ -77,7 +77,7 @@ npm run build:all      # alias for build:compat
 
 ## Smiley.Native — lightweight app
 
-Built with **.NET 10** (`net10.0`, self-contained). Zips from `build-native-all.sh`. See [README-NATIVE.md](../README-NATIVE.md).
+Built with **.NET 10** (`net10.0`, self-contained). Zips from `scripts/build-native-all.sh`. See [README-NATIVE.md](../README-NATIVE.md).
 
 | Platform | Minimum OS | Architectures | Artifact |
 |----------|------------|---------------|----------|

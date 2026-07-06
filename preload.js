@@ -2,7 +2,7 @@
 // YOU ARE HERE: Preload bridge (renderer ↔ main)
 // ─ Adds window.smiley.* — UI must use this, not require('electron')
 // ─ Pair each method with ipcMain.handle in main.js
-// ─ Project map: PROJECT-STRUCTURE.md
+// ─ Project map: PROJECT-STRUCTURE.md │ Newbie tour: docs/CODE-TOUR.md
 // ═══════════════════════════════════════════════════════════════════════
 const { contextBridge, ipcRenderer } = require('electron');
 
@@ -30,7 +30,6 @@ contextBridge.exposeInMainWorld('smiley', {
   getWallpaperPath: (filename) => ipcRenderer.invoke('get-wallpaper-path', filename),
   deleteWallpaper: (filename) => ipcRenderer.invoke('delete-wallpaper', filename),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
-  openSystemFocusSettings: () => ipcRenderer.invoke('open-system-focus-settings'),
   exportSettings: () => ipcRenderer.invoke('export-settings'),
   importSettings: () => ipcRenderer.invoke('import-settings'),
   toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),

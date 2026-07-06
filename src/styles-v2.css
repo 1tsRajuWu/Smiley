@@ -16,6 +16,7 @@
     0 12px 40px rgba(0, 0, 0, 0.28);
   --v2-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.18);
   --v2-text-tracking: 0.01em;
+  --v2-text-secondary: color-mix(in srgb, var(--text-muted) 65%, var(--text));
 }
 
 [data-ui-version='v2'] body {

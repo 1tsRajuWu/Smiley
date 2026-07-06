@@ -2,7 +2,8 @@
 # DEPRECATED (v3.0.0+): Smiley.Native is no longer shipped in releases.
 # Local development only — do not use for publishing.
 set -euo pipefail
-cd "$(dirname "$0")/Smiley.Native"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT/Smiley.Native"
 
 echo "==> Restoring..."
 dotnet restore
@@ -22,7 +23,7 @@ if [ -z "$RID" ]; then
   esac
 fi
 
-OUT="../dist-native/$RID"
+OUT="$ROOT/dist-native/$RID"
 echo "==> Publishing $RID (trimmed, single-file)..."
 dotnet publish -c Release -r "$RID" --self-contained true \
   -p:PublishTrimmed=true \
@@ -37,5 +38,5 @@ du -sh "$OUT"/* 2>/dev/null | head -5
 if [[ "$RID" == osx-* ]] && command -v create-dmg &>/dev/null; then
   echo "==> Creating DMG..."
   create-dmg --volname "Smiley" --window-size 600 400 \
-    "../dist-native/Smiley-${RID}.dmg" "$OUT/Smiley" 2>/dev/null || true
+    "$ROOT/dist-native/Smiley-${RID}.dmg" "$OUT/Smiley" 2>/dev/null || true
 fi

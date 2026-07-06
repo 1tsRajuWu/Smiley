@@ -133,19 +133,6 @@ xattr -cr /Applications/Smiley.app
 </details>
 
 <details>
-<summary><strong>System Focus / Do Not Disturb (macOS)</strong></summary>
-
-In **Settings → Advanced → System Focus**:
-
-1. Create two **Shortcuts** with a **Set Focus** action (e.g. Do Not Disturb on/off).
-2. Enter their names in Smiley (Focus On / Focus Off).
-3. Enable **Enable with focus activities**.
-
-Smiley runs them when you pick **Deep focus**, **Sleeping**, or **In a meeting**.
-
-</details>
-
-<details>
 <summary><strong>Advanced</strong></summary>
 
 - **Custom activities** — Settings or **My Activities**: title, emoji, GIF

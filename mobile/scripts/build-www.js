@@ -32,8 +32,8 @@ function copyDir(from, to) {
 }
 
 console.log('Building mobile/www…');
-copyFile(path.join(SRC, 'activities.js'), path.join(WWW, 'activities.js'));
-copyFile(path.join(SRC, 'discord-images.js'), path.join(WWW, 'discord-images.js'));
+copyFile(path.join(SRC, 'data/activities.js'), path.join(WWW, 'activities.js'));
+copyFile(path.join(SRC, 'data/discord-images.js'), path.join(WWW, 'discord-images.js'));
 copyDir(path.join(SRC, 'assets'), path.join(WWW, 'assets'));
 copyFile(path.join(ROOT, 'build/icon-transparent.png'), path.join(WWW, 'assets/icon.png'));
 copyFile(path.join(ROOT, 'build/icon-light.png'), path.join(WWW, 'assets/icon-light.png'));

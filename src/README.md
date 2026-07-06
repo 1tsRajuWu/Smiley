@@ -2,18 +2,23 @@
 
 This folder is the **Smiley window UI**: HTML, CSS, and browser JavaScript. It does **not** talk to Discord directly. It calls `window.smiley.*` (defined in `../preload.js`), which forwards requests to `../main.js`.
 
-## Files
+## Folder layout
 
-| File | Role |
-|------|------|
-| `index.html` | Page structure: header, activity list, settings modal, preview card |
-| `renderer.js` | Event handlers, state, search/favorites, settings UI — **largest UI file** |
-| `activities.js` | Categories and activity definitions (id, label, default image keys) |
-| `discord-images.js` | GIF/image URL resolution, caches, Tenor/Giphy/nekos helpers |
-| `styles-v2.css` | **Active** stylesheet (`index.html` loads this when `data-ui-version="v2"`) |
-| `styles.css` | Primary legacy theme |
-| `styles-v1.css` | Older theme variant |
-| `assets/` | Static images: logos, in-app icons, donation QR |
+```
+src/
+├── index.html          ← Page structure (header, grids, modals)
+├── renderer.js         ← UI logic — clicks, search, settings (largest file)
+├── styles-v2.css       ← Active theme (colors, layout)
+├── styles.css          ← Legacy theme
+├── styles-v1.css       ← Older theme variant
+├── activities.js       ← Re-export → data/activities.js
+├── discord-images.js   ← Re-export → data/discord-images.js
+├── data/               ← Activity presets & GIF URLs (edit these)
+│   ├── activities.js
+│   ├── discord-images.js
+│   └── README.md
+└── assets/             ← Icons, logos, donation QR
+```
 
 ## Edit order for UI features
 
@@ -23,20 +28,32 @@ This folder is the **Smiley window UI**: HTML, CSS, and browser JavaScript. It d
 
 If the feature needs disk access, Discord, or system dialogs, also update `../preload.js` and `../main.js`.
 
-## Module imports
+## `renderer.js` sections
 
-`renderer.js` uses ES modules:
+Search for `// ─── Section name ───` in `renderer.js`:
+
+| Section | What it covers |
+|---------|----------------|
+| DOM refs | Every `$('#...')` element handle |
+| State | Selected activity, theme, update banner state |
+| Activity Grid | Category tabs, activity cards, search |
+| Settings | Settings modal and save |
+| Initialization | `init()` — runs on page load |
+
+Full tour: [../docs/CODE-TOUR.md](../docs/CODE-TOUR.md)
+
+## Module imports
 
 ```js
 import { ACTIVITY_CATEGORIES, ... } from './activities.js';
 import { resolveDiscordImageUrl, ... } from './discord-images.js';
 ```
 
-`index.html` loads `renderer.js` as `type="module"`.
+Those paths re-export from `./data/`. `index.html` loads `renderer.js` as `type="module"`.
 
 ## Mobile sync
 
-`mobile/scripts/build-www.js` copies relevant files from here into `mobile/www/` for the Capacitor app. Change **this** folder, then run from repo root:
+`mobile/scripts/build-www.js` copies `data/activities.js` and `data/discord-images.js` into `mobile/www/`. Change **`src/data/`**, then:
 
 ```bash
 npm run build:mobile:www
@@ -44,4 +61,4 @@ npm run build:mobile:www
 
 ## Full project map
 
-See [../PROJECT-STRUCTURE.md](../PROJECT-STRUCTURE.md).
+[../PROJECT-STRUCTURE.md](../PROJECT-STRUCTURE.md) · [data/README.md](data/README.md)

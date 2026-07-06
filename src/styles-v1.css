@@ -8,8 +8,8 @@
   --border: rgba(255,255,255,0.08);
   --border-hover: rgba(255,255,255,0.14);
   --text: #e8eaf2;
-  --text-muted: #a0a8bc;
-  --text-dim: #7a8298;
+  --text-muted: #b4bcd0;
+  --text-dim: #8e96ac;
   --accent: #6b9fff;
   --accent-glow: rgba(107,159,255,0.22);
   --accent-soft: rgba(107,159,255,0.12);
@@ -439,10 +439,10 @@ body.has-window-controls .app-header {
 .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 2px 12px var(--accent-glow); }
 .btn-secondary { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); padding: 10px 18px; margin-right: 10px; }
 .btn-secondary:hover { background: var(--bg-elevated); color: var(--text); border-color: var(--border-hover); }
-.btn-danger { background: rgba(247,118,142,0.12); color: var(--danger); border: 1px solid rgba(247,118,142,0.25); padding: 10px; }
-.preview-actions .btn-danger { width: auto; margin-top: 0; flex: 1; }
-.btn-danger:hover:not(:disabled) { background: rgba(247,118,142,0.2); }
-.btn-danger:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-danger { background: rgba(247,118,142,0.16); color: #ff9ab0; border: 1px solid rgba(247,118,142,0.38); padding: 10px; }
+.preview-actions .btn-danger { width: auto; margin-top: 0; flex: 1; font-weight: 600; }
+.btn-danger:hover:not(:disabled) { background: rgba(247,118,142,0.26); color: #ffb4c4; border-color: rgba(247,118,142,0.5); }
+.btn-danger:disabled { opacity: 0.45; color: color-mix(in srgb, var(--danger) 55%, var(--text-muted)); cursor: not-allowed; }
 
 /* Left Sidebar */
 .preview-sidebar { display: flex; flex-direction: column; gap: var(--gap-md); min-height: 0; overflow-y: auto; padding-right: 4px; align-items: stretch; }
@@ -475,7 +475,7 @@ body.has-window-controls .app-header {
 .discord-art { width: 56px; height: 56px; border-radius: 12px; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; transition: var(--transition); }
 .discord-card.active .discord-art { animation: artPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes artPop { 0%{transform:scale(0.8)} 100%{transform:scale(1)} }
-.discord-art-emoji { font-size: 1.8rem; animation: float 3s ease-in-out infinite; }
+.discord-art-emoji { font-size: 1.8rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; animation: float 3s ease-in-out infinite; }
 .discord-art-gif { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; opacity: 0; transition: opacity 0.3s ease; }
 .discord-art-gif.loaded { opacity: 1; }
 .discord-art:has(.discord-art-gif.loaded) .discord-art-emoji { display: none; }
@@ -494,9 +494,11 @@ body.has-window-controls .app-header {
 .quick-section { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .quick-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); flex-shrink: 0; }
 .quick-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.quick-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 0.76rem; color: var(--text); cursor: pointer; transition: var(--transition); -webkit-app-region: no-drag; }
+.quick-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 0.76rem; color: var(--text); cursor: pointer; transition: var(--transition); -webkit-app-region: no-drag; line-height: 1.2; }
+.quick-chip-emoji { font-size: 1.05em; line-height: 1; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.quick-chip-label { line-height: 1.2; }
 .quick-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
-.footer-hint { font-size: 0.72rem; color: var(--text-muted); opacity: 0.85; letter-spacing: 0.01em; margin-left: auto; text-align: right; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+.footer-hint { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.01em; margin-left: auto; text-align: right; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
 .timer-icon { font-size: 0.7rem; }
 
 /* Donate Banner — decorative glass card */
@@ -658,7 +660,9 @@ body.has-window-controls .app-header {
 .category-tabs { display: flex; gap: var(--gap-xs); flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
 .category-tabs::-webkit-scrollbar { display: none; }
 .category-tab { flex-shrink: 0; }
-.category-tab { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: inherit; font-size: 0.78rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: var(--transition); -webkit-app-region: no-drag; outline: none; }
+.category-tab { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: inherit; font-size: 0.78rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: var(--transition); -webkit-app-region: no-drag; outline: none; line-height: 1.2; }
+.category-tab-emoji { font-size: 1.05em; line-height: 1; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.category-tab-label { line-height: 1.2; }
 .category-tab:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 .category-tab:hover { color: var(--text); border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
 .category-tab.active { color: var(--tab-text, #0f1117); border-color: transparent; background: var(--tab-color,var(--accent)); font-weight: 700; box-shadow: none; }
@@ -699,7 +703,7 @@ body.has-window-controls .app-header {
 .activity-card.selected { border-color: var(--card-accent,var(--accent)); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--card-accent,var(--accent)) 30%, transparent); }
 .activity-card.selected::after { content: '✓'; position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; background: var(--card-accent,var(--accent)); color: var(--tab-text, #0f1117); border-radius: 50%; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; animation: checkPop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes checkPop { from { transform: scale(0); } }
-.activity-emoji { font-size: 2.2rem; line-height: 1; height: 2.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: var(--gap-sm); transition: transform 0.3s ease; flex-shrink: 0; }
+.activity-emoji { font-size: 2.2rem; line-height: 1; height: 2.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: var(--gap-sm); transition: transform 0.3s ease; flex-shrink: 0; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .activity-card:hover .activity-emoji { transform: scale(1.15) rotate(-5deg); }
 .activity-card.selected .activity-emoji { animation: bounce 0.5s ease; }
 @keyframes bounce { 0%,100%{transform:scale(1)} 40%{transform:scale(1.25)} }
@@ -744,7 +748,7 @@ body.has-window-controls .app-header {
 .field-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
 .field input[type="text"], .field input[type="url"], .field input[type="password"] { background: var(--bg-card); border: 1px solid var(--border-hover); border-radius: var(--radius-xs); padding: 11px 14px; color: var(--text); font-family: inherit; font-size: 0.88rem; outline: none; transition: var(--transition); }
 .field input:focus { border-color: color-mix(in srgb, var(--accent) 50%, transparent); box-shadow: 0 0 0 2px var(--accent-soft); }
-.field-hint { font-size: 0.74rem; color: var(--text-muted); line-height: 1.5; }
+.field-hint { font-size: 0.74rem; color: color-mix(in srgb, var(--text-muted) 75%, var(--text)); line-height: 1.5; }
 .field-hint a { color: var(--accent); text-decoration: none; }
 .field-hint a:hover { text-decoration: underline; }
 

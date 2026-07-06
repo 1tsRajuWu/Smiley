@@ -8,13 +8,13 @@ The .NET native app is **~25MB** and recommended for low-end PCs. It does not us
 
 ```bash
 # macOS Apple Silicon
-./build-native.sh osx-arm64
+./scripts/build-native.sh osx-arm64
 
 # macOS Intel
-./build-native.sh osx-x64
+./scripts/build-native.sh osx-x64
 
 # Windows
-.\build-native.ps1 win-x64
+.\scripts\build-native.ps1 win-x64
 ```
 
 Output: `dist-native/<runtime>/Smiley` (or `Smiley.exe` on Windows)
