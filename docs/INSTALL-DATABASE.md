@@ -36,10 +36,16 @@ The schema includes a `BEFORE INSERT OR UPDATE` trigger that sets `ip_address` f
 
 ### 2. Get API keys
 
-Project **Settings → API**:
+Project **Settings → API Keys**:
 
-- **Project URL** → `supabaseUrl`
-- **anon public** key → `supabaseAnonKey`
+| Use | Key |
+|-----|-----|
+| Stats dashboard | **Secret keys** → `default` → Reveal (`sb_secret_…`) |
+| App + GitHub Actions | **Publishable key** (`sb_publishable_…`) as `SUPABASE_ANON_KEY` |
+
+Legacy tab (if needed): **service_role** for dashboard, **anon** for the app.
+
+- **Project URL** → `https://YOUR_PROJECT.supabase.co`
 
 ### 3. Configure the app build
 

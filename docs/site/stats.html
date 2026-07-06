@@ -338,15 +338,16 @@
     <section id="loginSection" class="card">
       <h2>Connect to Supabase</h2>
       <p class="subtitle" style="margin-bottom:1rem;">
-        Use your <strong>service role</strong> key (Settings → API). Never share this page with the key filled in.
+        Use your <strong>Secret key</strong> from Supabase → Settings → API Keys → <strong>Secret keys</strong> → Reveal
+        (<code>sb_secret_…</code>). Not the publishable key.
       </p>
       <div class="field">
         <label for="supabaseUrl">Project URL</label>
         <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co" autocomplete="off">
       </div>
       <div class="field">
-        <label for="serviceKey">Service role key</label>
-        <input type="password" id="serviceKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…" autocomplete="off">
+        <label for="serviceKey">Secret key (service role)</label>
+        <input type="password" id="serviceKey" placeholder="sb_secret_… or legacy service_role JWT" autocomplete="off">
       </div>
       <div class="toolbar">
         <button type="button" class="btn btn-primary" id="connectBtn">Connect</button>
@@ -446,19 +447,34 @@
       el.classList.remove('hidden');
     }
 
+    function buildSupabaseHeaders(key) {
+      const headers = {
+        apikey: key.trim(),
+        'Content-Type': 'application/json',
+      };
+      // New sb_secret_ keys: apikey only. Legacy JWT service_role: also send Bearer.
+      if (key.trim().startsWith('eyJ')) {
+        headers.Authorization = `Bearer ${key.trim()}`;
+      }
+      return headers;
+    }
+
     async function fetchInstalls(url, key) {
+      const trimmed = key.trim();
+      if (trimmed.startsWith('sb_publishable_')) {
+        throw new Error('That is the publishable key. Use Secret keys → default → Reveal (sb_secret_…).');
+      }
       const base = url.replace(/\/$/, '');
       const endpoint = `${base}/rest/v1/installs?select=*&order=last_seen_at.desc`;
-      const res = await fetch(endpoint, {
-        headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const res = await fetch(endpoint, { headers: buildSupabaseHeaders(trimmed) });
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(res.status === 401 ? 'Invalid service role key' : `HTTP ${res.status}: ${text.slice(0, 200)}`);
+        if (res.status === 401) {
+          throw new Error(
+            'Key rejected (401). Use Secret keys → sb_secret_… (full key), or Legacy API Keys → service_role — not anon/publishable.'
+          );
+        }
+        throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
       }
       return res.json();
     }
