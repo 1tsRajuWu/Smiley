@@ -1,4 +1,4 @@
-# Smiley Mobile — Android & iOS (v3.1.0)
+# Smiley Mobile — Android & iOS (v3.1.1)
 
 Companion app for browsing activities, previewing anime GIFs, and copying status text.
 
@@ -20,7 +20,7 @@ Companion app for browsing activities, previewing anime GIFs, and copying status
 
 | Platform | Install |
 |----------|---------|
-| **Android** | [Smiley-3.1.0-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.0/Smiley-3.1.0-android-debug.apk) · Sideload · Android 8+ |
+| **Android** | [Smiley-3.1.1-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.1/Smiley-3.1.1-android-debug.apk) · Sideload · Android 8+ |
 | **iOS** | Build in Xcode — [instructions below](#ios) · no IPA download (Apple policy) |
 | **PWA** | Open `mobile/dist/index.html` via `npm run preview` → Add to Home Screen |
 
@@ -94,7 +94,7 @@ mobile/
 └── capacitor.config.json
 ```
 
-Shared data (`activities.js`, `discord-images.js`, assets) is copied from `../src` on each build so mobile stays aligned with desktop v3.1.0.
+Shared data (`activities.js`, `discord-images.js`, assets) is copied from `../src` on each build so mobile stays aligned with desktop v3.1.1.
 
 ## Honest limitation: why no Rich Presence on phone?
 
@@ -119,7 +119,7 @@ Smiley talks to the **Discord desktop client** over a local IPC socket (`discord
 
 ## Version
 
-Aligned with **Smiley desktop v3.1.0**. See [Releases](https://github.com/1tsRajuWu/Smiley/releases).
+Aligned with **Smiley desktop v3.1.1**. See [Releases](https://github.com/1tsRajuWu/Smiley/releases).
 
 ---
 

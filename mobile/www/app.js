@@ -1,5 +1,5 @@
 /**
- * Smiley Mobile — activity companion (v3.1.0)
+ * Smiley Mobile — activity companion (v3.1.1)
  * No Discord RPC on mobile; preview GIFs + copy status for desktop use.
  */
 import { Capacitor } from '@capacitor/core';
@@ -12,7 +12,7 @@ import { resolveDiscordImageUrl, getActivityFallbackUrls } from './discord-image
 
 const STORAGE_KEY = 'smiley-mobile-settings';
 const FAVORITES_KEY = 'smiley-mobile-favorites';
-const VERSION = '3.1.0';
+const VERSION = '3.1.1';
 
 const isNative = Capacitor.isNativePlatform();
 
