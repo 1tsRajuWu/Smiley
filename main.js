@@ -508,17 +508,22 @@ function formatUpdateError(err) {
     msg.includes('latest-linux.yml') ||
     msg.includes('no published') ||
     msg.includes('cannot find') ||
-    msg.includes('404')
+    msg.includes('net::err') ||
+    msg.includes('404') ||
+    msg.includes('enotfound') ||
+    msg.includes('403')
   ) {
     return {
+      ok: false,
       status: 'no-release',
-      message: 'No updates found yet. Install from GitHub Releases.',
+      message: 'No update on GitHub yet — download the latest installer from github.com/1tsRajuWu/Smiley/releases',
       expected: true,
     };
   }
   return {
+    ok: false,
     status: 'error',
-    error: err?.message || 'Update check failed. Try again or install from GitHub Releases.',
+    error: err?.message || 'Update check failed. Download from GitHub Releases.',
     expected: false,
   };
 }
@@ -527,18 +532,62 @@ function sendUpdateStatus(payload) {
   if (mainWindow?.webContents) mainWindow.webContents.send('update-status', payload);
 }
 
+let manualUpdateResolve = null;
+
+function resolveManualUpdate(result) {
+  if (manualUpdateResolve) {
+    const resolve = manualUpdateResolve;
+    manualUpdateResolve = null;
+    resolve(result);
+  }
+}
+
+function waitForManualUpdateCheck(timeoutMs = 45000) {
+  return new Promise((resolve) => {
+    if (manualUpdateResolve) {
+      resolve({ ok: false, status: 'busy', error: 'Update check already in progress' });
+      return;
+    }
+    const timer = setTimeout(() => {
+      manualUpdateResolve = null;
+      resolve({
+        ok: false,
+        status: 'timeout',
+        error: 'Update check timed out. Try again or install from GitHub Releases.',
+      });
+    }, timeoutMs);
+    manualUpdateResolve = (result) => {
+      clearTimeout(timer);
+      resolve(result);
+    };
+  });
+}
+
 async function checkForUpdates(manual = false) {
   if (!isPackaged) {
-    if (manual) {
-      sendUpdateStatus({
-        status: 'dev-mode',
-        message: 'Updates are only available in installed releases. Build with npm run build first.',
-      });
-    }
-    return { ok: true, status: 'dev-mode' };
+    const result = {
+      ok: true,
+      status: 'dev-mode',
+      message: 'Updates only work in the installed app from GitHub Releases (not npm start).',
+    };
+    if (manual) sendUpdateStatus({ status: 'dev-mode', message: result.message });
+    return result;
   }
 
-  if (manual) sendUpdateStatus({ status: 'checking' });
+  if (manual) {
+    sendUpdateStatus({ status: 'checking' });
+    const waitPromise = waitForManualUpdateCheck();
+    try {
+      await autoUpdater.checkForUpdates();
+      return await waitPromise;
+    } catch (err) {
+      console.error('[updater]', err.message);
+      const formatted = formatUpdateError(err);
+      sendUpdateStatus(formatted);
+      resolveManualUpdate(formatted);
+      return formatted;
+    }
+  }
 
   try {
     await autoUpdater.checkForUpdates();
@@ -546,8 +595,8 @@ async function checkForUpdates(manual = false) {
   } catch (err) {
     console.error('[updater]', err.message);
     const formatted = formatUpdateError(err);
-    if (manual) sendUpdateStatus(formatted);
-    return { ok: false, ...formatted };
+    sendUpdateStatus(formatted);
+    return formatted;
   }
 }
 
@@ -574,15 +623,19 @@ function setupAutoUpdater() {
 
     autoUpdater.on('update-available', (info) => {
       pendingUpdateVersion = info.version;
-      sendUpdateStatus({ status: 'available', version: info.version });
+      const payload = { status: 'available', version: info.version };
+      sendUpdateStatus(payload);
+      resolveManualUpdate({ ok: true, status: 'available', version: info.version });
     });
 
     autoUpdater.on('update-not-available', (info) => {
       pendingUpdateVersion = null;
-      sendUpdateStatus({
+      const payload = {
         status: 'up-to-date',
         version: info?.version || APP_VERSION,
-      });
+      };
+      sendUpdateStatus(payload);
+      resolveManualUpdate({ ok: true, status: 'up-to-date', version: payload.version });
     });
 
     autoUpdater.on('download-progress', (progress) => {
@@ -611,7 +664,9 @@ function setupAutoUpdater() {
 
     autoUpdater.on('error', (err) => {
       console.error('[updater]', err.message);
-      sendUpdateStatus(formatUpdateError(err));
+      const formatted = formatUpdateError(err);
+      sendUpdateStatus(formatted);
+      resolveManualUpdate(formatted);
     });
   } catch (err) {
     console.error('[updater] setup failed:', err.message);
@@ -714,20 +769,14 @@ function setupIPC() {
   ipcMain.handle('get-status', () => ({ connected: !!rpcClient, activity: currentActivity, sessionStart }));
 
   ipcMain.handle('check-for-updates', async () => {
-    if (!isPackaged) {
-      sendUpdateStatus({
-        status: 'dev-mode',
-        message: 'Updates are only available in installed releases. Build with npm run build first.',
-      });
-      return { ok: true, status: 'dev-mode' };
-    }
-
-    sendUpdateStatus({ status: 'checking' });
-    checkForUpdates(true).catch((err) => {
+    try {
+      return await checkForUpdates(true);
+    } catch (err) {
       console.error('[updater]', err.message);
-      sendUpdateStatus(formatUpdateError(err));
-    });
-    return { ok: true, status: 'checking' };
+      const formatted = formatUpdateError(err);
+      sendUpdateStatus(formatted);
+      return formatted;
+    }
   });
 
   ipcMain.handle('install-update', () => {

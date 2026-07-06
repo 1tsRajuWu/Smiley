@@ -510,7 +510,7 @@ function handleUpdateStatus(data) {
       showToast(data.message || 'Updates are only available in installed releases.');
       break;
     case 'no-release':
-      showToast(data.message || 'No updates found yet. Install from GitHub Releases.');
+      showToast(data.message || 'No release on GitHub yet — open github.com/1tsRajuWu/Smiley/releases');
       break;
     case 'available':
       showToast(`Update v${data.version} available! Downloading...`);
@@ -615,9 +615,35 @@ async function init() {
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
 
   async function triggerUpdateCheck() {
-    const result = await window.smiley.checkForUpdates();
-    if (!result?.ok && result?.error) {
-      showToast(result.error, 'error');
+    showToast('Checking for updates...');
+    try {
+      const result = await window.smiley.checkForUpdates();
+      if (!result) return;
+      if (result.status === 'dev-mode') {
+        showToast(result.message || 'Updates only work in the installed app from GitHub Releases.');
+        return;
+      }
+      if (result.status === 'up-to-date') {
+        showToast(`You're on the latest version (v${result.version || 'current'}).`);
+        return;
+      }
+      if (result.status === 'available') {
+        showToast(`Update v${result.version} found — downloading…`);
+        return;
+      }
+      if (result.status === 'no-release') {
+        showToast(result.message || 'No release on GitHub yet — download from Releases page.');
+        return;
+      }
+      if (result.status === 'busy' || result.status === 'timeout') {
+        showToast(result.error || 'Update check failed.', 'error');
+        return;
+      }
+      if (!result.ok && result.error) {
+        showToast(result.error, 'error');
+      }
+    } catch (_) {
+      showToast('Update check failed. Try again or download from GitHub Releases.', 'error');
     }
   }
   const checkUpdateBtn = $('#checkUpdateBtn');

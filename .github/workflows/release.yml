@@ -42,13 +42,7 @@ jobs:
       - name: Create discord.app.json
         env:
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
-        run: |
-          if [ -z "$DISCORD_CLIENT_ID" ]; then
-            echo "DISCORD_CLIENT_ID secret is required for release builds"
-            exit 1
-          fi
-          echo "{\"clientId\":\"$DISCORD_CLIENT_ID\"}" > discord.app.json
-        shell: bash
+        run: node -e "const fs=require('fs');const id=process.env.DISCORD_CLIENT_ID;if(!id){console.error('DISCORD_CLIENT_ID secret required');process.exit(1)}fs.writeFileSync('discord.app.json',JSON.stringify({clientId:id}))"
 
       - name: Build and publish (${{ matrix.platform }})
         env:

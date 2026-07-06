@@ -4,7 +4,7 @@
 
 by **Raj ([@1tsRaj](https://github.com/1tsRaj))**
 
-![Version](https://img.shields.io/badge/version-2.1.5-blue) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![Version](https://img.shields.io/badge/version-2.1.7-blue) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
 > **Official repository** — [github.com/1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley)  
 > Forks, reuploads, and rebranded copies are **not authorized**. Download releases from this repo only.
@@ -13,84 +13,82 @@ by **Raj ([@1tsRaj](https://github.com/1tsRaj))**
 
 ## Download Smiley
 
-**Pick your platform** — requires [Discord desktop](https://discord.com/download) (not mobile). No setup needed for end users.
+**Requires [Discord desktop](https://discord.com/download)** (not mobile). Pick your OS below.
 
-> **Get Smiley:** open **[Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)** on GitHub, pick **v2.1.5**, and download the file for your OS from **Assets** (scroll below the release notes).  
-> Direct links below work once that release is published. If a link 404s, use the Releases page — do not use unofficial mirrors.
+> **Always works:** **[Open latest release → Assets](https://github.com/1tsRajuWu/Smiley/releases/latest)** and download the file for your computer.  
+> Direct buttons below work after **v2.1.7** (or newer) is published on Releases. If a button 404s, use the Releases page.
 
 <p align="center">
   <a href="https://github.com/1tsRajuWu/Smiley/releases/latest">
-    <img src="https://img.shields.io/github/v/release/1tsRajuWu/Smiley?label=Latest%20release&style=for-the-badge" alt="Latest GitHub release" />
-  </a>
-  &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases">
-    <img src="https://img.shields.io/badge/All%20downloads-Releases%20tab-181717?style=for-the-badge&logo=github&logoColor=white" alt="All releases on GitHub" />
+    <img src="https://img.shields.io/github/v/release/1tsRajuWu/Smiley?label=Download%20latest&style=for-the-badge" alt="Latest GitHub release" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-2.1.5.exe">
-    <img src="https://img.shields.io/badge/Windows%20Installer-Download-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows installer" />
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-2.1.7.exe">
+    <img src="https://img.shields.io/badge/Windows%20Installer-Download-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Windows installer" />
   </a>
   &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Portable-2.1.5.exe">
-    <img src="https://img.shields.io/badge/Windows%20Portable-Download-5E5E5E?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows portable" />
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Portable-2.1.7.exe">
+    <img src="https://img.shields.io/badge/Windows%20Portable-Download-5E5E5E?style=for-the-badge&logo=windows&logoColor=white" alt="Windows portable" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.5-arm64.dmg">
-    <img src="https://img.shields.io/badge/macOS%20Apple%20Silicon-Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" />
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7-arm64.dmg">
+    <img src="https://img.shields.io/badge/macOS%20Apple%20Silicon-Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS Apple Silicon" />
   </a>
   &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.5-x64.dmg">
-    <img src="https://img.shields.io/badge/macOS%20Intel-Download-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" />
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7-x64.dmg">
+    <img src="https://img.shields.io/badge/macOS%20Intel-Download-555555?style=for-the-badge&logo=apple&logoColor=white" alt="macOS Intel" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.5.AppImage">
-    <img src="https://img.shields.io/badge/Linux%20AppImage-Download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download Linux AppImage" />
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7.AppImage">
+    <img src="https://img.shields.io/badge/Linux%20AppImage-Download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux AppImage" />
   </a>
   &nbsp;
-  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/smiley-rpc_2.1.5_amd64.deb">
-    <img src="https://img.shields.io/badge/Linux%20.deb-Download-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Linux deb" />
+  <a href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-2.1.7.deb">
+    <img src="https://img.shields.io/badge/Linux%20.deb-Download-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Linux deb" />
   </a>
 </p>
 
-### All downloads (Electron — full app)
+### All downloads (Electron)
 
-| Platform | File name | Download |
-|----------|-----------|----------|
-| **Windows** | `Smiley-Setup-2.1.5.exe` | [Installer (x64)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-Setup-2.1.5.exe) |
-| **Windows** | `Smiley-Portable-2.1.5.exe` | [Portable (x64)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-Portable-2.1.5.exe) |
-| **Windows** | `Smiley-Setup-2.1.5-ia32.exe` | [Installer (32-bit)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-Setup-2.1.5-ia32.exe) |
-| **macOS** | `Smiley-2.1.5-arm64.dmg` | [Apple Silicon .dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-2.1.5-arm64.dmg) |
-| **macOS** | `Smiley-2.1.5-x64.dmg` | [Intel .dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-2.1.5-x64.dmg) |
-| **macOS** | `Smiley-2.1.5-arm64-mac.zip` · `Smiley-2.1.5-mac.zip` | [arm64 zip](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-2.1.5-arm64-mac.zip) · [Intel zip](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-2.1.5-mac.zip) |
-| **Linux** | `Smiley-2.1.5.AppImage` | [AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/Smiley-2.1.5.AppImage) |
-| **Linux** | `smiley-rpc_2.1.5_amd64.deb` | [.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.5/smiley-rpc_2.1.5_amd64.deb) |
+| Platform | File | Link |
+|----------|------|------|
+| Windows x64 | `Smiley-Setup-2.1.7.exe` | [Installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-Setup-2.1.7.exe) |
+| Windows x64 | `Smiley-Portable-2.1.7.exe` | [Portable](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-Portable-2.1.7.exe) |
+| macOS ARM | `Smiley-2.1.7-arm64.dmg` | [.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7-arm64.dmg) |
+| macOS Intel | `Smiley-2.1.7-x64.dmg` | [.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7-x64.dmg) |
+| Linux | `Smiley-2.1.7.AppImage` | [AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7.AppImage) |
+| Linux | `Smiley-2.1.7.deb` | [.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/Smiley-2.1.7.deb) |
 
-> **First launch on macOS?** Right-click the app → **Open** (unsigned build).  
-> **Windows SmartScreen?** Click **More info** → **Run anyway**.
+> **macOS:** Right-click → **Open** if unsigned. **Windows:** **More info** → **Run anyway** if SmartScreen warns.
 
-### Publishing releases (maintainers)
+### Auto-updates
 
-CI builds and uploads installers when you push a version tag (see [.github/workflows/release.yml](.github/workflows/release.yml)):
+Installed Smiley checks **GitHub Releases** on launch. Use **Settings → Check for Updates** anytime. Releases must include `latest-mac.yml` / `latest.yml` (uploaded automatically by CI).
+
+### Publishing (maintainers)
 
 ```bash
-git tag v2.1.5 && git push origin v2.1.5
+git tag v2.1.7 && git push origin main && git push origin v2.1.7
 ```
 
-To upload built files from `dist/` manually (install [GitHub CLI](https://cli.github.com/) first):
+Add repo secret **`DISCORD_CLIENT_ID`** = `1522538045989982279` for CI builds.
+
+Manual upload from `dist/`:
 
 ```bash
-gh release create v2.1.5 --title "v2.1.5" --notes "Smiley v2.1.5"
-gh release upload v2.1.5 dist/Smiley-Setup-2.1.5.exe dist/Smiley-Portable-2.1.5.exe \
-  dist/Smiley-2.1.5-arm64.dmg dist/Smiley-2.1.5-x64.dmg dist/Smiley-2.1.5.AppImage dist/smiley-rpc_2.1.5_amd64.deb
+gh release create v2.1.7 --repo 1tsRajuWu/Smiley --title "Smiley v2.1.7" --notes "Bug fixes: update checker, download links"
+gh release upload v2.1.7 --repo 1tsRajuWu/Smiley \
+  dist/Smiley-Setup-2.1.7.exe dist/Smiley-Portable-2.1.7.exe \
+  dist/Smiley-2.1.7-arm64.dmg dist/Smiley-2.1.7-x64.dmg \
+  dist/Smiley-2.1.7.AppImage dist/Smiley-2.1.7.deb \
+  dist/latest-mac.yml dist/latest.yml dist/latest-linux.yml
 ```
-
-Older portable builds used a space in the filename (`Smiley 2.x.x.exe`); current builds use `Smiley-Portable-{version}.exe` (no encoding needed).
 
 ### Smiley Native — lightweight (~25 MB)
 
