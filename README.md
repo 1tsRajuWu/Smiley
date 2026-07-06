@@ -79,29 +79,28 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 
 ## ⬇️ Download
 
+<!-- DOWNLOADS_START -->
 **Latest: v4.0.0** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.0)
+
+**Total downloads (latest release):** 6 · [live stats on Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
+
+| Platform | File | Downloads |
+|----------|------|-----------|
+| Windows | [**Smiley-Setup-4.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.0.exe) | 2 |
+| macOS Apple Silicon | [**Smiley-4.0.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-arm64.dmg) | 1 |
+| macOS Intel | [**Smiley-4.0.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-x64.dmg) | 1 |
+| Linux (AppImage) | [**Smiley-4.0.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.AppImage) | 1 |
+| Linux (.deb) | [**Smiley-4.0.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.deb) | 1 |
+
+<!-- DOWNLOADS_END -->
 
 > **Needs:** Discord **desktop** app (not browser), macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](docs/MINIMUM-REQUIREMENTS.md)
 
-### Windows
-
-| | Link | Notes |
-|---|---|---|
-| **Installer** ⭐ | [**Smiley-Setup-4.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.0.exe) | Recommended — Start menu + desktop shortcut |
-
-### macOS
-
-| Chip | Link |
+| | |
 |---|---|
-| **Apple Silicon** (M1–M5) | [**Smiley-4.0.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-arm64.dmg) |
-| **Intel** (pre-2020) | [**Smiley-4.0.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-x64.dmg) |
-
-### Linux
-
-| Format | Link | Notes |
-|---|---|---|
-| **AppImage** | [**Smiley-4.0.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.AppImage) | `chmod +x` then run — works on most distros |
-| **.deb** | [**Smiley-4.0.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.deb) | Debian / Ubuntu / Mint |
+| **Windows** | Installer only (no portable) — Start menu + desktop shortcut |
+| **macOS** | Apple Silicon (M1–M5) or Intel (pre-2020) DMG |
+| **Linux** | AppImage (`chmod +x` then run) or `.deb` for Debian / Ubuntu / Mint |
 
 ### Low-end PC?
 

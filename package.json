@@ -32,6 +32,7 @@
     "mobile:ios": "cd mobile && npm run ios",
     "publish": "electron-builder --publish always",
     "release:tag": "node -e \"const v=require('./package.json').version; console.log('Tag with: git tag v'+v+' && git push origin main --tags')\"",
+    "update-readme-downloads": "bash scripts/update-readme-downloads.sh",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
