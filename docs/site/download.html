@@ -22,7 +22,7 @@
     "description": "Discord Rich Presence desktop app with animated anime GIF status picker for Windows, macOS, and Linux.",
     "applicationCategory": "DesktopApplication",
     "operatingSystem": "Windows, macOS, Linux",
-    "softwareVersion": "4.0.8",
+    "softwareVersion": "4.1.4",
     "offers": {
       "@type": "Offer",
       "price": "0",
@@ -67,6 +67,16 @@
       min-height: 100vh;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+
+    ::selection {
+      background-color: var(--accent);
+      color: #fff;
+    }
+    ::-moz-selection {
+      background-color: var(--accent);
+      color: #fff;
     }
 
     .page {
