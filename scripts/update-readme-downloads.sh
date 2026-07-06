@@ -87,18 +87,14 @@ while IFS=$'\t' read -r _order name url count platform; do
   total=$((total + count))
   formatted=$(format_count "$count")
   latest_download="${latest_url}/download/${name}"
-  table_rows+="| ${platform} | [**${name}**](${latest_download}) | ${formatted} |"$'\n'
+  table_rows+="| ${platform} | [${name}](${latest_download}) |"$'\n'
 done <<< "$assets_tsv"
 
 total_formatted=$(format_count "$total")
 
 block=$(cat <<EOF
-**Latest: ${tag}** — [full release notes](${release_url})
-
-**Total downloads (latest release):** ${total_formatted} · [live stats on Releases](${latest_url})
-
-| Platform | File | Downloads |
-|----------|------|-----------|
+| Platform | File |
+|----------|------|
 ${table_rows}
 EOF
 )

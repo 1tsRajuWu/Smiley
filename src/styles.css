@@ -31,6 +31,8 @@
   --gap-xl: 20px;
   --pad-h: 24px;
   --pad-v: 16px;
+  --selection-bg: var(--accent);
+  --selection-text: var(--tab-text);
 }
 
 [data-theme="midnight"] {
@@ -245,8 +247,46 @@
   color: #1a1216;
 }
 
+::selection {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+::-moz-selection {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+html {
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
 html, body { height: 100%; overflow: hidden; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; user-select: none; position: relative; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  position: relative;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.search-wrap input,
+.field input,
+.footer,
+.footer-version,
+.footer-link,
+.footer-hint,
+.footer-copyright,
+.activity-name,
+.character-label,
+.modal-body,
+.legal-body {
+  -webkit-user-select: text;
+  user-select: text;
+}
 
 body.has-wallpaper::before {
   content: '';
