@@ -68,6 +68,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var ok = _rpc.Connect();
         ConnectionStatus = ok ? "Connected to Discord" : (_rpc.LastError ?? "Disconnected");
         IsConnected = ok;
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(4000);
+            await VersionCheckService.NotifyIfOutdatedAsync();
+        });
     }
 
     private void OnConnectionChanged(bool connected, string? error)
@@ -199,7 +205,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            Process.Start(new ProcessStartInfo(_settings.DonationUrl) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://paypal.me/1tsRaj") { UseShellExecute = true });
         }
         catch { }
     }

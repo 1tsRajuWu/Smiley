@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('smiley', {
   clearActivity: () => ipcRenderer.invoke('clear-activity'),
   getStatus: () => ipcRenderer.invoke('get-status'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
   pickCustomAnimation: () => ipcRenderer.invoke('pick-custom-animation'),
   getCustomAnimations: () => ipcRenderer.invoke('get-custom-animations'),
   deleteCustomAnimation: (name) => ipcRenderer.invoke('delete-custom-animation', name),

@@ -294,7 +294,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } }
 @keyframes toastOut { to { opacity: 0; transform: translateX(20px); } }
 
-/* Update banner */
+.about-hint { margin: 8px 0 12px; max-width: 320px; line-height: 1.45; }
 .update-banner {
   display: none;
   align-items: center;

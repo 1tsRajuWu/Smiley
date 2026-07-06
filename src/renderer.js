@@ -31,6 +31,7 @@ const characterLabel = $('#characterLabel');
 const characterSource = $('#characterSource');
 const appEl = $('#app');
 const footerVersion = $('#footerVersion');
+const aboutVersion = $('#aboutVersion');
 const legalModal = $('#legalModal');
 const legalTitle = $('#legalTitle');
 const legalBody = $('#legalBody');
@@ -324,7 +325,10 @@ function openSettings(tab = 'general') {
     switchSettingsTab(tab);
     loadCustomAnimationsList();
 
-    if (cfg.version) footerVersion.textContent = `Smiley v${cfg.version}`;
+    if (cfg.version) {
+      footerVersion.textContent = `Smiley v${cfg.version}`;
+      if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
+    }
 
     settingsModal.showModal();
   });
@@ -598,9 +602,9 @@ async function init() {
 
   if (updateDismissBtn) updateDismissBtn.addEventListener('click', () => updateBanner?.classList.remove('visible'));
   if (updateRestartBtn) {
-    updateRestartBtn.addEventListener('click', () => {
-      window.smiley.checkForUpdates();
-      showToast('Restart the app to apply updates');
+    updateRestartBtn.addEventListener('click', async () => {
+      const result = await window.smiley.installUpdate();
+      if (!result?.success) showToast('No update ready — check again in a moment', 'error');
     });
   }
 
@@ -615,7 +619,10 @@ async function init() {
       const timerEl = $('#previewTimer');
       if (timerEl) timerEl.style.display = data.settings.showTimer !== false ? '' : 'none';
     }
-    if (data.version) footerVersion.textContent = `Smiley v${data.version}`;
+    if (data.version) {
+      footerVersion.textContent = `Smiley v${data.version}`;
+      if (aboutVersion) aboutVersion.textContent = `Smiley v${data.version}`;
+    }
     if (data.activity) {
       const match = ALL_ACTIVITIES.find((a) => a.details === data.activity.details && a.state === data.activity.state);
       if (match) {
@@ -639,7 +646,10 @@ async function init() {
   const cfg = await window.smiley.getConfig();
   currentSettings = { ...currentSettings, ...cfg };
   applyTheme(cfg.theme || 'dark');
-  if (cfg.version) footerVersion.textContent = `Smiley v${cfg.version}`;
+  if (cfg.version) {
+    footerVersion.textContent = `Smiley v${cfg.version}`;
+    if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
+  }
   donateBanner.href = DONATION_URL;
 
   // Prompt setup when Client ID is missing

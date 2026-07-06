@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Discord Rich Presence with animated anime characters and beautiful UI",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -23,6 +23,7 @@
     "build:linux": "electron-builder --linux",
     "build:all": "electron-builder --mac --win --linux",
     "publish": "electron-builder --publish always",
+    "release:tag": "node -e \"const v=require('./package.json').version; console.log('Tag with: git tag v'+v+' && git push origin main --tags')\"",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {

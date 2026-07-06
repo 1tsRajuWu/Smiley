@@ -4,10 +4,12 @@ const fs = require('fs');
 const crypto = require('crypto');
 const RPC = require('discord-rpc');
 const { autoUpdater } = require('electron-updater');
+const pkg = require('./package.json');
 
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
-const APP_VERSION = '2.1.0';
+const isPackaged = app.isPackaged;
+const APP_VERSION = pkg.version;
 const GLOBAL_HOTKEY = 'CommandOrControl+Shift+S';
 const EXAMPLE_CONFIG = path.join(__dirname, 'config.example.json');
 const DISCORD_APP_CONFIG = path.join(__dirname, 'discord.app.json');
@@ -345,7 +347,7 @@ function updateTrayMenu() {
     ...(recentItems.length
       ? [{ label: 'Recent Activities', submenu: recentItems }, { type: 'separator' }]
       : []),
-    { label: 'Check for Updates', click: () => autoUpdater.checkForUpdatesAndNotify() },
+    { label: 'Check for Updates', click: () => checkForUpdates(true) },
     { label: 'Settings', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('open-settings'); } } },
     { type: 'separator' },
     { label: 'Donate', click: () => shell.openExternal(DONATION_URL) },
@@ -495,50 +497,96 @@ function broadcastStatus() {
 }
 
 // ─── Auto Updater ────────────────────────────────────────────────────
+let pendingUpdateVersion = null;
+
+function checkForUpdates(manual = false) {
+  if (!isPackaged) {
+    if (manual && mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', {
+        status: 'error',
+        error: 'Updates are only available in installed releases',
+      });
+    }
+    return Promise.resolve(null);
+  }
+  return autoUpdater.checkForUpdates().catch((err) => {
+    console.error('[updater]', err.message);
+    if (manual && mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', { status: 'error', error: err.message });
+    }
+    return null;
+  });
+}
+
+function installPendingUpdate() {
+  if (!isPackaged || !pendingUpdateVersion) return false;
+  app.isQuitting = true;
+  autoUpdater.quitAndInstall(false, true);
+  return true;
+}
+
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
+  autoUpdater.logger = console;
 
-  if (isDev) return;
+  if (!isPackaged) return;
 
   autoUpdater.on('checking-for-update', () => {
     if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'checking' });
   });
 
   autoUpdater.on('update-available', (info) => {
-    if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
+    pendingUpdateVersion = info.version;
+    if (mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
+    }
   });
 
-  autoUpdater.on('update-not-available', () => {
-    if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'up-to-date' });
+  autoUpdater.on('update-not-available', (info) => {
+    pendingUpdateVersion = null;
+    if (mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', {
+        status: 'up-to-date',
+        version: info?.version || APP_VERSION,
+      });
+    }
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'downloading', percent: Math.round(progress.percent) });
+    if (mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', {
+        status: 'downloading',
+        percent: Math.round(progress.percent),
+      });
+    }
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'downloaded', version: info.version });
+    pendingUpdateVersion = info.version;
+    if (mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', { status: 'downloaded', version: info.version });
+    }
     if (mainWindow) {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
         title: 'Update Ready',
         message: `Smiley v${info.version} has been downloaded.`,
-        detail: 'The update will be installed when you quit the app.',
+        detail: 'Restart now to install the update, or it will apply when you quit.',
         buttons: ['Restart Now', 'Later'],
+        defaultId: 0,
       }).then(({ response }) => {
-        if (response === 0) {
-          app.isQuitting = true;
-          autoUpdater.quitAndInstall(false, true);
-        }
+        if (response === 0) installPendingUpdate();
       });
     }
   });
 
   autoUpdater.on('error', (err) => {
     console.error('[updater]', err.message);
-    if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'error', error: err.message });
+    if (mainWindow?.webContents) {
+      mainWindow.webContents.send('update-status', { status: 'error', error: err.message });
+    }
   });
 }
 
@@ -638,8 +686,13 @@ function setupIPC() {
   ipcMain.handle('get-status', () => ({ connected: !!rpcClient, activity: currentActivity, sessionStart }));
 
   ipcMain.handle('check-for-updates', () => {
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    checkForUpdates(true);
     return { checking: true };
+  });
+
+  ipcMain.handle('install-update', () => {
+    const started = installPendingUpdate();
+    return { success: started };
   });
 
   ipcMain.handle('pick-custom-animation', async () => {
@@ -745,9 +798,9 @@ app.whenReady().then(async () => {
   setupAutoUpdater();
   registerGlobalHotkey();
 
-  // Check for updates after 5s (skip in dev)
-  if (!isDev) {
-    setTimeout(() => autoUpdater.checkForUpdatesAndNotify().catch(() => {}), 5000);
+  // Check for updates after 5s (installed app only)
+  if (isPackaged) {
+    setTimeout(() => checkForUpdates(false), 5000);
   }
 
   if (config.autoConnect !== false) {
