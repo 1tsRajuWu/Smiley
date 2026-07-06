@@ -901,7 +901,7 @@ body.has-window-controls .app-header {
   transition: max-height 0.2s ease, opacity 0.2s ease, margin 0.2s ease, padding 0.2s ease, border-color 0.2s ease;
 }
 .update-banner.visible {
-  max-height: 56px;
+  max-height: 76px;
   opacity: 1;
   margin-bottom: var(--gap-sm);
   padding: 10px 14px;
@@ -910,6 +910,20 @@ body.has-window-controls .app-header {
   pointer-events: auto;
 }
 .update-banner-actions { display: flex; align-items: center; gap: var(--gap-sm); flex-shrink: 0; }
+.update-banner-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.update-banner-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  overflow: hidden;
+}
+.update-banner-progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--accent, #7aa2f7);
+  transition: width 0.15s ease;
+}
 .update-banner .btn { padding: 6px 12px; font-size: 0.78rem; white-space: nowrap; }
 .update-banner #updateBannerText { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
 

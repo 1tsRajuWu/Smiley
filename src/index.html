@@ -40,9 +40,14 @@
       </header>
 
       <div class="update-banner" id="updateBanner">
-        <span id="updateBannerText">Update available</span>
+        <div class="update-banner-body">
+          <span id="updateBannerText">Update available</span>
+          <div class="update-banner-progress" id="updateBannerProgress" hidden>
+            <div class="update-banner-progress-bar" id="updateBannerProgressBar"></div>
+          </div>
+        </div>
         <div class="update-banner-actions">
-          <button type="button" class="btn btn-primary" id="updateGetBtn" hidden>Get update</button>
+          <button type="button" class="btn btn-primary" id="updateDownloadBtn" hidden>Download update</button>
           <button type="button" class="btn btn-primary" id="updateRestartBtn">Restart</button>
           <button type="button" class="btn btn-ghost" id="updateDismissBtn">Later</button>
         </div>
@@ -138,7 +143,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v4.1.4</span>
+        <span class="footer-version" id="footerVersion">Smiley v4.1.5</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -316,7 +321,7 @@
               </div>
               <h3 id="aboutVersion">Smiley</h3>
               <p class="about-desc">Discord Rich Presence with animated anime characters and beautiful UI.</p>
-              <p class="about-hint field-hint">Installed builds check for updates on startup (Settings → General). Downloads run in the background; restart or quit to apply.</p>
+              <p class="about-hint field-hint" id="aboutUpdateHint">Installed builds check for updates on startup (Settings → General). On Mac, use <strong>Download update</strong> in the banner, then drag to Applications. On Windows, updates install on restart.</p>
               <p class="about-hint field-hint">Friends viewing your Discord profile can tap <strong>Download Smiley</strong> on your presence card to get the app.</p>
               <div class="about-links">
                 <a class="about-link" href="https://1tsrajuwu.github.io/Smiley/" target="_blank" rel="noopener"><span>⬇️</span> Download latest</a>

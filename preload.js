@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('smiley', {
   getStatus: () => ipcRenderer.invoke('get-status'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
+  downloadMacUpdate: (version) => ipcRenderer.invoke('download-mac-update', version),
+  openMacUpdateDmg: (version) => ipcRenderer.invoke('open-mac-update-dmg', version),
   pickCustomAnimation: () => ipcRenderer.invoke('pick-custom-animation'),
   getCustomAnimations: () => ipcRenderer.invoke('get-custom-animations'),
   deleteCustomAnimation: (name) => ipcRenderer.invoke('delete-custom-animation', name),

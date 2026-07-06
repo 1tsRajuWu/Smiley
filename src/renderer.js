@@ -125,8 +125,10 @@ const storageInfoText = $('#storageInfoText');
 const clearCacheBtn = $('#clearCacheBtn');
 const updateBanner = $('#updateBanner');
 const updateBannerText = $('#updateBannerText');
+const updateBannerProgress = $('#updateBannerProgress');
+const updateBannerProgressBar = $('#updateBannerProgressBar');
 const updateRestartBtn = $('#updateRestartBtn');
-const updateGetBtn = $('#updateGetBtn');
+const updateDownloadBtn = $('#updateDownloadBtn');
 const updateDismissBtn = $('#updateDismissBtn');
 const recentSection = $('#recentSection');
 const recentChips = $('#recentChips');
@@ -161,7 +163,15 @@ let customAnimations = [];
 let activeCustomAnimation = null;
 let currentGifUrl = null;
 let currentDiscordImageUrl = null;
-let updateState = { downloaded: false, manualInstall: false, dismissed: false, percent: 0, version: null };
+let updateState = {
+  downloaded: false,
+  manualInstall: false,
+  dismissed: false,
+  percent: 0,
+  version: null,
+  dmgDownloading: false,
+  dmgReady: false,
+};
 let releasesUrl = GITHUB_RELEASES_URL;
 let macAdHocUpdates = false;
 let searchDebounceTimer = null;
@@ -268,7 +278,7 @@ function applyPlatformUI(cfg = {}) {
   if (windowControls) windowControls.hidden = isMacPlatform;
   document.body.classList.toggle('has-window-controls', !isMacPlatform);
   if (updateRestartBtn) updateRestartBtn.hidden = isMacPlatform;
-  if (updateGetBtn) updateGetBtn.hidden = !isMacPlatform;
+  if (updateDownloadBtn) updateDownloadBtn.hidden = !isMacPlatform;
   const autoInstallField = autoInstallUpdatesToggle?.closest('.toggle-field');
   if (autoInstallField) autoInstallField.hidden = isMacPlatform;
   syncSystemFocusUI(cfg);
@@ -1733,17 +1743,42 @@ function isUpdateSignatureError(msg) {
 
 function buildManualUpdateMessage(version) {
   return version
-    ? `Update v${version} is ready — download the DMG from GitHub.`
-    : 'Update available — download the latest DMG from GitHub.';
+    ? `Update v${version} available`
+    : 'Update available';
+}
+
+function buildMacInstallInstructions() {
+  return 'Quit Smiley → drag to Applications (replace) → reopen.';
+}
+
+function setUpdateBannerProgress(percent, visible = true) {
+  if (!updateBannerProgress || !updateBannerProgressBar) return;
+  const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+  updateBannerProgress.hidden = !visible;
+  updateBannerProgressBar.style.width = `${pct}%`;
 }
 
 function syncUpdateBannerButtons() {
-  const macManual = macAdHocUpdates && (updateState.version || updateState.downloaded || updateState.manualInstall);
-  if (updateGetBtn) {
-    updateGetBtn.disabled = !macManual;
-    updateGetBtn.title = macManual
-      ? 'Download the DMG from GitHub (Mac updates install manually)'
-      : 'Available when an update is detected';
+  const macUpdate = macAdHocUpdates && (
+    updateState.version || updateState.downloaded || updateState.manualInstall || updateState.dmgReady
+  );
+  if (updateDownloadBtn) {
+    updateDownloadBtn.hidden = !macAdHocUpdates;
+    if (updateState.dmgReady) {
+      updateDownloadBtn.textContent = 'Open downloaded file';
+      updateDownloadBtn.disabled = false;
+      updateDownloadBtn.title = buildMacInstallInstructions();
+    } else if (updateState.dmgDownloading) {
+      updateDownloadBtn.textContent = `Downloading… ${updateState.percent}%`;
+      updateDownloadBtn.disabled = true;
+      updateDownloadBtn.title = 'Download in progress';
+    } else {
+      updateDownloadBtn.textContent = 'Download update';
+      updateDownloadBtn.disabled = !macUpdate;
+      updateDownloadBtn.title = macUpdate
+        ? 'Download the update installer for your Mac'
+        : 'Available when an update is detected';
+    }
   }
   if (!updateRestartBtn || macAdHocUpdates) return;
   updateRestartBtn.disabled = !updateState.downloaded;
@@ -1751,6 +1786,87 @@ function syncUpdateBannerButtons() {
   updateRestartBtn.title = updateState.downloaded
     ? 'Restart to install update'
     : 'Available after download completes';
+}
+
+function showMacUpdateAvailable(data) {
+  updateState = {
+    downloaded: false,
+    manualInstall: true,
+    dismissed: false,
+    percent: 0,
+    version: data.version || null,
+    dmgDownloading: false,
+    dmgReady: false,
+  };
+  setUpdateBannerProgress(0, false);
+  syncUpdateBannerButtons();
+  if (updateBannerText) {
+    const ver = data.version ? `v${data.version}` : 'update';
+    updateBannerText.textContent = `Update ${ver} available`;
+  }
+  updateBanner?.classList.add('visible');
+}
+
+function showMacDmgDownloading(data) {
+  updateState.version = data.version || updateState.version;
+  updateState.manualInstall = true;
+  updateState.dmgDownloading = true;
+  updateState.dmgReady = false;
+  updateState.percent = data.percent ?? updateState.percent;
+  if (updateState.dismissed) return;
+  setUpdateBannerProgress(updateState.percent, true);
+  syncUpdateBannerButtons();
+  if (updateBannerText) {
+    const ver = data.version ? `v${data.version}` : 'update';
+    const pct = updateState.percent;
+    updateBannerText.textContent = pct >= 99
+      ? `Finishing download of ${ver}…`
+      : `Downloading ${ver}… ${pct}%`;
+  }
+  updateBanner?.classList.add('visible');
+}
+
+function showMacDmgReady(data) {
+  updateState = {
+    downloaded: true,
+    manualInstall: true,
+    dismissed: false,
+    percent: 100,
+    version: data.version || updateState.version,
+    dmgDownloading: false,
+    dmgReady: true,
+  };
+  setUpdateBannerProgress(100, false);
+  syncUpdateBannerButtons();
+  if (updateBannerText) {
+    const ver = data.version ? `v${data.version}` : 'update';
+    updateBannerText.textContent = `Update ${ver} ready — ${buildMacInstallInstructions()}`;
+  }
+  updateBanner?.classList.add('visible');
+  showToast(data.message || 'Download complete — open the installer to update.', 'success');
+}
+
+async function triggerMacUpdateDownload() {
+  if (!updateState.version) {
+    showToast('No update version available yet — check for updates first.', 'error');
+    return;
+  }
+  const version = updateState.version;
+  if (updateState.dmgReady) {
+    const result = await window.smiley.openMacUpdateDmg(version);
+    if (result?.success) {
+      showToast(result.message || buildMacInstallInstructions(), 'success');
+    } else {
+      showToast(result?.error || 'Could not open installer', 'error');
+    }
+    return;
+  }
+  const result = await window.smiley.downloadMacUpdate(version);
+  if (result?.status === 'busy') {
+    showToast(result.error || 'Download already in progress', 'error');
+  } else if (result?.status === 'dmg-error' || result?.success === false) {
+    showToast(result.error || 'Could not download update. Try again later.', 'error');
+  }
 }
 
 function handleUpdateStatus(data) {
@@ -1772,14 +1888,19 @@ function handleUpdateStatus(data) {
     case 'available':
       updateCheckingToastShown = false;
       if (macAdHocUpdates) {
-        handleUpdateStatus({
-          ...data,
-          status: 'manual-install-required',
-          message: buildManualUpdateMessage(data.version),
-        });
+        showMacUpdateAvailable(data);
         break;
       }
-      updateState = { downloaded: false, manualInstall: false, dismissed: false, percent: 0, version: data.version || null };
+      updateState = {
+        downloaded: false,
+        manualInstall: false,
+        dismissed: false,
+        percent: 0,
+        version: data.version || null,
+        dmgDownloading: false,
+        dmgReady: false,
+      };
+      setUpdateBannerProgress(0, false);
       syncUpdateBannerButtons();
       showToast(`Update v${data.version} available! Downloading...`);
       if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}… 0%`;
@@ -1790,6 +1911,7 @@ function handleUpdateStatus(data) {
       updateState.downloaded = false;
       updateState.percent = data.percent ?? updateState.percent;
       if (updateState.dismissed) break;
+      setUpdateBannerProgress(updateState.percent, true);
       if (updateBannerText) {
         const pct = updateState.percent;
         const ver = data.version ? `v${data.version}` : 'update';
@@ -1803,15 +1925,12 @@ function handleUpdateStatus(data) {
       updateCheckingToastShown = false;
       if (data.silent) break;
       hideUpdateBanner();
+      setUpdateBannerProgress(0, false);
       showToast('You are on the latest version!');
       break;
     case 'downloaded':
       if (macAdHocUpdates) {
-        handleUpdateStatus({
-          ...data,
-          status: 'manual-install-required',
-          message: buildManualUpdateMessage(data.version),
-        });
+        showMacUpdateAvailable(data);
         break;
       }
       updateCheckingToastShown = false;
@@ -1820,73 +1939,90 @@ function handleUpdateStatus(data) {
       updateState.percent = 100;
       updateState.dismissed = false;
       updateState.version = data.version || updateState.version;
+      updateState.dmgDownloading = false;
+      updateState.dmgReady = false;
+      setUpdateBannerProgress(100, false);
       syncUpdateBannerButtons();
       if (updateBannerText) {
-        if (macAdHocUpdates) {
-          updateBannerText.textContent = `Update v${data.version} ready — download from GitHub`;
-        } else {
-          updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
-        }
+        updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
       }
       updateBanner?.classList.add('visible');
-      if (macAdHocUpdates) {
-        showToast(`Update v${data.version} ready — use Get update to download the DMG.`);
-      } else {
-        showToast(`Update v${data.version} ready! Restart to apply.`);
-      }
+      showToast(`Update v${data.version} ready! Restart to apply.`);
       break;
     case 'download-stalled':
       updateCheckingToastShown = false;
-      updateState = { downloaded: false, manualInstall: false, dismissed: true, percent: 0, version: null };
+      updateState = {
+        downloaded: false,
+        manualInstall: false,
+        dismissed: true,
+        percent: 0,
+        version: null,
+        dmgDownloading: false,
+        dmgReady: false,
+      };
+      setUpdateBannerProgress(0, false);
       syncUpdateBannerButtons();
       hideUpdateBanner();
-      showToast('Update download stalled. Try again later or download from GitHub.', 'error');
+      showToast('Update download stalled. Try again later.', 'error');
       break;
+    case 'update-available-mac':
     case 'unsigned-update':
     case 'manual-install-required':
       updateCheckingToastShown = false;
-      updateState = {
-        downloaded: true,
-        manualInstall: true,
-        dismissed: false,
-        percent: 100,
-        version: data.version || null,
-      };
-      syncUpdateBannerButtons();
-      if (updateBannerText) {
-        const ver = data.version ? `v${data.version}` : 'update';
-        updateBannerText.textContent = `Update ${ver} ready — download from GitHub`;
+      showMacUpdateAvailable(data);
+      if (!data.silent) {
+        showToast(buildManualUpdateMessage(data.version));
       }
-      updateBanner?.classList.add('visible');
-      showUpdateActionToast(
-        data.message || buildManualUpdateMessage(data.version),
-        { url: data.releasesUrl || releasesUrl }
-      );
+      break;
+    case 'dmg-downloading':
+      updateCheckingToastShown = false;
+      showMacDmgDownloading(data);
+      break;
+    case 'dmg-ready':
+      updateCheckingToastShown = false;
+      showMacDmgReady(data);
+      break;
+    case 'dmg-error':
+      updateCheckingToastShown = false;
+      updateState.dmgDownloading = false;
+      updateState.dmgReady = false;
+      setUpdateBannerProgress(0, false);
+      syncUpdateBannerButtons();
+      if (updateState.version && !updateState.dismissed) {
+        updateBanner?.classList.add('visible');
+        if (updateBannerText) {
+          const ver = updateState.version ? `v${updateState.version}` : 'update';
+          updateBannerText.textContent = `Update ${ver} available`;
+        }
+      }
+      showToast(data.error || 'Could not download update. Try again later.', 'error');
       break;
     case 'error':
       updateCheckingToastShown = false;
+      if (macAdHocUpdates || isUpdateSignatureError(String(data.error || data.message || ''))) {
+        if (data.version) {
+          showMacUpdateAvailable(data);
+        } else {
+          showToast(data.message || 'Update check unavailable.');
+        }
+        break;
+      }
       updateState = {
         downloaded: false,
         manualInstall: false,
         dismissed: false,
         percent: 0,
         version: data.version || null,
+        dmgDownloading: false,
+        dmgReady: false,
       };
+      setUpdateBannerProgress(0, false);
       syncUpdateBannerButtons();
       hideUpdateBanner();
       if (data.expected) {
-        const friendly = data.message || 'Update check unavailable.';
-        if (macAdHocUpdates || isUpdateSignatureError(String(data.error || data.message || ''))) {
-          showUpdateActionToast(buildManualUpdateMessage(data.version), {
-            url: data.releasesUrl || releasesUrl,
-          });
-        } else {
-          showToast(friendly);
-        }
+        showToast(data.message || data.error || 'Update check unavailable.');
       } else {
-        showUpdateActionToast(buildManualUpdateMessage(data.version), {
-          url: data.releasesUrl || releasesUrl,
-        });
+        showToast(data.error || 'Update check failed. Try again later.', 'error');
       }
       break;
   }
@@ -2162,16 +2298,16 @@ async function init() {
       hideUpdateBanner();
     });
   }
-  if (updateGetBtn) {
-    updateGetBtn.addEventListener('click', () => {
-      window.smiley.openExternal(releasesUrl);
+  if (updateDownloadBtn) {
+    updateDownloadBtn.addEventListener('click', () => {
+      triggerMacUpdateDownload();
     });
   }
   if (updateRestartBtn) {
     updateRestartBtn.disabled = true;
     updateRestartBtn.addEventListener('click', async () => {
       if (macAdHocUpdates) {
-        window.smiley.openExternal(releasesUrl);
+        await triggerMacUpdateDownload();
         return;
       }
       if (!updateState.downloaded) {

@@ -20,11 +20,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 
 ## Download
 
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.1.4.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.1.5.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5.deb)
 
 [All releases](https://github.com/1tsRajuWu/Smiley/releases) · [Download page](https://1tsrajuwu.github.io/Smiley/)
 
@@ -34,11 +34,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-4.1.4.exe](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.1.4.exe) |
-| macOS Apple Silicon | [Smiley-4.1.4-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4-arm64.dmg) |
-| macOS Intel | [Smiley-4.1.4-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4-x64.dmg) |
-| Linux (AppImage) | [Smiley-4.1.4.AppImage](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4.AppImage) |
-| Linux (.deb) | [Smiley-4.1.4.deb](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4.deb) |
+| Windows | [Smiley-Setup-4.1.5.exe](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.1.5.exe) |
+| macOS Apple Silicon | [Smiley-4.1.5-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5-arm64.dmg) |
+| macOS Intel | [Smiley-4.1.5-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5-x64.dmg) |
+| Linux (AppImage) | [Smiley-4.1.5.AppImage](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5.AppImage) |
+| Linux (.deb) | [Smiley-4.1.5.deb](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.5.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
@@ -69,7 +69,7 @@ If Smiley's been useful: **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 <details>
 <summary><strong>What's new</strong></summary>
 
-**v4.1.x** — Readable text selection, cache cleanup in Settings, Mac update flow improvements.
+**v4.1.x** — Mac in-app update downloads the correct DMG (arm64/x64) with progress; drag to Applications to install. Readable text selection, cache cleanup in Settings.
 
 **v4.0** — Per-activity GIF picker, custom activities, legal docs (LICENSE, LEGAL.md), Mac auto-update fixes.
 
@@ -105,7 +105,9 @@ xattr -cr /Applications/Smiley.app
 
 **Windows SmartScreen** — Click More info → Run anyway (not code-signed yet).
 
-**Mac in-app update / code signature** — Smiley is ad-hoc signed. On v4.1.1+, use **Get update** → download the DMG manually. One-time fix: quit Smiley, install latest DMG from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest), relaunch.
+**Mac in-app update** — Smiley is ad-hoc signed (no Apple Developer account), so one-click restart install is not available. In the app, use **Download update** when a banner appears, then **Open downloaded file**. Quit Smiley, drag to Applications (replace), reopen. Intel Macs get `Smiley-x.x.x-x64.dmg`; Apple Silicon gets `Smiley-x.x.x-arm64.dmg`.
+
+If an older build shows a code-signature error on restart, install this version once manually from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest), then future updates work from the banner.
 
 ```bash
 rm -rf ~/Library/Caches/com.smiley.rpc.ShipIt

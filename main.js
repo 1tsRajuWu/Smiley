@@ -155,6 +155,44 @@ const GITHUB_REPO_URL =
     .replace(/\.git$/, '')
     .trim();
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
+const GITHUB_DOWNLOAD_HOSTS = new Set(['github.com', 'objects.githubusercontent.com']);
+
+function getMacDmgArch() {
+  return process.arch === 'arm64' ? 'arm64' : 'x64';
+}
+
+function normalizeReleaseVersion(version) {
+  return String(version || '').replace(/^v/i, '').trim();
+}
+
+function buildMacDmgDownloadUrl(version) {
+  const ver = normalizeReleaseVersion(version);
+  const arch = getMacDmgArch();
+  return `${GITHUB_REPO_URL}/releases/download/v${ver}/Smiley-${ver}-${arch}.dmg`;
+}
+
+function getMacUpdateDownloadDir() {
+  const dir = path.join(app.getPath('downloads'), 'Smiley Updates');
+  ensureDir(dir);
+  return dir;
+}
+
+function getMacDmgPathForVersion(version) {
+  const ver = normalizeReleaseVersion(version);
+  if (!ver) return null;
+  return path.join(getMacUpdateDownloadDir(), `Smiley-${ver}-${getMacDmgArch()}.dmg`);
+}
+
+function isAllowedGithubDownloadUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    return GITHUB_DOWNLOAD_HOSTS.has(host);
+  } catch {
+    return false;
+  }
+}
 // package.json mac.identity is "-" (ad-hoc). Squirrel ShipIt validates update signatures
 // at install time — separate from electron-updater verifyUpdateCodeSignature (Windows).
 const MAC_ADHOC_DISTRIBUTION = true;
@@ -1214,6 +1252,8 @@ let downloadStallTimer = null;
 let updaterListenersAttached = false;
 let silentUpdateCheck = false;
 let isCheckingUpdate = false;
+let macDmgDownloadInProgress = false;
+let macDmgDownloadedPath = null;
 
 function finishUpdateCheck() {
   isCheckingUpdate = false;
@@ -1272,15 +1312,182 @@ function isMacAdHocUpdater() {
   return process.platform === 'darwin';
 }
 
-function buildManualInstallPayload(version = pendingUpdateVersion) {
-  const verLabel = version ? `v${version}` : 'the latest version';
+function buildMacUpdateAvailablePayload(version = pendingUpdateVersion) {
+  const ver = normalizeReleaseVersion(version) || null;
   return {
-    ok: false,
-    status: 'manual-install-required',
-    message: `Update ${verLabel} is available — download the DMG from GitHub and drag into Applications.`,
-    version: version || null,
+    ok: true,
+    status: 'update-available-mac',
+    message: ver ? `Update v${ver} available` : 'Update available',
+    version: ver,
+    arch: getMacDmgArch(),
+    dmgUrl: ver ? buildMacDmgDownloadUrl(ver) : null,
     releasesUrl: GITHUB_RELEASES_URL,
     expected: true,
+  };
+}
+
+function buildManualInstallPayload(version = pendingUpdateVersion) {
+  return buildMacUpdateAvailablePayload(version);
+}
+
+function buildMacDmgReadyPayload(version = pendingUpdateVersion, dmgPath = macDmgDownloadedPath) {
+  const ver = normalizeReleaseVersion(version) || null;
+  return {
+    ok: true,
+    status: 'dmg-ready',
+    message: 'Download complete — open the installer to update.',
+    version: ver,
+    path: dmgPath || (ver ? getMacDmgPathForVersion(ver) : null),
+    instructions: [
+      'Quit Smiley',
+      'Drag Smiley to Applications (replace the existing app)',
+      'Reopen Smiley from Applications',
+    ],
+    expected: true,
+  };
+}
+
+function httpDownloadFile(url, destPath, onProgress) {
+  return new Promise((resolve, reject) => {
+    const follow = (currentUrl, redirects = 0) => {
+      if (redirects > 10) {
+        reject(new Error('Too many redirects'));
+        return;
+      }
+      if (!isAllowedGithubDownloadUrl(currentUrl)) {
+        reject(new Error('Download host not allowed'));
+        return;
+      }
+      const parsed = new URL(currentUrl);
+      const lib = parsed.protocol === 'http:' ? require('http') : require('https');
+      const req = lib.get(
+        currentUrl,
+        { headers: { 'User-Agent': `Smiley/${APP_VERSION}`, Accept: '*/*' } },
+        (res) => {
+          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            const next = res.headers.location.startsWith('http')
+              ? res.headers.location
+              : new URL(res.headers.location, currentUrl).href;
+            res.resume();
+            follow(next, redirects + 1);
+            return;
+          }
+          if (res.statusCode !== 200) {
+            res.resume();
+            reject(new Error(`Download failed (${res.statusCode})`));
+            return;
+          }
+          const total = parseInt(res.headers['content-length'], 10) || 0;
+          let received = 0;
+          const tmpPath = `${destPath}.part`;
+          const file = fs.createWriteStream(tmpPath);
+          res.on('data', (chunk) => {
+            received += chunk.length;
+            if (onProgress) {
+              const percent = total > 0
+                ? Math.min(99, Math.round((received / total) * 100))
+                : Math.min(95, Math.round(received / (1024 * 1024)));
+              onProgress(percent, received, total);
+            }
+          });
+          res.pipe(file);
+          file.on('finish', () => {
+            file.close(() => {
+              try {
+                if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+                fs.renameSync(tmpPath, destPath);
+                if (onProgress) onProgress(100, received, total);
+                resolve(destPath);
+              } catch (err) {
+                reject(err);
+              }
+            });
+          });
+          file.on('error', (err) => {
+            try { fs.unlinkSync(tmpPath); } catch (_) {}
+            reject(err);
+          });
+        },
+      );
+      req.on('error', reject);
+      req.setTimeout(300000, () => {
+        req.destroy();
+        reject(new Error('Download timed out'));
+      });
+    };
+    follow(url);
+  });
+}
+
+function isValidDownloadedDmg(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return false;
+  try {
+    return fs.statSync(filePath).size > 1024 * 1024;
+  } catch {
+    return false;
+  }
+}
+
+async function downloadMacUpdateDmg(version) {
+  if (process.platform !== 'darwin') {
+    return { success: false, error: 'Mac-only feature' };
+  }
+  const ver = normalizeReleaseVersion(version || pendingUpdateVersion);
+  if (!ver) return { success: false, error: 'No update version available' };
+  if (macDmgDownloadInProgress) {
+    return { success: false, status: 'busy', error: 'Download already in progress' };
+  }
+
+  const destPath = getMacDmgPathForVersion(ver);
+  if (isValidDownloadedDmg(destPath)) {
+    macDmgDownloadedPath = destPath;
+    const payload = buildMacDmgReadyPayload(ver, destPath);
+    sendUpdateStatus(payload);
+    return { success: true, ...payload };
+  }
+
+  const url = buildMacDmgDownloadUrl(ver);
+  macDmgDownloadInProgress = true;
+  sendUpdateStatus({ status: 'dmg-downloading', version: ver, percent: 0 });
+
+  try {
+    await httpDownloadFile(url, destPath, (percent) => {
+      sendUpdateStatus({ status: 'dmg-downloading', version: ver, percent });
+    });
+    macDmgDownloadInProgress = false;
+    macDmgDownloadedPath = destPath;
+    const payload = buildMacDmgReadyPayload(ver, destPath);
+    sendUpdateStatus(payload);
+    return { success: true, ...payload };
+  } catch (err) {
+    macDmgDownloadInProgress = false;
+    console.error('[updater] DMG download failed:', err.message);
+    const payload = {
+      ok: false,
+      status: 'dmg-error',
+      version: ver,
+      error: 'Could not download update. Check your connection or try again later.',
+      releasesUrl: GITHUB_RELEASES_URL,
+      expected: true,
+    };
+    sendUpdateStatus(payload);
+    return payload;
+  }
+}
+
+function openMacDownloadedDmg(version = pendingUpdateVersion) {
+  const ver = normalizeReleaseVersion(version);
+  const destPath = macDmgDownloadedPath || (ver ? getMacDmgPathForVersion(ver) : null);
+  if (!isValidDownloadedDmg(destPath)) {
+    return { success: false, error: 'Installer not found — download the update first.' };
+  }
+  macDmgDownloadedPath = destPath;
+  shell.openPath(destPath);
+  return {
+    success: true,
+    path: destPath,
+    message: 'Quit Smiley, drag to Applications (replace), then reopen.',
+    instructions: buildMacDmgReadyPayload(ver, destPath).instructions,
   };
 }
 
@@ -2137,6 +2344,7 @@ function setupIPC() {
     systemFocusMinimizeTray: config.systemFocusMinimizeTray === true,
     isMac: process.platform === 'darwin',
     macAdHocUpdates: process.platform === 'darwin',
+    macDmgArch: process.platform === 'darwin' ? getMacDmgArch() : null,
     releasesUrl: GITHUB_RELEASES_URL,
     osPlatform: process.platform,
     version: APP_VERSION,
@@ -2185,18 +2393,14 @@ function setupIPC() {
     }
   });
 
-  ipcMain.handle('install-update', () => {
+  ipcMain.handle('install-update', async () => {
     if (isMacAdHocUpdater()) {
-      const payload = buildManualInstallPayload();
-      sendUpdateStatus(payload);
-      shell.openExternal(GITHUB_RELEASES_URL);
-      return {
-        success: false,
-        status: 'manual-install-required',
-        message: payload.message,
-        releasesUrl: GITHUB_RELEASES_URL,
-        version: pendingUpdateVersion || null,
-      };
+      const ver = pendingUpdateVersion;
+      const destPath = macDmgDownloadedPath || (ver ? getMacDmgPathForVersion(ver) : null);
+      if (isValidDownloadedDmg(destPath)) {
+        return openMacDownloadedDmg(ver);
+      }
+      return downloadMacUpdateDmg(ver);
     }
     if (process.platform === 'darwin' && isRunningFromDmg()) {
       return {
@@ -2218,6 +2422,26 @@ function setupIPC() {
       version: pendingUpdateVersion || null,
     };
   });
+
+  ipcMain.handle('download-mac-update', async (_, version) => {
+    try {
+      return await downloadMacUpdateDmg(version || pendingUpdateVersion);
+    } catch (err) {
+      console.error('[updater] download-mac-update failed:', err.message);
+      const payload = {
+        ok: false,
+        status: 'dmg-error',
+        version: normalizeReleaseVersion(version || pendingUpdateVersion) || null,
+        error: 'Could not download update. Try again later.',
+        releasesUrl: GITHUB_RELEASES_URL,
+        expected: true,
+      };
+      sendUpdateStatus(payload);
+      return payload;
+    }
+  });
+
+  ipcMain.handle('open-mac-update-dmg', (_, version) => openMacDownloadedDmg(version || pendingUpdateVersion));
 
   ipcMain.handle('pick-custom-animation', async () => {
     if (!mainWindow) return { canceled: true };
