@@ -14,7 +14,12 @@ git tag v2.1.2
 git push origin main --tags
 ```
 
-That's it. Within ~15–30 minutes, GitHub Actions uploads `.dmg`, `.exe`, and Linux packages to [Releases](https://github.com/1tsRaj/smiley-rpc/releases). Installed users get the update automatically.
+That's it. Within ~15–30 minutes, GitHub Actions uploads `.dmg`, `.exe`, and Linux packages to [Releases](https://github.com/1tsRajuWu/Smiley/releases). Installed users get the update automatically.
+
+### After bumping version
+
+1. Update download URLs in **README.md** (search for old version number in download links)
+2. Copy release notes from [RELEASE_BODY_TEMPLATE.md](./RELEASE_BODY_TEMPLATE.md) into the GitHub Release description
 
 ## One-time GitHub setup
 
@@ -73,4 +78,4 @@ The lightweight native app does **not** auto-update yet. Users download new buil
 
 ---
 
-© Raj (@1tsRaj) — [smiley-rpc](https://github.com/1tsRaj/smiley-rpc)
+© Raj (@1tsRaj) — [Smiley](https://github.com/1tsRajuWu/Smiley)

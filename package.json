@@ -8,11 +8,11 @@
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/1tsRaj/smiley-rpc.git"
+    "url": "https://github.com/1tsRajuWu/Smiley.git"
   },
-  "homepage": "https://github.com/1tsRaj/smiley-rpc",
+  "homepage": "https://github.com/1tsRajuWu/Smiley",
   "bugs": {
-    "url": "https://github.com/1tsRaj/smiley-rpc/issues"
+    "url": "https://github.com/1tsRajuWu/Smiley/issues"
   },
   "scripts": {
     "start": "electron .",
@@ -94,6 +94,9 @@
         }
       ],
       "publisherName": "Raj (1tsRaj)"
+    },
+    "portable": {
+      "artifactName": "Smiley-Portable-${version}.${ext}"
     },
     "linux": {
       "target": [
