@@ -1,6 +1,6 @@
 # GitHub Release body template
 
-Copy into the release description when publishing **v{VERSION}**. Replace `{VERSION}` (e.g. `3.2.0`).
+Copy into the release description when publishing **v{VERSION}**. Replace `{VERSION}` (e.g. `4.0.0`).
 
 ---
 
