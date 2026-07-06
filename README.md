@@ -348,7 +348,7 @@ npm start
 
 `discord.app.json` needs a Client ID from the [Discord Developer Portal](https://discord.com/developers/applications). **Releases bundle this** — only needed for local dev.
 
-**Rich Presence buttons:** If you maintain the Discord application, add `github.com` under **Rich Presence → URL Configuration** in the Developer Portal so the **Download Smiley** and **GitHub** buttons appear on presence cards.
+**Rich Presence buttons:** If you maintain the Discord application, add `github.com` under **Rich Presence → URL Configuration** in the Developer Portal so the **Download Smiley** button appears on presence cards.
 
 ```bash
 npm run build:mac    # macOS .dmg + .zip (x64 + arm64)

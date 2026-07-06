@@ -1,6 +1,6 @@
 // Anime image APIs — see discord-images.js for resolution pipeline.
 // API-sourced SFW anime only; no copyrighted character assets bundled.
-// Optional per-activity `buttons` (max 2, { label, url }) override default GitHub links in main.js.
+// Optional per-activity `buttons` (max 2, { label, url }) override default download link in main.js.
 export const WAIFU_TAGS = {
   food: 'neko',
   gaming: 'shinobu',

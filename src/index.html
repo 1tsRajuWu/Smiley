@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com;"
     />
     <title>Smiley</title>
     <link rel="stylesheet" href="styles.css" />
@@ -115,9 +115,9 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v3.1.4</span>
+        <span class="footer-version" id="footerVersion">Smiley v3.1.5</span>
         <a href="#" class="footer-link" id="footerBugReport">Report a bug</a>
-        <span class="footer-hint" id="footerShortcuts">⌘1–5 categories · ⌘K search · Esc clear</span>
+        <span class="footer-hint" id="footerShortcuts"></span>
       </footer>
     </div>
 
@@ -191,6 +191,26 @@
                 <label class="theme-option" data-theme="cyber"><div class="theme-preview theme-cyber"></div><span>Cyber</span></label>
                 <label class="theme-option" data-theme="coffee"><div class="theme-preview theme-coffee"></div><span>Coffee</span></label>
                 <label class="theme-option" data-theme="rose"><div class="theme-preview theme-rose"></div><span>Rose</span></label>
+              </div>
+            </div>
+            <div class="field wallpaper-field">
+              <span class="field-label">Custom wallpaper</span>
+              <p class="field-hint">Upload a background image (JPG, PNG, WebP). Supports 2K+ resolutions.</p>
+              <div class="wallpaper-preview" id="wallpaperPreview" hidden>
+                <div class="wallpaper-preview-thumb" id="wallpaperPreviewThumb"></div>
+                <span class="wallpaper-preview-name" id="wallpaperPreviewName"></span>
+              </div>
+              <div class="wallpaper-actions">
+                <button type="button" class="btn btn-secondary" id="uploadWallpaperBtn">Upload wallpaper</button>
+                <button type="button" class="btn btn-secondary" id="resetWallpaperBtn" hidden>Reset to default</button>
+              </div>
+              <div class="wallpaper-slider-field">
+                <label class="wallpaper-slider-label" for="wallpaperBlurSlider">Blur <span id="wallpaperBlurValue">0</span>px</label>
+                <input type="range" id="wallpaperBlurSlider" min="0" max="20" value="0" step="1" disabled />
+              </div>
+              <div class="wallpaper-slider-field">
+                <label class="wallpaper-slider-label" for="wallpaperDimSlider">Dim overlay <span id="wallpaperDimValue">0</span>%</label>
+                <input type="range" id="wallpaperDimSlider" min="0" max="80" value="0" step="1" disabled />
               </div>
             </div>
           </div>

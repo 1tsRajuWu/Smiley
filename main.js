@@ -155,7 +155,6 @@ const GITHUB_REPO_URL =
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
 const DEFAULT_RPC_BUTTONS = [
   { label: 'Download Smiley', url: GITHUB_RELEASES_URL },
-  { label: 'GitHub', url: GITHUB_REPO_URL },
 ];
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
@@ -163,6 +162,7 @@ const DEFAULT_CONFIG = {
   showTimer: true,
   animationsEnabled: true,
   customAnimation: null,
+  customWallpaper: null,
   windowState: { width: 1100, height: 780 },
   autoConnect: true,
   minimizeToTray: true,
@@ -172,6 +172,8 @@ const DEFAULT_CONFIG = {
   autoInstallUpdates: true,
   recentActivities: [],
   favoriteActivities: [],
+  migrationNoticeShown: false,
+  installWarningShown: false,
 };
 let config = { ...DEFAULT_CONFIG };
 let configMigrationNotice = null;
@@ -184,12 +186,15 @@ function loadConfig() {
       const raw = JSON.parse(fs.readFileSync(securePath, 'utf8'));
       const decrypted = decryptConfig(raw);
       if (decrypted?.__keychainMigration) {
-        configMigrationNotice = {
-          title: 'Settings reset',
-          message: 'Smiley updated how settings are stored.',
-          detail: 'Your previous settings used macOS Keychain and could not be migrated automatically. Defaults were restored — you can reconfigure theme, favorites, and other preferences in Settings.',
-        };
-        config = { ...DEFAULT_CONFIG };
+        const noticeAlreadyShown = config.migrationNoticeShown === true;
+        config = { ...DEFAULT_CONFIG, migrationNoticeShown: noticeAlreadyShown };
+        if (!noticeAlreadyShown) {
+          configMigrationNotice = {
+            title: 'Settings reset',
+            message: 'Smiley updated how settings are stored.',
+            detail: 'Your previous settings used macOS Keychain and could not be migrated automatically. Defaults were restored — you can reconfigure theme, favorites, and other preferences in Settings.',
+          };
+        }
         fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
         return;
       }
@@ -293,6 +298,21 @@ function registerGlobalHotkey() {
   } catch (err) {
     console.error('[hotkey]', err.message);
   }
+}
+
+function showOneTimeDialog(notice, configKey) {
+  if (!notice || !mainWindow || config[configKey]) return;
+  mainWindow.webContents.once('did-finish-load', () => {
+    dialog.showMessageBox(mainWindow, {
+      type: notice.type || 'info',
+      title: notice.title,
+      message: notice.message,
+      detail: notice.detail,
+      buttons: ['OK'],
+    }).then(() => {
+      saveConfig({ [configKey]: true });
+    });
+  });
 }
 
 function saveConfig(data) {
@@ -1122,6 +1142,64 @@ function setupAutoUpdater() {
   }
 }
 
+// ─── Custom Wallpapers ───────────────────────────────────────────────
+const WALLPAPER_EXTS = ['.jpg', '.jpeg', '.png', '.webp'];
+
+function getWallpapersDir() {
+  const dir = getUserDataPath('wallpapers');
+  ensureDir(dir);
+  return dir;
+}
+
+function saveWallpaper(sourcePath) {
+  const ext = path.extname(sourcePath).toLowerCase();
+  if (!WALLPAPER_EXTS.includes(ext)) {
+    return { valid: false, error: `Only ${WALLPAPER_EXTS.join(', ')} allowed` };
+  }
+  const dir = getWallpapersDir();
+  const hash = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const destName = sanitizeFilename(`wallpaper-${hash}${ext}`);
+  const destPath = path.join(dir, destName);
+  try {
+    fs.copyFileSync(sourcePath, destPath);
+    return { valid: true, path: destPath, filename: destName };
+  } catch {
+    return { valid: false, error: 'Save failed' };
+  }
+}
+
+function resolveWallpaperPath(filename) {
+  if (!filename || typeof filename !== 'string') return null;
+  const dir = getWallpapersDir();
+  const safeName = sanitizeFilename(path.basename(filename));
+  const filePath = path.resolve(path.join(dir, safeName));
+  const resolvedDir = path.resolve(dir);
+  if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) return null;
+  if (!fs.existsSync(filePath)) return null;
+  return filePath;
+}
+
+function deleteWallpaperFile(filename) {
+  const filePath = resolveWallpaperPath(filename);
+  if (!filePath) return { success: false, error: 'Not found' };
+  try {
+    fs.unlinkSync(filePath);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function wallpaperPathToUrl(filePath) {
+  if (!filePath) return null;
+  try {
+    const { pathToFileURL } = require('url');
+    return pathToFileURL(filePath).href;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Custom Animations ───────────────────────────────────────────────
 const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -1202,6 +1280,8 @@ function setupIPC() {
     autoInstallUpdates: config.autoInstallUpdates !== false,
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
+    customWallpaper: config.customWallpaper || null,
+    isMac: process.platform === 'darwin',
     version: APP_VERSION,
     platform: `${process.platform} ${os.release()}`,
   }));
@@ -1303,6 +1383,29 @@ function setupIPC() {
     } catch (err) { return { success: false, error: err.message }; }
   });
 
+  ipcMain.handle('pick-wallpaper', async () => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Wallpaper',
+      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths[0]) return { canceled: true };
+    const saveResult = saveWallpaper(result.filePaths[0]);
+    if (!saveResult.valid) return { error: saveResult.error };
+    const url = wallpaperPathToUrl(saveResult.path);
+    if (!url) return { error: 'Could not read image' };
+    return { success: true, filename: saveResult.filename, url };
+  });
+
+  ipcMain.handle('get-wallpaper-path', (_, filename) => {
+    const filePath = resolveWallpaperPath(filename);
+    const url = wallpaperPathToUrl(filePath);
+    return url ? { url } : { url: null };
+  });
+
+  ipcMain.handle('delete-wallpaper', (_, filename) => deleteWallpaperFile(filename));
+
   ipcMain.handle('open-external', (_, url) => {
     try {
       const parsed = new URL(url);
@@ -1368,6 +1471,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
+  ensureDir(getUserDataPath('wallpapers'));
   applyLaunchAtLogin();
   createWindow();
   createTray();
@@ -1376,28 +1480,12 @@ app.whenReady().then(async () => {
   registerGlobalHotkey();
 
   const installWarning = getInstallLocationWarning();
-  if (installWarning && mainWindow) {
-    mainWindow.webContents.once('did-finish-load', () => {
-      dialog.showMessageBox(mainWindow, {
-        type: 'warning',
-        title: installWarning.title,
-        message: installWarning.message,
-        detail: installWarning.detail,
-        buttons: ['OK'],
-      });
-    });
+  if (installWarning) {
+    showOneTimeDialog({ ...installWarning, type: 'warning' }, 'installWarningShown');
   }
 
-  if (configMigrationNotice && mainWindow) {
-    mainWindow.webContents.once('did-finish-load', () => {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: configMigrationNotice.title,
-        message: configMigrationNotice.message,
-        detail: configMigrationNotice.detail,
-        buttons: ['OK'],
-      });
-    });
+  if (configMigrationNotice) {
+    showOneTimeDialog(configMigrationNotice, 'migrationNoticeShown');
   }
 
   // Auto-check for updates shortly after launch (installed NSIS/dmg builds only)

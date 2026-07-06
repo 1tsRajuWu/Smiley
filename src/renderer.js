@@ -47,6 +47,18 @@ const licenseLink = $('#licenseLink');
 const bugReportLink = $('#bugReportLink');
 const bugReportEmailLink = $('#bugReportEmailLink');
 const footerBugReport = $('#footerBugReport');
+const footerShortcuts = $('#footerShortcuts');
+
+// Wallpaper settings refs
+const uploadWallpaperBtn = $('#uploadWallpaperBtn');
+const resetWallpaperBtn = $('#resetWallpaperBtn');
+const wallpaperBlurSlider = $('#wallpaperBlurSlider');
+const wallpaperDimSlider = $('#wallpaperDimSlider');
+const wallpaperBlurValue = $('#wallpaperBlurValue');
+const wallpaperDimValue = $('#wallpaperDimValue');
+const wallpaperPreview = $('#wallpaperPreview');
+const wallpaperPreviewThumb = $('#wallpaperPreviewThumb');
+const wallpaperPreviewName = $('#wallpaperPreviewName');
 
 // Settings refs
 const settingsTabs = document.querySelectorAll('.settings-tab');
@@ -89,8 +101,18 @@ let updateState = { downloaded: false, dismissed: false, percent: 0 };
 let searchDebounceTimer = null;
 let recentActivities = [];
 let favoriteIds = [];
+let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
+let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 
 // ─── Helpers ─────────────────────────────────────────────────────────
+function formatShortcutHint(mac = isMacPlatform) {
+  if (mac) return '⌘1–5 categories · ⌘K search · Esc clear';
+  return 'Ctrl+1–5 categories · Ctrl+K search · Esc clear';
+}
+
+function updateFooterShortcuts(mac = isMacPlatform) {
+  if (footerShortcuts) footerShortcuts.textContent = formatShortcutHint(mac);
+}
 function showToast(message, type = 'success') {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
@@ -476,6 +498,16 @@ function openSettings(tab = 'general') {
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
 
+    if (typeof cfg.isMac === 'boolean') isMacPlatform = cfg.isMac;
+    updateFooterShortcuts(isMacPlatform);
+
+    wallpaperSettings = {
+      filename: cfg.customWallpaper?.filename || null,
+      blur: Number(cfg.customWallpaper?.blur) || 0,
+      dim: Number(cfg.customWallpaper?.dim) || 0,
+    };
+    syncWallpaperControls();
+
     themeOptions.forEach((opt) => {
       opt.classList.toggle('active', opt.dataset.theme === (cfg.theme || 'dark'));
     });
@@ -511,6 +543,9 @@ async function handleSaveSettings(e) {
     customAnimation: activeCustomAnimation ? 'custom' : null,
     launchAtLogin: launchAtLoginToggle?.checked === true,
     hotkeyEnabled: hotkeyToggle?.checked !== false,
+    customWallpaper: wallpaperSettings.filename
+      ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
+      : null,
   };
 
   const result = await window.smiley.saveConfig(newSettings);
@@ -534,6 +569,95 @@ async function handleSaveSettings(e) {
 function applyTheme(theme) {
   appEl.dataset.theme = theme || 'dark';
   currentSettings.theme = theme || 'dark';
+}
+
+async function applyWallpaper(wallpaper = wallpaperSettings) {
+  wallpaperSettings = {
+    filename: wallpaper?.filename || null,
+    blur: Number(wallpaper?.blur) || 0,
+    dim: Number(wallpaper?.dim) || 0,
+  };
+
+  if (!wallpaperSettings.filename) {
+    document.body.classList.remove('has-wallpaper');
+    document.body.style.removeProperty('--wallpaper-url');
+    document.body.style.removeProperty('--wallpaper-blur');
+    document.body.style.removeProperty('--wallpaper-dim');
+    return;
+  }
+
+  try {
+    const result = await window.smiley.getWallpaperPath(wallpaperSettings.filename);
+    if (!result?.url) {
+      document.body.classList.remove('has-wallpaper');
+      return;
+    }
+    document.body.classList.add('has-wallpaper');
+    document.body.style.setProperty('--wallpaper-url', `url("${result.url}")`);
+    document.body.style.setProperty('--wallpaper-blur', `${wallpaperSettings.blur}px`);
+    document.body.style.setProperty('--wallpaper-dim', String(wallpaperSettings.dim / 100));
+  } catch (err) {
+    console.error('Failed to apply wallpaper:', err);
+  }
+}
+
+function syncWallpaperControls() {
+  const hasWallpaper = !!wallpaperSettings.filename;
+  if (wallpaperBlurSlider) {
+    wallpaperBlurSlider.disabled = !hasWallpaper;
+    wallpaperBlurSlider.value = String(wallpaperSettings.blur);
+  }
+  if (wallpaperDimSlider) {
+    wallpaperDimSlider.disabled = !hasWallpaper;
+    wallpaperDimSlider.value = String(wallpaperSettings.dim);
+  }
+  if (wallpaperBlurValue) wallpaperBlurValue.textContent = String(wallpaperSettings.blur);
+  if (wallpaperDimValue) wallpaperDimValue.textContent = String(wallpaperSettings.dim);
+  if (resetWallpaperBtn) resetWallpaperBtn.hidden = !hasWallpaper;
+  if (wallpaperPreview) wallpaperPreview.hidden = !hasWallpaper;
+  if (hasWallpaper && wallpaperPreviewName) {
+    wallpaperPreviewName.textContent = wallpaperSettings.filename;
+  }
+  if (hasWallpaper && wallpaperPreviewThumb) {
+    window.smiley.getWallpaperPath(wallpaperSettings.filename).then((result) => {
+      if (result?.url) wallpaperPreviewThumb.style.backgroundImage = `url("${result.url}")`;
+    });
+  } else if (wallpaperPreviewThumb) {
+    wallpaperPreviewThumb.style.backgroundImage = '';
+  }
+}
+
+async function handleUploadWallpaper() {
+  const result = await window.smiley.pickWallpaper();
+  if (result?.canceled) return;
+  if (result?.error) {
+    showToast(result.error, 'error');
+    return;
+  }
+  if (!result?.filename) return;
+
+  const oldFilename = wallpaperSettings.filename;
+  wallpaperSettings = {
+    filename: result.filename,
+    blur: wallpaperSettings.blur || 0,
+    dim: wallpaperSettings.dim || 0,
+  };
+  if (oldFilename && oldFilename !== result.filename) {
+    await window.smiley.deleteWallpaper(oldFilename);
+  }
+  syncWallpaperControls();
+  await applyWallpaper(wallpaperSettings);
+  showToast('Wallpaper uploaded');
+}
+
+async function handleResetWallpaper() {
+  if (wallpaperSettings.filename) {
+    await window.smiley.deleteWallpaper(wallpaperSettings.filename);
+  }
+  wallpaperSettings = { filename: null, blur: 0, dim: 0 };
+  syncWallpaperControls();
+  await applyWallpaper(wallpaperSettings);
+  showToast('Wallpaper reset');
 }
 
 // ─── Custom Animations ───────────────────────────────────────────────
@@ -897,6 +1021,23 @@ async function init() {
 
   setupDragDrop();
 
+  if (uploadWallpaperBtn) uploadWallpaperBtn.addEventListener('click', handleUploadWallpaper);
+  if (resetWallpaperBtn) resetWallpaperBtn.addEventListener('click', handleResetWallpaper);
+  if (wallpaperBlurSlider) {
+    wallpaperBlurSlider.addEventListener('input', () => {
+      wallpaperSettings.blur = Number(wallpaperBlurSlider.value) || 0;
+      if (wallpaperBlurValue) wallpaperBlurValue.textContent = String(wallpaperSettings.blur);
+      applyWallpaper(wallpaperSettings);
+    });
+  }
+  if (wallpaperDimSlider) {
+    wallpaperDimSlider.addEventListener('input', () => {
+      wallpaperSettings.dim = Number(wallpaperDimSlider.value) || 0;
+      if (wallpaperDimValue) wallpaperDimValue.textContent = String(wallpaperSettings.dim);
+      applyWallpaper(wallpaperSettings);
+    });
+  }
+
   donateBanner.addEventListener('click', (e) => {
     e.preventDefault();
     window.smiley.openExternal(donateBanner.href);
@@ -1056,6 +1197,14 @@ async function init() {
   currentSettings = { ...currentSettings, ...cfg };
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
+  if (typeof cfg.isMac === 'boolean') isMacPlatform = cfg.isMac;
+  updateFooterShortcuts(isMacPlatform);
+  wallpaperSettings = {
+    filename: cfg.customWallpaper?.filename || null,
+    blur: Number(cfg.customWallpaper?.blur) || 0,
+    dim: Number(cfg.customWallpaper?.dim) || 0,
+  };
+  await applyWallpaper(wallpaperSettings);
   renderRecentChips();
   applyTheme(cfg.theme || 'dark');
   if (cfg.version) {

@@ -239,13 +239,65 @@
 }
 
 html, body { height: 100%; overflow: hidden; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; user-select: none; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; user-select: none; position: relative; }
+
+body.has-wallpaper::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--wallpaper-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(var(--wallpaper-blur, 0px));
+  transform: scale(1.06);
+  pointer-events: none;
+}
+
+body.has-wallpaper::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: rgba(0, 0, 0, var(--wallpaper-dim, 0));
+  pointer-events: none;
+}
 
 .app {
-  display: flex; flex-direction: column; height: 100vh;
+  display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 1;
   background: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(107,159,255,0.04), transparent),
               radial-gradient(ellipse 60% 40% at 90% 100%, rgba(240,112,136,0.03), transparent),
               var(--bg);
+}
+
+body.has-wallpaper .app {
+  background: transparent;
+}
+
+body.has-wallpaper .character-stage,
+body.has-wallpaper .discord-card,
+body.has-wallpaper .donate-banner,
+body.has-wallpaper .activity-card,
+body.has-wallpaper .quick-chip,
+body.has-wallpaper .connection-pill,
+body.has-wallpaper .picker-main,
+body.has-wallpaper .header,
+body.has-wallpaper .footer,
+body.has-wallpaper .modal-content {
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.has-wallpaper .picker-main {
+  background: color-mix(in srgb, var(--bg-elevated) 65%, transparent);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+body.has-wallpaper .activity-card {
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
 }
 
 .content { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 20px; padding: 8px 24px 16px; min-height: 0; overflow: hidden; }
@@ -474,6 +526,17 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .custom-animation-item.active span { color: var(--accent); font-weight: 600; }
 .custom-animation-item .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: var(--transition); }
 .custom-animation-item .btn-delete:hover { background: rgba(247,118,142,0.15); }
+
+/* Wallpaper settings */
+.wallpaper-field { margin-top: 4px; }
+.wallpaper-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.wallpaper-actions .btn { margin-right: 0; }
+.wallpaper-preview { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xs); }
+.wallpaper-preview-thumb { width: 64px; height: 40px; border-radius: 6px; background-size: cover; background-position: center; border: 1px solid var(--border); flex-shrink: 0; }
+.wallpaper-preview-name { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallpaper-slider-field { margin-top: 14px; }
+.wallpaper-slider-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+.wallpaper-slider-field input[type="range"] { width: 100%; accent-color: var(--accent); }
 
 /* About */
 .about-section { text-align: center; padding: 10px 0; }
