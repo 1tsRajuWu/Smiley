@@ -54,5 +54,5 @@ For permission to use, modify, or redistribute Smiley:
 
 - [LICENSE](LICENSE) — Proprietary software license
 - [NOTICE](NOTICE) — Copyright and trademark notice
-- [Terms of Service](ToS.md)
-- [Privacy Policy](PRIVACY.md)
+- [Terms of Service](ToS.md) — includes default install/usage data collection
+- [Privacy Policy](PRIVACY.md) — full disclosure of collected fields and opt-out

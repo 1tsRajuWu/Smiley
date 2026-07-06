@@ -4,7 +4,7 @@ Platforms: Windows, macOS, Linux. Author: Himanshu Raj (1tsRajuWu / 1tsRaj).
 Download: https://1tsrajuwu.github.io/Smiley/
 -->
 
-**New to the code?** Read **[PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)** — folder map, core files, and data flow for newcomers.
+**New to the code?** Read **[docs/CODE-TOUR.md](docs/CODE-TOUR.md)** (beginner walkthrough) or **[PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)** (folder map).
 
 <div align="center">
 
@@ -168,7 +168,9 @@ Smiley is **not open source**. Source is visible for transparency — not licens
 | Download official releases for personal use | Fork, clone, mirror, rebrand |
 | Report bugs via Issues | Commercial use without permission |
 
-Full terms: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [Privacy](PRIVACY.md)
+Full terms: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [Privacy](PRIVACY.md) · [Terms](ToS.md)
+
+Using Smiley means you accept our Terms and default install/usage reporting (opt out in Settings). See [PRIVACY.md](PRIVACY.md).
 
 </details>
 
@@ -189,7 +191,7 @@ npm run build:win    # Windows installer
 npm run build:linux  # AppImage + .deb
 ```
 
-More in [docs/](docs/) · [Project structure (code map)](PROJECT-STRUCTURE.md) · [About the author](docs/ABOUT.md)
+More in [docs/](docs/) · [Code tour (newbies)](docs/CODE-TOUR.md) · [Project structure](PROJECT-STRUCTURE.md) · [About the author](docs/ABOUT.md)
 
 </details>
 

@@ -2,7 +2,14 @@
 // YOU ARE HERE: Electron MAIN process (backend)
 // ─ UI lives in src/ (renderer.js, index.html)
 // ─ Bridge: preload.js exposes window.smiley → IPC handlers below
-// ─ Project map: PROJECT-STRUCTURE.md
+// ─ Project map: PROJECT-STRUCTURE.md │ Newbie tour: docs/CODE-TOUR.md
+// ─ Module index: electron/README.md
+//
+// TABLE OF CONTENTS (search for the section name):
+//   Constants · Encryption · Config · State · Window State · Tray Icons
+//   Window · Tray · Discord RPC · Anonymous install registry · Auto Updater
+//   Custom Wallpapers · Custom Animations · Custom Activities
+//   Storage & cache cleanup · IPC · App Lifecycle
 // ═══════════════════════════════════════════════════════════════════════
 const os = require('os');
 const { execFile, spawn } = require('child_process');
@@ -13,8 +20,8 @@ const crypto = require('crypto');
 const pkg = require('./package.json');
 const {
   loadRegistryConfig,
-  registerAnonymousInstall,
-} = require('./src/install-registry');
+  registerInstall,
+} = require('./electron/install-registry');
 
 function getRPC() {
   return require('discord-rpc');
@@ -168,13 +175,16 @@ const GITHUB_REPO_URL =
     .trim();
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
 const GITHUB_DOWNLOAD_HOSTS = new Set(['github.com', 'objects.githubusercontent.com']);
+const RELEASE_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
 function getMacDmgArch() {
   return process.arch === 'arm64' ? 'arm64' : 'x64';
 }
 
 function normalizeReleaseVersion(version) {
-  return String(version || '').replace(/^v/i, '').trim();
+  const ver = String(version || '').replace(/^v/i, '').trim();
+  if (!RELEASE_VERSION_PATTERN.test(ver)) return '';
+  return ver;
 }
 
 function buildMacDmgDownloadUrl(version) {
@@ -257,7 +267,8 @@ function isAllowedExternalUrl(url) {
 const CONFIG_PATCH_KEYS = new Set([
   'theme', 'uiVersion', 'showTimer', 'animationsEnabled', 'customAnimation', 'customWallpaper',
   'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
-  'autoCheckUpdates', 'autoInstallUpdates', 'shareAnonymousInstallStats', 'recentActivities', 'favoriteActivities',
+  'autoCheckUpdates', 'autoInstallUpdates', 'installTrackingEnabled', 'shareAnonymousInstallStats',
+  'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'migrationNoticeShown', 'installWarningShown',
   'systemFocusEnabled', 'systemFocusShortcutOn', 'systemFocusShortcutOff', 'systemFocusMinimizeTray',
 ]);
@@ -279,7 +290,7 @@ const DEFAULT_CONFIG = {
   hotkeyEnabled: true,
   autoCheckUpdates: true,
   autoInstallUpdates: true,
-  shareAnonymousInstallStats: false,
+  installTrackingEnabled: true,
   recentActivities: [],
   favoriteActivities: [],
   customActivities: [],
@@ -295,6 +306,21 @@ const DEFAULT_SYSTEM_FOCUS_ACTIVITIES = ['focus', 'sleeping', 'meeting'];
 let config = { ...DEFAULT_CONFIG };
 let systemFocusActive = false;
 let configMigrationNotice = null;
+
+function normalizeInstallTrackingConfig(raw) {
+  const cfg = { ...raw };
+  if (cfg.installTrackingEnabled === undefined) {
+    cfg.installTrackingEnabled = true;
+  } else {
+    cfg.installTrackingEnabled = cfg.installTrackingEnabled !== false;
+  }
+  delete cfg.shareAnonymousInstallStats;
+  return cfg;
+}
+
+function isInstallTrackingEnabled() {
+  return config.installTrackingEnabled !== false;
+}
 
 function loadConfig() {
   const securePath = getUserDataPath('config.secure');
@@ -322,13 +348,13 @@ function loadConfig() {
         delete config.clientId;
         return;
       }
-      config = { ...DEFAULT_CONFIG, ...decrypted };
+      config = normalizeInstallTrackingConfig({ ...DEFAULT_CONFIG, ...decrypted });
       delete config.clientId;
       return;
     }
     if (fs.existsSync(legacyPath)) {
       const old = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
-      config = { ...DEFAULT_CONFIG, ...old };
+      config = normalizeInstallTrackingConfig({ ...DEFAULT_CONFIG, ...old });
       delete config.clientId;
       fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
       try { fs.unlinkSync(legacyPath); } catch (_) {}
@@ -336,7 +362,7 @@ function loadConfig() {
     }
     if (fs.existsSync(EXAMPLE_CONFIG)) {
       const example = JSON.parse(fs.readFileSync(EXAMPLE_CONFIG, 'utf8'));
-      config = { ...DEFAULT_CONFIG, ...example };
+      config = normalizeInstallTrackingConfig({ ...DEFAULT_CONFIG, ...example });
       delete config.clientId;
       fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
       return;
@@ -495,12 +521,15 @@ function sanitizeConfigPatch(data) {
       case 'hotkeyEnabled':
       case 'autoCheckUpdates':
       case 'autoInstallUpdates':
-      case 'shareAnonymousInstallStats':
       case 'migrationNoticeShown':
       case 'installWarningShown':
       case 'systemFocusEnabled':
       case 'systemFocusMinimizeTray':
         out[key] = val === true;
+        break;
+      case 'installTrackingEnabled':
+      case 'shareAnonymousInstallStats':
+        out.installTrackingEnabled = val === true;
         break;
       case 'uiVersion':
         out.uiVersion = val === 'v1' ? 'v1' : 'v2';
@@ -1266,7 +1295,10 @@ async function schedulePresenceUpdate(activity, isNewSession) {
   if (!safeActivity) return { success: false, error: 'Invalid activity' };
   if (isNewSession) sessionStart = Date.now();
   pendingUpdate = safeActivity;
-  if (updateTimer) return { success: true, queued: true };
+  if (updateTimer) {
+    await syncSystemFocus(safeActivity, isNewSession);
+    return { success: true, queued: true };
+  }
 
   const run = async () => {
     const toApply = pendingUpdate;
@@ -1341,20 +1373,23 @@ function broadcastStatus(immediate = false) {
   }, 1500);
 }
 
-// ─── Anonymous install registry (opt-in, legal-minimal) ───────────────
-async function maybeRegisterAnonymousInstall() {
+// ─── Install registry (default-on; opt-out in Settings) ─────────────
+async function maybeRegisterInstall() {
   if (!isPackaged) return;
-  if (config.shareAnonymousInstallStats !== true) return;
+  if (!isInstallTrackingEnabled()) return;
   if (!loadRegistryConfig(__dirname)) return;
   try {
-    const result = await registerAnonymousInstall({
+    const result = await registerInstall({
       rootDir: __dirname,
       userDataDir: app.getPath('userData'),
       appVersion: APP_VERSION,
       platform: process.platform,
       arch: process.arch,
+      osRelease: os.release(),
+      electronVersion: process.versions.electron,
+      shouldProceed: () => isInstallTrackingEnabled(),
     });
-    if (result.success) console.log('[registry] anonymous install recorded');
+    if (result.success) console.log('[registry] install heartbeat recorded');
     else if (result.error) console.warn('[registry]', result.error);
   } catch (err) {
     console.warn('[registry]', err.message);
@@ -2754,7 +2789,8 @@ function setupIPC() {
     hotkey: GLOBAL_HOTKEY,
     autoCheckUpdates: config.autoCheckUpdates !== false,
     autoInstallUpdates: config.autoInstallUpdates !== false,
-    shareAnonymousInstallStats: config.shareAnonymousInstallStats === true,
+    installTrackingEnabled: isInstallTrackingEnabled(),
+    shareAnonymousInstallStats: isInstallTrackingEnabled(),
     installRegistryConfigured: !!loadRegistryConfig(__dirname),
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
@@ -2795,8 +2831,8 @@ function setupIPC() {
     registerGlobalHotkey();
     applyUpdaterSettings();
     updateTrayMenu();
-    if (config.shareAnonymousInstallStats === true) {
-      maybeRegisterAnonymousInstall();
+    if (isInstallTrackingEnabled()) {
+      maybeRegisterInstall();
     }
     if (config.autoConnect !== false && !rpcClient) return connectRPC();
     return { connected: !!rpcClient };
@@ -3231,8 +3267,8 @@ app.whenReady().then(async () => {
     setImmediate(() => checkForUpdates(false, true));
   }
 
-  if (isPackaged && config.shareAnonymousInstallStats === true) {
-    setImmediate(() => maybeRegisterAnonymousInstall());
+  if (isPackaged && isInstallTrackingEnabled()) {
+    setImmediate(() => maybeRegisterInstall());
   }
 
   if (config.autoConnect !== false) {

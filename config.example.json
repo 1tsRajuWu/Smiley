@@ -9,5 +9,5 @@
   "minimizeToTray": true,
   "customActivities": [],
   "activityGifChoice": {},
-  "shareAnonymousInstallStats": false
+  "installTrackingEnabled": true
 }

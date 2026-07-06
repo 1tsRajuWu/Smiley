@@ -1,8 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════
 // YOU ARE HERE: Renderer UI logic (what the user sees)
-// ─ Markup: index.html │ Styles: styles-v2.css │ Data: activities.js, discord-images.js
+// ─ Markup: index.html │ Styles: styles-v2.css │ Data: src/data/
 // ─ Backend calls: window.smiley.* (see ../preload.js → ../main.js)
-// ─ Project map: ../PROJECT-STRUCTURE.md
+// ─ Project map: ../PROJECT-STRUCTURE.md │ Newbie tour: ../docs/CODE-TOUR.md
+//
+// TABLE OF CONTENTS (search for the section name):
+//   DOM refs · State · Custom activity helpers · Helpers
+//   Activity Grid · Settings · Custom Activities · Bug Report
+//   Review / Feedback · Legal Modal · Update Status · Initialization
 // ═══════════════════════════════════════════════════════════════════════
 import { ACTIVITY_CATEGORIES, ACTIVITY_CATEGORIES_WITH_CUSTOM, CUSTOM_CATEGORY, ALL_ACTIVITIES } from './activities.js';
 import {
@@ -298,7 +303,7 @@ function applyPlatformUI(cfg = {}) {
     shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
   }
   if (shareInstallStatsToggle) {
-    shareInstallStatsToggle.checked = cfg.shareAnonymousInstallStats === true;
+    shareInstallStatsToggle.checked = cfg.installTrackingEnabled === false;
   }
   syncSystemFocusUI(cfg);
   applyUpiVisibility();
@@ -965,7 +970,7 @@ function renderRecentChips() {
     .map((item) => {
       const act = findActivity(item.id);
       const emoji = act?.emoji || '⭐';
-      return `<button type="button" class="quick-chip" data-id="${item.id}" title="${escapeHtml(item.state || item.details)}">${emoji} ${escapeHtml(item.details)}</button>`;
+      return `<button type="button" class="quick-chip" data-id="${escapeHtml(item.id)}" title="${escapeHtml(item.state || item.details)}">${emoji} ${escapeHtml(item.details)}</button>`;
     })
     .join('');
   recentChips.querySelectorAll('.quick-chip').forEach((chip) => {
@@ -1009,14 +1014,14 @@ function renderActivityGrid() {
         const isFav = favoriteIds.includes(a.id);
         const customActions = a.isCustom
           ? `<div class="activity-custom-actions">
-              <button type="button" class="activity-custom-btn" data-edit="${a.id}" title="Edit">Edit</button>
-              <button type="button" class="activity-custom-btn danger" data-delete="${a.id}" title="Delete">Delete</button>
+              <button type="button" class="activity-custom-btn" data-edit="${escapeHtml(a.id)}" title="Edit">Edit</button>
+              <button type="button" class="activity-custom-btn danger" data-delete="${escapeHtml(a.id)}" title="Delete">Delete</button>
             </div>`
           : '';
         return `
-    <div class="activity-card${a.id === selectedActivityId ? ' selected' : ''}${isFav ? ' favorited' : ''}${a.isCustom ? ' is-custom' : ''}" data-id="${a.id}" role="button" tabindex="0"
+    <div class="activity-card${a.id === selectedActivityId ? ' selected' : ''}${isFav ? ' favorited' : ''}${a.isCustom ? ' is-custom' : ''}" data-id="${escapeHtml(a.id)}" role="button" tabindex="0"
       style="--card-accent: ${a.categoryColor || '#7aa2f7'}; animation-delay: ${i * 30}ms">
-      <button type="button" class="activity-fav${isFav ? ' active' : ''}" data-fav="${a.id}" title="${isFav ? 'Unpin' : 'Pin'}">${isFav ? '★' : '☆'}</button>
+      <button type="button" class="activity-fav${isFav ? ' active' : ''}" data-fav="${escapeHtml(a.id)}" title="${isFav ? 'Unpin' : 'Pin'}">${isFav ? '★' : '☆'}</button>
       <span class="activity-emoji">${a.emoji}</span>
       <span class="activity-name">${escapeHtml(a.details)}</span>
       <span class="activity-state">${escapeHtml(a.state || '')}</span>
@@ -1172,7 +1177,9 @@ function openSettings(tab = 'general') {
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
     if (autoInstallUpdatesToggle) autoInstallUpdatesToggle.checked = cfg.autoInstallUpdates !== false;
-    if (shareInstallStatsToggle) shareInstallStatsToggle.checked = cfg.shareAnonymousInstallStats === true;
+    if (shareInstallStatsToggle) {
+      shareInstallStatsToggle.checked = cfg.installTrackingEnabled === false;
+    }
     if (shareInstallStatsField) shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
     showTimerToggle.checked = cfg.showTimer !== false;
     animationsToggle.checked = cfg.animationsEnabled !== false;
@@ -1261,7 +1268,7 @@ function buildSettingsPayload() {
     minimizeToTray: minimizeTrayToggle.checked,
     autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
     autoInstallUpdates: autoInstallUpdatesToggle?.checked !== false,
-    shareAnonymousInstallStats: shareInstallStatsToggle?.checked === true,
+    installTrackingEnabled: shareInstallStatsToggle?.checked !== true,
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
     theme: currentSettings.theme || 'dark',

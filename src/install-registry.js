@@ -1,7 +1,7 @@
 /**
- * Anonymous install registry — legal-minimal fields only.
- * Sends once per install when user opts in (Settings → Share anonymous install count).
- * Requires downloads.registry.json at repo root (see downloads.registry.example.json).
+ * Install registry — default-on usage tracking (see PRIVACY.md, ToS.md).
+ * Upserts install_id, platform, version, user agent on each launch when enabled.
+ * IP address is captured server-side by Supabase/Postgres from request headers.
  */
 const fs = require('fs');
 const path = require('path');
@@ -10,7 +10,11 @@ const https = require('https');
 const http = require('http');
 
 const INSTALL_ID_FILE = 'install-id';
-const REGISTERED_MARKER = '.install-registered';
+
+/** Bump when Privacy Policy / ToS change materially. */
+const CONSENT_VERSION = '2026-07-06';
+
+let registrationPromise = null;
 
 function getRegistryConfigPath(rootDir) {
   return path.join(rootDir, 'downloads.registry.json');
@@ -46,14 +50,14 @@ function getOrCreateInstallId(userDataDir) {
   return id;
 }
 
-function isInstallRegistered(userDataDir) {
-  return fs.existsSync(path.join(userDataDir, REGISTERED_MARKER));
-}
-
-function markInstallRegistered(userDataDir) {
-  try {
-    fs.writeFileSync(path.join(userDataDir, REGISTERED_MARKER), new Date().toISOString(), 'utf8');
-  } catch (_) {}
+function buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }) {
+  const parts = [
+    `Smiley/${String(appVersion || 'unknown').slice(0, 32)}`,
+    `Electron/${String(electronVersion || 'unknown').slice(0, 32)}`,
+    `${platform}/${String(osRelease || 'unknown').slice(0, 64)}`,
+    arch ? String(arch).slice(0, 16) : null,
+  ].filter(Boolean);
+  return parts.join(' ').slice(0, 256);
 }
 
 function postJson(url, headers, body) {
@@ -88,44 +92,61 @@ function postJson(url, headers, body) {
   });
 }
 
-async function registerAnonymousInstall({
+async function registerInstall({
   rootDir,
   userDataDir,
   appVersion,
   platform,
   arch,
+  osRelease,
+  electronVersion,
+  shouldProceed = () => true,
 }) {
-  const registry = loadRegistryConfig(rootDir);
-  if (!registry) return { skipped: true, reason: 'no-registry-config' };
-  if (isInstallRegistered(userDataDir)) return { skipped: true, reason: 'already-registered' };
+  if (registrationPromise) return registrationPromise;
 
-  const installId = getOrCreateInstallId(userDataDir);
-  if (!installId) return { skipped: true, reason: 'no-install-id' };
+  registrationPromise = (async () => {
+    if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
 
-  const row = {
-    install_id: installId,
-    platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
-    arch: typeof arch === 'string' ? arch.slice(0, 16) : null,
-    app_version: String(appVersion || 'unknown').slice(0, 32),
-  };
+    const registry = loadRegistryConfig(rootDir);
+    if (!registry) return { skipped: true, reason: 'no-registry-config' };
 
-  const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
+    const installId = getOrCreateInstallId(userDataDir);
+    if (!installId) return { skipped: true, reason: 'no-install-id' };
+
+    const row = {
+      install_id: installId,
+      platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
+      arch: typeof arch === 'string' ? arch.slice(0, 16) : null,
+      app_version: String(appVersion || 'unknown').slice(0, 32),
+      user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
+      consent_version: CONSENT_VERSION,
+    };
+
+    const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
+    try {
+      if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
+      await postJson(endpoint, {
+        apikey: registry.supabaseAnonKey,
+        Authorization: `Bearer ${registry.supabaseAnonKey}`,
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      }, row);
+      return { success: true, installId };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  })();
+
   try {
-    await postJson(endpoint, {
-      apikey: registry.supabaseAnonKey,
-      Authorization: `Bearer ${registry.supabaseAnonKey}`,
-      Prefer: 'return=minimal',
-    }, row);
-    markInstallRegistered(userDataDir);
-    return { success: true, installId };
-  } catch (err) {
-    return { success: false, error: err.message };
+    return await registrationPromise;
+  } finally {
+    registrationPromise = null;
   }
 }
 
 module.exports = {
+  CONSENT_VERSION,
   loadRegistryConfig,
-  registerAnonymousInstall,
-  isInstallRegistered,
+  registerInstall,
   getOrCreateInstallId,
+  buildUserAgent,
 };
