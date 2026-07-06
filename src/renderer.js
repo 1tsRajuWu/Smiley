@@ -347,8 +347,11 @@ async function loadActivityGif(activity, { bustCache = false, updateRpc = false,
     setCharacterDisplay(url, source, fallbacks, { generation, activity });
 
     if (updateRpc && rpcPayload && discordUrl) {
-      const imageFields = discordImageFields(activity, discordUrl);
-      window.smiley.setActivity({ ...rpcPayload, ...imageFields }, false).catch(() => {});
+      const initialUrl = rpcPayload.discordImageUrl || rpcPayload.largeImageUrl;
+      if (discordUrl !== initialUrl) {
+        const imageFields = discordImageFields(activity, discordUrl);
+        window.smiley.setActivity({ ...rpcPayload, ...imageFields }, false).catch(() => {});
+      }
     }
   } catch {
     if (selectedActivityId === activity.id && generation === gifLoadGeneration) {

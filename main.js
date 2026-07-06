@@ -744,19 +744,19 @@ function buildActivityPayload(activity) {
   };
 
   // Discord shows the app/bot logo when the image key is missing or invalid.
-  // Always use a direct HTTPS GIF URL for the large image (animated on Discord).
+  // Always use a direct HTTPS GIF URL resolved for this activity.
   const imageUrl =
-    activity.largeImageUrl ||
     activity.discordImageUrl ||
+    activity.largeImageUrl ||
     (activity.largeImageKey && /^https?:\/\//i.test(activity.largeImageKey) ? activity.largeImageKey : null) ||
     activity.fallbackGif;
 
   if (imageUrl) {
     payload.largeImageKey = imageUrl;
     payload.largeImageText = activity.largeImageText || activity.details;
-    if (isDev) console.log('[RPC] large_image:', imageUrl);
+    if (isDev) console.log('[RPC] large_image:', activity.id || activity.details, imageUrl);
   } else if (isDev) {
-    console.warn('[RPC] no image URL for activity', activity.details);
+    console.warn('[RPC] no image URL for activity', activity.id || activity.details);
   }
 
   // No small_image — invalid asset keys show the bot logo as an overlay
