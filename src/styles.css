@@ -631,13 +631,8 @@ body.has-window-controls .app-header {
 
 .gif-picker-section { flex-shrink: 0; padding: 10px 16px 14px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--bg-elevated) 90%, var(--accent-soft)); -webkit-app-region: no-drag; }
 .gif-picker-section[hidden] { display: none !important; }
-.gif-picker-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.gif-picker-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
 .gif-picker-label { margin: 0; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
-.gif-gender-tabs { display: flex; gap: 4px; margin-left: auto; }
-.gif-gender-tab { padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-size: 0.62rem; font-weight: 600; line-height: 1.2; transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease; -webkit-app-region: no-drag; }
-.gif-gender-tab:hover { border-color: var(--border-hover); color: var(--text); }
-.gif-gender-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.gif-gender-badge { position: absolute; top: 2px; right: 2px; z-index: 1; font-size: 0.62rem; line-height: 1; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
 .gif-picker-sublabel { margin: 10px 0 6px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
 .gif-picker-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; scrollbar-color: var(--text-dim) transparent; }
 .gif-picker-strip::-webkit-scrollbar { height: 4px; }
@@ -744,21 +739,6 @@ body.has-window-controls .app-header {
 .theme-option span { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
 .theme-option.active span { color: var(--accent); }
 
-.custom-animation-drop { border: 2px dashed var(--border); border-radius: var(--radius-xs); padding: 24px; text-align: center; cursor: pointer; transition: var(--transition); background: var(--bg-card); }
-.custom-animation-drop:hover, .custom-animation-drop.drag-over { border-color: var(--accent); background: var(--accent-soft); }
-.drop-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
-.custom-animation-drop p { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
-.drop-formats { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; display: block; }
-.custom-animation-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-.custom-animation-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xs); transition: var(--transition); cursor: pointer; }
-.custom-animation-item:hover { border-color: var(--border-hover); }
-.custom-animation-item.active { border-color: var(--accent); background: var(--accent-soft); }
-.custom-animation-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
-.custom-animation-item span { flex: 1; font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.custom-animation-item.active span { color: var(--accent); font-weight: 600; }
-.custom-animation-item .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: var(--transition); }
-.custom-animation-item .btn-delete:hover { background: rgba(247,118,142,0.15); }
-
 /* Custom activities */
 .activity-card.is-create-card { border-style: dashed; background: transparent; }
 .activity-card.is-create-card:hover { border-color: var(--accent); background: var(--accent-soft); }
@@ -779,12 +759,6 @@ body.has-window-controls .app-header {
 .discord-rpc-hint { color: #e0af68; margin: 8px 0 0; padding: 0 4px; }
 .custom-activity-gif-preview { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-xs); overflow: hidden; background: var(--bg-card); max-height: 180px; display: flex; align-items: center; justify-content: center; }
 .custom-activity-gif-preview img { max-width: 100%; max-height: 180px; object-fit: contain; display: block; }
-.custom-activities-settings-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.custom-activity-settings-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xs); }
-.custom-activity-settings-item img { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-.custom-activity-settings-item .meta { flex: 1; min-width: 0; }
-.custom-activity-settings-item .meta strong { display: block; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.custom-activity-settings-item .meta span { font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .required { color: var(--danger); }
 
 /* Wallpaper settings */
