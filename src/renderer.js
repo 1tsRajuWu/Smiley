@@ -9,9 +9,14 @@ import {
   getDefaultGifChoiceId,
   clearActivityImageCacheEntry,
   isValidDiscordImageUrl,
+  isNekosBestUrl,
+  fetchNekosGifForActivity,
 } from './discord-images.js';
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
+const GITHUB_RELEASES_URL = 'https://github.com/1tsRajuWu/Smiley/releases/latest';
+const UPI_ID = 'therajind.07@oksbi';
+const UPI_NAME = 'Himanshu Raj (R A J)';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -35,10 +40,21 @@ const gifPickerMyStrip = $('#gifPickerMyStrip');
 const searchInput = $('#searchInput');
 const settingsBtn = $('#settingsBtn');
 const minimizeBtn = $('#minimizeBtn');
+const maximizeBtn = $('#maximizeBtn');
+const closeWindowBtn = $('#closeWindowBtn');
+const windowControls = $('#windowControls');
 const settingsModal = $('#settingsModal');
 const saveSettingsBtn = $('#saveSettingsBtn');
 const closeSettings = $('#closeSettings');
 const donateBanner = $('#donateBanner');
+const donatePaypalBtn = $('#donatePaypalBtn');
+const donateUpiBtn = $('#donateUpiBtn');
+const donateUpiQrBtn = $('#donateUpiQrBtn');
+const upiQrModal = $('#upiQrModal');
+const closeUpiQr = $('#closeUpiQr');
+const supportUpiCopyBtn = $('#supportUpiCopyBtn');
+const aboutUpiCopyBtn = $('#aboutUpiCopyBtn');
+const aboutUpiQrBtn = $('#aboutUpiQrBtn');
 const toastContainer = $('#toastContainer');
 const characterGif = $('#characterGif');
 const characterLoading = $('#characterLoading');
@@ -133,7 +149,9 @@ let customAnimations = [];
 let activeCustomAnimation = null;
 let currentGifUrl = null;
 let currentDiscordImageUrl = null;
-let updateState = { downloaded: false, dismissed: false, percent: 0 };
+let updateState = { downloaded: false, dismissed: false, percent: 0, version: null };
+let releasesUrl = GITHUB_RELEASES_URL;
+let macAdHocUpdates = false;
 let searchDebounceTimer = null;
 let recentActivities = [];
 let favoriteIds = [];
@@ -210,9 +228,36 @@ function applyPlatformUI(cfg = {}) {
   }
   if (osPlatform) document.body.dataset.platform = osPlatform;
   if (typeof cfg.isMac === 'boolean') isMacPlatform = cfg.isMac;
+  if (typeof cfg.macAdHocUpdates === 'boolean') macAdHocUpdates = cfg.macAdHocUpdates;
+  if (cfg.releasesUrl) releasesUrl = cfg.releasesUrl;
   updateFooterShortcuts(isMacPlatform);
   if (minimizeBtn) minimizeBtn.hidden = isMacPlatform;
+  if (windowControls) windowControls.hidden = isMacPlatform;
+  document.body.classList.toggle('has-window-controls', !isMacPlatform);
 }
+
+async function copyUpiId() {
+  try {
+    const result = await window.smiley.copyText(UPI_ID);
+    if (result?.success) showToast('UPI ID copied');
+    else showToast('Could not copy UPI ID', 'error');
+  } catch {
+    showToast('Could not copy UPI ID', 'error');
+  }
+}
+
+function openUpiQrModal() {
+  if (!upiQrModal) return;
+  if (!upiQrModal.open) upiQrModal.showModal();
+}
+
+function syncMaximizeButton(isMaximized) {
+  if (!maximizeBtn) return;
+  maximizeBtn.textContent = isMaximized ? '❐' : '□';
+  maximizeBtn.title = isMaximized ? 'Restore' : 'Maximize';
+  maximizeBtn.setAttribute('aria-label', isMaximized ? 'Restore window' : 'Maximize window');
+}
+
 function showToast(message, type = 'success') {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
@@ -224,6 +269,26 @@ function showToast(message, type = 'success') {
   if (type === 'subtle') {
     el.style.animation = `toastIn 0.3s ease, toastOut 0.3s ease ${fadeDelay}ms forwards`;
   }
+}
+
+function showUpdateActionToast(message, { label = 'Download from GitHub', url = releasesUrl } = {}) {
+  const el = document.createElement('div');
+  el.className = 'toast error toast-with-action';
+  const text = document.createElement('span');
+  text.textContent = message;
+  el.appendChild(text);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-ghost toast-action-btn';
+  btn.textContent = label;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.smiley.openExternal(url);
+    el.remove();
+  });
+  el.appendChild(btn);
+  toastContainer.appendChild(el);
+  setTimeout(() => el.remove(), 12000);
 }
 
 function setConnectionStatus(connected, error) {
@@ -334,15 +399,51 @@ function collectMyGifs() {
 function renderGifOptionButton(option, selectedId) {
   const selected = option.id === selectedId;
   const previewOnly = option.previewOnly ? ' preview-only' : '';
+  const fallbackAttr = option.fallbackUrl
+    ? ` data-fallback-url="${escapeHtml(option.fallbackUrl)}"`
+    : '';
+  const nekosAttr = isNekosBestUrl(option.url) ? ' referrerpolicy="no-referrer"' : '';
   return `
     <button type="button" class="gif-option${selected ? ' selected' : ''}${previewOnly}"
-      role="option" aria-selected="${selected}" data-choice="${escapeHtml(option.id)}"
+      role="option" aria-selected="${selected}" data-choice="${escapeHtml(option.id)}"${fallbackAttr}
       title="${escapeHtml(option.label)}${option.previewOnly ? ' (app preview only)' : ''}">
       <span class="gif-option-thumb">
-        <img src="${escapeHtml(option.url)}" alt="" loading="lazy" decoding="async" />
+        <img src="${escapeHtml(option.url)}" alt="" loading="lazy" decoding="async"${nekosAttr} />
       </span>
       <span class="gif-option-label">${escapeHtml(option.label)}</span>
     </button>`;
+}
+
+function bindGifPickerThumbFallbacks(strip) {
+  if (!strip) return;
+  strip.querySelectorAll('.gif-option-thumb img').forEach((img) => {
+    const btn = img.closest('.gif-option');
+    const fallback = btn?.dataset?.fallbackUrl;
+    if (!fallback) return;
+    img.addEventListener('error', () => {
+      if (img.dataset.fallbackTried === '1') return;
+      img.dataset.fallbackTried = '1';
+      img.src = fallback;
+    }, { once: false });
+  });
+}
+
+async function refreshNekosPickerThumbs(activity) {
+  if (!activity?.id) return;
+  const strips = [gifPickerStrip, gifPickerMyStrip].filter(Boolean);
+  for (const strip of strips) {
+    const nekoOptions = strip.querySelectorAll('.gif-option[data-choice$="-nekos"], .gif-option img[src*="nekos.best"]');
+    for (const node of nekoOptions) {
+      const btn = node.classList?.contains('gif-option') ? node : node.closest('.gif-option');
+      if (!btn) continue;
+      const img = btn.querySelector('img');
+      if (!img || img.dataset.nekosRefreshed === '1') continue;
+      const fresh = await fetchNekosGifForActivity(activity.id, img.getAttribute('src') || img.src);
+      if (!fresh || selectedActivityId !== activity.id) continue;
+      img.dataset.nekosRefreshed = '1';
+      img.src = fresh;
+    }
+  }
 }
 
 function bindGifPickerStrip(strip, activity, onSelect) {
@@ -401,6 +502,9 @@ function renderGifPicker(activity) {
   }
 
   bindGifPickerStrip(gifPickerStrip, activity, onGifOptionSelect);
+  bindGifPickerThumbFallbacks(gifPickerStrip);
+  bindGifPickerThumbFallbacks(gifPickerMyStrip);
+  refreshNekosPickerThumbs(activity);
 }
 
 async function onGifOptionSelect(activityId, choiceId) {
@@ -428,7 +532,13 @@ async function onGifOptionSelect(activityId, choiceId) {
 }
 
 async function resolveGifUrl(activity, { bustCache = false } = {}) {
-  const preferredGifUrl = getPreferredGifUrl(activity);
+  let preferredGifUrl = getPreferredGifUrl(activity);
+  const choiceId = activityGifChoices[activity?.id];
+  const wantsNekos = choiceId?.endsWith('-nekos') || isNekosBestUrl(preferredGifUrl);
+  if (wantsNekos && activity?.id) {
+    const fresh = await fetchNekosGifForActivity(activity.id, preferredGifUrl);
+    if (fresh) preferredGifUrl = fresh;
+  }
   const { url, discordUrl, source, fallbacks } = await resolveDiscordImageUrl(activity, {
     animationsEnabled: currentSettings.animationsEnabled,
     customDataUrl: activeCustomAnimation,
@@ -871,7 +981,6 @@ async function handleClear() {
 function openSettings(tab = 'general') {
   window.smiley.getConfig().then((cfg) => {
     currentSettings = { ...cfg };
-    donateBanner.href = DONATION_URL;
     autoConnectToggle.checked = cfg.autoConnect !== false;
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
@@ -935,7 +1044,6 @@ async function handleSaveSettings(e) {
   const result = await window.smiley.saveConfig(newSettings);
   settingsModal.close();
 
-  donateBanner.href = DONATION_URL;
   applyTheme(newSettings.theme);
   await applyWallpaper(wallpaperSettings);
 
@@ -1503,12 +1611,38 @@ function hideUpdateBanner() {
   updateBanner?.classList.remove('visible');
 }
 
+function isUpdateSignatureError(msg) {
+  const lower = String(msg || '').toLowerCase();
+  return (
+    lower.includes('code signature') ||
+    lower.includes('did not pass validation') ||
+    lower.includes('code requirement') ||
+    lower.includes('satisfy specified code requirement') ||
+    lower.includes('signature verification') ||
+    lower.includes('not signed')
+  );
+}
+
+function buildManualUpdateMessage(version) {
+  return version
+    ? `Update couldn't install automatically. Download v${version} from GitHub.`
+    : "Update couldn't install automatically. Download the latest version from GitHub.";
+}
+
 function syncUpdateBannerButtons() {
   if (!updateRestartBtn) return;
-  updateRestartBtn.disabled = !updateState.downloaded;
-  updateRestartBtn.title = updateState.downloaded
-    ? 'Restart to install update'
-    : 'Available after download completes';
+  const macManual = macAdHocUpdates && updateState.downloaded;
+  updateRestartBtn.disabled = !updateState.downloaded && !macManual;
+  if (macManual) {
+    updateRestartBtn.textContent = 'Get update';
+    updateRestartBtn.title =
+      'Download the DMG from GitHub (auto-restart unavailable on unsigned Mac builds)';
+  } else {
+    updateRestartBtn.textContent = 'Restart';
+    updateRestartBtn.title = updateState.downloaded
+      ? 'Restart to install update'
+      : 'Available after download completes';
+  }
 }
 
 function handleUpdateStatus(data) {
@@ -1524,7 +1658,7 @@ function handleUpdateStatus(data) {
       showToast(data.message || 'No release on GitHub yet — open github.com/1tsRajuWu/Smiley/releases');
       break;
     case 'available':
-      updateState = { downloaded: false, dismissed: false, percent: 0 };
+      updateState = { downloaded: false, dismissed: false, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       showToast(`Update v${data.version} available! Downloading...`);
       if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}… 0%`;
@@ -1552,33 +1686,57 @@ function handleUpdateStatus(data) {
       updateState.downloaded = true;
       updateState.percent = 100;
       updateState.dismissed = false;
+      updateState.version = data.version || updateState.version;
       syncUpdateBannerButtons();
       if (updateBannerText) {
-        updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
+        if (macAdHocUpdates) {
+          updateBannerText.textContent = `Update v${data.version} ready — download from GitHub`;
+        } else {
+          updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
+        }
       }
       updateBanner?.classList.add('visible');
-      showToast(`Update v${data.version} ready! Restart to apply.`);
+      if (macAdHocUpdates) {
+        showToast(`Update v${data.version} ready — use Get update to download the DMG.`);
+      } else {
+        showToast(`Update v${data.version} ready! Restart to apply.`);
+      }
       break;
     case 'download-stalled':
-      updateState = { downloaded: false, dismissed: true, percent: 0 };
+      updateState = { downloaded: false, dismissed: true, percent: 0, version: null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
       showToast(data.error || 'Update download stalled. Try again later.', 'error');
       break;
     case 'unsigned-update':
-      updateState = { downloaded: false, dismissed: true, percent: 0 };
+    case 'manual-install-required':
+      updateState = { downloaded: false, dismissed: true, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
-      showToast(data.message || 'Download the latest installer from GitHub Releases.', 'error');
+      showUpdateActionToast(
+        data.message ||
+          `Update couldn't install automatically. Download ${data.version ? `v${data.version}` : 'the latest version'} from GitHub.`,
+        { url: data.releasesUrl || releasesUrl }
+      );
       break;
     case 'error':
-      updateState = { downloaded: false, dismissed: false, percent: 0 };
+      updateState = { downloaded: false, dismissed: false, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
       if (data.expected) {
         showToast(data.message || data.error || 'Update check unavailable.');
+      } else if (isUpdateSignatureError(String(data.error || ''))) {
+        showUpdateActionToast(
+          buildManualUpdateMessage(data.version),
+          { url: data.releasesUrl || releasesUrl }
+        );
       } else {
-        showToast(`Update error: ${data.error}`, 'error');
+        showUpdateActionToast(
+          data.error
+            ? `Update failed. ${buildManualUpdateMessage(data.version)}`
+            : buildManualUpdateMessage(data.version),
+          { url: data.releasesUrl || releasesUrl }
+        );
       }
       break;
   }
@@ -1617,10 +1775,22 @@ async function init() {
   renderActivityGrid();
 
   settingsBtn.addEventListener('click', () => openSettings('general'));
-  minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
+  if (minimizeBtn) minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
+  if (maximizeBtn) {
+    maximizeBtn.addEventListener('click', async () => {
+      const result = await window.smiley.maximizeWindow();
+      if (typeof result?.isMaximized === 'boolean') syncMaximizeButton(result.isMaximized);
+    });
+  }
+  if (closeWindowBtn) closeWindowBtn.addEventListener('click', () => window.smiley.closeWindow());
+  if (window.smiley.onWindowMaximized) {
+    window.smiley.onWindowMaximized((isMaximized) => syncMaximizeButton(isMaximized));
+    window.smiley.isWindowMaximized?.().then((max) => syncMaximizeButton(!!max));
+  }
   setupModalClose(settingsModal, closeSettings);
   setupModalClose(legalModal, closeLegal);
   setupModalClose(createActivityModal, closeCreateActivity);
+  setupModalClose(upiQrModal, closeUpiQr);
   if (cancelCreateActivity) cancelCreateActivity.addEventListener('click', () => createActivityModal?.close());
   if (saveCreateActivity) saveCreateActivity.addEventListener('click', handleSaveCustomActivity);
   if (resolveGifBtn) resolveGifBtn.addEventListener('click', handleResolveGifPreview);
@@ -1705,10 +1875,33 @@ async function init() {
     });
   }
 
-  donateBanner.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.smiley.openExternal(donateBanner.href);
-  });
+  donateBanner?.addEventListener('click', (e) => e.preventDefault());
+  if (donatePaypalBtn) {
+    donatePaypalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.smiley.openExternal(DONATION_URL);
+    });
+  }
+  if (donateUpiBtn) {
+    donateUpiBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      copyUpiId();
+    });
+  }
+  if (donateUpiQrBtn) {
+    donateUpiQrBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openUpiQrModal();
+    });
+  }
+  if (supportUpiCopyBtn) supportUpiCopyBtn.addEventListener('click', () => copyUpiId());
+  if (aboutUpiCopyBtn) aboutUpiCopyBtn.addEventListener('click', () => copyUpiId());
+  if (aboutUpiQrBtn) aboutUpiQrBtn.addEventListener('click', () => openUpiQrModal());
+  const upiQrCopyBtn = $('#upiQrCopyBtn');
+  if (upiQrCopyBtn) upiQrCopyBtn.addEventListener('click', () => copyUpiId());
 
   document.querySelectorAll('.about-link[href^="http"]').forEach((link) => {
     link.addEventListener('click', (e) => {
@@ -1751,8 +1944,15 @@ async function init() {
         showToast(`Update v${result.version} ready — restart to apply.`);
         return;
       }
-      if (result.status === 'no-release' || result.status === 'unsigned-update') {
-        showToast(result.message || 'No release on GitHub yet — download from Releases page.');
+      if (result.status === 'no-release' || result.status === 'unsigned-update' || result.status === 'manual-install-required') {
+        if (result.status === 'manual-install-required' || result.status === 'unsigned-update') {
+          showUpdateActionToast(
+            result.message || buildManualUpdateMessage(result.version),
+            { url: result.releasesUrl || releasesUrl }
+          );
+        } else {
+          showToast(result.message || 'No release on GitHub yet — download from Releases page.');
+        }
         return;
       }
       if (result.status === 'busy' || result.status === 'timeout') {
@@ -1846,7 +2046,6 @@ async function init() {
 
   // IPC events
   window.smiley.onStatus((data) => {
-    if (data.donationUrl) donateBanner.href = DONATION_URL;
     if (data.settings) {
       currentSettings = { ...currentSettings, ...data.settings };
       applyTheme(data.settings.theme);
@@ -1887,6 +2086,8 @@ async function init() {
   favoriteIds = cfg.favoriteActivities || [];
   await loadCustomActivitiesConfig();
   applyPlatformUI(cfg);
+  if (cfg.releasesUrl) releasesUrl = cfg.releasesUrl;
+  if (typeof cfg.macAdHocUpdates === 'boolean') macAdHocUpdates = cfg.macAdHocUpdates;
   wallpaperSettings = {
     filename: cfg.customWallpaper?.filename || null,
     blur: Number(cfg.customWallpaper?.blur) || 0,
@@ -1899,7 +2100,6 @@ async function init() {
     footerVersion.textContent = `Smiley v${cfg.version}`;
     if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
   }
-  donateBanner.href = DONATION_URL;
 
   // Prompt setup when Client ID is missing
   if (!cfg.hasValidClientId) {

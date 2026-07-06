@@ -153,6 +153,9 @@ const GITHUB_REPO_URL =
     .replace(/\.git$/, '')
     .trim();
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
+// package.json mac.identity is "-" (ad-hoc). Squirrel ShipIt validates update signatures
+// at install time — separate from electron-updater verifyUpdateCodeSignature (Windows).
+const MAC_ADHOC_DISTRIBUTION = true;
 const DEFAULT_RPC_BUTTONS = [
   { label: 'Download Smiley', url: GITHUB_RELEASES_URL },
 ];
@@ -670,6 +673,7 @@ function getAppIcon() {
 function createWindow() {
   const state = getWindowState();
   const isMac = process.platform === 'darwin';
+  const isWin = process.platform === 'win32';
   mainWindow = new BrowserWindow({
     width: state.width || 1100,
     height: state.height || 780,
@@ -677,8 +681,9 @@ function createWindow() {
     minHeight: 650,
     x: state.x,
     y: state.y,
-    titleBarStyle: isMac ? 'hiddenInset' : 'default',
-    ...(isMac ? { trafficLightPosition: { x: 14, y: 16 } } : {}),
+    frame: isMac,
+    ...(isMac ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 16 } } : {}),
+    ...(isWin ? { thickFrame: false } : {}),
     autoHideMenuBar: true,
     backgroundColor: '#1a1b26',
     show: false,
@@ -719,6 +724,15 @@ function createWindow() {
 
   mainWindow.on('resize', () => saveWindowState());
   mainWindow.on('move', () => saveWindowState());
+  if (isWin) {
+    const sendMaximized = () => {
+      if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('window-maximized', mainWindow.isMaximized());
+      }
+    };
+    mainWindow.on('maximize', sendMaximized);
+    mainWindow.on('unmaximize', sendMaximized);
+  }
 }
 
 // ─── Tray ────────────────────────────────────────────────────────────
@@ -947,7 +961,12 @@ function applyUpdaterSettings() {
   try {
     const autoUpdater = getAutoUpdater();
     autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
+    // Ad-hoc macOS: ShipIt rejects in-app install on quit — manual DMG download instead
+    if (process.platform === 'darwin' && MAC_ADHOC_DISTRIBUTION) {
+      autoUpdater.autoInstallOnAppQuit = false;
+    } else {
+      autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
+    }
     autoUpdater.autoRunAppAfterInstall = false;
   } catch (_) {}
 }
@@ -972,18 +991,48 @@ function resetDownloadStallTimer() {
   }, 60000);
 }
 
-function formatUpdateError(err) {
-  const msg = String(err?.message || err || '').toLowerCase();
-  if (
+function buildManualInstallPayload(version = pendingUpdateVersion) {
+  const verLabel = version ? `v${version}` : 'the latest version';
+  return {
+    ok: false,
+    status: 'manual-install-required',
+    message: `Update couldn't install automatically. Download ${verLabel} from GitHub.`,
+    version: version || null,
+    releasesUrl: GITHUB_RELEASES_URL,
+    expected: true,
+  };
+}
+
+function isUpdateSignatureError(msg) {
+  return (
     msg.includes('not signed') ||
     msg.includes('invalid_signature') ||
     msg.includes('signature verification') ||
-    msg.includes('signed by the application owner')
+    msg.includes('signed by the application owner') ||
+    msg.includes('code signature') ||
+    msg.includes('did not pass validation') ||
+    msg.includes('code requirement') ||
+    msg.includes('satisfy specified code requirement') ||
+    msg.includes('shipit')
+  );
+}
+
+function formatUpdateError(err, version = pendingUpdateVersion) {
+  const msg = String(err?.message || err || '').toLowerCase();
+  if (isUpdateSignatureError(msg)) {
+    return buildManualInstallPayload(version);
+  }
+  if (
+    process.platform === 'linux' &&
+    (msg.includes('appimage env is not defined') || msg.includes('err_updater_old_file_not_found'))
   ) {
     return {
       ok: false,
-      status: 'unsigned-update',
-      message: 'Auto-update could not verify the installer signature. Download the latest installer from github.com/1tsRajuWu/Smiley/releases',
+      status: 'manual-install-required',
+      message:
+        'In-app updates only work from the AppImage. Download the latest AppImage from GitHub Releases.',
+      version: version || null,
+      releasesUrl: GITHUB_RELEASES_URL,
       expected: true,
     };
   }
@@ -1029,6 +1078,8 @@ function formatUpdateError(err) {
     ok: false,
     status: 'error',
     error: err?.message || 'Update check failed. Download from GitHub Releases.',
+    version: version || null,
+    releasesUrl: GITHUB_RELEASES_URL,
     expected: false,
   };
 }
@@ -1150,9 +1201,10 @@ function setupAutoUpdater() {
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
 
-    // Ad-hoc signed macOS / unsigned Windows: skip publisher signature check
-    if (process.platform === 'win32' || process.platform === 'darwin') {
-      autoUpdater.verifyUpdateCodeSignature = () => Promise.resolve(null);
+    // Windows NSIS: skip publisher signature check (unsigned builds).
+    // macOS Squirrel ShipIt validates separately at install — handled via friendly errors.
+    if (process.platform === 'win32') {
+      autoUpdater.verifyUpdateCodeSignature = async () => null;
     }
 
     if (!isPackaged || updaterListenersAttached) return;
@@ -1217,9 +1269,10 @@ function setupAutoUpdater() {
       console.error('[updater]', err.message);
       clearDownloadStallTimer();
       silentUpdateCheck = false;
+      const failedVersion = pendingUpdateVersion;
       updateDownloaded = false;
       lastDownloadPercent = 0;
-      const formatted = formatUpdateError(err);
+      const formatted = formatUpdateError(err, failedVersion);
       sendUpdateStatus(formatted);
       resolveManualUpdate(formatted);
     });
@@ -1538,6 +1591,8 @@ function setupIPC() {
     customActivities: config.customActivities || [],
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
+    macAdHocUpdates: process.platform === 'darwin' && MAC_ADHOC_DISTRIBUTION,
+    releasesUrl: GITHUB_RELEASES_URL,
     osPlatform: process.platform,
     version: APP_VERSION,
     platform: `${process.platform} ${os.release()}`,
@@ -1599,6 +1654,8 @@ function setupIPC() {
     return {
       success: started,
       error: started ? undefined : 'Could not start installer. Try downloading from GitHub Releases.',
+      releasesUrl: GITHUB_RELEASES_URL,
+      version: pendingUpdateVersion || null,
     };
   });
 
@@ -1792,6 +1849,15 @@ function setupIPC() {
   });
 
   ipcMain.handle('minimize-window', () => { if (mainWindow) mainWindow.minimize(); });
+  ipcMain.handle('maximize-window', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return { isMaximized: false };
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+    else mainWindow.maximize();
+    return { isMaximized: mainWindow.isMaximized() };
+  });
+  ipcMain.handle('is-window-maximized', () => ({
+    isMaximized: !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized()),
+  }));
   ipcMain.handle('close-window', () => {
     if (mainWindow) {
       if (config.minimizeToTray !== false) mainWindow.hide();

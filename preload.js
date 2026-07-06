@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('smiley', {
   toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
+  isWindowMaximized: () => ipcRenderer.invoke('is-window-maximized'),
+  closeWindow: () => ipcRenderer.invoke('close-window'),
   resetWindowPosition: () => ipcRenderer.invoke('reset-window-position'),
   onStatus: (callback) => ipcRenderer.on('rpc-status', (_, data) => callback(data)),
   onInitialConnect: (callback) => ipcRenderer.on('initial-connect', (_, data) => callback(data)),
@@ -33,4 +36,5 @@ contextBridge.exposeInMainWorld('smiley', {
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
   onSelectActivity: (callback) => ipcRenderer.on('select-activity', (_, id) => callback(id)),
   onConfigChanged: (callback) => ipcRenderer.on('config-changed', (_, data) => callback(data)),
+  onWindowMaximized: (callback) => ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized)),
 });

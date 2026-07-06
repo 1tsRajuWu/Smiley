@@ -161,7 +161,11 @@ v4.0 onward ships the **installer only** on Windows. Portable builds were droppe
 <details>
 <summary><strong>Mac in-app update didn't work</strong></summary>
 
-Auto-update on macOS needs the **.zip** artifact, not just the DMG. If update stalls, grab the latest DMG from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) and drag into Applications.
+Smiley is **ad-hoc signed** (no Apple Developer ID yet). macOS Squirrel **ShipIt** validates code signatures when installing zip updates — ad-hoc builds usually fail with a "code signature … did not pass validation" error on **Restart**.
+
+**What to do:** download the latest **DMG** from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) and drag into Applications. The app will show a **Get update** button instead of Restart when it detects this.
+
+Auto-update on macOS also needs the **.zip** artifact in the release (not just the DMG). If the download stalls, use the DMG manually.
 </details>
 
 <details>

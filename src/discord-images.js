@@ -8,7 +8,7 @@ const FETCH_TIMEOUT_MS = 6000;
 const DISCORD_IMAGE_MAX_LEN = 512;
 const FETCH_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'Smiley/4.0.0 (Discord Rich Presence)',
+  'User-Agent': 'Smiley/4.0.1 (Discord Rich Presence)',
 };
 
 /** Per-category API config — nekos GIF endpoint + waifu still fallback */
@@ -176,80 +176,133 @@ export const ACTIVITY_TENOR_FALLBACKS = {
 export const ACTIVITY_GIF_OPTIONS = {
   sleeping: [
     { id: 'sleep-1', label: 'Sleepy Sleep', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
-    { id: 'sleep-2', label: 'Go to Sleep', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
+    { id: 'sleep-2', label: 'D4DJ Sleepy', url: 'https://media.tenor.com/6OCEdkhjHKUAAAAM/d4dj-first-mix-d4dj.gif' },
     { id: 'sleep-3', label: 'Nekos Sleep', url: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif' },
-    { id: 'sleep-4', label: 'Power Nap', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
+    { id: 'sleep-4', label: 'Mocha Bear', url: 'https://media.tenor.com/OZdXkNd2o-IAAAAM/mocha-and-milk-mocha-bear.gif' },
   ],
   napping: [
     { id: 'nap-1', label: 'Power Nap', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
-    { id: 'nap-2', label: 'Go to Sleep', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
-    { id: 'nap-3', label: 'Sleepy Sleep', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
+    { id: 'nap-2', label: 'Benjammins', url: 'https://media.tenor.com/P4iukwlv4LIAAAAM/benjammins-ben-jammins.gif' },
+    { id: 'nap-3', label: 'Ba12 Chill', url: 'https://media.tenor.com/xr-ystYEDtsAAAAM/ba12.gif' },
     { id: 'nap-4', label: 'Nekos Sleep', url: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif' },
   ],
   'eating-ramen': [
     { id: 'ramen-1', label: 'Hungry Ramen', url: 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif' },
     { id: 'ramen-2', label: 'Nekos Feed', url: 'https://nekos.best/api/v2/feed/e480b6f8-aa99-4f36-b112-7bda61bf4ab8.gif' },
-    { id: 'ramen-3', label: 'Naruto Ramen', url: 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif' },
-    { id: 'ramen-4', label: 'Sora Cooking', url: 'https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif' },
+    { id: 'ramen-3', label: 'Anime Slurp', url: 'https://i.giphy.com/aW9HiiooRmdwdG0bPc.gif' },
+    { id: 'ramen-4', label: 'Naruto Stare', url: 'https://media.tenor.com/rtMO2T0cQrEAAAAM/42.gif' },
   ],
   'eating-pizza': [
     { id: 'pizza-1', label: 'Pizza Food', url: 'https://media.tenor.com/i-xS-A_DTCEAAAAM/pizza-food.gif' },
     { id: 'pizza-2', label: 'Nekos Feed', url: 'https://nekos.best/api/v2/feed/b9abbae0-3b59-437e-b866-3402c2c7f22e.gif' },
-    { id: 'pizza-3', label: 'Umaru Snack', url: 'https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif' },
-    { id: 'pizza-4', label: 'Uwu Taco', url: 'https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif' },
+    { id: 'pizza-3', label: 'Birthday Cake', url: 'https://media.tenor.com/-pBlhybnp54AAAAM/happy-birthday-cake.gif' },
+    { id: 'pizza-4', label: 'Snack Time', url: 'https://i.giphy.com/p0dFF6nzn1DZKKyNdo.gif' },
   ],
   gaming: [
     { id: 'game-1', label: 'Konata Gaming', url: 'https://media.tenor.com/9tbKJeCFPaUAAAAd/konata-gaming.gif' },
     { id: 'game-2', label: 'Nekos Yeet', url: 'https://nekos.best/api/v2/yeet/bd0af6f9-aabe-4d69-a467-4727ee6ebee0.gif' },
-    { id: 'game-3', label: 'Co-op Hug', url: 'https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif' },
-    { id: 'game-4', label: 'Happy Dance', url: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif' },
+    { id: 'game-3', label: 'VR Boxing', url: 'https://media.tenor.com/hvmj5kz64Q4AAAAM/boxing-oculus.gif' },
+    { id: 'game-4', label: 'Potz Power', url: 'https://media.tenor.com/pqzUICCf7XYAAAAj/potz-power.gif' },
   ],
   listening: [
     { id: 'listen-1', label: 'Headphones', url: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif' },
     { id: 'listen-2', label: 'Nekos Dance', url: 'https://nekos.best/api/v2/dance/2fa17d31-404a-4d50-b092-4448d403a59e.gif' },
-    { id: 'listen-3', label: 'Party Hard', url: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif' },
-    { id: 'listen-4', label: 'Love Live', url: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif' },
+    { id: 'listen-3', label: 'Hakari Dance', url: 'https://media.tenor.com/uRlxzRNgp2MAAAAj/anime-girl.gif' },
+    { id: 'listen-4', label: 'Vibe Check', url: 'https://i.giphy.com/3o6YfXCRvjzATblkJy.gif' },
   ],
   studying: [
     { id: 'study-1', label: 'Studying Girl', url: 'https://media.tenor.com/etfl8OlhPIYAAAAM/studying-anime-girl.gif' },
-    { id: 'study-2', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+    { id: 'study-2', label: 'Taking Notes', url: 'https://media.tenor.com/COjSGra2WL4AAAAM/taking-notes-notes.gif' },
     { id: 'study-3', label: 'Nekos Pat', url: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif' },
-    { id: 'study-4', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+    { id: 'study-4', label: 'Typing Focus', url: 'https://media.tenor.com/Ie8lbeBejHEAAAAM/the-masterful-cat-is-depressed-again-today-dekiru-neko-wa-kyou-mo-yuuutsu.gif' },
   ],
   watching: [
     { id: 'watch-1', label: 'Movie Night', url: 'https://media.tenor.com/P8jCycbR6k8AAAAM/yosuke-tickets.gif' },
     { id: 'watch-2', label: 'Nekos Happy', url: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif' },
-    { id: 'watch-3', label: 'Anime Read', url: 'https://media.tenor.com/rJxGy9CYwHoAAAAM/anime-read.gif' },
-    { id: 'watch-4', label: 'Love Live', url: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif' },
+    { id: 'watch-3', label: 'Death Note', url: 'https://media.tenor.com/ranNc0BHOI4AAAAM/popopo.gif' },
+    { id: 'watch-4', label: 'Anime Vibes', url: 'https://i.giphy.com/2Y7tZMmIpwV6Lnc5QC.gif' },
   ],
   partying: [
     { id: 'party-1', label: 'Party Hard', url: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif' },
     { id: 'party-2', label: 'Nekos Dance', url: 'https://nekos.best/api/v2/dance/2fa17d31-404a-4d50-b092-4448d403a59e.gif' },
-    { id: 'party-3', label: 'Happy Dance', url: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif' },
-    { id: 'party-4', label: 'Headphones', url: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif' },
+    { id: 'party-3', label: 'Dance Moves', url: 'https://i.giphy.com/WyZ1D8gXF7QQsRkXw5.gif' },
+    { id: 'party-4', label: 'Celebration', url: 'https://i.giphy.com/ZJ25E2hJ5IpfvgkxYE.gif' },
   ],
   focus: [
     { id: 'focus-1', label: 'Anime Pat', url: 'https://media.tenor.com/qhe3ahMJ_i0AAAAM/anime-anime-pat.gif' },
     { id: 'focus-2', label: 'Nekos Pat', url: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif' },
-    { id: 'focus-3', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
-    { id: 'focus-4', label: 'Taking Notes', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
+    { id: 'focus-3', label: 'Note Taking', url: 'https://i.giphy.com/p55iGp1XppSv4WiV2y.gif' },
+    { id: 'focus-4', label: 'Deep Work', url: 'https://i.giphy.com/WgRsfKIC2WbJDpyLB7.gif' },
   ],
   traveling: [
     { id: 'travel-1', label: 'Road Trip', url: 'https://media.tenor.com/gPjII19ICdIAAAAM/road-road-trip-move-dragon-ball-anime-tyan-vibe-car.gif' },
     { id: 'travel-2', label: 'Nekos Run', url: 'https://nekos.best/api/v2/run/e13cc2bc-5826-41e2-8093-732a59bd39d1.gif' },
-    { id: 'travel-3', label: 'Anime Running', url: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif' },
-    { id: 'travel-4', label: 'Anime Running', url: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif' },
+    { id: 'travel-3', label: 'Uma Musume', url: 'https://media.tenor.com/7Wr359XtEtEAAAAM/uma-musume-meep.gif' },
+    { id: 'travel-4', label: 'Goku Sun', url: 'https://media.tenor.com/Wakk9-QWiLIAAAAM/dokkan-battle-top.gif' },
   ],
 };
 
+function nekosEndpointFromUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/nekos\.best\/api\/v2\/([^/?#]+)/i);
+  return match?.[1] || null;
+}
+
+/** Normalize nekos.best permalink / API JSON URL to a direct HTTPS GIF URL */
+export function normalizeNekosUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  const trimmed = url.trim();
+  const match = trimmed.match(/^https:\/\/nekos\.best\/api\/v2\/([^/?#]+)\/([^/?#]+)\.gif/i);
+  if (match) return `https://nekos.best/api/v2/${match[1]}/${match[2]}.gif`;
+  return trimmed;
+}
+
+export function isNekosBestUrl(url) {
+  return typeof url === 'string' && /nekos\.best\/api\/v2\//i.test(url);
+}
+
+export function getNekosEndpointForActivity(activityId, url = null) {
+  return nekosEndpointFromUrl(url) || ACTIVITY_NEKOS_ENDPOINTS[activityId] || null;
+}
+
+/** Live nekos.best GIF for an activity — used when static permalinks fail in the picker */
+export async function fetchNekosGifForActivity(activityId, hintUrl = null) {
+  const endpoints = [];
+  const fromUrl = nekosEndpointFromUrl(hintUrl);
+  const primary = ACTIVITY_NEKOS_ENDPOINTS[activityId];
+  const alternates = ACTIVITY_NEKOS_ALTERNATES[activityId] || [];
+  for (const ep of [fromUrl, primary, ...alternates]) {
+    if (ep && !endpoints.includes(ep)) endpoints.push(ep);
+  }
+  const result = await fetchNekosWithRetry(endpoints);
+  return result?.url || (isValidDiscordImageUrl(hintUrl) ? normalizeNekosUrl(hintUrl) : null);
+}
+
+function withNekosFallback(option, activityId) {
+  if (!option?.url || option.fallbackUrl) return option;
+  if (!isNekosBestUrl(option.url)) return option;
+  const tenor = ACTIVITY_TENOR_FALLBACKS[activityId];
+  const category = Object.keys(VERIFIED_FALLBACKS).find((k) => VERIFIED_FALLBACKS[k] === option.url);
+  const fallbackUrl = tenor || (category ? ACTIVITY_TENOR_FALLBACKS[category] : null) || null;
+  return fallbackUrl ? { ...option, fallbackUrl } : option;
+}
+
 export function getActivityGifOptions(activityId) {
-  if (ACTIVITY_GIF_OPTIONS[activityId]) return [...ACTIVITY_GIF_OPTIONS[activityId]];
+  if (ACTIVITY_GIF_OPTIONS[activityId]) {
+    return ACTIVITY_GIF_OPTIONS[activityId].map((o) => withNekosFallback({ ...o, url: normalizeNekosUrl(o.url) }, activityId));
+  }
   const options = [];
   const tenor = ACTIVITY_TENOR_FALLBACKS[activityId];
-  const verified = VERIFIED_FALLBACKS[activityId];
+  const verified = normalizeNekosUrl(VERIFIED_FALLBACKS[activityId]);
   if (tenor) options.push({ id: `${activityId}-curated`, label: 'Curated', url: tenor });
   if (verified && verified !== tenor) {
-    options.push({ id: `${activityId}-nekos`, label: 'Neko Alt', url: verified });
+    options.push({
+      id: `${activityId}-nekos`,
+      label: 'Neko Alt',
+      url: verified,
+      fallbackUrl: tenor || null,
+      nekosEndpoint: getNekosEndpointForActivity(activityId, verified),
+    });
   }
   return options;
 }
@@ -284,7 +337,7 @@ export function clearActivityImageCacheEntry(activityId) {
 
 export function normalizeDiscordImageUrl(url) {
   if (!url || typeof url !== 'string') return url;
-  let normalized = url.trim();
+  let normalized = normalizeNekosUrl(url.trim());
   if (/^https?:\/\/media1\.tenor\.com\//i.test(normalized)) {
     const match = normalized.match(/^https?:\/\/media1\.tenor\.com\/m\/([^/]+)\/(.+)$/i);
     if (match) {
