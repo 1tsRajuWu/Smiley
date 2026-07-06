@@ -481,7 +481,7 @@ body.has-window-controls .app-header {
 .discord-art:has(.discord-art-gif.loaded) .discord-art-emoji { display: none; }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
 .discord-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.discord-app-name { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 3px; }
+.discord-app-name { display: none; }
 .discord-details { font-size: 0.9rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: var(--transition); }
 .discord-state { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .discord-timer { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); opacity: 0; transform: translateY(4px); transition: var(--transition); }

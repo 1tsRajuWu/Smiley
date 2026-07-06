@@ -109,8 +109,8 @@
 }
 
 [data-ui-version='v2'] .character-container {
-  width: 196px;
-  height: 196px;
+  width: 220px;
+  height: 220px;
   border-radius: calc(var(--v2-radius-lg) - 4px);
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -148,22 +148,27 @@
 
 [data-ui-version='v2'] .discord-card-inner {
   padding: 18px 20px;
-  gap: 18px;
+  gap: 20px;
+}
+
+[data-ui-version='v2'] .discord-app-name {
+  display: none;
 }
 
 [data-ui-version='v2'] .discord-art {
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   border-radius: 16px;
   border: 1px solid var(--v2-border-subtle);
 }
 
 [data-ui-version='v2'] .discord-art-emoji {
-  font-size: 2.1rem;
+  font-size: 2.5rem;
 }
 
 [data-ui-version='v2'] .discord-details {
-  font-size: 1.02rem;
+  font-size: 1.05rem;
+  font-weight: 700;
   line-height: 1.3;
 }
 

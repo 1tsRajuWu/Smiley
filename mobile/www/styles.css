@@ -160,9 +160,9 @@ html, body {
 .discord-card-inner { display: flex; gap: 12px; align-items: center; }
 
 .discord-art {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
   background: var(--bg-elevated);
   display: flex;
   align-items: center;
@@ -174,7 +174,7 @@ html, body {
 .discord-art-gif { width: 100%; height: 100%; object-fit: cover; }
 .discord-art-emoji { font-size: 1.75rem; }
 
-.discord-app-name { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.discord-app-name { display: none; }
 .discord-details { font-weight: 600; font-size: 0.9rem; }
 .discord-state { font-size: 0.8rem; color: var(--text-muted); }
 

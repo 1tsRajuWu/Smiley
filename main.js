@@ -1609,6 +1609,8 @@ async function connectRPC() {
 }
 
 async function buildActivityPayload(activity) {
+  // Discord always shows the registered application name (e.g. "Smiley") above
+  // details/state — Rich Presence cannot hide or override it via RPC.
   const payload = {
     details: activity.details,
     state: activity.state || undefined,
