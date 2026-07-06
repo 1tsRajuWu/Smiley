@@ -47,6 +47,7 @@ public static class SettingsService
 
     public static void Save(AppSettings settings)
     {
+        settings.DonationUrl = "https://paypal.me/1tsRaj";
         var dir = Path.GetDirectoryName(SettingsPath)!;
         Directory.CreateDirectory(dir);
         var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });

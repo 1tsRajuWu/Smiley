@@ -572,13 +572,14 @@ async function init() {
   if (closeLegal) closeLegal.addEventListener('click', () => legalModal.close());
 
   // Check for Updates button
-  const checkUpdateBtn = $('#checkUpdateBtn');
-  if (checkUpdateBtn) {
-    checkUpdateBtn.addEventListener('click', () => {
-      window.smiley.checkForUpdates();
-      showToast('Checking for updates...');
-    });
+  function triggerUpdateCheck() {
+    window.smiley.checkForUpdates();
+    showToast('Checking for updates...');
   }
+  const checkUpdateBtn = $('#checkUpdateBtn');
+  const checkUpdateBtnGeneral = $('#checkUpdateBtnGeneral');
+  if (checkUpdateBtn) checkUpdateBtn.addEventListener('click', triggerUpdateCheck);
+  if (checkUpdateBtnGeneral) checkUpdateBtnGeneral.addEventListener('click', triggerUpdateCheck);
 
   if (exportSettingsBtn) {
     exportSettingsBtn.addEventListener('click', async () => {
