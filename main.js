@@ -1695,6 +1695,9 @@ async function maybeRegisterInstall() {
       arch: process.arch,
       osRelease: os.release(),
       electronVersion: process.versions.electron,
+      locale: app.getLocale(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+      channel: isPortableBuild() ? 'portable' : 'release',
       shouldProceed: () => isInstallTrackingEnabled(),
     });
     if (result.success) console.log('[registry] install heartbeat recorded');

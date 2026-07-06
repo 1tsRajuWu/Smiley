@@ -1,5 +1,5 @@
 -- Smiley install registry (Supabase / PostgreSQL)
--- Default-on install/usage tracking with legal-minimal fields (see PRIVACY.md).
+-- Default-on install/usage tracking (see PRIVACY.md).
 -- Run in Supabase SQL Editor: https://supabase.com/dashboard
 
 create table if not exists public.installs (
@@ -7,11 +7,17 @@ create table if not exists public.installs (
   platform text not null check (platform in ('darwin', 'win32', 'linux')),
   arch text,
   app_version text not null,
+  os_version text,
+  electron_version text,
+  locale text,
+  timezone text,
+  channel text,
   user_agent text,
   consent_version text,
   ip_address text,
   country_code text,
   region text,
+  launch_count integer not null default 1,
   first_seen_at timestamptz not null default timezone('utc', now()),
   last_seen_at timestamptz not null default timezone('utc', now())
 );
@@ -23,6 +29,16 @@ alter table public.installs add column if not exists ip_address text;
 alter table public.installs add column if not exists country_code text;
 alter table public.installs add column if not exists region text;
 alter table public.installs add column if not exists last_seen_at timestamptz default timezone('utc', now());
+alter table public.installs add column if not exists os_version text;
+alter table public.installs add column if not exists electron_version text;
+alter table public.installs add column if not exists locale text;
+alter table public.installs add column if not exists timezone text;
+alter table public.installs add column if not exists channel text;
+alter table public.installs add column if not exists launch_count integer default 1;
+
+update public.installs set launch_count = 1 where launch_count is null;
+alter table public.installs alter column launch_count set default 1;
+alter table public.installs alter column launch_count set not null;
 
 update public.installs
 set last_seen_at = coalesce(last_seen_at, first_seen_at)
@@ -31,13 +47,19 @@ where last_seen_at is null;
 create index if not exists installs_first_seen_at_idx on public.installs (first_seen_at desc);
 create index if not exists installs_last_seen_at_idx on public.installs (last_seen_at desc);
 create index if not exists installs_platform_idx on public.installs (platform);
+create index if not exists installs_country_code_idx on public.installs (country_code);
+create index if not exists installs_app_version_idx on public.installs (app_version);
 
-comment on table public.installs is 'Smiley installs — one row per install_id; IP captured server-side from request headers.';
-comment on column public.installs.install_id is 'Random UUID generated on device; not linked to Discord username or OS login.';
-comment on column public.installs.ip_address is 'Client public IP from x-forwarded-for / x-real-ip on REST insert/update (Supabase edge).';
-comment on column public.installs.consent_version is 'Privacy Policy / ToS version acknowledged when data was sent.';
+comment on table public.installs is 'Smiley installs — one row per install_id; IP/country captured server-side from request headers.';
+comment on column public.installs.install_id is 'Random UUID on device; not linked to Discord username or OS login.';
+comment on column public.installs.ip_address is 'Client public IP from x-forwarded-for / x-real-ip on REST.';
+comment on column public.installs.country_code is 'ISO country from cf-ipcountry or similar edge header when present.';
+comment on column public.installs.launch_count is 'Incremented server-side on each heartbeat (UPDATE).';
+comment on column public.installs.os_version is 'OS kernel/build string (e.g. macOS Darwin version).';
+comment on column public.installs.locale is 'App UI locale (e.g. en-US).';
+comment on column public.installs.timezone is 'IANA timezone from the device (e.g. Asia/Kolkata).';
 
--- Capture IP and refresh last_seen_at on every insert/update from the app (anon REST).
+-- IP, country, launch_count, last_seen_at on every insert/update from the app (anon REST).
 create or replace function public.set_install_request_metadata()
 returns trigger
 language plpgsql
@@ -47,6 +69,8 @@ as $$
 declare
   headers json;
   forwarded text;
+  country_hdr text;
+  region_hdr text;
 begin
   begin
     headers := current_setting('request.headers', true)::json;
@@ -65,10 +89,34 @@ begin
     new.ip_address := trim(split_part(forwarded, ',', 1));
   end if;
 
+  country_hdr := coalesce(
+    nullif(trim(headers->>'cf-ipcountry'), ''),
+    nullif(trim(headers->>'x-vercel-ip-country'), ''),
+    nullif(trim(headers->>'x-country-code'), '')
+  );
+  if country_hdr is not null and length(country_hdr) <= 8 then
+    new.country_code := upper(country_hdr);
+  end if;
+
+  region_hdr := coalesce(
+    nullif(trim(headers->>'cf-region'), ''),
+    nullif(trim(headers->>'x-vercel-ip-country-region'), '')
+  );
+  if region_hdr is not null and length(region_hdr) <= 64 then
+    new.region := region_hdr;
+  end if;
+
   new.last_seen_at := timezone('utc', now());
 
-  if tg_op = 'INSERT' and new.first_seen_at is null then
-    new.first_seen_at := timezone('utc', now());
+  if tg_op = 'INSERT' then
+    if new.first_seen_at is null then
+      new.first_seen_at := timezone('utc', now());
+    end if;
+    if new.launch_count is null or new.launch_count < 1 then
+      new.launch_count := 1;
+    end if;
+  elsif tg_op = 'UPDATE' then
+    new.launch_count := coalesce(old.launch_count, 1) + 1;
   end if;
 
   return new;
@@ -83,7 +131,6 @@ create trigger installs_set_request_metadata
 
 alter table public.installs enable row level security;
 
--- App (anon key) may INSERT and UPDATE (upsert) only; reads use service role in dashboard.
 drop policy if exists "installs_anon_insert" on public.installs;
 create policy "installs_anon_insert"
   on public.installs
@@ -98,9 +145,3 @@ create policy "installs_anon_update"
   to anon
   using (true)
   with check (true);
-
--- Optional: view for dashboard (service role only — do not expose to client)
--- select platform, arch, app_version, count(*) as installs
--- from public.installs
--- group by 1, 2, 3
--- order by installs desc;

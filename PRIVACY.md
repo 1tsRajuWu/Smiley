@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Raj (@1tsRaj)** — last updated 6 July 2026 (v4.1.13)
+**Raj (@1tsRaj)** — last updated 7 July 2026 (v5.0.4)
 
 ## Short version
 
@@ -26,11 +26,17 @@ When **install tracking is enabled** (default), each app launch sends a heartbea
 | `install_id` | Generated on your device | Count unique installs; no Discord or OS login link |
 | `ip_address` | **Captured server-side** from the HTTP request (e.g. `x-forwarded-for`) | Security, abuse prevention, coarse geography |
 | `platform`, `arch` | Your OS | Platform analytics |
+| `os_version` | OS kernel/build string | OS compatibility |
+| `electron_version` | Electron runtime | Runtime diagnostics |
+| `locale` | App UI language (e.g. `en-US`) | Localization analytics |
+| `timezone` | IANA timezone (e.g. `Asia/Kolkata`) | Coarse time region |
+| `channel` | `release` or `portable` | Install type |
 | `app_version` | Smiley version | Version adoption |
 | `user_agent` | App + Electron/OS string | Compatibility diagnostics |
+| `launch_count` | **Server-side** increment on each heartbeat | Usage frequency |
 | `first_seen_at`, `last_seen_at` | Server timestamps | Active install tracking |
 | `consent_version` | Policy version ID | Legal compliance record |
-| `country_code`, `region` | Optional, if derived server-side from IP | Aggregate geography |
+| `country_code`, `region` | **Server-side** from edge headers (`cf-ipcountry`, etc.) when present | Aggregate geography |
 
 **Not sent:** Discord username, token, messages, email, name, hostname, serial number, or files from your device.
 

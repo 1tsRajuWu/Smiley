@@ -12,7 +12,7 @@ const http = require('http');
 const INSTALL_ID_FILE = 'install-id';
 
 /** Bump when Privacy Policy / ToS change materially. */
-const CONSENT_VERSION = '2026-07-06';
+const CONSENT_VERSION = '2026-07-07';
 
 let registrationPromise = null;
 
@@ -109,6 +109,32 @@ function postJson(url, headers, body, method = 'POST') {
   });
 }
 
+function buildInstallRow({
+  installId,
+  appVersion,
+  platform,
+  arch,
+  osRelease,
+  electronVersion,
+  locale,
+  timezone,
+  channel,
+}) {
+  return {
+    install_id: installId,
+    platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
+    arch: typeof arch === 'string' ? arch.slice(0, 16) : null,
+    app_version: String(appVersion || 'unknown').slice(0, 32),
+    os_version: typeof osRelease === 'string' ? osRelease.slice(0, 64) : null,
+    electron_version: typeof electronVersion === 'string' ? electronVersion.slice(0, 32) : null,
+    locale: typeof locale === 'string' ? locale.slice(0, 16) : null,
+    timezone: typeof timezone === 'string' ? timezone.slice(0, 64) : null,
+    channel: typeof channel === 'string' ? channel.slice(0, 32) : 'release',
+    user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
+    consent_version: CONSENT_VERSION,
+  };
+}
+
 async function registerInstall({
   rootDir,
   userDataDir,
@@ -117,6 +143,9 @@ async function registerInstall({
   arch,
   osRelease,
   electronVersion,
+  locale,
+  timezone,
+  channel,
   shouldProceed = () => true,
 }) {
   if (registrationPromise) return registrationPromise;
@@ -130,14 +159,17 @@ async function registerInstall({
     const installId = getOrCreateInstallId(userDataDir);
     if (!installId) return { skipped: true, reason: 'no-install-id' };
 
-    const row = {
-      install_id: installId,
-      platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
-      arch: typeof arch === 'string' ? arch.slice(0, 16) : null,
-      app_version: String(appVersion || 'unknown').slice(0, 32),
-      user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
-      consent_version: CONSENT_VERSION,
-    };
+    const row = buildInstallRow({
+      installId,
+      appVersion,
+      platform,
+      arch,
+      osRelease,
+      electronVersion,
+      locale,
+      timezone,
+      channel,
+    });
 
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
     const headers = {
@@ -152,13 +184,8 @@ async function registerInstall({
         // merge-duplicates upsert needs SELECT; anon only has insert/update. PATCH on duplicate.
         if (err.statusCode !== 409) throw err;
         const patchUrl = `${endpoint}?install_id=eq.${encodeURIComponent(installId)}`;
-        await postJson(patchUrl, headers, {
-          platform: row.platform,
-          arch: row.arch,
-          app_version: row.app_version,
-          user_agent: row.user_agent,
-          consent_version: row.consent_version,
-        }, 'PATCH');
+        const { install_id: _id, ...patchBody } = row;
+        await postJson(patchUrl, headers, patchBody, 'PATCH');
       }
       return { success: true, installId };
     } catch (err) {
@@ -179,4 +206,5 @@ module.exports = {
   registerInstall,
   getOrCreateInstallId,
   buildUserAgent,
+  buildInstallRow,
 };
