@@ -201,6 +201,8 @@ let activityProfiles = [];
 let rotateFavoritesSettings = { enabled: false, intervalMinutes: 15 };
 let sessionStats = {};
 let presencePaused = false;
+let connectionConnected = false;
+let connectionError = null;
 let rotateTimer = null;
 let rotateFavoriteIndex = 0;
 let saveGifChoiceTimer = null;
@@ -397,6 +399,7 @@ async function togglePausePresence() {
     setupRotateFavorites();
     const status = await window.smiley.getStatus();
     if (status?.sessionStart) startTimer(status.sessionStart);
+    syncConnectionPill();
     showToast('Presence resumed on Discord', 'success');
     return;
   }
@@ -411,6 +414,7 @@ async function togglePausePresence() {
   }
   presencePaused = true;
   clearRotateTimer();
+  syncConnectionPill();
   showToast('Presence paused — hidden on Discord', 'subtle');
 }
 
@@ -548,17 +552,28 @@ function showUpdateActionToast(message, { label = 'Download from GitHub', url = 
   setTimeout(() => el.remove(), 12000);
 }
 
-function setConnectionStatus(connected, error) {
-  connectionPill.classList.remove('connected', 'error');
-  if (connected) {
+function syncConnectionPill() {
+  connectionPill.classList.remove('connected', 'error', 'paused');
+  if (presencePaused) {
+    connectionPill.classList.add('paused');
+    connectionText.textContent = 'Presence paused';
+    return;
+  }
+  if (connectionConnected) {
     connectionPill.classList.add('connected');
     connectionText.textContent = 'Connected to Discord';
-  } else if (error) {
+  } else if (connectionError) {
     connectionPill.classList.add('error');
-    connectionText.textContent = error;
+    connectionText.textContent = connectionError;
   } else {
     connectionText.textContent = 'Disconnected';
   }
+}
+
+function setConnectionStatus(connected, error) {
+  connectionConnected = !!connected;
+  connectionError = error || null;
+  syncConnectionPill();
 }
 
 function formatElapsed(ms) {
@@ -2632,6 +2647,7 @@ async function init() {
   window.smiley.onPresencePaused(() => {
     presencePaused = true;
     clearRotateTimer();
+    syncConnectionPill();
     showToast('Presence paused — hidden on Discord', 'subtle');
   });
 
@@ -2752,6 +2768,8 @@ async function init() {
   presencePaused = cfg.presencePaused === true;
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
+  syncConnectionPill();
+  setupRotateFavorites();
   applyPlatformUI(cfg);
   applyUIVersion(cfg.uiVersion || 'v2');
   if (cfg.releasesUrl) releasesUrl = cfg.releasesUrl;

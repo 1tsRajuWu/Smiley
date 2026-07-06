@@ -23,11 +23,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 ## Download
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-Setup-4.1.18.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-Setup-5.0.0.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 [All releases](https://github.com/1tsRajuWu/Smiley/releases) · [Download page](https://1tsrajuwu.github.io/Smiley/)
@@ -38,11 +38,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-4.1.18.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-Setup-4.1.18.exe) |
-| macOS Apple Silicon | [Smiley-4.1.18-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18-arm64.dmg) |
-| macOS Intel | [Smiley-4.1.18-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18-x64.dmg) |
-| Linux (AppImage) | [Smiley-4.1.18.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18.AppImage) |
-| Linux (.deb) | [Smiley-4.1.18.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.18/Smiley-4.1.18.deb) |
+| Windows | [Smiley-Setup-5.0.0.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-Setup-5.0.0.exe) |
+| macOS Apple Silicon | [Smiley-5.0.0-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0-arm64.dmg) |
+| macOS Intel | [Smiley-5.0.0-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0-x64.dmg) |
+| Linux (AppImage) | [Smiley-5.0.0.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0.AppImage) |
+| Linux (.deb) | [Smiley-5.0.0.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.0/Smiley-5.0.0.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
@@ -73,6 +73,8 @@ If Smiley's been useful: **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 <details>
 <summary><strong>What's new</strong></summary>
 
+**v5.0.0** — Major release: activity profiles, auto-rotate favorites, pause/resume presence, favorite hotkeys, session stats. UI polish, all platforms synced, GitHub release notes on every tag.
+
 **v4.1.19** — Advanced features: activity profiles, favorite rotation, pause/resume presence, session stats. Mobile APK CI fix.
 
 **v4.1.18** — Fix GitHub download links (versioned URLs), release CI race (mobile APK after desktop), and incomplete-release README updates.
@@ -98,6 +100,11 @@ If Smiley's been useful: **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 - Curated anime GIFs per activity — synced in-app and on Discord
 - Custom activities (title, emoji, GIF) under **My Activities**
 - GIF picker — swap animation per activity
+- **Activity profiles** — save & apply favorite combos
+- **Auto-rotate favorites** — cycle starred activities on a timer
+- **Pause / resume** — hide Discord status without losing your pick (`Cmd/Ctrl+Shift+P`)
+- **Favorite hotkeys** — `Cmd/Ctrl+Shift+1–9`
+- **Session stats** — track time per activity
 - 11 themes, favorites, recents
 - Tray icon + `Cmd/Ctrl+Shift+S` hotkey
 - Auto-update (one-click on macOS v4.1.9+, installer on Windows)

@@ -140,3 +140,25 @@ jobs:
             git commit -m "docs: update README download links for latest release"
             git push
           fi
+
+  write-release-notes:
+    needs: [build-mac, build-win, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write GitHub release description
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          BODY_FILE="docs/releases/v${VERSION}.md"
+          if [[ -f "$BODY_FILE" ]]; then
+            gh release edit "$TAG" --notes-file "$BODY_FILE"
+            echo "Release notes written from ${BODY_FILE}"
+          else
+            echo "No release notes file at ${BODY_FILE} — skipping"
+          fi

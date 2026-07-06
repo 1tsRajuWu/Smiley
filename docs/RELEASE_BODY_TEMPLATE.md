@@ -1,6 +1,6 @@
 # GitHub Release body template
 
-Copy into the release description when publishing **v{VERSION}**. Replace `{VERSION}` (e.g. `4.0.0`).
+Copy into `docs/releases/v{VERSION}.md` before tagging. CI writes the file to the GitHub Release automatically via `write-release-notes` job.
 
 ---
 
@@ -16,6 +16,11 @@ Made by [@1tsRaj](https://github.com/1tsRaj).
 
 - 🎨 **Custom activities** — build your own title, emoji, and GIF
 - 🖼️ **GIF picker** — swap animations per activity
+- 📋 **Activity profiles** — save favorite combos as named presets
+- 🔄 **Auto-rotate favorites** — cycle starred activities on a timer
+- ⏸ **Pause / resume** — hide Discord status without losing your pick
+- ⌨️ **Favorite hotkeys** — Cmd/Ctrl+Shift+1–9
+- 📊 **Session stats** — track time per activity
 - 🎬 **Curated anime animations** — matched in-app and on Discord
 - 🌓 **Theme-aware logo** — header icon follows your theme
 - 🐛 Bug fixes and polish

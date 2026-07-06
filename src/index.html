@@ -143,7 +143,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v4.1.17</span>
+        <span class="footer-version" id="footerVersion">Smiley v5.0.0</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -277,6 +277,8 @@
             </div>
           </div>
           <div class="settings-panel" data-panel="advanced">
+            <div class="settings-section">
+              <h3 class="settings-section-title">Startup &amp; shortcuts</h3>
             <div class="field toggle-field">
               <span class="field-label">Start on system login</span>
               <label class="toggle"><input type="checkbox" id="launchAtLoginToggle" /><span class="toggle-slider"></span></label>
@@ -286,6 +288,9 @@
               <label class="toggle"><input type="checkbox" id="hotkeyToggle" checked /><span class="toggle-slider"></span></label>
             </div>
             <p class="field-hint" id="hotkeyHint">Shortcut: Cmd/Ctrl + Shift + S</p>
+            </div>
+            <div class="settings-section">
+              <h3 class="settings-section-title">Profiles &amp; automation</h3>
             <div class="field profiles-field">
               <span class="field-label">Activity profiles</span>
               <p class="field-hint">Save favorite combos as named presets — apply from here or the tray menu.</p>
@@ -297,7 +302,7 @@
             <div class="field toggle-field">
               <div>
                 <span class="field-label">Auto-rotate favorites</span>
-                <p class="field-hint" style="margin:4px 0 0;">Cycle through starred activities on a timer (needs 2+ favorites).</p>
+                <p class="field-hint settings-inline-hint">Cycle starred activities on a timer (needs 2+ favorites).</p>
               </div>
               <label class="toggle"><input type="checkbox" id="rotateFavoritesToggle" /><span class="toggle-slider"></span></label>
             </div>
@@ -305,6 +310,9 @@
               <label class="field-label" for="rotateIntervalInput">Rotate every (minutes)</label>
               <input type="number" class="text-input rotate-interval-input" id="rotateIntervalInput" min="5" max="120" value="15" />
             </div>
+            </div>
+            <div class="settings-section">
+              <h3 class="settings-section-title">Data &amp; storage</h3>
             <div class="field session-stats-field">
               <span class="field-label">Session stats</span>
               <p class="field-hint" id="sessionStatsText">No activity time tracked yet.</p>
@@ -315,10 +323,11 @@
               <button type="button" class="btn btn-secondary" id="clearCacheBtn">Clear cache</button>
               <p class="field-hint">Removes browser cache, old update downloads, and orphaned temp files. Keeps settings, activities, and custom GIFs.</p>
             </div>
-            <div class="field" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+            <div class="field settings-actions-row">
               <button type="button" class="btn btn-secondary" id="exportSettingsBtn">Export settings</button>
               <button type="button" class="btn btn-secondary" id="importSettingsBtn">Import settings</button>
               <button type="button" class="btn btn-secondary" id="resetWindowBtn">Reset window position</button>
+            </div>
             </div>
           </div>
           <div class="settings-panel" data-panel="about">
