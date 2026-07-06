@@ -34,8 +34,8 @@ Download: https://1tsrajuwu.github.io/Smiley/
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| macOS Apple Silicon | [Smiley-4.1.8-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.8-arm64.dmg) |
-| macOS Intel | [Smiley-4.1.8-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.8-x64.dmg) |
+| macOS Apple Silicon | [Smiley-4.1.9-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.9-arm64.dmg) |
+| macOS Intel | [Smiley-4.1.9-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.9-x64.dmg) |
 <!-- DOWNLOADS_END -->
 
 </details>
