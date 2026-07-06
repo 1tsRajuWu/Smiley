@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "Discord Rich Presence with animated anime characters and beautiful UI",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -37,7 +37,7 @@
   "build": {
     "appId": "com.smiley.rpc",
     "productName": "Smiley",
-    "copyright": "Copyright © 2025–2026 Raj (1tsRaj). All Rights Reserved.",
+    "copyright": "Copyright \u00a9 2025\u20132026 Raj (1tsRaj). All Rights Reserved.",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -70,11 +70,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "hardenedRuntime": true,
@@ -86,11 +92,16 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "publisherName": "Raj (1tsRaj)"
@@ -102,11 +113,15 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icons",
@@ -114,7 +129,8 @@
       "maintainer": "Raj (1tsRaj)",
       "vendor": "Raj (1tsRaj)",
       "synopsis": "Discord Rich Presence with animated characters",
-      "description": "Set your Discord status with beautiful animated anime characters"
+      "description": "Set your Discord status with beautiful animated anime characters",
+      "artifactName": "Smiley-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
