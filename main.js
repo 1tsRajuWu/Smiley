@@ -1,5 +1,5 @@
 const os = require('os');
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -195,9 +195,10 @@ function isAllowedGithubDownloadUrl(url) {
     return false;
   }
 }
-// package.json mac.identity is "-" (ad-hoc). Squirrel ShipIt validates update signatures
-// at install time — separate from electron-updater verifyUpdateCodeSignature (Windows).
+// package.json mac.identity is "-" (ad-hoc). Squirrel ShipIt is bypassed — custom shell
+// installer copies the verified zip from electron-updater cache (v4.1.9+).
 const MAC_ADHOC_DISTRIBUTION = true;
+const MAC_IN_APP_UPDATES = process.platform === 'darwin';
 const DEFAULT_RPC_BUTTONS = [
   { label: 'Download Smiley', url: GITHUB_REPO_URL },
 ];
@@ -1335,15 +1336,13 @@ function applyUpdaterSettings() {
   if (!isPackaged) return;
   try {
     const autoUpdater = getAutoUpdater();
-    // macOS ad-hoc: never download/install zip — Squirrel ShipIt rejects ad-hoc signatures
-    if (process.platform === 'darwin') {
-      autoUpdater.autoDownload = false;
-      autoUpdater.autoInstallOnAppQuit = false;
-    } else {
-      autoUpdater.autoDownload = true;
+    // macOS: download zip to cache; custom installer replaces ShipIt (ad-hoc safe)
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.autoRunAppAfterInstall = false;
+    if (process.platform !== 'darwin') {
       autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
     }
-    autoUpdater.autoRunAppAfterInstall = false;
   } catch (_) {}
 }
 
@@ -1353,9 +1352,8 @@ function guardMacUpdaterQuitAndInstall() {
   if (autoUpdater.__macQuitAndInstallGuarded) return;
   autoUpdater.__macQuitAndInstallGuarded = true;
   autoUpdater.quitAndInstall = () => {
-    console.warn('[updater] quitAndInstall blocked on macOS — install via DMG from GitHub Releases');
-    const payload = buildManualInstallPayload();
-    sendUpdateStatus(payload);
+    console.warn('[updater] quitAndInstall blocked on macOS — using custom in-app installer');
+    installMacUpdate();
   };
 }
 
@@ -1379,9 +1377,12 @@ function resetDownloadStallTimer() {
   }, 60000);
 }
 
+function isMacInAppUpdater() {
+  return MAC_IN_APP_UPDATES;
+}
+
 function isMacAdHocUpdater() {
-  // Ad-hoc signed — Squirrel ShipIt always fails on macOS
-  return process.platform === 'darwin';
+  return isMacInAppUpdater();
 }
 
 function buildMacUpdateAvailablePayload(version = pendingUpdateVersion) {
@@ -1563,6 +1564,194 @@ function openMacDownloadedDmg(version = pendingUpdateVersion) {
   };
 }
 
+function getUpdaterLogPath() {
+  const dir = getUserDataPath('logs');
+  ensureDir(dir);
+  return path.join(dir, 'mac-update.log');
+}
+
+function appendUpdaterLog(message) {
+  try {
+    fs.appendFileSync(getUpdaterLogPath(), `[${new Date().toISOString()}] ${message}\n`);
+  } catch (_) {}
+}
+
+function getMacAppBundlePath() {
+  if (process.platform !== 'darwin') return null;
+  try {
+    let p = path.resolve(process.execPath);
+    for (let i = 0; i < 8; i++) {
+      if (p.endsWith('.app')) return p;
+      const parent = path.dirname(p);
+      if (parent === p) break;
+      p = parent;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function getMacDownloadedZipPath() {
+  try {
+    const autoUpdater = getAutoUpdater();
+    const helper = autoUpdater.downloadedUpdateHelper;
+    if (helper?.file && fs.existsSync(helper.file)) return helper.file;
+    if (helper?.packageFile && fs.existsSync(helper.packageFile)) return helper.packageFile;
+    const pendingDir = helper?.cacheDirForPendingUpdate || path.join(getUpdaterCacheDir(), 'pending');
+    if (fs.existsSync(pendingDir)) {
+      const infoPath = path.join(pendingDir, 'update-info.json');
+      if (fs.existsSync(infoPath)) {
+        try {
+          const info = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
+          if (info?.fileName) {
+            const zipPath = path.join(pendingDir, info.fileName);
+            if (fs.existsSync(zipPath)) return zipPath;
+          }
+        } catch (_) {}
+      }
+      try {
+        const zips = fs.readdirSync(pendingDir).filter((f) => f.endsWith('.zip'));
+        if (zips.length === 1) return path.join(pendingDir, zips[0]);
+      } catch (_) {}
+    }
+    const cachedZip = path.join(getUpdaterCacheDir(), 'update.zip');
+    if (fs.existsSync(cachedZip)) return cachedZip;
+  } catch (err) {
+    appendUpdaterLog(`getMacDownloadedZipPath failed: ${err.message}`);
+  }
+  return null;
+}
+
+function shellQuoteForBash(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function writeMacUpdateInstallerScript({ zipPath, installPath, logPath, parentPid }) {
+  const scriptPath = path.join(app.getPath('temp'), 'smiley-mac-update-installer.sh');
+  const script = `#!/bin/bash
+set -euo pipefail
+LOG=${shellQuoteForBash(logPath)}
+ZIP=${shellQuoteForBash(zipPath)}
+INSTALL=${shellQuoteForBash(installPath)}
+PARENT_PID=${Number(parentPid) || 0}
+
+log() { echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") $*" >> "$LOG"; }
+
+log "Mac update installer started (pid=$$, parent=$PARENT_PID)"
+log "zip=$ZIP install=$INSTALL"
+
+if [ "$PARENT_PID" -gt 0 ]; then
+  for _ in $(seq 1 120); do
+    if ! kill -0 "$PARENT_PID" 2>/dev/null; then
+      break
+    fi
+    sleep 0.25
+  done
+  sleep 1
+fi
+
+EXTRACT_DIR=$(mktemp -d "\${TMPDIR:-/tmp}/smiley-update-XXXXXX")
+trap 'rm -rf "$EXTRACT_DIR"' EXIT
+
+log "Extracting to $EXTRACT_DIR"
+if ! ditto -xk "$ZIP" "$EXTRACT_DIR" 2>>"$LOG"; then
+  log "ditto failed, trying unzip"
+  unzip -q -o "$ZIP" -d "$EXTRACT_DIR" 2>>"$LOG" || { log "extract failed"; exit 1; }
+fi
+
+NEW_APP=$(find "$EXTRACT_DIR" -maxdepth 3 -name "*.app" -type d 2>/dev/null | head -1)
+if [ -z "$NEW_APP" ] || [ ! -d "$NEW_APP" ]; then
+  log "Could not find .app in archive"
+  exit 2
+fi
+
+log "Found app bundle: $NEW_APP"
+
+if [ -d "$INSTALL" ]; then
+  log "Removing old app at $INSTALL"
+  rm -rf "$INSTALL"
+fi
+
+log "Installing to $INSTALL"
+ditto "$NEW_APP" "$INSTALL"
+
+log "Stripping quarantine attributes"
+xattr -cr "$INSTALL" 2>>"$LOG" || true
+
+log "Launching updated app"
+open "$INSTALL"
+
+log "Install complete"
+exit 0
+`;
+  fs.writeFileSync(scriptPath, script, { mode: 0o755 });
+  return scriptPath;
+}
+
+function installMacUpdate() {
+  if (process.platform !== 'darwin') {
+    return { success: false, error: 'Mac-only feature' };
+  }
+  if (isRunningFromDmg()) {
+    return {
+      success: false,
+      error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
+      expected: true,
+    };
+  }
+
+  const installPath = getMacAppBundlePath();
+  if (!installPath) {
+    appendUpdaterLog('Could not determine app bundle path');
+    return { success: false, error: 'Could not find Smiley.app location.', fallback: true };
+  }
+
+  const zipPath = getMacDownloadedZipPath();
+  if (!zipPath) {
+    appendUpdaterLog('No downloaded zip found in updater cache');
+    return { success: false, error: 'Update is not ready to install. Wait for the download to finish.', fallback: true };
+  }
+
+  const cacheRoot = path.resolve(getUpdaterCacheDir());
+  const resolvedZip = path.resolve(zipPath);
+  if (!resolvedZip.startsWith(cacheRoot + path.sep)) {
+    appendUpdaterLog(`Rejected zip outside updater cache: ${resolvedZip}`);
+    return { success: false, error: 'Invalid update cache path.', fallback: true };
+  }
+
+  try {
+    const logPath = getUpdaterLogPath();
+    const scriptPath = writeMacUpdateInstallerScript({
+      zipPath: resolvedZip,
+      installPath,
+      logPath,
+      parentPid: process.pid,
+    });
+    appendUpdaterLog(`Spawning installer: ${scriptPath} -> ${installPath}`);
+    const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
+    child.unref();
+    app.isQuitting = true;
+    setTimeout(() => app.quit(), 400);
+    return { success: true, version: pendingUpdateVersion || null };
+  } catch (err) {
+    appendUpdaterLog(`installMacUpdate failed: ${err.message}`);
+    console.error('[updater] installMacUpdate failed:', err.message);
+    return { success: false, error: err.message, fallback: true };
+  }
+}
+
+function buildMacUpdateReadyPayload(version = pendingUpdateVersion) {
+  const ver = normalizeReleaseVersion(version) || null;
+  return {
+    ok: true,
+    status: 'downloaded',
+    message: 'Smiley will restart with the new version.',
+    version: ver,
+    percent: 100,
+    macInApp: true,
+    expected: true,
+  };
+}
+
 function isUpdateSignatureError(msg) {
   const lower = String(msg || '').toLowerCase();
   return (
@@ -1732,18 +1921,24 @@ async function checkForUpdates(manual = false, silent = false) {
 }
 
 function isUpdateReadyToInstall() {
-  if (!isPackaged || !updateDownloaded || !pendingUpdateVersion) return false;
+  if (!isPackaged || !pendingUpdateVersion) return false;
+  if (process.platform === 'darwin') {
+    return !!getMacDownloadedZipPath();
+  }
+  if (!updateDownloaded) return false;
   const helper = getAutoUpdater().downloadedUpdateHelper;
   if (helper?.file || helper?.packageFile) return true;
   return false;
 }
 
 function installPendingUpdate() {
-  // macOS: never call quitAndInstall — ShipIt rejects ad-hoc signatures
-  if (isMacAdHocUpdater()) {
-    const payload = buildManualInstallPayload();
-    sendUpdateStatus(payload);
-    return false;
+  if (isMacInAppUpdater()) {
+    const result = installMacUpdate();
+    if (!result.success && result.fallback) {
+      const payload = buildManualInstallPayload();
+      sendUpdateStatus(payload);
+    }
+    return result.success;
   }
   if (!isUpdateReadyToInstall()) return false;
   if (process.platform === 'darwin' && isRunningFromDmg()) {
@@ -1778,9 +1973,8 @@ function setupAutoUpdater() {
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
 
-    // Windows NSIS: skip publisher signature check (unsigned builds).
-    // macOS Squirrel ShipIt validates separately at install — handled via friendly errors.
-    if (process.platform === 'win32') {
+    // Windows NSIS + macOS zip: skip publisher signature check (unsigned / ad-hoc builds).
+    if (process.platform === 'win32' || process.platform === 'darwin') {
       autoUpdater.verifyUpdateCodeSignature = async () => null;
     }
 
@@ -1798,10 +1992,15 @@ function setupAutoUpdater() {
       updateDownloaded = false;
       lastDownloadPercent = 0;
       clearDownloadStallTimer();
-      if (isMacAdHocUpdater()) {
-        const payload = buildManualInstallPayload(info.version);
+      if (isMacInAppUpdater()) {
+        const payload = {
+          status: 'available',
+          version: info.version,
+          percent: 0,
+          macInApp: true,
+        };
         sendUpdateStatus(payload);
-        resolveManualUpdate(payload);
+        resolveManualUpdate({ ok: true, status: 'available', version: info.version });
         return;
       }
       if (updateDownloaded && pendingUpdateVersion === info.version) {
@@ -1831,13 +2030,13 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('download-progress', (progress) => {
-      if (isMacAdHocUpdater()) return;
       lastDownloadPercent = Math.min(99, Math.round(progress.percent || 0));
       resetDownloadStallTimer();
       sendUpdateStatus({
         status: 'downloading',
         percent: lastDownloadPercent,
         version: pendingUpdateVersion,
+        macInApp: isMacInAppUpdater() || undefined,
       });
     });
 
@@ -1847,10 +2046,10 @@ function setupAutoUpdater() {
       pendingUpdateVersion = info.version;
       updateDownloaded = true;
       lastDownloadPercent = 100;
-      if (isMacAdHocUpdater()) {
-        const payload = buildManualInstallPayload(info.version);
+      if (isMacInAppUpdater()) {
+        const payload = buildMacUpdateReadyPayload(info.version);
         sendUpdateStatus(payload);
-        resolveManualUpdate(payload);
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
       } else {
         sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
         resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
@@ -1866,8 +2065,24 @@ function setupAutoUpdater() {
       updateDownloaded = false;
       lastDownloadPercent = 0;
       const formatted = formatUpdateError(err, failedVersion);
-      // macOS: never surface raw ShipIt / signature errors — manual DMG only
-      if (isMacAdHocUpdater()) {
+      if (isMacInAppUpdater() && isUpdateSignatureError(err?.message)) {
+        appendUpdaterLog(`Suppressed signature error: ${err?.message || err}`);
+        if (getMacDownloadedZipPath()) {
+          updateDownloaded = true;
+          const payload = buildMacUpdateReadyPayload(failedVersion);
+          sendUpdateStatus(payload);
+          resolveManualUpdate({ ok: true, status: 'downloaded', version: failedVersion });
+        }
+        return;
+      }
+      if (isMacInAppUpdater() && getMacDownloadedZipPath()) {
+        updateDownloaded = true;
+        const payload = buildMacUpdateReadyPayload(failedVersion);
+        sendUpdateStatus(payload);
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: failedVersion });
+        return;
+      }
+      if (isMacInAppUpdater()) {
         const payload = buildManualInstallPayload(failedVersion);
         sendUpdateStatus(payload);
         resolveManualUpdate(payload);
@@ -2415,7 +2630,8 @@ function setupIPC() {
     systemFocusShortcutOff: config.systemFocusShortcutOff || DEFAULT_CONFIG.systemFocusShortcutOff,
     systemFocusMinimizeTray: config.systemFocusMinimizeTray === true,
     isMac: process.platform === 'darwin',
-    macAdHocUpdates: process.platform === 'darwin',
+    macInAppUpdates: MAC_IN_APP_UPDATES,
+    macAdHocUpdates: false,
     macDmgArch: process.platform === 'darwin' ? getMacDmgArch() : null,
     releasesUrl: GITHUB_RELEASES_URL,
     osPlatform: process.platform,
@@ -2473,13 +2689,31 @@ function setupIPC() {
   });
 
   ipcMain.handle('install-update', async () => {
-    if (isMacAdHocUpdater()) {
-      const ver = pendingUpdateVersion;
-      const destPath = macDmgDownloadedPath || (ver ? getMacDmgPathForVersion(ver) : null);
-      if (isValidDownloadedDmg(destPath)) {
-        return openMacDownloadedDmg(ver);
+    if (isMacInAppUpdater()) {
+      if (isRunningFromDmg()) {
+        return {
+          success: false,
+          error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
+        };
       }
-      return downloadMacUpdateDmg(ver);
+      if (isUpdateReadyToInstall()) {
+        const result = installMacUpdate();
+        if (result.success) return result;
+        if (result.fallback) {
+          const ver = pendingUpdateVersion;
+          const destPath = macDmgDownloadedPath || (ver ? getMacDmgPathForVersion(ver) : null);
+          if (isValidDownloadedDmg(destPath)) return openMacDownloadedDmg(ver);
+          return downloadMacUpdateDmg(ver);
+        }
+        return result;
+      }
+      try {
+        await getAutoUpdater().downloadUpdate();
+        return { success: true, status: 'downloading', version: pendingUpdateVersion || null };
+      } catch (err) {
+        appendUpdaterLog(`downloadUpdate on install failed: ${err.message}`);
+        return downloadMacUpdateDmg(pendingUpdateVersion);
+      }
     }
     if (process.platform === 'darwin' && isRunningFromDmg()) {
       return {

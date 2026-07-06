@@ -66,7 +66,9 @@ If Smiley's been useful: **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 <details>
 <summary><strong>What's new</strong></summary>
 
-**v4.1.x** — Mac in-app update downloads the correct DMG (arm64/x64) with progress; drag to Applications to install. Readable text selection, cache cleanup in Settings.
+**v4.1.9** — One-click Mac in-app updates: download in background, **Install update** restarts on the new version (no DMG / Gatekeeper loop). Users on very old builds need one manual update from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) first.
+
+**v4.1.x** — Mac update picks the correct arch (arm64/x64). Readable text selection, cache cleanup in Settings.
 
 **v4.0** — Per-activity GIF picker, custom activities, legal docs (LICENSE, LEGAL.md), Mac auto-update fixes.
 
@@ -83,7 +85,7 @@ If Smiley's been useful: **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 - GIF picker — swap animation per activity
 - 11 themes, favorites, recents
 - Tray icon + `Cmd/Ctrl+Shift+S` hotkey
-- Auto-update (DMG on macOS, installer on Windows)
+- Auto-update (one-click on macOS v4.1.9+, installer on Windows)
 - Export/import settings
 
 Low on RAM? Try **[Smiley.Native](README-NATIVE.md)** (~25 MB, no Electron).
@@ -93,23 +95,17 @@ Low on RAM? Try **[Smiley.Native](README-NATIVE.md)** (~25 MB, no Electron).
 <details>
 <summary><strong>Troubleshooting</strong></summary>
 
-**macOS Gatekeeper** — Right-click → Open the first time, or System Settings → Privacy & Security → Open Anyway. More: [INSTALL-MAC.md](INSTALL-MAC.md)
+**Mac in-app update (v4.1.9+)** — When a banner appears, Smiley downloads the update in the background. Click **Install update** — the app quits, replaces itself, and reopens. Works from `/Applications` or `~/Applications`. If install fails, use **Download DMG** in the banner as a fallback.
+
+**First time / very old versions** — Install [v4.1.9 or newer](https://github.com/1tsRajuWu/Smiley/releases/latest) once manually (right-click → Open if Gatekeeper blocks), then future updates are one-click in the app.
+
+**macOS Gatekeeper (first launch only)** — Right-click → Open the first time, or System Settings → Privacy & Security → Open Anyway. More: [INSTALL-MAC.md](INSTALL-MAC.md)
 
 ```bash
-xattr -cr ~/Downloads/Smiley-*.dmg
 xattr -cr /Applications/Smiley.app
 ```
 
 **Windows SmartScreen** — Click More info → Run anyway (not code-signed yet).
-
-**Mac in-app update** — Smiley is ad-hoc signed (no Apple Developer account), so one-click restart install is not available. In the app, use **Download update** when a banner appears, then **Open downloaded file**. Quit Smiley, drag to Applications (replace), reopen. Intel Macs get `Smiley-x.x.x-x64.dmg`; Apple Silicon gets `Smiley-x.x.x-arm64.dmg`.
-
-If an older build shows a code-signature error on restart, install this version once manually from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest), then future updates work from the banner.
-
-```bash
-rm -rf ~/Library/Caches/com.smiley.rpc.ShipIt
-xattr -cr /Applications/Smiley.app
-```
 
 **Cache growing** — Settings → Advanced → **Clear cache** (v4.1.2+). Keeps settings and custom GIFs.
 
