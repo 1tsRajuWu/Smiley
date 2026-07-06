@@ -20,7 +20,7 @@ Companion app for browsing activities, previewing anime GIFs, and copying status
 
 | Platform | Install |
 |----------|---------|
-| **Android** | [Smiley-3.0.1-android.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-android.apk) (debug build) or build below |
+| **Android** | [Smiley-3.0.1-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-android-debug.apk) | Sideload · Android 8+ |
 | **iOS** | Build with Xcode (Apple Developer account required) — no App Store build yet |
 | **PWA** | Open `mobile/dist/index.html` via `npm run preview` → Add to Home Screen |
 
