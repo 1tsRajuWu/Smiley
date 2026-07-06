@@ -159,12 +159,19 @@
 
 [data-ui-version='v2'] .preview-actions {
   gap: 10px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 [data-ui-version='v2'] .preview-actions .btn {
   border-radius: 10px;
   font-size: 0.8rem;
+  min-height: 38px;
+}
+
+[data-ui-version='v2'] .preview-actions .btn-danger:not(:disabled) {
+  background: rgba(247, 118, 142, 0.2);
+  color: #ffb4c4;
+  border-color: rgba(247, 118, 142, 0.45);
 }
 
 /* ─── Donate banner ─────────────────────────────────────────────────── */
@@ -188,6 +195,18 @@
   padding: 7px 14px;
 }
 
+[data-ui-version='v2'] .donate-banner-icons {
+  align-self: center;
+  gap: 5px;
+}
+
+[data-ui-version='v2'] .donate-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 /* ─── Activity picker ───────────────────────────────────────────────── */
 [data-ui-version='v2'] .picker-main {
   border-radius: var(--v2-radius-lg);
@@ -201,12 +220,21 @@
   background: color-mix(in srgb, var(--bg-elevated) 50%, transparent);
 }
 
+[data-ui-version='v2'] .category-tabs {
+  gap: 8px;
+}
+
 [data-ui-version='v2'] .category-tab {
   font-size: 0.76rem;
   padding: 8px 16px;
   border-radius: 999px;
   border-color: transparent;
   background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+  gap: 7px;
+}
+
+[data-ui-version='v2'] .category-tab-emoji {
+  font-size: 1.1em;
 }
 
 [data-ui-version='v2'] .category-tab:hover {
@@ -260,7 +288,12 @@
   font-size: 0.71rem;
   line-height: 1.3;
   margin-top: 5px;
-  color: var(--text-dim);
+  color: var(--v2-text-secondary);
+}
+
+[data-ui-version='v2'] .quick-label {
+  color: var(--v2-text-secondary);
+  letter-spacing: 0.05em;
 }
 
 [data-ui-version='v2'] .quick-chip {
@@ -268,6 +301,7 @@
   padding: 5px 12px;
   font-size: 0.74rem;
   background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  gap: 6px;
 }
 
 /* ─── Footer & update banner ────────────────────────────────────────── */
@@ -277,6 +311,21 @@
   background: color-mix(in srgb, var(--bg) 80%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  color: var(--v2-text-secondary);
+}
+
+[data-ui-version='v2'] .footer-hint {
+  color: var(--v2-text-secondary);
+  opacity: 1;
+}
+
+[data-ui-version='v2'] .footer-version {
+  color: color-mix(in srgb, var(--text-muted) 80%, var(--text));
+}
+
+[data-ui-version='v2'] .field-hint,
+[data-ui-version='v2'] #hotkeyHint {
+  color: var(--v2-text-secondary);
 }
 
 [data-ui-version='v2'] .update-banner.visible {
@@ -295,6 +344,10 @@
 [data-ui-version='v2'] .settings-tab {
   font-size: 0.8rem;
   padding: 13px 20px;
+}
+
+[data-ui-version='v2'] .settings-tab:not(.active) {
+  color: var(--v2-text-secondary);
 }
 
 [data-ui-version='v2'] .theme-option {
@@ -337,8 +390,12 @@
 
 [data-ui-version='v2'] .ui-version-option span {
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: var(--v2-text-secondary);
   line-height: 1.35;
+}
+
+[data-ui-version='v2'] .field-label {
+  color: color-mix(in srgb, var(--text) 92%, var(--text-muted));
 }
 
 /* ─── Wallpaper glass on v2 ─────────────────────────────────────────── */
