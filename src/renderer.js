@@ -1,5 +1,9 @@
 import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES } from './activities.js';
-import { resolveActivityImage, discordImageFields } from './discord-images.js';
+import {
+  resolveDiscordImageUrl,
+  discordImageFields,
+  getActivityFallbackUrls,
+} from './discord-images.js';
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
 
@@ -135,48 +139,69 @@ function startTimer(start) {
 }
 
 async function resolveGifUrl(activity) {
-  const { url, discordUrl, source } = await resolveActivityImage(activity, {
+  const { url, discordUrl, source, fallbacks } = await resolveDiscordImageUrl(activity, {
     animationsEnabled: currentSettings.animationsEnabled,
     customDataUrl: activeCustomAnimation,
   });
-  return { url, discordUrl, source };
+  return { url, discordUrl, source, fallbacks };
 }
 
-function setCharacterDisplay(url, source) {
-  if (!url) {
+/** Load an <img> through a URL chain — hidden display:none blocks browser fetch. */
+function loadImageWithFallback(img, urls, { onSuccess, onFail } = {}) {
+  const queue = [...new Set(urls.filter(Boolean))];
+  let index = 0;
+
+  const tryNext = () => {
+    if (index >= queue.length) {
+      onFail?.();
+      return;
+    }
+    const nextUrl = queue[index++];
+    img.onload = () => onSuccess?.(nextUrl);
+    img.onerror = tryNext;
+    img.loading = 'eager';
+    img.decoding = 'async';
+    img.src = nextUrl;
+    if (img.complete && img.naturalWidth > 0) onSuccess?.(nextUrl);
+  };
+
+  tryNext();
+}
+
+function setCharacterDisplay(url, source, fallbackUrls = []) {
+  if (!url && !fallbackUrls.length) {
     characterLoading.style.display = 'none';
-    characterGif.style.display = 'none';
     characterGif.classList.remove('character-gif-loaded');
     characterGif.removeAttribute('src');
     characterSource.textContent = '';
     return;
   }
+
   characterGif.classList.remove('character-gif-loaded');
   characterLoading.style.display = 'flex';
-  characterGif.style.display = 'none';
-  const showGif = () => {
-    characterLoading.style.display = 'none';
-    characterGif.style.display = 'block';
-    characterGif.classList.add('character-gif-loaded');
-  };
-  const hideLoading = () => {
-    characterLoading.style.display = 'none';
-    characterGif.classList.remove('character-gif-loaded');
-  };
-  characterGif.onload = showGif;
-  characterGif.onerror = hideLoading;
-  characterGif.src = url;
-  if (characterGif.complete && characterGif.naturalWidth > 0) showGif();
+
+  loadImageWithFallback(characterGif, [url, ...fallbackUrls], {
+    onSuccess: () => {
+      characterLoading.style.display = 'none';
+      characterGif.classList.add('character-gif-loaded');
+    },
+    onFail: () => {
+      characterLoading.style.display = 'none';
+      characterGif.classList.remove('character-gif-loaded');
+      characterSource.textContent = source ? `${source} · failed to load` : 'Image failed to load';
+    },
+  });
   characterSource.textContent = source;
 }
 
-function setPreviewDisplay(activity, gifUrl) {
+function setPreviewDisplay(activity, gifUrl, fallbackUrls = []) {
   if (!activity) {
     previewCard.classList.remove('active');
     previewCard.style.removeProperty('--card-glow');
     previewEmoji.textContent = '😊';
     previewEmoji.style.display = '';
-    previewGif.style.display = 'none';
+    previewGif.classList.remove('loaded');
+    previewGif.removeAttribute('src');
     previewDetails.textContent = 'Pick an activity';
     previewState.textContent = 'Your status appears here';
     clearBtn.disabled = true;
@@ -189,21 +214,31 @@ function setPreviewDisplay(activity, gifUrl) {
   previewCard.classList.add('active');
   previewCard.style.setProperty('--card-glow', `${category?.color || '#7aa2f7'}33`);
 
-  // Use GIF in preview if animations enabled
-  if (gifUrl && currentSettings.animationsEnabled !== false) {
-    previewEmoji.style.display = 'none';
-    previewGif.src = gifUrl;
-    previewGif.style.display = 'block';
-  } else {
-    previewGif.style.display = 'none';
-    previewEmoji.textContent = activity.emoji;
-    previewEmoji.style.display = '';
-  }
-
   previewDetails.textContent = activity.details;
   previewState.textContent = activity.state || '';
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
+
+  if (gifUrl && currentSettings.animationsEnabled !== false) {
+    previewEmoji.style.display = 'none';
+    loadImageWithFallback(previewGif, [gifUrl, ...fallbackUrls], {
+      onSuccess: () => {
+        previewGif.classList.add('loaded');
+        previewEmoji.style.display = 'none';
+      },
+      onFail: () => {
+        previewGif.classList.remove('loaded');
+        previewGif.removeAttribute('src');
+        previewEmoji.textContent = activity.emoji;
+        previewEmoji.style.display = '';
+      },
+    });
+  } else {
+    previewGif.classList.remove('loaded');
+    previewGif.removeAttribute('src');
+    previewEmoji.textContent = activity.emoji;
+    previewEmoji.style.display = '';
+  }
 }
 
 function setCharacterLabel(activity) {
@@ -211,14 +246,7 @@ function setCharacterLabel(activity) {
     characterLabel.textContent = 'Pick an activity';
     return;
   }
-  const labels = {
-    food: 'Yum! Time to eat! 🍽️',
-    gaming: 'Game on! Let\'s go! 🎮',
-    chill: 'Relaxing and vibing... 😌',
-    work: 'Focus mode activated 💻',
-    social: 'Having fun with friends! ✨',
-  };
-  characterLabel.textContent = labels[activity.category] || `${activity.details} time!`;
+  characterLabel.textContent = `${activity.emoji} ${activity.state || activity.details}`;
 }
 
 async function updatePreview(activity) {
@@ -232,17 +260,16 @@ async function updatePreview(activity) {
   }
 
   // Show loading state
-  characterGif.style.display = 'none';
+  characterGif.classList.remove('character-gif-loaded');
   characterLoading.style.display = 'flex';
 
   // Resolve GIF
-  const { url, discordUrl, source } = await resolveGifUrl(activity);
+  const { url, discordUrl, source, fallbacks } = await resolveGifUrl(activity);
   currentGifUrl = url;
   currentDiscordImageUrl = discordUrl;
 
-  // Update displays
-  setPreviewDisplay(activity, url);
-  setCharacterDisplay(url, source);
+  setPreviewDisplay(activity, url, fallbacks);
+  setCharacterDisplay(url, source, fallbacks);
   setCharacterLabel(activity);
 }
 
@@ -364,10 +391,11 @@ async function selectActivity(id) {
   // Immediate UI — don't block on GIF fetch
   setCharacterLabel(activity);
   setPreviewDisplay(activity, null);
-  characterGif.style.display = 'none';
+  characterGif.classList.remove('character-gif-loaded');
   characterLoading.style.display = 'flex';
 
-  const fallbackFields = discordImageFields(activity, null);
+  const fallbackUrls = getActivityFallbackUrls(activity);
+  const fallbackFields = discordImageFields(activity, fallbackUrls[0] || null);
   const rpcPayload = {
     id: activity.id,
     details: activity.details,
@@ -379,12 +407,12 @@ async function selectActivity(id) {
   const result = await window.smiley.setActivity(rpcPayload, !isReselect);
 
   resolveGifUrl(activity)
-    .then(({ url, discordUrl, source }) => {
+    .then(({ url, discordUrl, source, fallbacks }) => {
       if (selectedActivityId !== id) return;
       currentGifUrl = url;
       currentDiscordImageUrl = discordUrl;
-      setPreviewDisplay(activity, url);
-      setCharacterDisplay(url, source);
+      setPreviewDisplay(activity, url, fallbacks);
+      setCharacterDisplay(url, source, fallbacks);
 
       if (discordUrl && discordUrl !== fallbackFields.discordImageUrl) {
         const imageFields = discordImageFields(activity, discordUrl);

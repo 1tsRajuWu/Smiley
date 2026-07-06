@@ -1,5 +1,5 @@
 /**
- * Smiley Mobile — activity companion (v3.0.1)
+ * Smiley Mobile — activity companion (v3.1.0)
  * No Discord RPC on mobile; preview GIFs + copy status for desktop use.
  */
 import { Capacitor } from '@capacitor/core';
@@ -8,11 +8,11 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Preferences } from '@capacitor/preferences';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES } from './activities.js';
-import { resolveActivityImage } from './discord-images.js';
+import { resolveDiscordImageUrl, getActivityFallbackUrls } from './discord-images.js';
 
 const STORAGE_KEY = 'smiley-mobile-settings';
 const FAVORITES_KEY = 'smiley-mobile-favorites';
-const VERSION = '3.0.1';
+const VERSION = '3.1.0';
 
 const isNative = Capacitor.isNativePlatform();
 
@@ -131,6 +131,26 @@ function buildStatusText(activity) {
   return `${activity.details}\n${activity.state}`;
 }
 
+function loadImageWithFallback(img, urls, { onSuccess, onFail } = {}) {
+  const queue = [...new Set(urls.filter(Boolean))];
+  let index = 0;
+
+  const tryNext = () => {
+    if (index >= queue.length) {
+      onFail?.();
+      return;
+    }
+    const nextUrl = queue[index++];
+    img.onload = () => onSuccess?.(nextUrl);
+    img.onerror = tryNext;
+    img.loading = 'eager';
+    img.src = nextUrl;
+    if (img.complete && img.naturalWidth > 0) onSuccess?.(nextUrl);
+  };
+
+  tryNext();
+}
+
 function renderBottomNav() {
   els.bottomNav.innerHTML = ACTIVITY_CATEGORIES.map(
     (cat) => `
@@ -227,50 +247,49 @@ async function updatePreview(activity) {
   els.previewDetails.textContent = activity.details;
   els.previewState.textContent = activity.state;
   els.previewEmoji.textContent = activity.emoji;
-  els.characterLabel.textContent = `${activity.emoji} ${activity.details}`;
+  els.characterLabel.textContent = `${activity.emoji} ${activity.state || activity.details}`;
 
   els.characterLoading.hidden = false;
-  els.characterGif.hidden = true;
+  els.characterGif.classList.remove('loaded');
   els.characterPlaceholder.hidden = true;
-  els.previewGif.hidden = true;
-  els.previewEmoji.hidden = false;
+  els.previewGif.classList.remove('loaded');
 
   try {
-    const { url, source } = await resolveActivityImage(activity, {
+    const { url, source, fallbacks } = await resolveDiscordImageUrl(activity, {
       animationsEnabled: state.animations,
     });
+    const chain = [url, ...(fallbacks || getActivityFallbackUrls(activity))].filter(Boolean);
     els.characterSource.textContent = source || '';
 
-    if (url && state.animations) {
-      const onLoad = () => {
-        els.characterGif.classList.add('loaded');
-        els.characterLoading.hidden = true;
-        els.characterGif.hidden = false;
-        els.characterPlaceholder.hidden = true;
-      };
-      els.characterGif.onload = onLoad;
-      els.characterGif.onerror = () => {
-        els.characterLoading.hidden = true;
-        els.characterGif.hidden = true;
-        els.characterPlaceholder.hidden = false;
-        els.characterPlaceholder.textContent = activity.emoji;
-      };
-      els.characterGif.classList.remove('loaded');
-      els.characterGif.src = url;
+    if (chain.length && state.animations) {
+      loadImageWithFallback(els.characterGif, chain, {
+        onSuccess: () => {
+          els.characterGif.classList.add('loaded');
+          els.characterLoading.hidden = true;
+          els.characterPlaceholder.hidden = true;
+        },
+        onFail: () => {
+          els.characterLoading.hidden = true;
+          els.characterPlaceholder.hidden = false;
+          els.characterPlaceholder.textContent = activity.emoji;
+          els.characterSource.textContent = source ? `${source} · failed to load` : 'Image failed to load';
+        },
+      });
 
-      els.previewGif.src = url;
-      els.previewGif.hidden = false;
-      els.previewEmoji.hidden = true;
-      els.previewGif.onerror = () => {
-        els.previewGif.hidden = true;
-        els.previewEmoji.hidden = false;
-      };
+      loadImageWithFallback(els.previewGif, chain, {
+        onSuccess: () => {
+          els.previewGif.classList.add('loaded');
+          els.previewEmoji.hidden = true;
+        },
+        onFail: () => {
+          els.previewGif.classList.remove('loaded');
+          els.previewEmoji.hidden = false;
+        },
+      });
     } else {
       els.characterLoading.hidden = true;
-      els.characterGif.hidden = true;
       els.characterPlaceholder.hidden = false;
       els.characterPlaceholder.textContent = activity.emoji;
-      els.previewGif.hidden = true;
       els.previewEmoji.hidden = false;
     }
   } catch {

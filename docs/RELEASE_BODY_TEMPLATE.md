@@ -23,6 +23,10 @@ Discord Rich Presence with animated anime characters — by [@1tsRaj](https://gi
 - **[AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v{VERSION}/Smiley-{VERSION}.AppImage)** — works on most distros
 - **[.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v{VERSION}/Smiley-{VERSION}.deb)** — Debian / Ubuntu
 
+#### Mobile
+- **[Android APK](https://github.com/1tsRajuWu/Smiley/releases/download/v{VERSION}/Smiley-{VERSION}-android-debug.apk)** — companion app (no Rich Presence)
+- **iOS** — build in Xcode; see [README-MOBILE.md](README-MOBILE.md#ios). No IPA download.
+
 ### Requirements
 - Discord **desktop** app open (not mobile, not Invisible mode)
 - **OS:** macOS 11+, Windows 10 (1809+) / 11, Linux Ubuntu 20.04+ — see [MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)

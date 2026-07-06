@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https:; connect-src 'self' https://api.waifu.pics https://nekos.best;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com;"
     />
     <title>Smiley</title>
     <link rel="stylesheet" href="styles.css" />
@@ -48,7 +48,7 @@
           <!-- Character Stage with GIF -->
           <div class="character-stage" id="characterStage">
             <div class="character-container" id="characterContainer">
-              <img class="character-gif" id="characterGif" src="" alt="Character" loading="lazy" decoding="async" style="display:none;" />
+              <img class="character-gif" id="characterGif" src="" alt="Character" decoding="async" />
               <div class="character-loading" id="characterLoading" style="display:none;">
                 <span class="loading-spinner">⏳</span>
                 <span>Loading…</span>
@@ -63,7 +63,7 @@
             <div class="discord-card-glow"></div>
             <div class="discord-card-inner">
               <div class="discord-art" id="previewArt">
-                <img class="discord-art-gif" id="previewGif" src="" alt="" loading="lazy" decoding="async" style="display:none;" />
+                <img class="discord-art-gif" id="previewGif" src="" alt="" decoding="async" />
                 <span class="discord-art-emoji" id="previewEmoji">🍕</span>
               </div>
               <div class="discord-info">
@@ -115,7 +115,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v3.0.1</span>
+        <span class="footer-version" id="footerVersion">Smiley v3.1.0</span>
         <span class="footer-hint" id="footerShortcuts">⌘1–5 categories · ⌘K search · Esc clear</span>
       </footer>
     </div>

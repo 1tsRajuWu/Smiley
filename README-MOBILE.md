@@ -1,4 +1,4 @@
-# Smiley Mobile — Android & iOS (v3.0.1)
+# Smiley Mobile — Android & iOS (v3.1.0)
 
 Companion app for browsing activities, previewing anime GIFs, and copying status text.
 
@@ -20,8 +20,8 @@ Companion app for browsing activities, previewing anime GIFs, and copying status
 
 | Platform | Install |
 |----------|---------|
-| **Android** | [Smiley-3.0.1-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-android-debug.apk) | Sideload · Android 8+ |
-| **iOS** | Build with Xcode (Apple Developer account required) — no App Store build yet |
+| **Android** | [Smiley-3.1.0-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.0/Smiley-3.1.0-android-debug.apk) · Sideload · Android 8+ |
+| **iOS** | Build in Xcode — [instructions below](#ios) · no IPA download (Apple policy) |
 | **PWA** | Open `mobile/dist/index.html` via `npm run preview` → Add to Home Screen |
 
 ## Quick start (developers)
@@ -66,11 +66,11 @@ npm run ios            # opens Xcode
 
 1. Select your Team in **Signing & Capabilities**
 2. Set deployment target **iOS 16.0+** (recommended 17+ for latest safe areas)
-3. **Product → Archive → Distribute App**
+3. **Product → Run** for Simulator, or **Archive → Distribute App** for device/TestFlight
 
 TestFlight steps: upload archive → App Store Connect → invite testers.
 
-> Without an Apple Developer account you can run on the **Simulator** only (no .ipa for others).
+> Without an Apple Developer account you can run on the **Simulator** only. There is no `.ipa` for others to download — Apple does not allow unsigned IPA distribution like Android APK sideloading.
 
 ## Web preview (no native build)
 
@@ -94,7 +94,7 @@ mobile/
 └── capacitor.config.json
 ```
 
-Shared data (`activities.js`, `discord-images.js`, assets) is copied from `../src` on each build so mobile stays aligned with desktop v3.0.1.
+Shared data (`activities.js`, `discord-images.js`, assets) is copied from `../src` on each build so mobile stays aligned with desktop v3.1.0.
 
 ## Honest limitation: why no Rich Presence on phone?
 
@@ -119,7 +119,7 @@ Smiley talks to the **Discord desktop client** over a local IPC socket (`discord
 
 ## Version
 
-Aligned with **Smiley desktop v3.0.1**. See [Releases](https://github.com/1tsRajuWu/Smiley/releases).
+Aligned with **Smiley desktop v3.1.0**. See [Releases](https://github.com/1tsRajuWu/Smiley/releases).
 
 ---
 
