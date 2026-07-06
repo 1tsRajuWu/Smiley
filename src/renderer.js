@@ -253,6 +253,14 @@ function updateFooterShortcuts(mac = isMacPlatform) {
   if (footerShortcuts) footerShortcuts.textContent = formatShortcutHint(mac);
 }
 
+function scheduleDeferredWork(fn) {
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(() => fn(), { timeout: 2500 });
+  } else {
+    setTimeout(fn, 0);
+  }
+}
+
 function applyUIVersion(version = 'v2') {
   const uiVersion = version === 'v1' ? 'v1' : 'v2';
   document.body.dataset.uiVersion = uiVersion;
@@ -2136,8 +2144,21 @@ function setupModalClose(dialog, closeBtn) {
 async function init() {
   applyUpiVisibility();
   renderCategoryTabs();
-  preloadActiveCategoryGifs();
-  renderActivityGrid();
+
+  const configPromise = window.smiley.getConfig();
+  const statusPromise = window.smiley.getStatus();
+  const customDataPromise = Promise.all([
+    window.smiley.getCustomActivities().then((list) => {
+      customActivitiesConfig = list || [];
+    }).catch(() => {
+      customActivitiesConfig = [];
+    }),
+    window.smiley.getCustomAnimations().then((list) => {
+      customAnimations = list || [];
+    }).catch(() => {
+      customAnimations = [];
+    }),
+  ]);
 
   settingsBtn.addEventListener('click', () => openSettings('general'));
   if (minimizeBtn) minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
@@ -2458,14 +2479,13 @@ async function init() {
   window.smiley.onOpenSettings(() => openSettings('general'));
   window.smiley.onUpdateStatus(handleUpdateStatus);
 
-  // Initial config load
-  const cfg = await window.smiley.getConfig();
+  // Initial config load (IPC fetches started at top of init in parallel with listener wiring)
+  const cfg = await configPromise;
+  await customDataPromise;
   currentSettings = { ...currentSettings, ...cfg };
   activityGifChoices = cfg.activityGifChoice || {};
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
-  await loadCustomActivitiesConfig();
-  await loadCustomAnimations();
   applyPlatformUI(cfg);
   applyUIVersion(cfg.uiVersion || 'v2');
   if (cfg.releasesUrl) releasesUrl = cfg.releasesUrl;
@@ -2476,9 +2496,13 @@ async function init() {
     blur: Number(cfg.customWallpaper?.blur) || 0,
     dim: Number(cfg.customWallpaper?.dim) || 0,
   };
-  await applyWallpaper(wallpaperSettings);
-  renderRecentChips();
   applyTheme(cfg.theme || 'dark');
+  renderActivityGrid();
+  renderRecentChips();
+  scheduleDeferredWork(preloadActiveCategoryGifs);
+  if (wallpaperSettings.filename) {
+    await applyWallpaper(wallpaperSettings);
+  }
   if (cfg.version) {
     footerVersion.textContent = `Smiley v${cfg.version}`;
     if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
@@ -2490,7 +2514,7 @@ async function init() {
   }
 
   // Restore previous activity
-  const status = await window.smiley.getStatus();
+  const status = await statusPromise;
   if (status.activity) {
     const match = findActivity(status.activity.id) || getAllActivitiesMerged().find(
       (a) => a.details === status.activity.details && a.state === status.activity.state

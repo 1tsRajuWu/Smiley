@@ -3126,8 +3126,46 @@ function setupIPC() {
   });
 }
 
+function deferAfterWindowShown(fn) {
+  if (!mainWindow) {
+    setImmediate(fn);
+    return;
+  }
+  if (mainWindow.isVisible()) {
+    setImmediate(fn);
+    return;
+  }
+  mainWindow.once('show', () => setImmediate(fn));
+}
+
+function scheduleStartupCacheMaintenance() {
+  deferAfterWindowShown(() => runStartupCacheMaintenance());
+}
+
+function scheduleInitialRpcConnect() {
+  const notify = (result) => {
+    broadcastStatus(true);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('initial-connect', result);
+    }
+  };
+
+  if (config.autoConnect === false) {
+    const sendDisconnected = () => notify({ connected: false, error: null });
+    if (mainWindow?.webContents.isLoadingMainFrame()) {
+      mainWindow.webContents.once('did-finish-load', sendDisconnected);
+    } else {
+      setImmediate(sendDisconnected);
+    }
+    return;
+  }
+
+  const run = () => connectRPC().then(notify);
+  deferAfterWindowShown(() => setTimeout(run, 50));
+}
+
 // ─── App Lifecycle ───────────────────────────────────────────────────
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   app.setName(APP_DISPLAY_NAME);
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.smiley.rpc');
@@ -3137,9 +3175,9 @@ app.whenReady().then(async () => {
   ensureDir(getUserDataPath('custom-animations'));
   ensureDir(getUserDataPath('custom-activities'));
   ensureDir(getUserDataPath('wallpapers'));
-  runStartupCacheMaintenance();
   applyLaunchAtLogin();
   createWindow();
+  scheduleStartupCacheMaintenance();
   createTray();
   nativeTheme.on('updated', () => {
     if (!tray || process.platform !== 'win32') return;
@@ -3169,20 +3207,7 @@ app.whenReady().then(async () => {
     setImmediate(() => maybeRegisterInstall());
   }
 
-  if (config.autoConnect !== false) {
-    const result = await connectRPC();
-    if (mainWindow) {
-      mainWindow.webContents.once('did-finish-load', () => {
-        broadcastStatus(true);
-        mainWindow.webContents.send('initial-connect', result);
-      });
-    }
-  } else if (mainWindow) {
-    mainWindow.webContents.once('did-finish-load', () => {
-      broadcastStatus(true);
-      mainWindow.webContents.send('initial-connect', { connected: false, error: null });
-    });
-  }
+  scheduleInitialRpcConnect();
 });
 
 if (gotSingleInstanceLock) {
