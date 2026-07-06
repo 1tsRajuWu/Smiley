@@ -73,6 +73,8 @@ If Smiley's been useful: **[paypal.me/1tsRaj](https://paypal.me/1tsRaj)**
 <details>
 <summary><strong>What's new</strong></summary>
 
+**v4.1.19** — Advanced features: activity profiles, favorite rotation, pause/resume presence, session stats. Mobile APK CI fix.
+
 **v4.1.18** — Fix GitHub download links (versioned URLs), release CI race (mobile APK after desktop), and incomplete-release README updates.
 
 **v4.1.17** — Sync all platforms to one version; mobile companion updated with desktop GIF fixes and shared assets.

@@ -13,7 +13,8 @@ jobs:
   android:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
     steps:
       - name: Resolve release tag
@@ -26,14 +27,16 @@ jobs:
             echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          SHA="${{ github.event.workflow_run.head_sha }}"
-          TAG=$(gh api "repos/${{ github.repository }}/commits/${SHA}/tags" --jq '.[0].name // empty')
-          if [[ -z "$TAG" ]]; then
-            TAG=$(gh api "repos/${{ github.repository }}/tags" --paginate \
-              --jq ".[] | select(.commit.sha == \"${SHA}\") | .name" | head -1)
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          if [[ "$BRANCH" =~ ^v[0-9] ]]; then
+            echo "tag=${BRANCH}" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          TAG=$(gh api "repos/${{ github.repository }}/tags" --paginate \
+            --jq ".[] | select(.commit.sha == \"${SHA}\") | .name" | head -1)
           if [[ -z "$TAG" ]]; then
-            echo "Could not resolve git tag for commit ${SHA}" >&2
+            echo "Could not resolve release tag (branch=${BRANCH}, sha=${SHA})" >&2
             exit 1
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"

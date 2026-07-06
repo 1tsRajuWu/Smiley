@@ -124,6 +124,12 @@ const uiStylesheet = $('#uiStylesheet');
 const launchAtLoginToggle = $('#launchAtLoginToggle');
 const hotkeyToggle = $('#hotkeyToggle');
 const hotkeyHint = $('#hotkeyHint');
+const profilesList = $('#profilesList');
+const saveProfileBtn = $('#saveProfileBtn');
+const rotateFavoritesToggle = $('#rotateFavoritesToggle');
+const rotateIntervalField = $('#rotateIntervalField');
+const rotateIntervalInput = $('#rotateIntervalInput');
+const sessionStatsText = $('#sessionStatsText');
 const exportSettingsBtn = $('#exportSettingsBtn');
 const importSettingsBtn = $('#importSettingsBtn');
 const resetWindowBtn = $('#resetWindowBtn');
@@ -191,6 +197,12 @@ let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 let customActivitiesConfig = [];
 let activityGifChoices = {};
+let activityProfiles = [];
+let rotateFavoritesSettings = { enabled: false, intervalMinutes: 15 };
+let sessionStats = {};
+let presencePaused = false;
+let rotateTimer = null;
+let rotateFavoriteIndex = 0;
 let saveGifChoiceTimer = null;
 let updateCheckDebounceUntil = 0;
 let updateCheckingToastShown = false;
@@ -245,8 +257,161 @@ function escapeHtml(str) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function formatShortcutHint(mac = isMacPlatform) {
-  if (mac) return '⌘1–6 categories · ⌘K search · Esc clear';
-  return 'Ctrl+1–6 categories · Ctrl+K search · Esc clear';
+  if (mac) {
+    return '⌘1–6 categories · ⌘⇧1–9 favorites · ⌘⇧P pause · ⌘K search · Esc clear';
+  }
+  return 'Ctrl+1–6 categories · Ctrl+Shift+1–9 favorites · Ctrl+Shift+P pause · Ctrl+K search · Esc clear';
+}
+
+function formatDurationMs(ms) {
+  const totalMin = Math.floor(Math.max(0, ms) / 60000);
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  return `${h}h ${totalMin % 60}m`;
+}
+
+function renderSessionStats() {
+  if (!sessionStatsText) return;
+  const entries = Object.entries(sessionStats || {}).filter(([, ms]) => ms > 0);
+  if (!entries.length) {
+    sessionStatsText.textContent = 'No activity time tracked yet.';
+    return;
+  }
+  const total = entries.reduce((sum, [, ms]) => sum + ms, 0);
+  const ranked = entries
+    .map(([id, ms]) => {
+      const activity = findActivity(id);
+      const label = activity ? (activity.state || activity.details) : id;
+      return { id, ms, label };
+    })
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 3);
+  const top = ranked.map((r) => `${r.label} (${formatDurationMs(r.ms)})`).join(', ');
+  sessionStatsText.textContent = `${formatDurationMs(total)} across ${entries.length} activities · Top: ${top}`;
+}
+
+function syncRotateIntervalField() {
+  if (!rotateIntervalField || !rotateFavoritesToggle) return;
+  rotateIntervalField.hidden = !rotateFavoritesToggle.checked;
+}
+
+function clearRotateTimer() {
+  if (rotateTimer) {
+    clearInterval(rotateTimer);
+    rotateTimer = null;
+  }
+}
+
+function setupRotateFavorites() {
+  clearRotateTimer();
+  if (!rotateFavoritesSettings?.enabled || favoriteIds.length < 2 || presencePaused) return;
+  const minutes = Math.min(Math.max(Number(rotateFavoritesSettings.intervalMinutes) || 15, 5), 120);
+  rotateFavoriteIndex = Math.max(0, favoriteIds.indexOf(selectedActivityId));
+  rotateTimer = setInterval(() => {
+    if (presencePaused || favoriteIds.length < 2) return;
+    rotateFavoriteIndex = (rotateFavoriteIndex + 1) % favoriteIds.length;
+    const nextId = favoriteIds[rotateFavoriteIndex];
+    if (nextId && nextId !== selectedActivityId) {
+      selectActivity(nextId);
+    }
+  }, minutes * 60 * 1000);
+}
+
+function renderProfilesList() {
+  if (!profilesList) return;
+  const profiles = activityProfiles || [];
+  if (!profiles.length) {
+    profilesList.innerHTML = '<p class="field-hint profiles-empty">No profiles yet — star some activities, then save a profile.</p>';
+    return;
+  }
+  profilesList.innerHTML = profiles.map((profile) => `
+    <div class="profile-row">
+      <span class="profile-name">${escapeHtml(profile.name)}</span>
+      <span class="profile-meta">${profile.activityIds?.length || 0} activities</span>
+      <div class="profile-row-actions">
+        <button type="button" class="btn btn-secondary btn-sm profile-apply" data-profile="${escapeHtml(profile.id)}">Apply</button>
+        <button type="button" class="btn btn-ghost btn-sm profile-delete" data-profile="${escapeHtml(profile.id)}" title="Delete profile">✕</button>
+      </div>
+    </div>
+  `).join('');
+  profilesList.querySelectorAll('.profile-apply').forEach((btn) => {
+    btn.addEventListener('click', () => applyActivityProfile(btn.dataset.profile));
+  });
+  profilesList.querySelectorAll('.profile-delete').forEach((btn) => {
+    btn.addEventListener('click', () => deleteActivityProfile(btn.dataset.profile));
+  });
+}
+
+async function saveCurrentProfile() {
+  if (!favoriteIds.length) {
+    showToast('Star at least one activity first', 'error');
+    return;
+  }
+  const name = window.prompt('Profile name', 'My preset');
+  if (!name?.trim()) return;
+  if ((activityProfiles || []).length >= 8) {
+    showToast('Maximum 8 profiles', 'error');
+    return;
+  }
+  const profile = {
+    id: `profile-${Date.now().toString(36)}`,
+    name: name.trim().slice(0, 40),
+    activityIds: [...favoriteIds],
+  };
+  activityProfiles = [...(activityProfiles || []), profile];
+  await window.smiley.saveConfig({ activityProfiles });
+  renderProfilesList();
+  showToast(`Saved profile: ${profile.name}`);
+}
+
+async function applyActivityProfile(profileId) {
+  const profile = (activityProfiles || []).find((p) => p.id === profileId);
+  if (!profile?.activityIds?.length) return;
+  favoriteIds = [...profile.activityIds];
+  await window.smiley.saveConfig({ favoriteActivities: favoriteIds });
+  renderActivityGrid();
+  setupRotateFavorites();
+  const firstValid = profile.activityIds.find((id) => findActivity(id));
+  if (firstValid) await selectActivity(firstValid);
+  showToast(`Applied profile: ${profile.name}`);
+}
+
+async function deleteActivityProfile(profileId) {
+  const profile = (activityProfiles || []).find((p) => p.id === profileId);
+  if (!profile) return;
+  if (!window.confirm(`Delete profile "${profile.name}"?`)) return;
+  activityProfiles = (activityProfiles || []).filter((p) => p.id !== profileId);
+  await window.smiley.saveConfig({ activityProfiles });
+  renderProfilesList();
+  showToast('Profile deleted');
+}
+
+async function togglePausePresence() {
+  if (presencePaused) {
+    const result = await window.smiley.resumePresence();
+    if (!result?.success) {
+      showToast(result?.error || 'Could not resume presence', 'error');
+      return;
+    }
+    presencePaused = false;
+    setupRotateFavorites();
+    const status = await window.smiley.getStatus();
+    if (status?.sessionStart) startTimer(status.sessionStart);
+    showToast('Presence resumed on Discord', 'success');
+    return;
+  }
+  if (!selectedActivityId) {
+    showToast('Pick an activity first', 'error');
+    return;
+  }
+  const result = await window.smiley.pausePresence();
+  if (!result?.success) {
+    showToast(result?.error || 'Could not pause presence', 'error');
+    return;
+  }
+  presencePaused = true;
+  clearRotateTimer();
+  showToast('Presence paused — hidden on Discord', 'subtle');
 }
 
 function updateFooterShortcuts(mac = isMacPlatform) {
@@ -1041,6 +1206,7 @@ function renderActivityGrid() {
       e.stopPropagation();
       favoriteIds = await window.smiley.toggleFavorite(btn.dataset.fav);
       renderActivityGrid();
+      setupRotateFavorites();
     });
   });
 
@@ -1139,8 +1305,10 @@ async function selectActivity(id) {
   } else if (result?.queued) {
     showToast('Update queued (Discord rate limit)', 'success');
   } else if (result?.success !== false) {
+    presencePaused = false;
     showToast(`Status set: ${activity.details}`);
     if (!isReselect) startTimer(Date.now());
+    setupRotateFavorites();
   }
 }
 
@@ -1156,6 +1324,8 @@ async function handleCopy() {
 async function handleClear() {
   await window.smiley.clearActivity();
   selectedActivityId = null;
+  presencePaused = false;
+  clearRotateTimer();
   markGridSelection(null);
   lastRenderedGridKey = '';
   renderGifPicker(null);
@@ -1180,6 +1350,16 @@ function openSettings(tab = 'general') {
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
+
+    activityProfiles = cfg.activityProfiles || [];
+    rotateFavoritesSettings = cfg.rotateFavorites || { enabled: false, intervalMinutes: 15 };
+    sessionStats = cfg.sessionStats || {};
+    presencePaused = cfg.presencePaused === true;
+    if (rotateFavoritesToggle) rotateFavoritesToggle.checked = rotateFavoritesSettings.enabled === true;
+    if (rotateIntervalInput) rotateIntervalInput.value = String(rotateFavoritesSettings.intervalMinutes || 15);
+    syncRotateIntervalField();
+    renderProfilesList();
+    renderSessionStats();
 
     applyPlatformUI(cfg);
 
@@ -1211,7 +1391,11 @@ function openSettings(tab = 'general') {
 function switchSettingsTab(tabId) {
   settingsTabs.forEach((t) => t.classList.toggle('active', t.dataset.tab === tabId));
   settingsPanels.forEach((p) => p.classList.toggle('active', p.dataset.panel === tabId));
-  if (tabId === 'advanced') refreshStorageInfo();
+  if (tabId === 'advanced') {
+    refreshStorageInfo();
+    renderProfilesList();
+    renderSessionStats();
+  }
 }
 
 async function refreshStorageInfo() {
@@ -1273,6 +1457,10 @@ function buildSettingsPayload() {
     customWallpaper: wallpaperSettings.filename
       ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
       : null,
+    rotateFavorites: {
+      enabled: rotateFavoritesToggle?.checked === true,
+      intervalMinutes: Math.min(Math.max(Number(rotateIntervalInput?.value) || 15, 5), 120),
+    },
   };
 }
 
@@ -1306,6 +1494,7 @@ async function handleSaveSettings(e) {
   if (e) e.preventDefault();
 
   const newSettings = buildSettingsPayload();
+  rotateFavoritesSettings = newSettings.rotateFavorites;
 
   const result = await window.smiley.saveConfig(newSettings);
   settingsModal.close();
@@ -1313,6 +1502,7 @@ async function handleSaveSettings(e) {
   applyTheme(newSettings.theme);
   applyUIVersion(newSettings.uiVersion);
   await applyWallpaper(wallpaperSettings);
+  setupRotateFavorites();
 
   const timerEl = $('#previewTimer');
   if (timerEl) timerEl.style.display = newSettings.showTimer !== false ? '' : 'none';
@@ -2208,6 +2398,18 @@ async function init() {
 
   document.addEventListener('keydown', (e) => {
     const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.shiftKey && e.key >= '1' && e.key <= '9') {
+      e.preventDefault();
+      const idx = parseInt(e.key, 10) - 1;
+      const favId = favoriteIds[idx];
+      if (favId) selectActivity(favId);
+      return;
+    }
+    if (mod && e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      togglePausePresence();
+      return;
+    }
     if (mod && e.key >= '1' && e.key <= '6') {
       e.preventDefault();
       const idx = parseInt(e.key, 10) - 1;
@@ -2378,8 +2580,14 @@ async function init() {
       if (result.success) {
         showToast('Settings imported — reopen Settings to review');
         await loadCustomActivitiesConfig();
+        const freshCfg = await window.smiley.getConfig();
+        activityProfiles = freshCfg.activityProfiles || [];
+        rotateFavoritesSettings = freshCfg.rotateFavorites || { enabled: false, intervalMinutes: 15 };
+        sessionStats = freshCfg.sessionStats || {};
+        favoriteIds = freshCfg.favoriteActivities || [];
         renderCategoryTabs();
         renderActivityGrid();
+        setupRotateFavorites();
         openSettings('advanced');
       } else showToast(result.error || 'Import failed', 'error');
     });
@@ -2396,6 +2604,38 @@ async function init() {
   if (clearCacheBtn) {
     clearCacheBtn.addEventListener('click', () => handleClearCache());
   }
+
+  if (saveProfileBtn) {
+    saveProfileBtn.addEventListener('click', () => saveCurrentProfile());
+  }
+  if (rotateFavoritesToggle) {
+    rotateFavoritesToggle.addEventListener('change', () => {
+      syncRotateIntervalField();
+      rotateFavoritesSettings = {
+        ...rotateFavoritesSettings,
+        enabled: rotateFavoritesToggle.checked,
+      };
+      setupRotateFavorites();
+    });
+  }
+  if (rotateIntervalInput) {
+    rotateIntervalInput.addEventListener('change', () => {
+      rotateFavoritesSettings = {
+        ...rotateFavoritesSettings,
+        intervalMinutes: Math.min(Math.max(Number(rotateIntervalInput.value) || 15, 5), 120),
+      };
+      setupRotateFavorites();
+    });
+  }
+
+  window.smiley.onApplyProfile((id) => applyActivityProfile(id));
+  window.smiley.onPresencePaused(() => {
+    presencePaused = true;
+    clearRotateTimer();
+    showToast('Presence paused — hidden on Discord', 'subtle');
+  });
+
+  window.smiley.onSelectActivity((id) => selectActivity(id));
 
   if (updateDismissBtn) {
     updateDismissBtn.addEventListener('click', () => {
@@ -2460,6 +2700,10 @@ async function init() {
         if (activity) renderGifPicker(activity);
       }
     }
+    if (data.activityProfiles) {
+      activityProfiles = data.activityProfiles;
+      renderProfilesList();
+    }
   });
 
   // IPC events
@@ -2502,6 +2746,10 @@ async function init() {
   await customDataPromise;
   currentSettings = { ...currentSettings, ...cfg };
   activityGifChoices = cfg.activityGifChoice || {};
+  activityProfiles = cfg.activityProfiles || [];
+  rotateFavoritesSettings = cfg.rotateFavorites || { enabled: false, intervalMinutes: 15 };
+  sessionStats = cfg.sessionStats || {};
+  presencePaused = cfg.presencePaused === true;
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
   applyPlatformUI(cfg);
@@ -2550,6 +2798,7 @@ async function init() {
 
   updateBrandIcon();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBrandIcon);
+  setupRotateFavorites();
 }
 
 init();

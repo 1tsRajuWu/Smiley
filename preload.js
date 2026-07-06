@@ -33,6 +33,9 @@ contextBridge.exposeInMainWorld('smiley', {
   exportSettings: () => ipcRenderer.invoke('export-settings'),
   importSettings: () => ipcRenderer.invoke('import-settings'),
   toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),
+  pausePresence: () => ipcRenderer.invoke('pause-presence'),
+  resumePresence: () => ipcRenderer.invoke('resume-presence'),
+  getPresencePaused: () => ipcRenderer.invoke('get-presence-paused'),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
@@ -60,6 +63,14 @@ contextBridge.exposeInMainWorld('smiley', {
   onSelectActivity: (callback) => {
     ipcRenderer.removeAllListeners('select-activity');
     ipcRenderer.on('select-activity', (_, id) => callback(id));
+  },
+  onApplyProfile: (callback) => {
+    ipcRenderer.removeAllListeners('apply-profile');
+    ipcRenderer.on('apply-profile', (_, id) => callback(id));
+  },
+  onPresencePaused: (callback) => {
+    ipcRenderer.removeAllListeners('presence-paused');
+    ipcRenderer.on('presence-paused', () => callback());
   },
   onConfigChanged: (callback) => {
     ipcRenderer.removeAllListeners('config-changed');

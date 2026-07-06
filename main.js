@@ -287,8 +287,11 @@ const CONFIG_PATCH_KEYS = new Set([
   'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
   'autoCheckUpdates', 'autoInstallUpdates', 'installTrackingEnabled', 'shareAnonymousInstallStats',
   'recentActivities', 'favoriteActivities',
-  'customActivities', 'activityGifChoice', 'migrationNoticeShown', 'installWarningShown',
+  'customActivities', 'activityGifChoice', 'activityProfiles', 'rotateFavorites', 'sessionStats',
+  'migrationNoticeShown', 'installWarningShown',
 ]);
+const MAX_ACTIVITY_PROFILES = 8;
+const MAX_PROFILE_ACTIVITIES = 10;
 const MAX_COPY_TEXT_LEN = 2000;
 const MAX_IMPORT_BYTES = 512 * 1024;
 
@@ -312,6 +315,9 @@ const DEFAULT_CONFIG = {
   favoriteActivities: [],
   customActivities: [],
   activityGifChoice: {},
+  activityProfiles: [],
+  rotateFavorites: { enabled: false, intervalMinutes: 15 },
+  sessionStats: {},
   migrationNoticeShown: false,
   installWarningShown: false,
 };
@@ -407,11 +413,12 @@ function trackRecentActivity(activity) {
   const recent = [entry, ...(config.recentActivities || []).filter((r) => r.id !== entry.id)].slice(0, 5);
   saveConfig({ recentActivities: recent });
   if (mainWindow?.webContents) {
-    mainWindow.webContents.send('config-changed', {
-      recentActivities: recent,
-      favoriteActivities: config.favoriteActivities || [],
-      customActivities: config.customActivities || [],
-    });
+  mainWindow.webContents.send('config-changed', {
+    recentActivities: recent,
+    favoriteActivities: config.favoriteActivities || [],
+    customActivities: config.customActivities || [],
+    activityProfiles: config.activityProfiles || [],
+  });
   }
 }
 
@@ -603,6 +610,39 @@ function sanitizeConfigPatch(data) {
           out.activityGifChoice = choices;
         }
         break;
+      case 'activityProfiles':
+        if (Array.isArray(val)) {
+          out.activityProfiles = val.slice(0, MAX_ACTIVITY_PROFILES).map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            const name = sanitizeActivityText(item.name, 40);
+            const id = typeof item.id === 'string' ? item.id.slice(0, 64) : `profile-${Date.now()}`;
+            const activityIds = Array.isArray(item.activityIds)
+              ? item.activityIds.filter((aid) => typeof aid === 'string').map((aid) => aid.slice(0, 64)).slice(0, MAX_PROFILE_ACTIVITIES)
+              : [];
+            if (!name || !activityIds.length) return null;
+            return { id, name, activityIds };
+          }).filter(Boolean);
+        }
+        break;
+      case 'rotateFavorites':
+        if (val && typeof val === 'object') {
+          out.rotateFavorites = {
+            enabled: val.enabled === true,
+            intervalMinutes: Math.min(Math.max(Number(val.intervalMinutes) || 15, 5), 120),
+          };
+        }
+        break;
+      case 'sessionStats':
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          const stats = {};
+          for (const [k, v] of Object.entries(val).slice(0, 200)) {
+            if (typeof k === 'string' && Number.isFinite(Number(v)) && Number(v) > 0) {
+              stats[k.slice(0, 64)] = Math.min(Math.floor(Number(v)), 864000000);
+            }
+          }
+          out.sessionStats = stats;
+        }
+        break;
       default:
         break;
     }
@@ -636,6 +676,54 @@ let pendingUpdate = null;
 let updateTimer = null;
 let sessionStart = null;
 let currentTrayIcon = 'default';
+let pausedPresenceSnapshot = null;
+
+function recordSessionStatsForActivity(activityId, startedAt) {
+  if (!activityId || !startedAt) return;
+  const duration = Date.now() - startedAt;
+  if (duration < 1000) return;
+  const stats = { ...(config.sessionStats || {}) };
+  stats[activityId] = (stats[activityId] || 0) + duration;
+  saveConfig({ sessionStats: stats });
+}
+
+async function pausePresence() {
+  if (!currentActivity) {
+    return { success: false, error: 'No active presence to pause' };
+  }
+  pausedPresenceSnapshot = {
+    activity: { ...currentActivity },
+    sessionStart,
+  };
+  pendingUpdate = null;
+  if (updateTimer) {
+    clearTimeout(updateTimer);
+    updateTimer = null;
+  }
+  currentActivity = null;
+  sessionStart = null;
+  updateTrayIcon('default');
+  updateTrayMenu();
+  if (rpcClient) {
+    try { await rpcClient.clearActivity(); } catch (_) {}
+  }
+  broadcastStatus(true);
+  return { success: true };
+}
+
+async function resumePresence() {
+  if (!pausedPresenceSnapshot?.activity) {
+    return { success: false, error: 'Nothing to resume' };
+  }
+  const { activity, sessionStart: prevStart } = pausedPresenceSnapshot;
+  pausedPresenceSnapshot = null;
+  sessionStart = prevStart || Date.now();
+  return applyPresence(activity);
+}
+
+function isPresencePaused() {
+  return !!pausedPresenceSnapshot;
+}
 
 // ─── Window State ────────────────────────────────────────────────────
 const FIRST_SHOW_MARKER = '.first-window-shown';
@@ -1092,13 +1180,61 @@ function updateTrayMenu() {
     },
   }));
 
+  const favoriteItems = (config.favoriteActivities || []).slice(0, 9).map((id, idx) => {
+    const recent = (config.recentActivities || []).find((r) => r.id === id);
+    const label = recent
+      ? `${recent.details}${recent.state ? ` — ${recent.state}` : ''}`
+      : `Favorite ${idx + 1}`;
+    return {
+      label,
+      click: () => {
+        showMainWindow();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('select-activity', id);
+        }
+      },
+    };
+  });
+
+  const profileItems = (config.activityProfiles || []).map((profile) => ({
+    label: profile.name,
+    click: () => {
+      showMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('apply-profile', profile.id);
+      }
+    },
+  }));
+
   const template = [
     { label: 'Show Smiley', click: () => showMainWindow() },
     { type: 'separator' },
-    { label: currentActivity ? `Status: ${currentActivity.details}` : 'No status set', enabled: false },
+    { label: currentActivity ? `Status: ${currentActivity.details}` : (pausedPresenceSnapshot ? 'Paused' : 'No status set'), enabled: false },
     { label: sessionLabel, enabled: false },
     { label: 'Clear Presence', click: () => clearPresence(), enabled: !!currentActivity },
+    ...(pausedPresenceSnapshot
+      ? [{ label: 'Resume Presence', click: () => {
+        resumePresence().then((result) => {
+          if (result?.success && mainWindow && !mainWindow.isDestroyed() && currentActivity?.id) {
+            mainWindow.webContents.send('select-activity', currentActivity.id);
+          }
+          broadcastStatus(true);
+        });
+      } }]
+      : [{ label: 'Pause Presence', click: () => {
+        pausePresence().then((result) => {
+          if (result?.success && mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('presence-paused');
+          }
+        });
+      }, enabled: !!currentActivity }]),
     { type: 'separator' },
+    ...(favoriteItems.length
+      ? [{ label: 'Favorites', submenu: favoriteItems }, { type: 'separator' }]
+      : []),
+    ...(profileItems.length
+      ? [{ label: 'Profiles', submenu: profileItems }, { type: 'separator' }]
+      : []),
     ...(recentItems.length
       ? [{ label: 'Recent Activities', submenu: recentItems }, { type: 'separator' }]
       : []),
@@ -1201,6 +1337,10 @@ async function applyPresence(activity) {
     if (!result.connected) return result;
   }
   try {
+    if (currentActivity?.id && sessionStart) {
+      recordSessionStatsForActivity(currentActivity.id, sessionStart);
+    }
+    pausedPresenceSnapshot = null;
     const payload = await buildActivityPayload(activity);
     await rpcClient.setActivity(payload);
     currentActivity = activity;
@@ -1244,6 +1384,10 @@ async function schedulePresenceUpdate(activity, isNewSession) {
 async function clearPresence() {
   pendingUpdate = null;
   if (updateTimer) { clearTimeout(updateTimer); updateTimer = null; }
+  if (currentActivity?.id && sessionStart) {
+    recordSessionStatsForActivity(currentActivity.id, sessionStart);
+  }
+  pausedPresenceSnapshot = null;
   currentActivity = null;
   sessionStart = null;
   updateTrayIcon('default');
@@ -2797,6 +2941,10 @@ function setupIPC() {
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
+    activityProfiles: config.activityProfiles || [],
+    rotateFavorites: config.rotateFavorites || { enabled: false, intervalMinutes: 15 },
+    sessionStats: config.sessionStats || {},
+    presencePaused: isPresencePaused(),
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
     macInAppUpdates: MAC_IN_APP_UPDATES,
@@ -2812,6 +2960,9 @@ function setupIPC() {
     if (typeof id !== 'string' || !id.trim()) return config.favoriteActivities || [];
     return toggleFavoriteActivity(id.trim().slice(0, 64));
   });
+  ipcMain.handle('pause-presence', () => pausePresence());
+  ipcMain.handle('resume-presence', () => resumePresence());
+  ipcMain.handle('get-presence-paused', () => ({ paused: isPresencePaused() }));
   ipcMain.handle('copy-text', (_, text) => {
     try {
       if (typeof text !== 'string' || !text.trim()) return { success: false };
