@@ -41,4 +41,17 @@ copyFile(path.join(ROOT, 'build/icon-dark.png'), path.join(WWW, 'assets/icon-dar
 copyFile(path.join(ROOT, 'build/icon-64.png'), path.join(WWW, 'assets/icon-64.png'));
 copyFile(path.join(ROOT, 'build/icon-192.png'), path.join(WWW, 'assets/icon-192.png'));
 copyFile(path.join(ROOT, 'build/icon-512.png'), path.join(WWW, 'assets/icon-512.png'));
+
+const version = require(path.join(ROOT, 'package.json')).version;
+const wwwIndex = path.join(WWW, 'index.html');
+if (fs.existsSync(wwwIndex)) {
+  let html = fs.readFileSync(wwwIndex, 'utf8');
+  html = html.replace(
+    /(<p class="tagline">Activity companion · )v[\d.]+(<\/p>)/,
+    `$1v${version}$2`
+  );
+  fs.writeFileSync(wwwIndex, html);
+  console.log(`  ✓ mobile/www/index.html (v${version})`);
+}
+
 console.log('Done.');

@@ -6,6 +6,16 @@ const fs = require('fs');
 const path = require('path');
 
 const MOBILE = path.join(__dirname, '..');
+const ROOT = path.join(MOBILE, '..');
+
+function appVersion() {
+  return require(path.join(ROOT, 'package.json')).version;
+}
+
+function versionCodeFromSemver(version) {
+  const [major, minor, patch] = version.split('.').map((n) => parseInt(n, 10) || 0);
+  return major * 10000 + minor * 100 + patch;
+}
 
 function patchAndroid() {
   const varsPath = path.join(MOBILE, 'android', 'variables.gradle');
@@ -19,6 +29,17 @@ function patchAndroid() {
   vars = vars.replace(/targetSdkVersion\s*=\s*\d+/, 'targetSdkVersion = 34');
   fs.writeFileSync(varsPath, vars);
   console.log('Android: minSdk 26, compile/targetSdk 34');
+
+  const gradlePath = path.join(MOBILE, 'android', 'app', 'build.gradle');
+  if (fs.existsSync(gradlePath)) {
+    const version = appVersion();
+    const versionCode = versionCodeFromSemver(version);
+    let gradle = fs.readFileSync(gradlePath, 'utf8');
+    gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`);
+    gradle = gradle.replace(/versionName\s+"[^"]*"/, `versionName "${version}"`);
+    fs.writeFileSync(gradlePath, gradle);
+    console.log(`Android: versionName ${version}, versionCode ${versionCode}`);
+  }
 }
 
 function patchIos() {
