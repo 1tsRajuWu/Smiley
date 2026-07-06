@@ -503,7 +503,15 @@ async function showLegal(type) {
 // ─── Update Status ───────────────────────────────────────────────────
 function handleUpdateStatus(data) {
   switch (data.status) {
-    case 'checking': showToast('Checking for updates...'); break;
+    case 'checking':
+      showToast('Checking for updates...');
+      break;
+    case 'dev-mode':
+      showToast(data.message || 'Updates are only available in installed releases.');
+      break;
+    case 'no-release':
+      showToast(data.message || 'No updates found yet. Install from GitHub Releases.');
+      break;
     case 'available':
       showToast(`Update v${data.version} available! Downloading...`);
       if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}…`;
@@ -513,14 +521,49 @@ function handleUpdateStatus(data) {
       if (updateBannerText) updateBannerText.textContent = `Downloading update… ${data.percent || 0}%`;
       updateBanner?.classList.add('visible');
       break;
-    case 'up-to-date': showToast('You are on the latest version!'); break;
+    case 'up-to-date':
+      showToast('You are on the latest version!');
+      break;
     case 'downloaded':
       if (updateBannerText) updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
       updateBanner?.classList.add('visible');
       showToast(`Update v${data.version} ready! Restart to apply.`);
       break;
-    case 'error': showToast(`Update error: ${data.error}`, 'error'); break;
+    case 'error':
+      if (data.expected) {
+        showToast(data.message || data.error || 'Update check unavailable.');
+      } else {
+        showToast(`Update error: ${data.error}`, 'error');
+      }
+      break;
   }
+}
+
+function setupModalClose(dialog, closeBtn) {
+  if (!dialog) return;
+  if (closeBtn) {
+    closeBtn.type = 'button';
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (dialog.open) dialog.close();
+    });
+  }
+  dialog.addEventListener('click', (e) => {
+    const content = dialog.querySelector('.modal-content');
+    if (!content) return;
+    const rect = content.getBoundingClientRect();
+    const clickedBackdrop =
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom;
+    if (clickedBackdrop && dialog.open) dialog.close();
+  });
+  dialog.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    dialog.close();
+  });
 }
 
 // ─── Initialization ──────────────────────────────────────────────────
@@ -530,7 +573,8 @@ async function init() {
 
   settingsBtn.addEventListener('click', () => openSettings('general'));
   minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
-  closeSettings.addEventListener('click', () => settingsModal.close());
+  setupModalClose(settingsModal, closeSettings);
+  setupModalClose(legalModal, closeLegal);
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
 
@@ -569,12 +613,12 @@ async function init() {
 
   if (tosLink) tosLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('tos'); });
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
-  if (closeLegal) closeLegal.addEventListener('click', () => legalModal.close());
 
-  // Check for Updates button
-  function triggerUpdateCheck() {
-    window.smiley.checkForUpdates();
-    showToast('Checking for updates...');
+  async function triggerUpdateCheck() {
+    const result = await window.smiley.checkForUpdates();
+    if (!result?.ok && result?.error) {
+      showToast(result.error, 'error');
+    }
   }
   const checkUpdateBtn = $('#checkUpdateBtn');
   const checkUpdateBtnGeneral = $('#checkUpdateBtnGeneral');

@@ -334,10 +334,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .modal { border: none; padding: 0; background: transparent; max-width: 520px; width: calc(100% - 40px); border-radius: var(--radius); }
 .modal-wide { max-width: 640px; }
 .modal::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
-.modal-content { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.modal-content { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; -webkit-app-region: no-drag; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; z-index: 2; }
 .modal-header h2 { font-size: 1.15rem; font-weight: 700; }
-.btn-close { background: none; border: none; color: var(--text-muted); font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: var(--transition); }
+.btn-close { background: none; border: none; color: var(--text-muted); font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: var(--transition); -webkit-app-region: no-drag; position: relative; z-index: 3; }
 .btn-close:hover { background: var(--bg-card); color: var(--text); }
 
 .settings-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }

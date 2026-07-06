@@ -6,36 +6,53 @@
 
 const FETCH_TIMEOUT_MS = 6000;
 
-/** nekos.best endpoint per category — returns animated GIFs */
-export const NEKOS_ENDPOINTS = {
-  food: 'nom',
-  gaming: 'yeet',
-  chill: 'sleep',
-  work: 'bored',
-  social: 'wave',
+/** Per-category API config — nekos GIF endpoint + waifu still fallback */
+export const CATEGORY_SOURCES = {
+  food: { nekos: 'nom', waifu: 'neko' },
+  gaming: { nekos: 'yeet', waifu: 'shinobu' },
+  chill: { nekos: 'sleep', waifu: 'megumin' },
+  work: { nekos: 'bored', waifu: 'awoo' },
+  social: { nekos: 'wave', waifu: 'cry' },
 };
 
-/** Per-activity nekos.best overrides (cute eating, coding, etc.) */
+/** Legacy alias */
+export const NEKOS_ENDPOINTS = Object.fromEntries(
+  Object.entries(CATEGORY_SOURCES).map(([k, v]) => [k, v.nekos])
+);
+
+/** Per-activity nekos.best overrides (when not set on activity object) */
 export const ACTIVITY_NEKOS_ENDPOINTS = {
   'eating-pizza': 'feed',
   'eating-sushi': 'nom',
   'eating-ramen': 'feed',
-  'eating-burger': 'nom',
-  'eating-tacos': 'feed',
+  'eating-burger': 'bite',
+  'eating-tacos': 'nom',
   'eating-snacks': 'nom',
   'cooking': 'feed',
-  'eating-dessert': 'nom',
+  'eating-dessert': 'bite',
   'gaming': 'yeet',
   'ranked': 'yeet',
   'coop': 'hug',
-  'coding': 'bored',
-  'studying': 'bored',
-  'meeting': 'wave',
+  'retro': 'dance',
+  'speedrun': 'yeet',
+  'vr-gaming': 'dance',
   'sleeping': 'sleep',
   'napping': 'sleep',
+  'reading': 'smile',
   'listening': 'dance',
+  'meditating': 'smile',
+  'bath': 'happy',
+  'studying': 'bored',
+  'meeting': 'wave',
+  'focus': 'bored',
+  'designing': 'smile',
+  'writing': 'bored',
   'streaming': 'wave',
+  'watching': 'happy',
+  'traveling': 'wave',
   'gym': 'yeet',
+  'partying': 'dance',
+  'shopping': 'happy',
 };
 
 /**
@@ -49,8 +66,17 @@ export const VERIFIED_FALLBACKS = {
   work: 'https://nekos.best/api/v2/bored/82f8fec0-d651-4905-a739-5917d728f89f.gif',
   social: 'https://nekos.best/api/v2/wave/e6f276a8-11f1-4ad0-b1e0-3fa91678e2f4.gif',
   'eating-pizza': 'https://nekos.best/api/v2/feed/b9abbae0-3b59-437e-b866-3402c2c7f22e.gif',
+  'eating-burger': 'https://nekos.best/api/v2/bite/5ff15901-a4fb-4d2f-bf61-97ad62d1e53e.gif',
   coding: 'https://nekos.best/api/v2/bored/82f8fec0-d651-4905-a739-5917d728f89f.gif',
+  sleeping: 'https://nekos.best/api/v2/sleep/611a318f-1645-48f4-9cc0-099eb8d817d9.gif',
 };
+
+/** Session cache — same activity keeps the same resolved image until app restart */
+const sessionImageCache = new Map();
+
+export function clearActivityImageCache() {
+  sessionImageCache.clear();
+}
 
 export function isValidDiscordImageUrl(url) {
   if (!url || typeof url !== 'string') return false;
@@ -98,16 +124,32 @@ export async function fetchWaifuImage(tag) {
   }
 }
 
+function getCategorySources(category) {
+  return CATEGORY_SOURCES[category] || CATEGORY_SOURCES.food;
+}
+
 function getNekosEndpoint(activity) {
-  return ACTIVITY_NEKOS_ENDPOINTS[activity.id] || NEKOS_ENDPOINTS[activity.category] || 'neko';
+  if (activity.nekosEndpoint) return activity.nekosEndpoint;
+  return ACTIVITY_NEKOS_ENDPOINTS[activity.id] || getCategorySources(activity.category).nekos || 'neko';
+}
+
+function getWaifuTag(activity) {
+  if (activity.waifuTag) return activity.waifuTag;
+  return getCategorySources(activity.category).waifu || null;
 }
 
 function getVerifiedFallback(activity) {
   return (
+    activity.fallbackGif ||
     VERIFIED_FALLBACKS[activity.id] ||
     VERIFIED_FALLBACKS[activity.category] ||
     VERIFIED_FALLBACKS.food
   );
+}
+
+function cacheResult(activityId, result) {
+  sessionImageCache.set(activityId, result);
+  return result;
 }
 
 /**
@@ -129,21 +171,49 @@ export async function resolveActivityImage(activity, { animationsEnabled = true,
     return { url: verified, discordUrl: verified, source: 'nekos.best · cached' };
   }
 
+  const cached = sessionImageCache.get(activity.id);
+  if (cached) return cached;
+
   const nekosEndpoint = getNekosEndpoint(activity);
+  const waifuTag = getWaifuTag(activity);
+  const preferWaifu = activity.preferWaifu === true;
 
-  const nekosUrl = await fetchNekosBest(nekosEndpoint);
-  if (nekosUrl) {
-    return { url: nekosUrl, discordUrl: nekosUrl, source: `nekos.best · ${nekosEndpoint}` };
-  }
-
-  if (activity.waifuTag) {
-    const waifuUrl = await fetchWaifuImage(activity.waifuTag);
+  if (preferWaifu && waifuTag) {
+    const waifuUrl = await fetchWaifuImage(waifuTag);
     if (waifuUrl) {
-      return { url: waifuUrl, discordUrl: waifuUrl, source: `waifu.pics · ${activity.waifuTag}` };
+      return cacheResult(activity.id, {
+        url: waifuUrl,
+        discordUrl: waifuUrl,
+        source: `waifu.pics · ${waifuTag}`,
+      });
     }
   }
 
-  return { url: verified, discordUrl: verified, source: 'nekos.best · fallback' };
+  const nekosUrl = await fetchNekosBest(nekosEndpoint);
+  if (nekosUrl) {
+    return cacheResult(activity.id, {
+      url: nekosUrl,
+      discordUrl: nekosUrl,
+      source: `nekos.best · ${nekosEndpoint}`,
+    });
+  }
+
+  if (waifuTag) {
+    const waifuUrl = await fetchWaifuImage(waifuTag);
+    if (waifuUrl) {
+      return cacheResult(activity.id, {
+        url: waifuUrl,
+        discordUrl: waifuUrl,
+        source: `waifu.pics · ${waifuTag}`,
+      });
+    }
+  }
+
+  return cacheResult(activity.id, {
+    url: verified,
+    discordUrl: verified,
+    source: 'nekos.best · fallback',
+  });
 }
 
 /** Build fields for Discord RPC payload */

@@ -498,34 +498,56 @@ function broadcastStatus() {
 
 // ─── Auto Updater ────────────────────────────────────────────────────
 let pendingUpdateVersion = null;
+let updaterListenersAttached = false;
+
+function formatUpdateError(err) {
+  const msg = String(err?.message || err || '').toLowerCase();
+  if (
+    msg.includes('latest.yml') ||
+    msg.includes('latest-mac.yml') ||
+    msg.includes('latest-linux.yml') ||
+    msg.includes('no published') ||
+    msg.includes('cannot find') ||
+    msg.includes('404')
+  ) {
+    return {
+      status: 'no-release',
+      message: 'No updates found yet. Install from GitHub Releases.',
+      expected: true,
+    };
+  }
+  return {
+    status: 'error',
+    error: err?.message || 'Update check failed. Try again or install from GitHub Releases.',
+    expected: false,
+  };
+}
+
+function sendUpdateStatus(payload) {
+  if (mainWindow?.webContents) mainWindow.webContents.send('update-status', payload);
+}
 
 async function checkForUpdates(manual = false) {
   if (!isPackaged) {
-    if (manual && mainWindow?.webContents) {
-      mainWindow.webContents.send('update-status', {
-        status: 'error',
-        error: 'Updates are only available in installed releases',
+    if (manual) {
+      sendUpdateStatus({
+        status: 'dev-mode',
+        message: 'Updates are only available in installed releases. Build with npm run build first.',
       });
     }
-    return Promise.resolve(null);
+    return { ok: true, status: 'dev-mode' };
   }
+
+  if (manual) sendUpdateStatus({ status: 'checking' });
+
   try {
-    return await autoUpdater.checkForUpdates().catch((err) => {
-      console.error('[updater]', err.message);
-      const message =
-        err.message || 'Update check failed. Try again or install from GitHub Releases.';
-      if (manual && mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', { status: 'error', error: message });
-      }
-      return null;
-    });
+    await autoUpdater.checkForUpdates();
+    return { ok: true, status: 'checking' };
   } catch (err) {
     console.error('[updater]', err.message);
-    const message = 'Could not check for updates. Download from GitHub Releases.';
-    if (manual && mainWindow?.webContents) {
-      mainWindow.webContents.send('update-status', { status: 'error', error: message });
-    }
-    return null;
+    const formatted = formatUpdateError(err);
+    if (manual) sendUpdateStatus(formatted);
+    return { ok: false, ...formatted };
   }
 }
 
@@ -543,43 +565,36 @@ function setupAutoUpdater() {
     autoUpdater.allowPrerelease = false;
     autoUpdater.logger = console;
 
-    if (!isPackaged) return;
+    if (!isPackaged || updaterListenersAttached) return;
+    updaterListenersAttached = true;
 
     autoUpdater.on('checking-for-update', () => {
-      if (mainWindow?.webContents) mainWindow.webContents.send('update-status', { status: 'checking' });
+      sendUpdateStatus({ status: 'checking' });
     });
 
     autoUpdater.on('update-available', (info) => {
       pendingUpdateVersion = info.version;
-      if (mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
-      }
+      sendUpdateStatus({ status: 'available', version: info.version });
     });
 
     autoUpdater.on('update-not-available', (info) => {
       pendingUpdateVersion = null;
-      if (mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', {
-          status: 'up-to-date',
-          version: info?.version || APP_VERSION,
-        });
-      }
+      sendUpdateStatus({
+        status: 'up-to-date',
+        version: info?.version || APP_VERSION,
+      });
     });
 
     autoUpdater.on('download-progress', (progress) => {
-      if (mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', {
-          status: 'downloading',
-          percent: Math.round(progress.percent),
-        });
-      }
+      sendUpdateStatus({
+        status: 'downloading',
+        percent: Math.round(progress.percent),
+      });
     });
 
     autoUpdater.on('update-downloaded', (info) => {
       pendingUpdateVersion = info.version;
-      if (mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', { status: 'downloaded', version: info.version });
-      }
+      sendUpdateStatus({ status: 'downloaded', version: info.version });
       if (mainWindow) {
         dialog.showMessageBox(mainWindow, {
           type: 'info',
@@ -596,9 +611,7 @@ function setupAutoUpdater() {
 
     autoUpdater.on('error', (err) => {
       console.error('[updater]', err.message);
-      if (mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', { status: 'error', error: err.message });
-      }
+      sendUpdateStatus(formatUpdateError(err));
     });
   } catch (err) {
     console.error('[updater] setup failed:', err.message);
@@ -701,18 +714,20 @@ function setupIPC() {
   ipcMain.handle('get-status', () => ({ connected: !!rpcClient, activity: currentActivity, sessionStart }));
 
   ipcMain.handle('check-for-updates', async () => {
-    try {
-      await checkForUpdates(true);
-      return { checking: true };
-    } catch (err) {
-      console.error('[updater]', err.message);
-      const message =
-        'Could not check for updates. Download the latest version from GitHub Releases.';
-      if (mainWindow?.webContents) {
-        mainWindow.webContents.send('update-status', { status: 'error', error: message });
-      }
-      return { checking: false, error: message };
+    if (!isPackaged) {
+      sendUpdateStatus({
+        status: 'dev-mode',
+        message: 'Updates are only available in installed releases. Build with npm run build first.',
+      });
+      return { ok: true, status: 'dev-mode' };
     }
+
+    sendUpdateStatus({ status: 'checking' });
+    checkForUpdates(true).catch((err) => {
+      console.error('[updater]', err.message);
+      sendUpdateStatus(formatUpdateError(err));
+    });
+    return { ok: true, status: 'checking' };
   });
 
   ipcMain.handle('install-update', () => {
