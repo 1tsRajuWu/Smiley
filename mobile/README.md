@@ -1,8 +1,8 @@
-# Smiley Mobile — Important Limitations
+# Smiley Mobile — Android companion
 
-**Discord Rich Presence does not work on Android or iPhone.**
+**Android only.** iOS is not supported or shipped. The `ios/` folder exists for Capacitor development only.
 
-Smiley's core feature connects to the **Discord desktop app** over a local IPC socket. Mobile Discord apps do not expose this API.
+**Discord Rich Presence does not work on Android.** Smiley connects to the **Discord desktop app** over a local IPC socket. Mobile Discord apps do not expose this API.
 
 ## What you get on mobile
 
@@ -10,17 +10,25 @@ Smiley's core feature connects to the **Discord desktop app** over a local IPC s
 - Live GIF preview via [nekos.best](https://nekos.best) & [waifu.pics](https://waifu.pics)
 - Copy status text to clipboard
 - Save favorites
-- PWA-ready dark themes with safe-area support
+- Dark themes with safe-area support
 
-## Build & install
+## Install (users)
 
-See **[README-MOBILE.md](../README-MOBILE.md)** for full Android APK and iOS Xcode instructions.
+Download the APK from [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) (`Smiley-*-android-debug.apk`). Install steps are in the [main README](../README.md#android).
+
+## Build (developers)
 
 ```bash
-cd mobile && npm install && npm run sync
-npm run android   # or npm run ios
+cd mobile
+npm install
+npm run sync
+npm run android    # opens Android Studio
+# or
+npm run apk:debug  # outputs android/app/build/outputs/apk/debug/app-debug.apk
 ```
+
+**Requirements:** Android Studio, JDK 17+, Android SDK 34 · Min SDK 26 (Android 8.0+)
 
 ## Recommendation
 
-Use **desktop Smiley** (`.exe` / `.dmg`) for animated Discord Rich Presence. Use mobile as a companion when you're away from your PC.
+Use **desktop Smiley** (`.exe` / `.dmg` / AppImage) for animated Discord Rich Presence. Use the Android app as a companion when you're away from your PC.
