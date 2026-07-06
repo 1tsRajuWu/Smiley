@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Ad-hoc sign Smiley.app for unsigned local/CI distribution.
-# Fixes macOS "damaged and can't be opened" from Gatekeeper on partial signatures.
+# Fixes "damaged and can't be opened" from partial signatures — not the
+# unnotarized "Apple could not verify" dialog (needs notarization; see docs/NOTARIZATION.md).
 set -euo pipefail
 
 APP="${1:?Usage: sign-mac-app.sh /path/to/Smiley.app [entitlements.plist]}"

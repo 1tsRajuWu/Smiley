@@ -459,6 +459,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .update-banner.visible { display: flex; }
 .update-banner-actions { display: flex; gap: 8px; }
 .update-banner .btn { padding: 6px 12px; font-size: 0.78rem; }
+.update-banner .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
 .update-banner .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Responsive */

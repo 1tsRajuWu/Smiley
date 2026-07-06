@@ -68,6 +68,7 @@
     "afterSign": "scripts/afterSign-mac.js",
     "mac": {
       "identity": "-",
+      "minimumSystemVersion": "10.15.0",
       "category": "public.app-category.social-networking",
       "target": [
         {
@@ -146,7 +147,30 @@
     },
     "dmg": {
       "title": "Smiley ${version}",
-      "artifactName": "Smiley-${version}-${arch}.${ext}"
+      "artifactName": "Smiley-${version}-${arch}.${ext}",
+      "window": {
+        "width": 540,
+        "height": 420
+      },
+      "contents": [
+        {
+          "x": 130,
+          "y": 200
+        },
+        {
+          "x": 410,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 270,
+          "y": 340,
+          "type": "file",
+          "path": "INSTALL-MAC.txt",
+          "name": "INSTALL.txt"
+        }
+      ]
     }
   }
 }

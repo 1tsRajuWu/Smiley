@@ -3,8 +3,14 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const RPC = require('discord-rpc');
-const { autoUpdater } = require('electron-updater');
 const pkg = require('./package.json');
+
+function getAutoUpdater() {
+  return require('electron-updater').autoUpdater;
+}
+
+// Keep timers/RPC responsive when window is in background
+app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
@@ -475,25 +481,44 @@ async function clearPresence() {
   return { success: true };
 }
 
-function broadcastStatus() {
+let broadcastTimer = null;
+
+function broadcastStatus(immediate = false) {
   if (!mainWindow?.webContents) return;
-  mainWindow.webContents.send('rpc-status', {
-    connected: !!rpcClient,
-    activity: currentActivity,
-    sessionStart,
-    // clientId intentionally hidden from UI
-    donationUrl: DONATION_URL,
-    settings: {
-      theme: config.theme || 'dark',
-      showTimer: config.showTimer !== false,
-      animationsEnabled: config.animationsEnabled !== false,
-      customAnimation: config.customAnimation || null,
-      minimizeToTray: config.minimizeToTray !== false,
-      autoConnect: config.autoConnect !== false,
+
+  const send = () => {
+    mainWindow.webContents.send('rpc-status', {
+      connected: !!rpcClient,
+      activity: currentActivity,
+      sessionStart,
       donationUrl: DONATION_URL,
-    },
-    version: APP_VERSION,
-  });
+      settings: {
+        theme: config.theme || 'dark',
+        showTimer: config.showTimer !== false,
+        animationsEnabled: config.animationsEnabled !== false,
+        customAnimation: config.customAnimation || null,
+        minimizeToTray: config.minimizeToTray !== false,
+        autoConnect: config.autoConnect !== false,
+        donationUrl: DONATION_URL,
+      },
+      version: APP_VERSION,
+    });
+  };
+
+  if (immediate) {
+    if (broadcastTimer) {
+      clearTimeout(broadcastTimer);
+      broadcastTimer = null;
+    }
+    send();
+    return;
+  }
+
+  if (broadcastTimer) return;
+  broadcastTimer = setTimeout(() => {
+    broadcastTimer = null;
+    send();
+  }, 1500);
 }
 
 // ─── Auto Updater ────────────────────────────────────────────────────
@@ -601,7 +626,7 @@ async function checkForUpdates(manual = false) {
     sendUpdateStatus({ status: 'checking' });
     const waitPromise = waitForManualUpdateCheck();
     try {
-      await autoUpdater.checkForUpdates();
+      await getAutoUpdater().checkForUpdates();
       return await waitPromise;
     } catch (err) {
       console.error('[updater]', err.message);
@@ -613,7 +638,7 @@ async function checkForUpdates(manual = false) {
   }
 
   try {
-    await autoUpdater.checkForUpdates();
+    await getAutoUpdater().checkForUpdates();
     return { ok: true, status: 'checking' };
   } catch (err) {
     console.error('[updater]', err.message);
@@ -626,25 +651,25 @@ async function checkForUpdates(manual = false) {
 function installPendingUpdate() {
   if (!isPackaged || !pendingUpdateVersion || !updateDownloaded) return false;
   app.isQuitting = true;
-  autoUpdater.quitAndInstall(false, true);
+  getAutoUpdater().quitAndInstall(false, true);
   return true;
 }
 
 function setupAutoUpdater() {
   try {
-    autoUpdater.autoDownload = isPackaged;
-    autoUpdater.autoInstallOnAppQuit = isPackaged;
-    autoUpdater.allowPrerelease = false;
-    autoUpdater.logger = console;
+    getAutoUpdater().autoDownload = isPackaged;
+    getAutoUpdater().autoInstallOnAppQuit = isPackaged;
+    getAutoUpdater().allowPrerelease = false;
+    getAutoUpdater().logger = console;
 
     if (!isPackaged || updaterListenersAttached) return;
     updaterListenersAttached = true;
 
-    autoUpdater.on('checking-for-update', () => {
+    getAutoUpdater().on('checking-for-update', () => {
       sendUpdateStatus({ status: 'checking' });
     });
 
-    autoUpdater.on('update-available', (info) => {
+    getAutoUpdater().on('update-available', (info) => {
       pendingUpdateVersion = info.version;
       if (updateDownloaded && pendingUpdateVersion === info.version) {
         sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
@@ -659,7 +684,7 @@ function setupAutoUpdater() {
       resolveManualUpdate({ ok: true, status: 'available', version: info.version });
     });
 
-    autoUpdater.on('update-not-available', (info) => {
+    getAutoUpdater().on('update-not-available', (info) => {
       pendingUpdateVersion = null;
       updateDownloaded = false;
       lastDownloadPercent = 0;
@@ -672,7 +697,7 @@ function setupAutoUpdater() {
       resolveManualUpdate({ ok: true, status: 'up-to-date', version: payload.version });
     });
 
-    autoUpdater.on('download-progress', (progress) => {
+    getAutoUpdater().on('download-progress', (progress) => {
       lastDownloadPercent = Math.min(99, Math.round(progress.percent || 0));
       resetDownloadStallTimer();
       sendUpdateStatus({
@@ -682,7 +707,7 @@ function setupAutoUpdater() {
       });
     });
 
-    autoUpdater.on('update-downloaded', (info) => {
+    getAutoUpdater().on('update-downloaded', (info) => {
       clearDownloadStallTimer();
       pendingUpdateVersion = info.version;
       updateDownloaded = true;
@@ -691,7 +716,7 @@ function setupAutoUpdater() {
       resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
     });
 
-    autoUpdater.on('error', (err) => {
+    getAutoUpdater().on('error', (err) => {
       console.error('[updater]', err.message);
       clearDownloadStallTimer();
       updateDownloaded = false;
@@ -928,13 +953,13 @@ app.whenReady().then(async () => {
     const result = await connectRPC();
     if (mainWindow) {
       mainWindow.webContents.once('did-finish-load', () => {
-        broadcastStatus();
+        broadcastStatus(true);
         mainWindow.webContents.send('initial-connect', result);
       });
     }
   } else if (mainWindow) {
     mainWindow.webContents.once('did-finish-load', () => {
-      broadcastStatus();
+      broadcastStatus(true);
       mainWindow.webContents.send('initial-connect', { connected: false, error: null });
     });
   }

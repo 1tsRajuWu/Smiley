@@ -3,7 +3,7 @@
 > Set your Discord status with one click. Pick what you're doing — eating, gaming, coding — and it shows on your profile with a live GIF.
 
 [![release](https://img.shields.io/github/v/release/1tsRajuWu/Smiley)](https://github.com/1tsRajuWu/Smiley/releases/latest)
-[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#download-v218)
+[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#download-v219)
 [![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey)](LICENSE)
 
 **[Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues) · [Smiley.Native](README-NATIVE.md) (lightweight build)
@@ -30,8 +30,8 @@ Smiley ships with a bundled Discord Client ID. Download, run, pick something —
 |----------|------|-------|
 | **Windows** (installer) | [Smiley-Setup-2.1.9.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-Setup-2.1.9.exe) | Recommended. Start menu + desktop shortcut. |
 | **Windows** (portable) | [Smiley-Portable-2.1.9.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-Portable-2.1.9.exe) | No install — run from anywhere. |
-| **macOS** Apple Silicon | [Smiley-2.1.9-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-arm64.dmg) | M1/M2/M3/M4 Macs. |
-| **macOS** Intel | [Smiley-2.1.9-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-x64.dmg) | Pre-2020 Intel Macs. |
+| **macOS** Apple Silicon | [Smiley-2.1.9-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-arm64.dmg) | M1/M2/M3/M4. [macOS won't open?](#macos-wont-open) |
+| **macOS** Intel | [Smiley-2.1.9-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-x64.dmg) | Pre-2020 Intel. [macOS won't open?](#macos-wont-open) |
 | **Linux** AppImage | [Smiley-2.1.9.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9.AppImage) | `chmod +x` then run. Most distros. |
 | **Linux** .deb | [Smiley-2.1.9.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9.deb) | Debian / Ubuntu / derivatives. |
 
@@ -97,20 +97,46 @@ Smiley ships with a bundled Discord Client ID. Download, run, pick something —
 
 1. Download the `.dmg` for your chip (ARM64 or Intel).
 2. Open the DMG and drag **Smiley** into Applications.
-3. Launch from Applications (or Spotlight).
+3. **Right-click Smiley → Open** on first launch (see below). After that, double-click works.
 
-### "Smiley is damaged and can't be opened"
+The DMG includes **INSTALL.txt** with the same steps. Full guide: **[INSTALL-MAC.md](INSTALL-MAC.md)**.
 
-macOS Gatekeeper blocks unsigned downloads. This is normal for indie apps without an Apple Developer certificate.
+---
 
-**Fix — run in Terminal, then right-click → Open:**
+## macOS won't open?
+
+On macOS 13+, you may see:
+
+> **Smiley Not Opened** — Apple could not verify Smiley is free of malware that may harm your Mac or compromise your privacy.
+
+Buttons: **Move to Trash** | **Done**
+
+This is **not** a damaged file. Smiley is **ad-hoc signed** but **not notarized** — we don't have an Apple Developer certificate ($99/year) yet. The app is **safe** and [open source on GitHub](https://github.com/1tsRajuWu/Smiley). Notarization is planned when we get a Developer account ([docs/NOTARIZATION.md](docs/NOTARIZATION.md)).
+
+You only need to approve Smiley **once**.
+
+### Method A — Right-click Open (easiest)
+
+1. Download the DMG, open it, drag Smiley to **Applications**.
+2. Go to **Applications**, **right-click Smiley → Open** (not double-click).
+3. Click **Open** in the dialog.
+4. After the first launch, double-click works forever.
+
+### Method B — Terminal (if still blocked)
 
 ```bash
 xattr -cr ~/Downloads/Smiley-*.dmg
+# after installing:
 xattr -cr /Applications/Smiley.app
 ```
 
-If you already extracted the app, skip the first line. Right-click → **Open** on the first launch bypasses the block permanently for that copy.
+Or: `./scripts/install-mac.sh /Applications/Smiley.app` (from a cloned repo).
+
+Then **right-click → Open** once as in Method A.
+
+### Method C — System Settings
+
+**Settings → Privacy & Security** → scroll down → **Open Anyway** next to Smiley.
 
 ---
 
@@ -280,9 +306,9 @@ Usually a bad or unreachable image URL. Smiley resolves GIFs from nekos.best and
 </details>
 
 <details>
-<summary><strong>Why does macOS say the app is damaged?</strong></summary>
+<summary><strong>Why won't macOS open Smiley?</strong></summary>
 
-Gatekeeper blocks unsigned apps. Run `xattr -cr` on the DMG or `.app` (see <a href="#macos-install">macOS install</a>), then right-click → Open on first launch.
+Smiley isn't <strong>notarized</strong> by Apple yet (no Developer certificate). macOS 13+ shows "Apple could not verify…" — not a damaged file. Use <strong>right-click → Open</strong> once, or see <a href="#macos-wont-open">macOS won't open?</a> and <a href="INSTALL-MAC.md">INSTALL-MAC.md</a>.
 </details>
 
 <details>

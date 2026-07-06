@@ -73,7 +73,7 @@ The lightweight native app does **not** auto-update yet. Users download new buil
 |---------|-----|
 | Users don't get updates | Ensure they installed from a **packaged** build (not `npm start`) |
 | CI fails on discord.app.json | Add `DISCORD_CLIENT_ID` secret in repo settings |
-| macOS "app is damaged" | Code-sign the build, or users right-click → Open |
+| macOS "app is damaged" / won't open | Ad-hoc sign is in CI; users right-click → Open. See [INSTALL-MAC.md](../INSTALL-MAC.md). Notarize when Developer account exists — [NOTARIZATION.md](./NOTARIZATION.md). |
 | Windows SmartScreen | Sign with a code-signing cert, or users click "More info → Run anyway" |
 
 ---

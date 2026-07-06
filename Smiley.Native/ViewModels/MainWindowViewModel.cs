@@ -18,6 +18,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly System.Timers.Timer _sessionTimer;
     private CancellationTokenSource? _gifCts;
     private DateTime _sessionStart = DateTime.MinValue;
+    private System.Timers.Timer? _searchDebounceTimer;
+    private string _pendingSearchQuery = "";
 
     [ObservableProperty] private string _connectionStatus = "Connecting…";
     [ObservableProperty] private bool _isConnected;
@@ -92,7 +94,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     partial void OnSearchQueryChanged(string value)
     {
-        RefreshVisibleActivities();
+        _pendingSearchQuery = value;
+        _searchDebounceTimer?.Stop();
+        _searchDebounceTimer?.Dispose();
+        _searchDebounceTimer = new System.Timers.Timer(200) { AutoReset = false };
+        _searchDebounceTimer.Elapsed += (_, _) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_pendingSearchQuery == SearchQuery)
+                    RefreshVisibleActivities();
+            });
+        };
+        _searchDebounceTimer.Start();
     }
 
     private void RefreshVisibleActivities()
@@ -235,6 +249,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         _sessionTimer.Stop();
         _sessionTimer.Dispose();
+        _searchDebounceTimer?.Stop();
+        _searchDebounceTimer?.Dispose();
         _gifCts?.Cancel();
         _gifCts?.Dispose();
         _rpc.Dispose();

@@ -71,6 +71,7 @@ let activeCustomAnimation = null;
 let currentGifUrl = null;
 let currentDiscordImageUrl = null;
 let updateState = { downloaded: false, dismissed: false, percent: 0 };
+let searchDebounceTimer = null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
@@ -277,19 +278,39 @@ async function selectActivity(id) {
   selectedActivityId = id;
   renderActivityGrid();
 
-  // Update preview (includes async GIF loading)
-  await updatePreview(activity);
+  // Immediate UI — don't block on GIF fetch
+  setCharacterLabel(activity);
+  setPreviewDisplay(activity, null);
+  characterGif.style.display = 'none';
+  characterLoading.style.display = 'flex';
 
-  const imageFields = discordImageFields(activity, currentDiscordImageUrl);
+  const fallbackFields = discordImageFields(activity, null);
   const rpcPayload = {
     id: activity.id,
     details: activity.details,
     state: activity.state,
     category: activity.category,
-    ...imageFields,
+    ...fallbackFields,
   };
 
   const result = await window.smiley.setActivity(rpcPayload, !isReselect);
+
+  resolveGifUrl(activity)
+    .then(({ url, discordUrl, source }) => {
+      if (selectedActivityId !== id) return;
+      currentGifUrl = url;
+      currentDiscordImageUrl = discordUrl;
+      setPreviewDisplay(activity, url);
+      setCharacterDisplay(url, source);
+
+      if (discordUrl && discordUrl !== fallbackFields.discordImageUrl) {
+        const imageFields = discordImageFields(activity, discordUrl);
+        window.smiley.setActivity({ ...rpcPayload, ...imageFields }, false).catch(() => {});
+      }
+    })
+    .catch(() => {
+      if (selectedActivityId === id) characterLoading.style.display = 'none';
+    });
 
   if (result?.error) {
     showToast(result.error, 'error');
@@ -616,8 +637,11 @@ async function init() {
   clearBtn.addEventListener('click', handleClear);
 
   searchInput.addEventListener('input', (e) => {
-    searchQuery = e.target.value;
-    renderActivityGrid();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      searchQuery = e.target.value;
+      renderActivityGrid();
+    }, 200);
   });
 
   settingsTabs.forEach((tab) => {

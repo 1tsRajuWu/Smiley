@@ -1,6 +1,8 @@
 /**
  * electron-builder afterSign: ad-hoc sign macOS .app for unsigned distribution.
- * Ensures Gatekeeper accepts the bundle (avoids "damaged" on download).
+ * Fixes invalid/partial signatures ("damaged and can't be opened").
+ * Does NOT replace Apple notarization — users still need right-click → Open once
+ * until we have a Developer ID cert (see docs/NOTARIZATION.md).
  */
 const { execFileSync } = require('child_process');
 const path = require('path');

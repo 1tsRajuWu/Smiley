@@ -1,0 +1,25 @@
+Smiley — macOS install
+======================
+
+Smiley is not notarized by Apple yet (no Developer certificate).
+macOS may show: "Smiley Not Opened — Apple could not verify..."
+
+The app is safe and open source:
+https://github.com/1tsRajuWu/Smiley
+
+HOW TO OPEN (first time only)
+-----------------------------
+
+1. Drag Smiley into Applications (arrow →)
+2. Open Applications
+3. RIGHT-CLICK Smiley → Open  (do NOT double-click)
+4. Click Open in the dialog
+5. After that, double-click works forever
+
+Still blocked?
+  Terminal:  xattr -cr /Applications/Smiley.app
+  Then right-click → Open once.
+
+Or: System Settings → Privacy & Security → Open Anyway
+
+Full guide: https://github.com/1tsRajuWu/Smiley/blob/main/INSTALL-MAC.md
