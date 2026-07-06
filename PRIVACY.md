@@ -53,7 +53,7 @@ When **install tracking is enabled** (default), each app launch sends a heartbea
 
 **Not sent:** Discord username, token, messages, email, name, hostname, serial number, or files from your device.
 
-**Third party:** [Supabase](https://supabase.com) hosts the database (US/EU depending on project region). See their privacy policy for subprocessors.
+**Third party:** [Supabase](https://supabase.com) hosts the database; [ipwho.is](https://ipwho.is) provides IP geolocation (country, city, ISP) over HTTPS. See their privacy policies for subprocessors.
 
 **Opt out:** Settings → General → **Don't share install data**. When off, no heartbeat requests are sent.
 
