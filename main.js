@@ -456,8 +456,21 @@ function sanitizeConfigPatch(data) {
         out[key] = val === true;
         break;
       case 'customAnimation':
+        out.customAnimation = typeof val === 'string' ? sanitizeFilename(val).slice(0, 100) : null;
+        break;
       case 'customWallpaper':
-        out[key] = typeof val === 'string' ? sanitizeFilename(val).slice(0, 100) : null;
+        if (val === null) {
+          out.customWallpaper = null;
+        } else if (val && typeof val === 'object' && typeof val.filename === 'string') {
+          const filename = sanitizeFilename(val.filename).slice(0, 100);
+          out.customWallpaper = filename
+            ? {
+              filename,
+              blur: Math.min(Math.max(Number(val.blur) || 0, 0), 20),
+              dim: Math.min(Math.max(Number(val.dim) || 0, 0), 80),
+            }
+            : null;
+        }
         break;
       case 'windowState':
         if (val && typeof val === 'object') {
