@@ -140,7 +140,7 @@ export const VERIFIED_FALLBACKS = {
 };
 
 
-/** Curated SFW Tenor/Giphy GIFs per activity — primary = first girl option (verified HTTP 200) */
+/** Curated SFW Tenor/Giphy GIF per preset activity (verified HTTP 200) */
 export const ACTIVITY_TENOR_FALLBACKS = {
   'eating-pizza': 'https://media.tenor.com/i-xS-A_DTCEAAAAM/pizza-food.gif',
   'eating-sushi': 'https://media.tenor.com/KE361QFenNcAAAAM/anime-refei%C3%A7%C3%A3o-jap%C3%A3o-comida.gif',
@@ -175,196 +175,6 @@ export const ACTIVITY_TENOR_FALLBACKS = {
   shopping: 'https://media.tenor.com/9M34adQOtNwAAAAM/shopping-hi.gif',
 };
 
-
-// OPTIONS
-export const ACTIVITY_GIF_OPTIONS = {
-  'eating-pizza': [
-    { id: 'pizza-g1', label: 'Girl · Pizza Night', gender: 'girl', url: 'https://media.tenor.com/i-xS-A_DTCEAAAAM/pizza-food.gif' },
-    { id: 'pizza-g2', label: 'Girl · Umaru Bite', gender: 'girl', url: 'https://media.tenor.com/DtK1un8uLS0AAAAM/himouto-umaru-chan.gif' },
-    { id: 'pizza-b1', label: 'Boy · Chow Time', gender: 'boy', url: 'https://media.tenor.com/kJFtVfGATJ0AAAAM/love-food.gif' },
-    { id: 'pizza-b2', label: 'Boy · Cake Slice', gender: 'boy', url: 'https://media.tenor.com/DQDtfEaDA5AAAAAC/cake-eat.gif' },
-  ],
-  'eating-sushi': [
-    { id: 'sushi-g1', label: 'Girl · Sushi Bite', gender: 'girl', url: 'https://media.tenor.com/KE361QFenNcAAAAM/anime-refei%C3%A7%C3%A3o-jap%C3%A3o-comida.gif' },
-    { id: 'sushi-g2', label: 'Girl · Kanna Snack', gender: 'girl', url: 'https://media.tenor.com/hnlwW6KsH1sAAAAM/kanna-kamui.gif' },
-    { id: 'sushi-b1', label: 'Boy · Ramen Run', gender: 'boy', url: 'https://media.tenor.com/nwM1UzOjtAoAAAAM/anime-naruto.gif' },
-    { id: 'sushi-b2', label: 'Boy · Team Stare', gender: 'boy', url: 'https://media.tenor.com/IwyNIipPItQAAAAM/anime-naruto.gif' },
-  ],
-  'eating-ramen': [
-    { id: 'ramen-g1', label: 'Girl · Hungry Ramen', gender: 'girl', url: 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif' },
-    { id: 'ramen-g2', label: 'Girl · Nekos Feed', gender: 'girl', url: 'https://nekos.best/api/v2/feed/b9abbae0-3b59-437e-b866-3402c2c7f22e.gif' },
-    { id: 'ramen-b1', label: 'Boy · Death Note', gender: 'boy', url: 'https://media.tenor.com/sMGZ93n6Nc4AAAAM/death-note-anime.gif' },
-    { id: 'ramen-b2', label: 'Boy · Burger Bite', gender: 'boy', url: 'https://i.giphy.com/aW9HiiooRmdwdG0bPc.gif' },
-  ],
-  'eating-burger': [
-    { id: 'burger-g1', label: 'Girl · Burger Time', gender: 'girl', url: 'https://media.tenor.com/uk9xO0xpWoIAAAAM/burger-eating.gif' },
-    { id: 'burger-g2', label: 'Girl · Food Art', gender: 'girl', url: 'https://media.tenor.com/34Hc3tLeuUwAAAAM/foxphoria-ai.gif' },
-    { id: 'burger-b1', label: 'Boy · Benjammins', gender: 'boy', url: 'https://media.tenor.com/P4iukwlv4LIAAAAM/benjammins-ben-jammins.gif' },
-    { id: 'burger-b2', label: 'Boy · Kitchen Prep', gender: 'boy', url: 'https://i.giphy.com/p0dFF6nzn1DZKKyNdo.gif' },
-  ],
-  'eating-tacos': [
-    { id: 'taco-g1', label: 'Girl · Uwu Taco', gender: 'girl', url: 'https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif' },
-    { id: 'taco-g2', label: 'Girl · Birthday Treat', gender: 'girl', url: 'https://media.tenor.com/-pBlhybnp54AAAAM/happy-birthday-cake.gif' },
-    { id: 'taco-b1', label: 'Boy · Popopo', gender: 'boy', url: 'https://media.tenor.com/ranNc0BHOI4AAAAM/popopo.gif' },
-    { id: 'taco-b2', label: 'Boy · Quick Bite', gender: 'boy', url: 'https://media.tenor.com/rtMO2T0cQrEAAAAM/42.gif' },
-  ],
-  'eating-snacks': [
-    { id: 'snack-g1', label: 'Girl · Umaru Snacks', gender: 'girl', url: 'https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif' },
-    { id: 'snack-g2', label: 'Girl · Nekos Nom', gender: 'girl', url: 'https://nekos.best/api/v2/nom/0d6e98ff-6a91-4d5d-b3cd-ede275f78f71.gif' },
-    { id: 'snack-b1', label: 'Boy · Mocha Snack', gender: 'boy', url: 'https://media.tenor.com/OZdXkNd2o-IAAAAM/mocha-and-milk-mocha-bear.gif' },
-    { id: 'snack-b2', label: 'Boy · Kanna Crunch', gender: 'boy', url: 'https://media.tenor.com/lRy4uJzoGk8AAAAM/kanna-cry.gif' },
-  ],
-  cooking: [
-    { id: 'cook-g1', label: 'Girl · Sora Cooking', gender: 'girl', url: 'https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif' },
-    { id: 'cook-g2', label: 'Girl · Dragon Maid', gender: 'girl', url: 'https://media.tenor.com/H2TduYuD5S0AAAAM/anime-miss-kobayashis-dragon-maid.gif' },
-    { id: 'cook-b1', label: 'Boy · Chill Quotes', gender: 'boy', url: 'https://media.tenor.com/wITiUPzJyzYAAAAM/awesome-quotes.gif' },
-    { id: 'cook-b2', label: 'Boy · Nekos Feed', gender: 'boy', url: 'https://nekos.best/api/v2/feed/e480b6f8-aa99-4f36-b112-7bda61bf4ab8.gif' },
-  ],
-  'eating-dessert': [
-    { id: 'dessert-g1', label: 'Girl · Sweet Tooth', gender: 'girl', url: 'https://media.tenor.com/DTRz6D1e5ZEAAAAM/eating-dessert-happily.gif' },
-    { id: 'dessert-g2', label: 'Girl · Nekos Bite', gender: 'girl', url: 'https://nekos.best/api/v2/bite/cdff6f6e-5bdf-47ce-9d54-01c9bcdebb3c.gif' },
-    { id: 'dessert-b1', label: 'Boy · Nekos Happy', gender: 'boy', url: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif' },
-    { id: 'dessert-b2', label: 'Boy · Nekos Cuddle', gender: 'boy', url: 'https://nekos.best/api/v2/cuddle/e7e003a0-f6a2-4bed-84c8-66eb730a2abd.gif' },
-  ],
-  gaming: [
-    { id: 'game-g1', label: 'Girl · Gaming', gender: 'girl', url: 'https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif' },
-    { id: 'game-g2', label: 'Girl · Genshiken', gender: 'girl', url: 'https://media.tenor.com/lo3vlqAa6sAAAAAM/kasukabe-genshiken.gif' },
-    { id: 'game-b1', label: 'Boy · TWGOK', gender: 'boy', url: 'https://media.tenor.com/P3Ljq-dY4EUAAAAM/twgok-the-world-god-only-knows.gif' },
-    { id: 'game-b2', label: 'Boy · Boper Sword', gender: 'boy', url: 'https://media.tenor.com/4GoHst-v67gAAAAM/boper-sword.gif' },
-  ],
-  ranked: [
-    { id: 'ranked-g1', label: 'Girl · Ranked Kick', gender: 'girl', url: 'https://media.tenor.com/o52AZQZ_PloAAAAM/kick-anime.gif' },
-    { id: 'ranked-g2', label: 'Girl · Agnes Sprint', gender: 'girl', url: 'https://media.tenor.com/NazVGclCYHEAAAAM/agnes-tachyon-tachyon.gif' },
-    { id: 'ranked-b1', label: 'Boy · Nekos Kick', gender: 'boy', url: 'https://nekos.best/api/v2/kick/273cf4c2-4546-47b7-847c-0cc3cd887af4.gif' },
-    { id: 'ranked-b2', label: 'Boy · Dokkan Grind', gender: 'boy', url: 'https://media.tenor.com/Wakk9-QWiLIAAAAM/dokkan-battle-top.gif' },
-  ],
-  coop: [
-    { id: 'coop-g1', label: 'Girl · Co-op Hug', gender: 'girl', url: 'https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif' },
-    { id: 'coop-g2', label: 'Girl · Happy Dance', gender: 'girl', url: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif' },
-    { id: 'coop-b1', label: 'Boy · Pixel Co-op', gender: 'boy', url: 'https://i.giphy.com/qCr3LLomOJUfGUYOZx.gif' },
-    { id: 'coop-b2', label: 'Boy · Nekos Hug', gender: 'boy', url: 'https://nekos.best/api/v2/hug/a393a6e2-eb56-4ca2-b3bc-8c5d7978c0ce.gif' },
-  ],
-  retro: [
-    { id: 'retro-g1', label: 'Girl · Pixel Blue', gender: 'girl', url: 'https://media.tenor.com/L99ayPjM6m4AAAAM/zyclunt-blue.gif' },
-    { id: 'retro-g2', label: 'Girl · Pixel Blade', gender: 'girl', url: 'https://media.tenor.com/SpxDalREOsQAAAAM/zyclunt-blade-warrior.gif' },
-    { id: 'retro-b1', label: 'Boy · Lucky Star', gender: 'boy', url: 'https://media.tenor.com/hjjrsuCnKp8AAAAM/lucky-star-konata.gif' },
-    { id: 'retro-b2', label: 'Boy · Azumanga', gender: 'boy', url: 'https://media.tenor.com/aUuIN4CKrbEAAAAM/kagura-azumanga-daioh.gif' },
-  ],
-  speedrun: [
-    { id: 'speed-g1', label: 'Girl · Speed Run', gender: 'girl', url: 'https://media.tenor.com/V2FWyvBLJ0kAAAAM/anime-run-run.gif' },
-    { id: 'speed-g2', label: 'Girl · Agnes Dash', gender: 'girl', url: 'https://media.tenor.com/20tm8n8fkYIAAAAM/agnes-tachyon-agnestachyon.gif' },
-    { id: 'speed-b1', label: 'Boy · Haikyuu Run', gender: 'boy', url: 'https://media.tenor.com/FKtebSUVjJQAAAAM/haikyuu-kageyama.gif' },
-    { id: 'speed-b2', label: 'Boy · SK8 Sprint', gender: 'boy', url: 'https://media.tenor.com/IrblZ1b-FXEAAAAM/sk8-the-infinity-sk8.gif' },
-  ],
-  'vr-gaming': [
-    { id: 'vr-g1', label: 'Girl · VR Stream', gender: 'girl', url: 'https://media.tenor.com/qIvEeou-1FIAAAAM/play-network-anime-girl.gif' },
-    { id: 'vr-g2', label: 'Girl · Fan Art', gender: 'girl', url: 'https://media.tenor.com/dlD3cf-8WngAAAAM/anime-girl-fan-art.gif' },
-    { id: 'vr-b1', label: 'Boy · SAO Kirito', gender: 'boy', url: 'https://media.tenor.com/Hfs2DoWjE8kAAAAM/sao-kirito.gif' },
-    { id: 'vr-b2', label: 'Boy · Gaming Babel', gender: 'boy', url: 'https://media.tenor.com/fP8-Y1uW3s8AAAAM/speech-bubble-tower-of-babel-gaming.gif' },
-  ],
-  sleeping: [
-    { id: 'sleep-g1', label: 'Girl · Sleepy Sleep', gender: 'girl', url: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif' },
-    { id: 'sleep-g2', label: 'Girl · Sleep Anime', gender: 'girl', url: 'https://media.tenor.com/lptw_sFe1DYAAAAM/sleep-anime.gif' },
-    { id: 'sleep-b1', label: 'Boy · Go to Sleep', gender: 'boy', url: 'https://media.tenor.com/GOEO_QhhtlYAAAAM/go-to-sleep-anime.gif' },
-    { id: 'sleep-b2', label: 'Boy · Nekos Sleep', gender: 'boy', url: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif' },
-  ],
-  napping: [
-    { id: 'nap-g1', label: 'Girl · D4DJ Nap', gender: 'girl', url: 'https://media.tenor.com/y-nFVMnj_g4AAAAM/d4dj-d4dj-petit-mix.gif' },
-    { id: 'nap-g2', label: 'Girl · Power Nap', gender: 'girl', url: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif' },
-    { id: 'nap-b1', label: 'Boy · D4DJ Mix', gender: 'boy', url: 'https://media.tenor.com/6OCEdkhjHKUAAAAM/d4dj-first-mix-d4dj.gif' },
-    { id: 'nap-b2', label: 'Boy · Ba12 Chill', gender: 'boy', url: 'https://media.tenor.com/xr-ystYEDtsAAAAM/ba12.gif' },
-  ],
-  reading: [
-    { id: 'read-g1', label: 'Girl · Lost in Book', gender: 'girl', url: 'https://media.tenor.com/rJxGy9CYwHoAAAAM/anime-read.gif' },
-    { id: 'read-g2', label: 'Girl · Anya Notes', gender: 'girl', url: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif' },
-    { id: 'read-b1', label: 'Boy · Taking Notes', gender: 'boy', url: 'https://media.tenor.com/EL7zfInn_vsAAAAM/taking-notes-noting.gif' },
-    { id: 'read-b2', label: 'Boy · Nekos Wink', gender: 'boy', url: 'https://nekos.best/api/v2/wink/645e5e46-bc92-4edf-a880-8708f1c079d7.gif' },
-  ],
-  listening: [
-    { id: 'listen-g1', label: 'Girl · Headphones', gender: 'girl', url: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif' },
-    { id: 'listen-g2', label: 'Girl · Music Vibe', gender: 'girl', url: 'https://media.tenor.com/FhCrIhUtPmoAAAAM/headphones-listening-to-music.gif' },
-    { id: 'listen-b1', label: 'Boy · Monkey Beats', gender: 'boy', url: 'https://media.tenor.com/aFWrWPvQQ6kAAAAM/inefablejuly-monkey-listening-to-music-lilychouchoucore.gif' },
-    { id: 'listen-b2', label: 'Boy · Travel Vibes', gender: 'boy', url: 'https://i.giphy.com/3o6YfXCRvjzATblkJy.gif' },
-  ],
-  meditating: [
-    { id: 'med-g1', label: 'Girl · Pink Peace', gender: 'girl', url: 'https://media.tenor.com/KwyMelI5GqsAAAAM/anime-girl-pink.gif' },
-    { id: 'med-g2', label: 'Girl · Pastel Peace', gender: 'girl', url: 'https://media.tenor.com/Og_WECaTyNUAAAAM/cute-anime-cute-pastel-anime.gif' },
-    { id: 'med-b1', label: 'Boy · D4DJ Calm', gender: 'boy', url: 'https://media.tenor.com/K-7tCc7VN10AAAAM/anime-alya.gif' },
-    { id: 'med-b2', label: 'Boy · Relaxed Soak', gender: 'boy', url: 'https://media.tenor.com/qDL7O91_jSEAAAAM/anime-cute.gif' },
-  ],
-  bath: [
-    { id: 'bath-g1', label: 'Girl · Bubble Bath', gender: 'girl', url: 'https://media.tenor.com/M3nkdB81tkQAAAAM/virgin-road-anime-relaxed.gif' },
-    { id: 'bath-g2', label: 'Girl · Cute Soak', gender: 'girl', url: 'https://media.tenor.com/xeOiY0xJPcAAAAAM/anime-cute.gif' },
-    { id: 'bath-b1', label: 'Boy · Kanna Soak', gender: 'boy', url: 'https://media.tenor.com/6gpttArI89AAAAAM/sweet-cute.gif' },
-    { id: 'bath-b2', label: 'Boy · Awesome Cute', gender: 'boy', url: 'https://media.tenor.com/qLtSolTRwxgAAAAM/awesome-cute.gif' },
-  ],
-  studying: [
-    { id: 'study-g1', label: 'Girl · Studying', gender: 'girl', url: 'https://media.tenor.com/etfl8OlhPIYAAAAM/studying-anime-girl.gif' },
-    { id: 'study-g2', label: 'Girl · Study Vibe', gender: 'girl', url: 'https://media.tenor.com/6fHjWf9GZPkAAAAM/anime-girl.gif' },
-    { id: 'study-b1', label: 'Boy · Ghibli Study', gender: 'boy', url: 'https://i.giphy.com/6XX4V0O8a0xdS.gif' },
-    { id: 'study-b2', label: 'Boy · Rimu Peace', gender: 'boy', url: 'https://media.tenor.com/rjn01bXY-l0AAAAM/rimu-peace.gif' },
-  ],
-  meeting: [
-    { id: 'meet-g1', label: 'Girl · Wave Hello', gender: 'girl', url: 'https://media.tenor.com/_9W9bVa4AHgAAAAM/wavi-anime.gif' },
-    { id: 'meet-g2', label: 'Girl · Team Hug', gender: 'girl', url: 'https://media.tenor.com/_PlrdLD2vkkAAAAM/fox-girl-fox.gif' },
-    { id: 'meet-b1', label: 'Boy · Boss Cat', gender: 'boy', url: 'https://i.giphy.com/WyZ1D8gXF7QQsRkXw5.gif' },
-    { id: 'meet-b2', label: 'Boy · Nekos Wave', gender: 'boy', url: 'https://nekos.best/api/v2/wave/810920bc-280c-42f3-ade8-33a780484af0.gif' },
-  ],
-  focus: [
-    { id: 'focus-g1', label: 'Girl · Deep Work', gender: 'girl', url: 'https://media.tenor.com/YQ7zME1GJn8AAAAM/black-girl-typing-anime-working-drawing-cartoon.gif' },
-    { id: 'focus-g2', label: 'Girl · Taking Notes', gender: 'girl', url: 'https://media.tenor.com/COjSGra2WL4AAAAM/taking-notes-notes.gif' },
-    { id: 'focus-b1', label: 'Boy · Neko Typing', gender: 'boy', url: 'https://media.tenor.com/Ie8lbeBejHEAAAAM/the-masterful-cat-is-depressed-again-today-dekiru-neko-wa-kyou-mo-yuuutsu.gif' },
-    { id: 'focus-b2', label: 'Boy · Typing Code', gender: 'boy', url: 'https://media.tenor.com/t8rp6pY-Wl8AAAAM/typing-anime-coding.gif' },
-  ],
-  designing: [
-    { id: 'design-g1', label: 'Girl · Sketching', gender: 'girl', url: 'https://media.tenor.com/GB_tiifwEJ0AAAAM/drawing-kaoruko-moeta.gif' },
-    { id: 'design-g2', label: 'Girl · Fresco Paint', gender: 'girl', url: 'https://media.tenor.com/aDmW2trAww8AAAAM/painting-fresco.gif' },
-    { id: 'design-b1', label: 'Boy · Drawing', gender: 'boy', url: 'https://media.tenor.com/tHnnUJSL72QAAAAM/drawing-anime.gif' },
-    { id: 'design-b2', label: 'Boy · Cute Draw', gender: 'boy', url: 'https://media.tenor.com/SliX9DAcsgcAAAAM/cute-girl-drawing.gif' },
-  ],
-  writing: [
-    { id: 'write-g1', label: 'Girl · Artist Desk', gender: 'girl', url: 'https://media.tenor.com/oq3lNDA5J2QAAAAM/draw-artist.gif' },
-    { id: 'write-g2', label: 'Girl · Lion Sketch', gender: 'girl', url: 'https://media.tenor.com/wVffZ201Z9UAAAAM/sangatsu-no-lion-march-comes-in-like-a-lion.gif' },
-    { id: 'write-b1', label: 'Boy · Precure Draw', gender: 'boy', url: 'https://media.tenor.com/_GF7wBzy0-oAAAAM/smile-precure-kise-yayoi.gif' },
-    { id: 'write-b2', label: 'Boy · Arts Draw', gender: 'boy', url: 'https://media.tenor.com/oPhQ6Hhm94MAAAAM/arts-drawing.gif' },
-  ],
-  streaming: [
-    { id: 'stream-g1', label: 'Girl · Live Stream', gender: 'girl', url: 'https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif' },
-    { id: 'stream-g2', label: 'Girl · Asuna Stream', gender: 'girl', url: 'https://media.tenor.com/V2tKwBcvEBwAAAAM/asuna-sword-art-online.gif' },
-    { id: 'stream-b1', label: 'Boy · VTuber Live', gender: 'boy', url: 'https://media.tenor.com/k7RqxbIutVYAAAAM/amarys-amarys-saiba.gif' },
-    { id: 'stream-b2', label: 'Boy · Ahh Moment', gender: 'boy', url: 'https://media.tenor.com/RfETBoPIobAAAAAM/ahh.gif' },
-  ],
-  watching: [
-    { id: 'watch-g1', label: 'Girl · Popcorn Night', gender: 'girl', url: 'https://media.tenor.com/7_IxCInZUPQAAAAM/menhera-eating-popcorn.gif' },
-    { id: 'watch-g2', label: 'Girl · Binge Watch', gender: 'girl', url: 'https://media.tenor.com/EvYs9PsG-_EAAAAM/binging-anime-watching.gif' },
-    { id: 'watch-b1', label: 'Boy · Late Night', gender: 'boy', url: 'https://i.giphy.com/p55iGp1XppSv4WiV2y.gif' },
-    { id: 'watch-b2', label: 'Boy · Anime Couch', gender: 'boy', url: 'https://media.tenor.com/1ZgqNUsyg7kAAAAM/lets-go-watch-anime-its-rucka.gif' },
-  ],
-  traveling: [
-    { id: 'travel-g1', label: 'Girl · Road Trip', gender: 'girl', url: 'https://media.tenor.com/gPjII19ICdIAAAAM/road-road-trip-move-dragon-ball-anime-tyan-vibe-car.gif' },
-    { id: 'travel-g2', label: 'Girl · Trigun Walk', gender: 'girl', url: 'https://media.tenor.com/_UBMlDNZWDUAAAAM/vash-the-stampede-trigun.gif' },
-    { id: 'travel-b1', label: 'Boy · Joe Walk', gender: 'boy', url: 'https://media.tenor.com/KKIxlCODKOAAAAAM/ashita-no-joe-joe-yabuki.gif' },
-    { id: 'travel-b2', label: 'Boy · Night Walk', gender: 'boy', url: 'https://media.tenor.com/jKxRN_ayezsAAAAM/wolfram-gelzer-sebastian-michaelis.gif' },
-  ],
-  gym: [
-    { id: 'gym-g1', label: 'Girl · Gym Wow', gender: 'girl', url: 'https://media.tenor.com/uKWmvSxGj3gAAAAM/gym-wow.gif' },
-    { id: 'gym-g2', label: 'Girl · Wandance', gender: 'girl', url: 'https://media.tenor.com/DlfHCAUo16AAAAAM/on-miyao-wandance.gif' },
-    { id: 'gym-b1', label: 'Boy · Working Out', gender: 'boy', url: 'https://i.giphy.com/ZJ25E2hJ5IpfvgkxYE.gif' },
-    { id: 'gym-b2', label: 'Boy · Sailor Moon', gender: 'boy', url: 'https://media.tenor.com/NL_gRwi19MMAAAAM/sailor-moon-usagi.gif' },
-  ],
-  partying: [
-    { id: 'party-g1', label: 'Girl · Party Hard', gender: 'girl', url: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif' },
-    { id: 'party-g2', label: 'Girl · Uwu Girl', gender: 'girl', url: 'https://media.tenor.com/nNEVoD17clEAAAAM/nice-anime-girl-aesthetic-uwu.gif' },
-    { id: 'party-b1', label: 'Boy · Head Pat', gender: 'boy', url: 'https://media.tenor.com/eFQR2SrR-IsAAAAM/sonikou-nation-head-pat.gif' },
-    { id: 'party-b2', label: 'Boy · Nekos Pat', gender: 'boy', url: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif' },
-  ],
-  shopping: [
-    { id: 'shop-g1', label: 'Girl · Shopping Hi', gender: 'girl', url: 'https://media.tenor.com/9M34adQOtNwAAAAM/shopping-hi.gif' },
-    { id: 'shop-g2', label: 'Girl · Color Art', gender: 'girl', url: 'https://media.tenor.com/wEQP6dEzhPsAAAAM/color-art.gif' },
-    { id: 'shop-b1', label: 'Boy · Anime Art', gender: 'boy', url: 'https://media.tenor.com/DEt2bZ2WpRUAAAAM/anime-anime-art.gif' },
-    { id: 'shop-b2', label: 'Boy · Cute Girl', gender: 'boy', url: 'https://media.tenor.com/VJyaKrH7KlgAAAAM/cute-girl.gif' },
-  ],
-};
 
 
 function nekosEndpointFromUrl(url) {
@@ -403,50 +213,32 @@ export async function fetchNekosGifForActivity(activityId, hintUrl = null) {
   return result?.url || (isValidDiscordImageUrl(hintUrl) ? normalizeNekosUrl(hintUrl) : null);
 }
 
-function withNekosFallback(option, activityId) {
-  if (!option?.url || option.fallbackUrl) return option;
-  if (!isNekosBestUrl(option.url)) return option;
-  const tenor = ACTIVITY_TENOR_FALLBACKS[activityId];
-  const category = Object.keys(VERIFIED_FALLBACKS).find((k) => VERIFIED_FALLBACKS[k] === option.url);
-  const fallbackUrl = tenor || (category ? ACTIVITY_TENOR_FALLBACKS[category] : null) || null;
-  return fallbackUrl ? { ...option, fallbackUrl } : option;
-}
-
-export function getActivityGifOptions(activityId) {
-  if (ACTIVITY_GIF_OPTIONS[activityId]) {
-    return ACTIVITY_GIF_OPTIONS[activityId].map((o) => withNekosFallback({ ...o, url: normalizeNekosUrl(o.url) }, activityId));
-  }
+/** Custom-activity GIF picker options only (preset activities use ACTIVITY_TENOR_FALLBACKS). */
+export function getActivityGifOptions(activityId, { activityGifUrl = null } = {}) {
   const options = [];
-  const tenor = ACTIVITY_TENOR_FALLBACKS[activityId];
-  const verified = normalizeNekosUrl(VERIFIED_FALLBACKS[activityId]);
-  if (tenor) options.push({ id: `${activityId}-curated`, label: 'Curated', url: tenor });
-  if (verified && verified !== tenor) {
+  if (activityGifUrl && isValidDiscordImageUrl(activityGifUrl)) {
     options.push({
-      id: `${activityId}-nekos`,
-      label: 'Neko Alt',
-      url: verified,
-      fallbackUrl: tenor || null,
-      nekosEndpoint: getNekosEndpointForActivity(activityId, verified),
+      id: `custom:${activityGifUrl}`,
+      label: 'Activity GIF',
+      url: activityGifUrl,
     });
   }
   return options;
 }
 
 export function resolveGifChoiceUrl(activityId, choiceId) {
-  if (!choiceId || !activityId) return null;
-  if (choiceId.startsWith('custom:')) {
+  if (!activityId) return null;
+  if (choiceId?.startsWith('custom:')) {
     const url = normalizeDiscordImageUrl(choiceId.slice(7));
     return isValidDiscordImageUrl(url) ? url : null;
   }
-  const options = getActivityGifOptions(activityId);
-  const match = options.find((o) => o.id === choiceId);
-  const url = normalizeDiscordImageUrl(match?.url || options[0]?.url || ACTIVITY_TENOR_FALLBACKS[activityId] || null);
+  const tenor = ACTIVITY_TENOR_FALLBACKS[activityId];
+  const url = normalizeDiscordImageUrl(tenor || null);
   return isValidDiscordImageUrl(url) ? url : null;
 }
 
-export function getDefaultGifChoiceId(activityId) {
-  const options = getActivityGifOptions(activityId);
-  return options.find((o) => o.gender === 'girl')?.id || options[0]?.id || null;
+export function getDefaultGifChoiceId() {
+  return null;
 }
 
 /** Session cache — keyed by activity.id */

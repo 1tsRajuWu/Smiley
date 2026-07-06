@@ -154,12 +154,11 @@ const GITHUB_REPO_URL =
     .replace(/\.git$/, '')
     .trim();
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
-const DOWNLOAD_PAGE_URL = 'https://1tsrajuwu.github.io/Smiley/';
 // package.json mac.identity is "-" (ad-hoc). Squirrel ShipIt validates update signatures
 // at install time — separate from electron-updater verifyUpdateCodeSignature (Windows).
 const MAC_ADHOC_DISTRIBUTION = true;
 const DEFAULT_RPC_BUTTONS = [
-  { label: 'Download Smiley', url: DOWNLOAD_PAGE_URL },
+  { label: 'Download Smiley', url: GITHUB_REPO_URL },
 ];
 // SSRF guard — only fetch GIFs from known CDNs
 const ALLOWED_GIF_HOSTS = [
@@ -1130,8 +1129,8 @@ function applyUpdaterSettings() {
   try {
     const autoUpdater = getAutoUpdater();
     autoUpdater.autoDownload = true;
-    // Ad-hoc macOS: ShipIt rejects in-app install on quit — manual DMG download instead
-    if (process.platform === 'darwin' && MAC_ADHOC_DISTRIBUTION) {
+    // macOS ad-hoc: ShipIt always rejects in-app install — manual DMG download only
+    if (process.platform === 'darwin') {
       autoUpdater.autoInstallOnAppQuit = false;
     } else {
       autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
@@ -1161,7 +1160,8 @@ function resetDownloadStallTimer() {
 }
 
 function isMacAdHocUpdater() {
-  return process.platform === 'darwin' && MAC_ADHOC_DISTRIBUTION;
+  // Ad-hoc signed — Squirrel ShipIt always fails on macOS
+  return process.platform === 'darwin';
 }
 
 function buildManualInstallPayload(version = pendingUpdateVersion) {
@@ -1250,10 +1250,11 @@ function formatUpdateError(err, version = pendingUpdateVersion) {
   return {
     ok: false,
     status: 'error',
-    error: err?.message || 'Update check failed. Download from GitHub Releases.',
+    error: 'Update check failed. Download from GitHub Releases.',
+    message: 'Update check failed. Download from GitHub Releases.',
     version: version || null,
     releasesUrl: GITHUB_RELEASES_URL,
-    expected: false,
+    expected: true,
   };
 }
 
@@ -1347,6 +1348,12 @@ function isUpdateReadyToInstall() {
 }
 
 function installPendingUpdate() {
+  // macOS: never call quitAndInstall — ShipIt rejects ad-hoc signatures
+  if (isMacAdHocUpdater()) {
+    const payload = buildManualInstallPayload();
+    sendUpdateStatus(payload);
+    return false;
+  }
   if (!isUpdateReadyToInstall()) return false;
   if (process.platform === 'darwin' && isRunningFromDmg()) {
     sendUpdateStatus({
@@ -1357,15 +1364,8 @@ function installPendingUpdate() {
     });
     return false;
   }
-  // Ad-hoc macOS: ShipIt always rejects quitAndInstall — manual DMG only
-  if (isMacAdHocUpdater()) {
-    const payload = buildManualInstallPayload();
-    sendUpdateStatus(payload);
-    return false;
-  }
   try {
     app.isQuitting = true;
-    // macOS: don't force-run after install — avoids Squirrel spawning a second copy
     const forceRunAfter = process.platform !== 'darwin';
     getAutoUpdater().quitAndInstall(false, forceRunAfter);
     return true;
@@ -1473,6 +1473,13 @@ function setupAutoUpdater() {
       updateDownloaded = false;
       lastDownloadPercent = 0;
       const formatted = formatUpdateError(err, failedVersion);
+      // Suppress raw ShipIt / code-signature errors — always manual DMG on macOS
+      if (isMacAdHocUpdater() && (isUpdateSignatureError(String(err?.message || '')) || formatted.status === 'error')) {
+        const payload = buildManualInstallPayload(failedVersion);
+        sendUpdateStatus(payload);
+        resolveManualUpdate(payload);
+        return;
+      }
       sendUpdateStatus(formatted);
       resolveManualUpdate(formatted);
     });
@@ -1803,7 +1810,7 @@ function setupIPC() {
     customActivities: config.customActivities || [],
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
-    macAdHocUpdates: process.platform === 'darwin' && MAC_ADHOC_DISTRIBUTION,
+    macAdHocUpdates: process.platform === 'darwin',
     releasesUrl: GITHUB_RELEASES_URL,
     osPlatform: process.platform,
     version: APP_VERSION,
@@ -1853,21 +1860,22 @@ function setupIPC() {
   });
 
   ipcMain.handle('install-update', () => {
-    if (process.platform === 'darwin' && isRunningFromDmg()) {
-      return {
-        success: false,
-        error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
-      };
-    }
     if (isMacAdHocUpdater()) {
       const payload = buildManualInstallPayload();
       sendUpdateStatus(payload);
+      shell.openExternal(GITHUB_RELEASES_URL);
       return {
         success: false,
         status: 'manual-install-required',
         message: payload.message,
         releasesUrl: GITHUB_RELEASES_URL,
         version: pendingUpdateVersion || null,
+      };
+    }
+    if (process.platform === 'darwin' && isRunningFromDmg()) {
+      return {
+        success: false,
+        error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
       };
     }
     if (!isUpdateReadyToInstall()) {

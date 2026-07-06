@@ -6,7 +6,6 @@ import {
   getTenorFallback,
   getActivityGifOptions,
   resolveGifChoiceUrl,
-  getDefaultGifChoiceId,
   clearActivityImageCacheEntry,
   isValidDiscordImageUrl,
   isNekosBestUrl,
@@ -42,7 +41,6 @@ const gifPickerSection = $('#gifPickerSection');
 const gifPickerStrip = $('#gifPickerStrip');
 const gifPickerMyGifs = $('#gifPickerMyGifs');
 const gifPickerMyStrip = $('#gifPickerMyStrip');
-const gifGenderTabs = $('#gifGenderTabs');
 const searchInput = $('#searchInput');
 const settingsBtn = $('#settingsBtn');
 const minimizeBtn = $('#minimizeBtn');
@@ -110,8 +108,6 @@ const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
-const customAnimationDrop = $('#customAnimationDrop');
-const customAnimationList = $('#customAnimationList');
 const launchAtLoginToggle = $('#launchAtLoginToggle');
 const hotkeyToggle = $('#hotkeyToggle');
 const hotkeyHint = $('#hotkeyHint');
@@ -121,6 +117,7 @@ const resetWindowBtn = $('#resetWindowBtn');
 const updateBanner = $('#updateBanner');
 const updateBannerText = $('#updateBannerText');
 const updateRestartBtn = $('#updateRestartBtn');
+const updateGetBtn = $('#updateGetBtn');
 const updateDismissBtn = $('#updateDismissBtn');
 const recentSection = $('#recentSection');
 const recentChips = $('#recentChips');
@@ -142,7 +139,6 @@ const gifUrlPanel = $('#gifUrlPanel');
 const gifUploadPanel = $('#gifUploadPanel');
 const customActivityGifPreview = $('#customActivityGifPreview');
 const customActivityGifPreviewImg = $('#customActivityGifPreviewImg');
-const customActivitiesSettingsList = $('#customActivitiesSettingsList');
 const gifSourceTabs = document.querySelectorAll('.gif-source-tab');
 
 // ─── State ───────────────────────────────────────────────────────────
@@ -169,7 +165,6 @@ let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 let customActivitiesConfig = [];
 let activityGifChoices = {};
-let gifGenderFilter = 'all';
 let saveGifChoiceTimer = null;
 let updateCheckDebounceUntil = 0;
 let updateCheckingToastShown = false;
@@ -248,6 +243,8 @@ function applyPlatformUI(cfg = {}) {
   if (minimizeBtn) minimizeBtn.hidden = isMacPlatform;
   if (windowControls) windowControls.hidden = isMacPlatform;
   document.body.classList.toggle('has-window-controls', !isMacPlatform);
+  if (updateRestartBtn) updateRestartBtn.hidden = isMacPlatform;
+  if (updateGetBtn) updateGetBtn.hidden = !isMacPlatform;
   applyUpiVisibility();
 }
 
@@ -449,11 +446,6 @@ function renderGifOptionButton(option, selectedId) {
     ? ` data-fallback-url="${escapeHtml(option.fallbackUrl)}"`
     : '';
   const thumbSrc = getPickerThumbSrc(option);
-  const genderBadge = option.gender === 'girl'
-    ? '<span class="gif-gender-badge girl" aria-hidden="true">👧</span>'
-    : option.gender === 'boy'
-      ? '<span class="gif-gender-badge boy" aria-hidden="true">👦</span>'
-      : '';
   const thumbInner = thumbSrc
     ? `<img src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" decoding="async" />`
     : '<span class="gif-option-placeholder" aria-hidden="true">🎬</span>';
@@ -462,25 +454,10 @@ function renderGifOptionButton(option, selectedId) {
       role="option" aria-selected="${selected}" data-choice="${escapeHtml(option.id)}"${fallbackAttr}
       title="${escapeHtml(option.label)}${option.previewOnly ? ' (app preview only)' : ''}">
       <span class="gif-option-thumb">
-        ${genderBadge}
         ${thumbInner}
       </span>
       <span class="gif-option-label">${escapeHtml(option.label)}</span>
     </button>`;
-}
-
-function filterGifOptionsByGender(options) {
-  if (gifGenderFilter === 'all') return options;
-  return options.filter((o) => o.gender === gifGenderFilter);
-}
-
-function syncGifGenderTabs() {
-  if (!gifGenderTabs) return;
-  gifGenderTabs.querySelectorAll('.gif-gender-tab').forEach((tab) => {
-    const active = tab.dataset.gender === gifGenderFilter;
-    tab.classList.toggle('active', active);
-    tab.setAttribute('aria-selected', active ? 'true' : 'false');
-  });
 }
 
 function showGifPickerThumbPlaceholder(img) {
@@ -544,7 +521,9 @@ function renderGifPicker(activity) {
     return;
   }
 
-  const presetOptions = getActivityGifOptions(activity.id);
+  const presetOptions = getActivityGifOptions(activity.id, {
+    activityGifUrl: activity.isCustom ? activity.gifUrl : null,
+  });
   if (activity.isCustom && isValidDiscordImageUrl(activity.gifUrl)) {
     const hasOwn = presetOptions.some((o) => o.url === activity.gifUrl);
     if (!hasOwn) {
@@ -557,14 +536,12 @@ function renderGifPicker(activity) {
   }
 
   const selectedId = getSavedGifChoiceId(activity);
-  const visiblePresets = filterGifOptionsByGender(presetOptions);
   const showMyGifs = shouldShowMyGifsSection(activity);
   const myGifs = showMyGifs
     ? collectMyGifs().filter((g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id))
     : [];
-  gifPickerSection.hidden = visiblePresets.length === 0 && myGifs.length === 0;
-  gifPickerStrip.innerHTML = visiblePresets.map((o) => renderGifOptionButton(o, selectedId)).join('');
-  syncGifGenderTabs();
+  gifPickerSection.hidden = presetOptions.length === 0 && myGifs.length === 0;
+  gifPickerStrip.innerHTML = presetOptions.map((o) => renderGifOptionButton(o, selectedId)).join('');
 
   if (gifPickerMyGifs && gifPickerMyStrip) {
     if (myGifs.length) {
@@ -1204,8 +1181,6 @@ function openSettings(tab = 'general') {
     });
 
     switchSettingsTab(tab);
-    loadCustomAnimationsList();
-    renderCustomActivitiesSettingsList();
 
     if (cfg.version) {
       footerVersion.textContent = `Smiley v${cfg.version}`;
@@ -1520,7 +1495,6 @@ async function handleSaveCustomActivity() {
   activeCategory = 'custom';
   renderCategoryTabs();
   renderActivityGrid();
-  renderCustomActivitiesSettingsList();
   showToast(createActivityDraft.editingId ? 'Activity updated' : 'Activity created');
 }
 
@@ -1539,7 +1513,6 @@ async function handleDeleteCustomActivity(id) {
   }
   renderActivityGrid();
   renderRecentChips();
-  renderCustomActivitiesSettingsList();
   showToast('Activity deleted');
 }
 
@@ -1551,122 +1524,13 @@ async function loadCustomActivitiesConfig() {
   }
 }
 
-function renderCustomActivitiesSettingsList() {
-  if (!customActivitiesSettingsList) return;
-  if (!customActivitiesConfig.length) {
-    customActivitiesSettingsList.innerHTML = '<p class="field-hint">No custom activities yet — use the <strong>My Activities</strong> tab to create one.</p>';
-    return;
-  }
-  customActivitiesSettingsList.innerHTML = customActivitiesConfig
-    .map((ca) => {
-      const thumb = ca.gifUrl || ca.localGifPath || '';
-      const thumbHtml = thumb
-        ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />`
-        : '<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">✨</span>';
-      return `
-      <div class="custom-activity-settings-item" data-id="${escapeHtml(ca.id)}">
-        ${thumbHtml}
-        <div class="meta">
-          <strong>${escapeHtml(ca.emoji)} ${escapeHtml(ca.details)}</strong>
-          <span>${escapeHtml(ca.state || '')}${ca.gifUrl ? '' : ' · preview only'}</span>
-        </div>
-        <button type="button" class="btn-delete" data-delete-settings="${escapeHtml(ca.id)}" title="Delete">🗑️</button>
-      </div>`;
-    })
-    .join('');
-
-  customActivitiesSettingsList.querySelectorAll('[data-delete-settings]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      await handleDeleteCustomActivity(btn.dataset.deleteSettings);
-    });
-  });
-}
-
-// ─── Custom Animations ───────────────────────────────────────────────
-async function loadCustomAnimationsList() {
+async function loadCustomAnimations() {
   try {
-    const list = await window.smiley.getCustomAnimations();
-    customAnimations = list || [];
-    renderCustomAnimationsList();
+    customAnimations = (await window.smiley.getCustomAnimations()) || [];
   } catch (err) {
     console.error('Failed to load custom animations:', err);
+    customAnimations = [];
   }
-}
-
-function renderCustomAnimationsList() {
-  if (!customAnimations.length) {
-    customAnimationList.innerHTML = '';
-    return;
-  }
-
-  customAnimationList.innerHTML = customAnimations
-    .map(
-      (anim) => `
-    <div class="custom-animation-item${anim.dataUrl === activeCustomAnimation ? ' active' : ''}" data-name="${anim.name}">
-      <img src="${anim.dataUrl}" alt="${anim.name}" loading="lazy" />
-      <span>${anim.name}</span>
-      <button class="btn-delete" data-name="${anim.name}" title="Delete">🗑️</button>
-    </div>
-  `
-    )
-    .join('');
-
-  customAnimationList.querySelectorAll('.custom-animation-item').forEach((item) => {
-    item.addEventListener('click', (e) => {
-      if (e.target.classList.contains('btn-delete')) return;
-      const name = item.dataset.name;
-      const anim = customAnimations.find((a) => a.name === name);
-      if (anim) {
-        activeCustomAnimation = anim.dataUrl;
-        renderCustomAnimationsList();
-        const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
-        if (activity) updatePreview(activity);
-        showToast('Custom animation selected!');
-      }
-    });
-  });
-
-  customAnimationList.querySelectorAll('.btn-delete').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const name = btn.dataset.name;
-      const result = await window.smiley.deleteCustomAnimation(name);
-      if (result.success) {
-        if (activeCustomAnimation && customAnimations.find((a) => a.name === name)?.dataUrl === activeCustomAnimation) {
-          activeCustomAnimation = null;
-          const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
-          if (activity) updatePreview(activity);
-          else updatePreview(null);
-        }
-        await loadCustomAnimationsList();
-        showToast('Animation deleted');
-      }
-    });
-  });
-}
-
-async function handleUploadAnimation() {
-  const result = await window.smiley.pickCustomAnimation();
-  if (result.canceled) return;
-  if (result.error) { showToast(result.error, 'error'); return; }
-  activeCustomAnimation = result.dataUrl;
-  await loadCustomAnimationsList();
-  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
-  if (activity) updatePreview(activity);
-  showToast('Custom animation uploaded!');
-}
-
-function setupDragDrop() {
-  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
-    customAnimationDrop.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); });
-  });
-  ['dragenter', 'dragover'].forEach((eventName) => {
-    customAnimationDrop.addEventListener(eventName, () => customAnimationDrop.classList.add('drag-over'));
-  });
-  ['dragleave', 'drop'].forEach((eventName) => {
-    customAnimationDrop.addEventListener(eventName, () => customAnimationDrop.classList.remove('drag-over'));
-  });
-  customAnimationDrop.addEventListener('click', handleUploadAnimation);
 }
 
 // ─── Bug Report ──────────────────────────────────────────────────────
@@ -2031,17 +1895,6 @@ async function init() {
   gifSourceTabs.forEach((tab) => {
     tab.addEventListener('click', () => setGifSourceTab(tab.dataset.source));
   });
-  if (gifGenderTabs) {
-    gifGenderTabs.querySelectorAll('.gif-gender-tab').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const next = tab.dataset.gender || 'all';
-        if (next === gifGenderFilter) return;
-        gifGenderFilter = next;
-        const activity = findActivity(selectedActivityId);
-        if (activity) renderGifPicker(activity);
-      });
-    });
-  }
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
   if (copyBtn) copyBtn.addEventListener('click', handleCopy);
@@ -2100,8 +1953,6 @@ async function init() {
       applyTheme(opt.dataset.theme);
     });
   });
-
-  setupDragDrop();
 
   if (uploadWallpaperBtn) uploadWallpaperBtn.addEventListener('click', handleUploadWallpaper);
   if (resetWallpaperBtn) resetWallpaperBtn.addEventListener('click', handleResetWallpaper);
@@ -2279,7 +2130,6 @@ async function init() {
     if (data.customActivities) {
       customActivitiesConfig = data.customActivities;
       renderActivityGrid();
-      renderCustomActivitiesSettingsList();
       if (selectedActivityId) {
         const activity = findActivity(selectedActivityId);
         if (activity) renderGifPicker(activity);
@@ -2328,6 +2178,7 @@ async function init() {
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
   await loadCustomActivitiesConfig();
+  await loadCustomAnimations();
   applyPlatformUI(cfg);
   if (cfg.releasesUrl) releasesUrl = cfg.releasesUrl;
   if (typeof cfg.macAdHocUpdates === 'boolean') macAdHocUpdates = cfg.macAdHocUpdates;

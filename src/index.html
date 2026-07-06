@@ -133,11 +133,6 @@
           <section class="gif-picker-section" id="gifPickerSection" hidden aria-labelledby="gifPickerLabel">
             <div class="gif-picker-header">
               <h3 class="gif-picker-label" id="gifPickerLabel">Choose animation</h3>
-              <div class="gif-gender-tabs" id="gifGenderTabs" role="tablist" aria-label="Filter by character">
-                <button type="button" class="gif-gender-tab active" data-gender="all" role="tab" aria-selected="true">All</button>
-                <button type="button" class="gif-gender-tab" data-gender="girl" role="tab" aria-selected="false">👧 Girls</button>
-                <button type="button" class="gif-gender-tab" data-gender="boy" role="tab" aria-selected="false">👦 Boys</button>
-              </div>
             </div>
             <div class="gif-picker-strip" id="gifPickerStrip" role="listbox" aria-label="Preset animations"></div>
             <div class="gif-picker-my-gifs" id="gifPickerMyGifs" hidden>
@@ -171,7 +166,6 @@
         <div class="settings-tabs" id="settingsTabs">
           <button type="button" class="settings-tab active" data-tab="general">General</button>
           <button type="button" class="settings-tab" data-tab="appearance">Appearance</button>
-          <button type="button" class="settings-tab" data-tab="animations">Animations</button>
           <button type="button" class="settings-tab" data-tab="advanced">Advanced</button>
           <button type="button" class="settings-tab" data-tab="about">About</button>
         </div>
@@ -198,6 +192,10 @@
             <div class="field toggle-field">
               <span class="field-label">Minimize to tray on close</span>
               <label class="toggle"><input type="checkbox" id="minimizeTrayToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field toggle-field">
+              <span class="field-label">Enable anime animations</span>
+              <label class="toggle"><input type="checkbox" id="animationsToggle" checked /><span class="toggle-slider"></span></label>
             </div>
             <div class="field toggle-field">
               <span class="field-label">Check for updates on startup</span>
@@ -256,29 +254,6 @@
                 <label class="wallpaper-slider-label" for="wallpaperDimSlider">Dim overlay <span id="wallpaperDimValue">0</span>%</label>
                 <input type="range" id="wallpaperDimSlider" min="0" max="80" value="0" step="1" disabled />
               </div>
-            </div>
-          </div>
-          <div class="settings-panel" data-panel="animations">
-            <div class="field toggle-field">
-              <span class="field-label">Enable anime animations</span>
-              <label class="toggle"><input type="checkbox" id="animationsToggle" checked /><span class="toggle-slider"></span></label>
-            </div>
-            <div class="field">
-              <span class="field-label">Custom Animation</span>
-              <p class="field-hint">Upload your own animated GIF or image to use as your character</p>
-              <div class="custom-animation-area" id="customAnimationArea">
-                <div class="custom-animation-drop" id="customAnimationDrop">
-                  <span class="drop-icon">🎨</span>
-                  <p>Click to browse for an image</p>
-                  <span class="drop-formats">PNG, JPG, GIF, WebP, SVG (max 5MB)</span>
-                </div>
-                <div class="custom-animation-list" id="customAnimationList"></div>
-              </div>
-            </div>
-            <div class="field">
-              <span class="field-label">My custom activities</span>
-              <p class="field-hint">Activities you created appear under <strong>My Activities</strong>. Uploaded GIFs preview in-app; paste a direct HTTPS GIF URL for Discord.</p>
-              <div class="custom-activities-settings-list" id="customActivitiesSettingsList"></div>
             </div>
           </div>
           <div class="settings-panel" data-panel="advanced">
