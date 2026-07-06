@@ -58,6 +58,8 @@ The release workflow creates `downloads.registry.json` per platform when secrets
 
 ### 4. View installs
 
+**Web dashboard (recommended):** open [stats.html](https://1tsrajuwu.github.io/Smiley/stats.html) on GitHub Pages. Sign in with your Supabase **Project URL** and **service role** key (Settings → API). The service role can read rows; the anon key used by the app cannot.
+
 Supabase **Table Editor → installs**, or run:
 
 ```sql

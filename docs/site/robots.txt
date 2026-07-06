@@ -1,5 +1,6 @@
-# Smiley GitHub Pages — allow all crawlers
+# Smiley GitHub Pages — allow crawlers on public pages only
 User-agent: *
 Allow: /
+Disallow: /stats.html
 
 Sitemap: https://1tsrajuwu.github.io/Smiley/
