@@ -68,7 +68,7 @@ function buildSupabaseHeaders(anonKey) {
   return headers;
 }
 
-function postJson(url, headers, body) {
+function postJson(url, headers, body, method = 'POST') {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const lib = parsed.protocol === 'http:' ? http : https;
@@ -76,7 +76,7 @@ function postJson(url, headers, body) {
     const req = lib.request(
       url,
       {
-        method: 'POST',
+        method,
         headers: {
           ...headers,
           'Content-Type': 'application/json',
@@ -85,9 +85,18 @@ function postJson(url, headers, body) {
         timeout: 15000,
       },
       (res) => {
-        res.resume();
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve({ ok: true, status: res.statusCode });
-        else reject(new Error(`Registry HTTP ${res.statusCode}`));
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ ok: true, status: res.statusCode });
+          } else {
+            const err = new Error(`Registry HTTP ${res.statusCode}`);
+            err.statusCode = res.statusCode;
+            err.body = data;
+            reject(err);
+          }
+        });
       },
     );
     req.on('error', reject);
@@ -131,12 +140,26 @@ async function registerInstall({
     };
 
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
+    const headers = {
+      ...buildSupabaseHeaders(registry.supabaseAnonKey),
+      Prefer: 'return=minimal',
+    };
     try {
       if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
-      await postJson(endpoint, {
-        ...buildSupabaseHeaders(registry.supabaseAnonKey),
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      }, row);
+      try {
+        await postJson(endpoint, headers, row);
+      } catch (err) {
+        // merge-duplicates upsert needs SELECT; anon only has insert/update. PATCH on duplicate.
+        if (err.statusCode !== 409) throw err;
+        const patchUrl = `${endpoint}?install_id=eq.${encodeURIComponent(installId)}`;
+        await postJson(patchUrl, headers, {
+          platform: row.platform,
+          arch: row.arch,
+          app_version: row.app_version,
+          user_agent: row.user_agent,
+          consent_version: row.consent_version,
+        }, 'PATCH');
+      }
       return { success: true, installId };
     } catch (err) {
       return { success: false, error: err.message };

@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-    "version": "5.0.1",
+    "version": "5.0.2",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -25,6 +25,7 @@
     "build:all": "electron-builder --mac --win --linux",
     "build:compat": "electron-builder --mac --win --linux",
     "build:mobile:www": "node mobile/scripts/build-www.js",
+    "sync:version": "node scripts/sync-version.js",
     "icons": "bash scripts/generate-icons.sh",
     "mobile:build": "cd mobile && npm install && npm run build",
     "mobile:sync": "cd mobile && npm run sync",
