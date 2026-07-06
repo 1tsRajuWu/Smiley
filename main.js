@@ -996,6 +996,18 @@ function formatUpdateError(err) {
     };
   }
   if (
+    msg.includes('latest-mac.yml') &&
+    process.platform === 'darwin'
+  ) {
+    return {
+      ok: false,
+      status: 'no-release',
+      message:
+        'Mac update metadata is not on GitHub yet. If a release just went out, wait a few minutes and try again, or download from github.com/1tsRajuWu/Smiley/releases',
+      expected: true,
+    };
+  }
+  if (
     msg.includes('latest.yml') ||
     msg.includes('latest-mac.yml') ||
     msg.includes('latest-linux.yml') ||
@@ -1138,8 +1150,8 @@ function setupAutoUpdater() {
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
 
-    // Unsigned Windows builds: skip publisher signature check (see win.verifyUpdateCodeSignature in package.json)
-    if (process.platform === 'win32') {
+    // Ad-hoc signed macOS / unsigned Windows: skip publisher signature check
+    if (process.platform === 'win32' || process.platform === 'darwin') {
       autoUpdater.verifyUpdateCodeSignature = () => Promise.resolve(null);
     }
 

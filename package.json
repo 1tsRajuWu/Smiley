@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Discord Rich Presence with animated anime GIFs",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -78,6 +78,7 @@
     "afterSign": "scripts/afterSign-mac.js",
     "mac": {
       "identity": "-",
+      "verifyUpdateCodeSignature": false,
       "minimumSystemVersion": "11.0.0",
       "category": "public.app-category.social-networking",
       "artifactName": "Smiley-${version}-${arch}.${ext}",
