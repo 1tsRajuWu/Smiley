@@ -30,11 +30,32 @@ contextBridge.exposeInMainWorld('smiley', {
   isWindowMaximized: () => ipcRenderer.invoke('is-window-maximized'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
   resetWindowPosition: () => ipcRenderer.invoke('reset-window-position'),
-  onStatus: (callback) => ipcRenderer.on('rpc-status', (_, data) => callback(data)),
-  onInitialConnect: (callback) => ipcRenderer.on('initial-connect', (_, data) => callback(data)),
-  onOpenSettings: (callback) => ipcRenderer.on('open-settings', () => callback()),
-  onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
-  onSelectActivity: (callback) => ipcRenderer.on('select-activity', (_, id) => callback(id)),
-  onConfigChanged: (callback) => ipcRenderer.on('config-changed', (_, data) => callback(data)),
-  onWindowMaximized: (callback) => ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized)),
+  onStatus: (callback) => {
+    ipcRenderer.removeAllListeners('rpc-status');
+    ipcRenderer.on('rpc-status', (_, data) => callback(data));
+  },
+  onInitialConnect: (callback) => {
+    ipcRenderer.removeAllListeners('initial-connect');
+    ipcRenderer.on('initial-connect', (_, data) => callback(data));
+  },
+  onOpenSettings: (callback) => {
+    ipcRenderer.removeAllListeners('open-settings');
+    ipcRenderer.on('open-settings', () => callback());
+  },
+  onUpdateStatus: (callback) => {
+    ipcRenderer.removeAllListeners('update-status');
+    ipcRenderer.on('update-status', (_, data) => callback(data));
+  },
+  onSelectActivity: (callback) => {
+    ipcRenderer.removeAllListeners('select-activity');
+    ipcRenderer.on('select-activity', (_, id) => callback(id));
+  },
+  onConfigChanged: (callback) => {
+    ipcRenderer.removeAllListeners('config-changed');
+    ipcRenderer.on('config-changed', (_, data) => callback(data));
+  },
+  onWindowMaximized: (callback) => {
+    ipcRenderer.removeAllListeners('window-maximized');
+    ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized));
+  },
 });

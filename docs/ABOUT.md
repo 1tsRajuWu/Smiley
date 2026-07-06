@@ -17,7 +17,6 @@ Raj wanted Discord status to feel alive — not a static line of text. Smiley is
 | **GitHub** | [github.com/1tsRajuWu](https://github.com/1tsRajuWu) |
 | **Main project** | [Smiley](https://github.com/1tsRajuWu/Smiley) — Discord Rich Presence with anime GIFs |
 | **PayPal** | [paypal.me/1tsRaj](https://paypal.me/1tsRaj) |
-| **UPI** | `therajind.07@oksbi` |
 
 If Smiley has made your Discord profile more fun, a donation genuinely helps keep development going.
 

@@ -18,8 +18,6 @@ import {
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
 const GITHUB_RELEASES_URL = 'https://github.com/1tsRajuWu/Smiley/releases/latest';
-const UPI_ID = 'therajind.07@oksbi';
-const UPI_NAME = 'Himanshu Raj (R A J)';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -41,6 +39,7 @@ const gifPickerSection = $('#gifPickerSection');
 const gifPickerStrip = $('#gifPickerStrip');
 const gifPickerMyGifs = $('#gifPickerMyGifs');
 const gifPickerMyStrip = $('#gifPickerMyStrip');
+const gifGenderTabs = $('#gifGenderTabs');
 const searchInput = $('#searchInput');
 const settingsBtn = $('#settingsBtn');
 const minimizeBtn = $('#minimizeBtn');
@@ -52,13 +51,6 @@ const saveSettingsBtn = $('#saveSettingsBtn');
 const closeSettings = $('#closeSettings');
 const donateBanner = $('#donateBanner');
 const donatePaypalBtn = $('#donatePaypalBtn');
-const donateUpiBtn = $('#donateUpiBtn');
-const donateUpiQrBtn = $('#donateUpiQrBtn');
-const upiQrModal = $('#upiQrModal');
-const closeUpiQr = $('#closeUpiQr');
-const supportUpiCopyBtn = $('#supportUpiCopyBtn');
-const aboutUpiCopyBtn = $('#aboutUpiCopyBtn');
-const aboutUpiQrBtn = $('#aboutUpiQrBtn');
 const toastContainer = $('#toastContainer');
 const characterGif = $('#characterGif');
 const characterLoading = $('#characterLoading');
@@ -166,6 +158,10 @@ let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 let customActivitiesConfig = [];
 let activityGifChoices = {};
+let gifGenderFilter = 'all';
+let saveGifChoiceTimer = null;
+let updateCheckDebounceUntil = 0;
+let updateCheckingToastShown = false;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -239,21 +235,6 @@ function applyPlatformUI(cfg = {}) {
   if (minimizeBtn) minimizeBtn.hidden = isMacPlatform;
   if (windowControls) windowControls.hidden = isMacPlatform;
   document.body.classList.toggle('has-window-controls', !isMacPlatform);
-}
-
-async function copyUpiId() {
-  try {
-    const result = await window.smiley.copyText(UPI_ID);
-    if (result?.success) showToast('UPI ID copied');
-    else showToast('Could not copy UPI ID', 'error');
-  } catch {
-    showToast('Could not copy UPI ID', 'error');
-  }
-}
-
-function openUpiQrModal() {
-  if (!upiQrModal) return;
-  if (!upiQrModal.open) upiQrModal.showModal();
 }
 
 function syncMaximizeButton(isMaximized) {
@@ -408,15 +389,35 @@ function renderGifOptionButton(option, selectedId) {
     ? ` data-fallback-url="${escapeHtml(option.fallbackUrl)}"`
     : '';
   const nekosAttr = isNekosBestUrl(option.url) ? ' referrerpolicy="no-referrer"' : '';
+  const genderBadge = option.gender === 'girl'
+    ? '<span class="gif-gender-badge girl" aria-hidden="true">👧</span>'
+    : option.gender === 'boy'
+      ? '<span class="gif-gender-badge boy" aria-hidden="true">👦</span>'
+      : '';
   return `
     <button type="button" class="gif-option${selected ? ' selected' : ''}${previewOnly}"
       role="option" aria-selected="${selected}" data-choice="${escapeHtml(option.id)}"${fallbackAttr}
       title="${escapeHtml(option.label)}${option.previewOnly ? ' (app preview only)' : ''}">
       <span class="gif-option-thumb">
+        ${genderBadge}
         <img src="${escapeHtml(option.url)}" alt="" loading="lazy" decoding="async"${nekosAttr} />
       </span>
       <span class="gif-option-label">${escapeHtml(option.label)}</span>
     </button>`;
+}
+
+function filterGifOptionsByGender(options) {
+  if (gifGenderFilter === 'all') return options;
+  return options.filter((o) => o.gender === gifGenderFilter);
+}
+
+function syncGifGenderTabs() {
+  if (!gifGenderTabs) return;
+  gifGenderTabs.querySelectorAll('.gif-gender-tab').forEach((tab) => {
+    const active = tab.dataset.gender === gifGenderFilter;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
 }
 
 function bindGifPickerThumbFallbacks(strip) {
@@ -494,8 +495,10 @@ function renderGifPicker(activity) {
   }
 
   const selectedId = getSavedGifChoiceId(activity);
-  gifPickerSection.hidden = presetOptions.length === 0 && collectMyGifs().length === 0;
-  gifPickerStrip.innerHTML = presetOptions.map((o) => renderGifOptionButton(o, selectedId)).join('');
+  const visiblePresets = filterGifOptionsByGender(presetOptions);
+  gifPickerSection.hidden = visiblePresets.length === 0 && collectMyGifs().length === 0;
+  gifPickerStrip.innerHTML = visiblePresets.map((o) => renderGifOptionButton(o, selectedId)).join('');
+  syncGifGenderTabs();
 
   const myGifs = collectMyGifs().filter(
     (g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id)
@@ -517,6 +520,41 @@ function renderGifPicker(activity) {
   refreshNekosPickerThumbs(activity);
 }
 
+function scheduleSaveGifChoices() {
+  clearTimeout(saveGifChoiceTimer);
+  saveGifChoiceTimer = setTimeout(() => {
+    void window.smiley.saveConfig({ activityGifChoice: activityGifChoices });
+  }, 400);
+}
+
+function updateGifPickerSelection(choiceId) {
+  [gifPickerStrip, gifPickerMyStrip].forEach((strip) => {
+    if (!strip) return;
+    strip.querySelectorAll('.gif-option.selected').forEach((el) => {
+      el.classList.remove('selected');
+      el.setAttribute('aria-selected', 'false');
+    });
+    if (!choiceId) return;
+    const btn = strip.querySelector(`.gif-option[data-choice="${CSS.escape(choiceId)}"]`);
+    if (btn) {
+      btn.classList.add('selected');
+      btn.setAttribute('aria-selected', 'true');
+    }
+  });
+}
+
+function markGridSelection(id) {
+  activityGrid.querySelectorAll('.activity-card.selected').forEach((el) => el.classList.remove('selected'));
+  if (!id) return;
+  const card = activityGrid.querySelector(`.activity-card[data-id="${CSS.escape(id)}"]`);
+  if (card) card.classList.add('selected');
+  const parts = lastRenderedGridKey.split('|');
+  if (parts.length >= 3) {
+    parts[2] = id;
+    lastRenderedGridKey = parts.join('|');
+  }
+}
+
 async function onGifOptionSelect(activityId, choiceId) {
   if (!activityId || !choiceId) return;
 
@@ -536,10 +574,10 @@ async function onGifOptionSelect(activityId, choiceId) {
   setCharacterDisplay(instantUrl, 'Chosen GIF', fallbacks, { generation, activity });
 
   activityGifChoices = { ...activityGifChoices, [activityId]: choiceId };
-  void window.smiley.saveConfig({ activityGifChoice: activityGifChoices });
+  scheduleSaveGifChoices();
 
   clearActivityImageCacheEntry(activityId);
-  renderGifPicker(activity);
+  updateGifPickerSelection(choiceId);
 
   const rpcPayload = buildRpcPayload(activity, instantDiscord);
   window.smiley.setActivity(rpcPayload, false).then((result) => {
@@ -997,11 +1035,12 @@ async function selectActivity(id) {
   if (!activity) return;
 
   const isReselect = selectedActivityId === id;
+  const prevId = selectedActivityId;
   selectedActivityId = id;
-  renderActivityGrid();
+  if (prevId !== id) markGridSelection(id);
 
   setCharacterLabel(activity);
-  renderGifPicker(activity);
+  if (!isReselect) renderGifPicker(activity);
 
   const generation = ++gifLoadGeneration;
   lastGifActivityId = id;
@@ -1066,7 +1105,8 @@ async function handleCopy() {
 async function handleClear() {
   await window.smiley.clearActivity();
   selectedActivityId = null;
-  renderActivityGrid();
+  markGridSelection(null);
+  lastRenderedGridKey = '';
   renderGifPicker(null);
   await updatePreview(null);
   showToast('Status cleared');
@@ -1743,16 +1783,21 @@ function syncUpdateBannerButtons() {
 function handleUpdateStatus(data) {
   switch (data.status) {
     case 'checking':
-      if (data.silent) showToast('Checking for updates...', 'subtle');
-      else showToast('Checking for updates...');
+      if (data.silent) break;
+      if (updateCheckingToastShown) break;
+      updateCheckingToastShown = true;
+      showToast('Checking for updates...');
       break;
     case 'dev-mode':
+      updateCheckingToastShown = false;
       showToast(data.message || 'Updates are only available in installed releases.');
       break;
     case 'no-release':
+      updateCheckingToastShown = false;
       showToast(data.message || 'No release on GitHub yet — open github.com/1tsRajuWu/Smiley/releases');
       break;
     case 'available':
+      updateCheckingToastShown = false;
       updateState = { downloaded: false, dismissed: false, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       showToast(`Update v${data.version} available! Downloading...`);
@@ -1773,11 +1818,13 @@ function handleUpdateStatus(data) {
       syncUpdateBannerButtons();
       break;
     case 'up-to-date':
+      updateCheckingToastShown = false;
       if (data.silent) break;
       hideUpdateBanner();
       showToast('You are on the latest version!');
       break;
     case 'downloaded':
+      updateCheckingToastShown = false;
       updateState.downloaded = true;
       updateState.percent = 100;
       updateState.dismissed = false;
@@ -1798,6 +1845,7 @@ function handleUpdateStatus(data) {
       }
       break;
     case 'download-stalled':
+      updateCheckingToastShown = false;
       updateState = { downloaded: false, dismissed: true, percent: 0, version: null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
@@ -1805,6 +1853,7 @@ function handleUpdateStatus(data) {
       break;
     case 'unsigned-update':
     case 'manual-install-required':
+      updateCheckingToastShown = false;
       updateState = { downloaded: false, dismissed: true, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
@@ -1815,6 +1864,7 @@ function handleUpdateStatus(data) {
       );
       break;
     case 'error':
+      updateCheckingToastShown = false;
       updateState = { downloaded: false, dismissed: false, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
@@ -1886,7 +1936,6 @@ async function init() {
   setupModalClose(settingsModal, closeSettings);
   setupModalClose(legalModal, closeLegal);
   setupModalClose(createActivityModal, closeCreateActivity);
-  setupModalClose(upiQrModal, closeUpiQr);
   if (cancelCreateActivity) cancelCreateActivity.addEventListener('click', () => createActivityModal?.close());
   if (saveCreateActivity) saveCreateActivity.addEventListener('click', handleSaveCustomActivity);
   if (resolveGifBtn) resolveGifBtn.addEventListener('click', handleResolveGifPreview);
@@ -1894,6 +1943,17 @@ async function init() {
   gifSourceTabs.forEach((tab) => {
     tab.addEventListener('click', () => setGifSourceTab(tab.dataset.source));
   });
+  if (gifGenderTabs) {
+    gifGenderTabs.querySelectorAll('.gif-gender-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const next = tab.dataset.gender || 'all';
+        if (next === gifGenderFilter) return;
+        gifGenderFilter = next;
+        const activity = findActivity(selectedActivityId);
+        if (activity) renderGifPicker(activity);
+      });
+    });
+  }
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
   if (copyBtn) copyBtn.addEventListener('click', handleCopy);
@@ -1980,25 +2040,6 @@ async function init() {
       window.smiley.openExternal(DONATION_URL);
     });
   }
-  if (donateUpiBtn) {
-    donateUpiBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      copyUpiId();
-    });
-  }
-  if (donateUpiQrBtn) {
-    donateUpiQrBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openUpiQrModal();
-    });
-  }
-  if (supportUpiCopyBtn) supportUpiCopyBtn.addEventListener('click', () => copyUpiId());
-  if (aboutUpiCopyBtn) aboutUpiCopyBtn.addEventListener('click', () => copyUpiId());
-  if (aboutUpiQrBtn) aboutUpiQrBtn.addEventListener('click', () => openUpiQrModal());
-  const upiQrCopyBtn = $('#upiQrCopyBtn');
-  if (upiQrCopyBtn) upiQrCopyBtn.addEventListener('click', () => copyUpiId());
 
   document.querySelectorAll('.about-link[href^="http"]').forEach((link) => {
     link.addEventListener('click', (e) => {
@@ -2021,43 +2062,18 @@ async function init() {
   if (footerReview) footerReview.addEventListener('click', (e) => { e.preventDefault(); openReview(); });
 
   async function triggerUpdateCheck() {
-    showToast('Checking for updates...');
+    const now = Date.now();
+    if (now < updateCheckDebounceUntil) return;
+    updateCheckDebounceUntil = now + 500;
     try {
       const result = await window.smiley.checkForUpdates();
       if (!result) return;
+      if (result.status === 'busy') {
+        showToast(result.error || 'Update check already in progress', 'error');
+        return;
+      }
       if (result.status === 'dev-mode') {
         showToast(result.message || 'Updates only work in the installed app from GitHub Releases.');
-        return;
-      }
-      if (result.status === 'up-to-date') {
-        showToast(`You're on the latest version (v${result.version || 'current'}).`);
-        return;
-      }
-      if (result.status === 'available') {
-        showToast(`Update v${result.version} found — downloading…`);
-        return;
-      }
-      if (result.status === 'downloaded') {
-        showToast(`Update v${result.version} ready — restart to apply.`);
-        return;
-      }
-      if (result.status === 'no-release' || result.status === 'unsigned-update' || result.status === 'manual-install-required') {
-        if (result.status === 'manual-install-required' || result.status === 'unsigned-update') {
-          showUpdateActionToast(
-            result.message || buildManualUpdateMessage(result.version),
-            { url: result.releasesUrl || releasesUrl }
-          );
-        } else {
-          showToast(result.message || 'No release on GitHub yet — download from Releases page.');
-        }
-        return;
-      }
-      if (result.status === 'busy' || result.status === 'timeout') {
-        showToast(result.error || 'Update check failed.', 'error');
-        return;
-      }
-      if (!result.ok && result.error) {
-        showToast(result.error, 'error');
       }
     } catch (_) {
       showToast('Update check failed. Try again or download from GitHub Releases.', 'error');
@@ -2157,9 +2173,9 @@ async function init() {
       const match = findActivity(data.activity.id) || getAllActivitiesMerged().find(
         (a) => a.details === data.activity.details && a.state === data.activity.state
       );
-      if (match) {
+      if (match && match.id !== selectedActivityId) {
         selectedActivityId = match.id;
-        renderActivityGrid();
+        markGridSelection(match.id);
         renderGifPicker(match);
         updatePreview({ ...match, category: match.category });
       }

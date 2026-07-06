@@ -1118,6 +1118,11 @@ let lastDownloadPercent = 0;
 let downloadStallTimer = null;
 let updaterListenersAttached = false;
 let silentUpdateCheck = false;
+let isCheckingUpdate = false;
+
+function finishUpdateCheck() {
+  isCheckingUpdate = false;
+}
 
 function applyUpdaterSettings() {
   if (!isPackaged) return;
@@ -1293,15 +1298,20 @@ async function checkForUpdates(manual = false, silent = false) {
     return result;
   }
 
+  if (isCheckingUpdate) {
+    return { ok: false, status: 'busy', error: 'Update check already in progress' };
+  }
+
+  isCheckingUpdate = true;
   silentUpdateCheck = silent;
 
   if (manual) {
-    sendUpdateStatus({ status: 'checking' });
-    const waitPromise = waitForManualUpdateCheck();
+    const waitPromise = waitForManualUpdateCheck().finally(finishUpdateCheck);
     try {
       await getAutoUpdater().checkForUpdates();
       return await waitPromise;
     } catch (err) {
+      finishUpdateCheck();
       silentUpdateCheck = false;
       console.error('[updater]', err.message);
       const formatted = formatUpdateError(err);
@@ -1315,6 +1325,7 @@ async function checkForUpdates(manual = false, silent = false) {
     await getAutoUpdater().checkForUpdates();
     return { ok: true, status: 'checking' };
   } catch (err) {
+    finishUpdateCheck();
     silentUpdateCheck = false;
     console.error('[updater]', err.message);
     const formatted = formatUpdateError(err);
@@ -1378,6 +1389,7 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('update-available', (info) => {
+      finishUpdateCheck();
       silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
       if (updateDownloaded && pendingUpdateVersion === info.version) {
@@ -1394,6 +1406,7 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('update-not-available', (info) => {
+      finishUpdateCheck();
       pendingUpdateVersion = null;
       updateDownloaded = false;
       lastDownloadPercent = 0;
@@ -1429,6 +1442,7 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('error', (err) => {
+      finishUpdateCheck();
       console.error('[updater]', err.message);
       clearDownloadStallTimer();
       silentUpdateCheck = false;

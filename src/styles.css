@@ -580,24 +580,9 @@ body.has-window-controls .app-header {
   flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
-.donate-banner-cta-upi {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--success) 85%, #fff), var(--success));
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 28%, transparent);
-}
-.donate-banner-cta-qr {
-  min-width: 32px;
-  padding: 6px 8px;
-  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
-  color: var(--text);
-  border: 1px solid var(--border);
-  box-shadow: none;
-}
 .donate-banner-cta:hover {
   transform: scale(1.04);
   box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-.donate-banner-cta-upi:hover {
-  box-shadow: 0 3px 12px color-mix(in srgb, var(--success) 35%, transparent);
 }
 .donate-banner:hover .donate-banner-cta {
   transform: scale(1.04);
@@ -630,8 +615,13 @@ body.has-window-controls .app-header {
 
 .gif-picker-section { flex-shrink: 0; padding: 10px 16px 14px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--bg-elevated) 90%, var(--accent-soft)); -webkit-app-region: no-drag; }
 .gif-picker-section[hidden] { display: none !important; }
-.gif-picker-header { margin-bottom: 6px; }
+.gif-picker-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
 .gif-picker-label { margin: 0; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.gif-gender-tabs { display: flex; gap: 4px; margin-left: auto; }
+.gif-gender-tab { padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-size: 0.62rem; font-weight: 600; line-height: 1.2; transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease; -webkit-app-region: no-drag; }
+.gif-gender-tab:hover { border-color: var(--border-hover); color: var(--text); }
+.gif-gender-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.gif-gender-badge { position: absolute; top: 2px; right: 2px; z-index: 1; font-size: 0.62rem; line-height: 1; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
 .gif-picker-sublabel { margin: 10px 0 6px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
 .gif-picker-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; scrollbar-color: var(--text-dim) transparent; }
 .gif-picker-strip::-webkit-scrollbar { height: 4px; }
@@ -640,7 +630,7 @@ body.has-window-controls .app-header {
 .gif-option:hover { border-color: var(--border-hover); transform: translateY(-1px); }
 .gif-option:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 .gif-option.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent); }
-.gif-option-thumb { width: 64px; height: 64px; border-radius: 6px; overflow: hidden; background: var(--bg); display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+.gif-option-thumb { width: 64px; height: 64px; border-radius: 6px; overflow: hidden; background: var(--bg); display: flex; align-items: center; justify-content: center; margin: 0 auto; position: relative; }
 .gif-option-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gif-option-label { display: block; font-size: 0.62rem; text-align: center; margin-top: 4px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 72px; margin-left: auto; margin-right: auto; line-height: 1.2; }
 .gif-option.preview-only .gif-option-label::after { content: ' · app'; font-size: 0.58rem; opacity: 0.75; }
@@ -800,25 +790,6 @@ body.has-window-controls .app-header {
 .about-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 16px; }
 .about-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-xs); color: var(--text); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: var(--transition); }
 .about-link:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-1px); background: rgba(255,255,255,0.06); }
-.about-link-btn {
-  border: 1px solid rgba(255,255,255,0.1);
-  cursor: pointer;
-  font-family: inherit;
-}
-.support-upi-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
-.upi-qr-body { text-align: center; padding-bottom: 8px; }
-.upi-qr-name { font-weight: 700; margin: 0 0 12px; }
-.upi-qr-image {
-  width: min(240px, 100%);
-  height: auto;
-  border-radius: var(--radius-xs);
-  background: #fff;
-  padding: 8px;
-  margin: 0 auto 12px;
-  display: block;
-}
-.upi-qr-id { margin: 0 0 8px; font-size: 0.9rem; }
 .about-legal { margin: 12px 0; font-size: 0.78rem; }
 .about-legal a { color: var(--accent); text-decoration: none; cursor: pointer; }
 .about-legal a:hover { text-decoration: underline; }
@@ -860,22 +831,34 @@ body.has-window-controls .app-header {
 
 .about-hint { margin: 8px 0 12px; max-width: 320px; line-height: 1.45; }
 .update-banner {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--gap-md);
-  margin: 0 var(--pad-h) var(--gap-sm);
-  padding: 10px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-hover);
+  margin: 0 var(--pad-h);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 14px;
+  border: 1px solid transparent;
   border-radius: var(--radius-xs);
   font-size: 0.82rem;
   color: var(--text);
   -webkit-app-region: no-drag;
   flex-shrink: 0;
   min-width: 0;
+  pointer-events: none;
+  transition: max-height 0.2s ease, opacity 0.2s ease, margin 0.2s ease, padding 0.2s ease, border-color 0.2s ease;
 }
-.update-banner.visible { display: flex; }
+.update-banner.visible {
+  max-height: 56px;
+  opacity: 1;
+  margin-bottom: var(--gap-sm);
+  padding: 10px 14px;
+  border-color: var(--border-hover);
+  background: var(--bg-card);
+  pointer-events: auto;
+}
 .update-banner-actions { display: flex; align-items: center; gap: var(--gap-sm); flex-shrink: 0; }
 .update-banner .btn { padding: 6px 12px; font-size: 0.78rem; white-space: nowrap; }
 .update-banner #updateBannerText { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }

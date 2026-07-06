@@ -7,7 +7,6 @@
 
 - GitHub: https://github.com/1tsRajuWu (username: `1tsRajuWu`, also `1tsRaj`)
 - PayPal: https://paypal.me/1tsRaj
-- UPI: therajind.07@oksbi
 
 Raj built Smiley because Discord's built-in status is static. He wanted a one-click way to show what you're doing — gaming, coding, eating, chilling — with a live anime GIF on your profile, synced between the app preview and Discord Rich Presence.
 
