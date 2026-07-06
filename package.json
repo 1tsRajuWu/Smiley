@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-    "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -40,6 +40,13 @@
     "discord-rpc": "^4.0.1",
     "electron-updater": "^6.3.0"
   },
+  "optionalDependencies": {
+    "node-nowplaying-darwin-universal": "0.1.0",
+    "node-nowplaying-win32-x64-msvc": "0.1.0",
+    "node-nowplaying-win32-arm64-msvc": "0.1.0",
+    "node-nowplaying-linux-x64-gnu": "0.1.0",
+    "node-nowplaying-linux-arm64-gnu": "0.1.0"
+  },
   "devDependencies": {
     "electron": "^33.4.0",
     "electron-builder": "^25.1.8"
@@ -50,6 +57,9 @@
     "copyright": "Copyright © 2025–2026 Raj (1tsRaj). All Rights Reserved.",
     "compression": "maximum",
     "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"

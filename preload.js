@@ -80,4 +80,8 @@ contextBridge.exposeInMainWorld('smiley', {
     ipcRenderer.removeAllListeners('window-maximized');
     ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized));
   },
+  onNowPlayingUpdate: (callback) => {
+    ipcRenderer.removeAllListeners('now-playing-update');
+    ipcRenderer.on('now-playing-update', (_, track) => callback(track));
+  },
 });

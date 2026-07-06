@@ -9,5 +9,7 @@
   "minimizeToTray": true,
   "customActivities": [],
   "activityGifChoice": {},
-  "installTrackingEnabled": true
+  "installTrackingEnabled": true,
+  "musicNowPlaying": true,
+  "musicNowPlayingAlbumArt": true
 }

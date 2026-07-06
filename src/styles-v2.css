@@ -16,7 +16,7 @@
     0 12px 40px rgba(0, 0, 0, 0.28);
   --v2-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.18);
   --v2-text-tracking: 0.01em;
-  --v2-text-secondary: color-mix(in srgb, var(--text-muted) 65%, var(--text));
+  --v2-text-secondary: color-mix(in srgb, var(--text-muted) 30%, var(--text));
 }
 
 [data-ui-version='v2'] body {
@@ -62,7 +62,7 @@
 [data-ui-version='v2'] .tagline {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--text-dim);
+  color: var(--text-muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -144,27 +144,44 @@
 }
 
 [data-ui-version='v2'] .discord-card-inner {
-  padding: 16px;
-  gap: 16px;
+  padding: 18px 20px;
+  gap: 18px;
 }
 
 [data-ui-version='v2'] .discord-art {
-  width: 60px;
-  height: 60px;
-  border-radius: 14px;
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
   border: 1px solid var(--v2-border-subtle);
 }
 
+[data-ui-version='v2'] .discord-art-emoji {
+  font-size: 2.1rem;
+}
+
 [data-ui-version='v2'] .discord-details {
-  font-size: 0.92rem;
-  line-height: 1.25;
+  font-size: 1.02rem;
+  line-height: 1.3;
 }
 
 [data-ui-version='v2'] .discord-state {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   line-height: 1.35;
-  margin-top: 3px;
-  color: color-mix(in srgb, var(--text-muted) 92%, var(--text));
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+[data-ui-version='v2'] .discord-now-playing {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  margin-top: 5px;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+[data-ui-version='v2'] .discord-timer {
+  font-size: 0.8rem;
+  margin-top: 7px;
 }
 
 [data-ui-version='v2'] .preview-actions {
@@ -240,7 +257,12 @@
   border-radius: 999px;
   border-color: transparent;
   background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+  color: var(--text);
   gap: 7px;
+}
+
+[data-ui-version='v2'] .category-tab:not(.active) {
+  color: var(--v2-text-secondary);
 }
 
 [data-ui-version='v2'] .category-tab-emoji {
@@ -259,6 +281,7 @@
   border-radius: 12px;
   padding: 11px 16px;
   font-size: 0.86rem;
+  color: var(--text);
   background: color-mix(in srgb, var(--bg-card) 85%, transparent);
 }
 
@@ -291,6 +314,7 @@
 [data-ui-version='v2'] .activity-name {
   font-size: 0.86rem;
   line-height: 1.35;
+  color: var(--text);
   -webkit-line-clamp: 2;
 }
 
@@ -298,11 +322,11 @@
   font-size: 0.71rem;
   line-height: 1.3;
   margin-top: 5px;
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
 }
 
 [data-ui-version='v2'] .quick-label {
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
   letter-spacing: 0.05em;
 }
 
@@ -321,11 +345,11 @@
   background: color-mix(in srgb, var(--bg) 80%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
 }
 
 [data-ui-version='v2'] .footer-hint {
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
   opacity: 1;
 }
 
@@ -335,7 +359,7 @@
 
 [data-ui-version='v2'] .field-hint,
 [data-ui-version='v2'] #hotkeyHint {
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
 }
 
 [data-ui-version='v2'] .update-banner.visible {
@@ -357,7 +381,11 @@
 }
 
 [data-ui-version='v2'] .settings-tab:not(.active) {
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
+}
+
+[data-ui-version='v2'] .settings-tab.active {
+  color: var(--text);
 }
 
 [data-ui-version='v2'] .theme-option {
@@ -400,7 +428,7 @@
 
 [data-ui-version='v2'] .ui-version-option span {
   font-size: 0.72rem;
-  color: var(--v2-text-secondary);
+  color: var(--text-muted);
   line-height: 1.35;
 }
 

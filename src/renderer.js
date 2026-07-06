@@ -43,6 +43,7 @@ const previewEmoji = $('#previewEmoji');
 const previewGif = $('#previewGif');
 const previewDetails = $('#previewDetails');
 const previewState = $('#previewState');
+const previewNowPlaying = $('#previewNowPlaying');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -114,6 +115,8 @@ const autoConnectToggle = $('#autoConnectToggle');
 const minimizeTrayToggle = $('#minimizeTrayToggle');
 const autoCheckUpdatesToggle = $('#autoCheckUpdatesToggle');
 const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
+const musicNowPlayingToggle = $('#musicNowPlayingToggle');
+const musicNowPlayingAlbumArtToggle = $('#musicNowPlayingAlbumArtToggle');
 const shareInstallStatsField = $('#shareInstallStatsField');
 const shareInstallStatsToggle = $('#shareInstallStatsToggle');
 const showTimerToggle = $('#showTimerToggle');
@@ -210,6 +213,7 @@ let updateCheckDebounceUntil = 0;
 let updateCheckingToastShown = false;
 let lastUpdateActionToastKey = '';
 let lastUpdateActionToastAt = 0;
+let nowPlayingTrack = null;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -929,6 +933,44 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
   });
 }
 
+function applyNowPlayingPreview(activity) {
+  if (!previewNowPlaying) return;
+  const enabled = currentSettings.musicNowPlaying !== false;
+  const isListening = activity?.id === 'listening';
+  const track = isListening && enabled ? nowPlayingTrack : null;
+
+  if (track?.title) {
+    previewDetails.textContent = track.title;
+    if (track.isPlaying) {
+      previewState.textContent = track.artist
+        ? (track.album ? `${track.artist} — ${track.album}` : `by ${track.artist}`)
+        : (activity?.state || '');
+    } else {
+      previewState.textContent = track.artist ? `Paused · ${track.artist}` : 'Paused';
+    }
+    const hintParts = [];
+    if (track.device) hintParts.push(track.device);
+    if (track.album && track.isPlaying) hintParts.push(track.album);
+    if (!track.isPlaying) hintParts.push('Paused');
+    const hint = hintParts.join(' · ');
+    if (hint) {
+      previewNowPlaying.textContent = hint;
+      previewNowPlaying.hidden = false;
+    } else {
+      previewNowPlaying.textContent = '';
+      previewNowPlaying.hidden = true;
+    }
+    return;
+  }
+
+  if (activity) {
+    previewDetails.textContent = activity.details;
+    previewState.textContent = activity.state || '';
+  }
+  previewNowPlaying.textContent = '';
+  previewNowPlaying.hidden = true;
+}
+
 function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } = {}) {
   if (!activity) {
     previewCard.classList.remove('active');
@@ -939,6 +981,10 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
     previewGif.removeAttribute('src');
     previewDetails.textContent = 'Pick an activity';
     previewState.textContent = 'Your status appears here';
+    if (previewNowPlaying) {
+      previewNowPlaying.textContent = '';
+      previewNowPlaying.hidden = true;
+    }
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
@@ -950,8 +996,7 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   previewCard.classList.add('active');
   previewCard.style.setProperty('--card-glow', `${category?.color || '#7aa2f7'}33`);
 
-  previewDetails.textContent = activity.details;
-  previewState.textContent = activity.state || '';
+  applyNowPlayingPreview(activity);
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
 
@@ -1330,7 +1375,14 @@ async function selectActivity(id) {
 async function handleCopy() {
   const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
   if (!activity) return;
-  const text = activity.state ? `${activity.details} — ${activity.state}` : activity.details;
+  let text;
+  if (activity.id === 'listening' && nowPlayingTrack?.title && currentSettings.musicNowPlaying !== false) {
+    text = nowPlayingTrack.artist
+      ? `${nowPlayingTrack.title} — ${nowPlayingTrack.artist}`
+      : nowPlayingTrack.title;
+  } else {
+    text = activity.state ? `${activity.details} — ${activity.state}` : activity.details;
+  }
   const result = await window.smiley.copyText(text);
   if (result?.success) showToast('Copied to clipboard');
   else showToast('Copy failed', 'error');
@@ -1340,6 +1392,7 @@ async function handleClear() {
   await window.smiley.clearActivity();
   selectedActivityId = null;
   presencePaused = false;
+  nowPlayingTrack = null;
   clearRotateTimer();
   markGridSelection(null);
   lastRenderedGridKey = '';
@@ -1362,6 +1415,8 @@ function openSettings(tab = 'general') {
     if (shareInstallStatsField) shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
     showTimerToggle.checked = cfg.showTimer !== false;
     animationsToggle.checked = cfg.animationsEnabled !== false;
+    if (musicNowPlayingToggle) musicNowPlayingToggle.checked = cfg.musicNowPlaying !== false;
+    if (musicNowPlayingAlbumArtToggle) musicNowPlayingAlbumArtToggle.checked = cfg.musicNowPlayingAlbumArt !== false;
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
@@ -1464,6 +1519,8 @@ function buildSettingsPayload() {
     installTrackingEnabled: shareInstallStatsToggle?.checked !== true,
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
+    musicNowPlaying: musicNowPlayingToggle?.checked !== false,
+    musicNowPlayingAlbumArt: musicNowPlayingAlbumArtToggle?.checked !== false,
     theme: currentSettings.theme || 'dark',
     uiVersion: currentSettings.uiVersion === 'v1' ? 'v1' : 'v2',
     customAnimation: activeCustomAnimation ? 'custom' : null,
@@ -1991,9 +2048,20 @@ function isUpdateSignatureError(msg) {
 }
 
 function buildManualUpdateMessage(version) {
-  return version
-    ? `Update v${version} available`
-    : 'Update available';
+  const label = formatUpdateVersion(version);
+  return label ? `Update ${label} available` : 'Update available';
+}
+
+function formatUpdateVersion(version) {
+  const ver = normalizeReleaseVersion(version);
+  return ver ? `v${ver}` : '';
+}
+
+function normalizeReleaseVersion(version) {
+  const ver = String(version ?? '').replace(/^v/i, '').trim();
+  if (!ver || ver === 'null' || ver === 'undefined') return '';
+  if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(ver)) return '';
+  return ver;
 }
 
 function buildMacInstallInstructions() {
@@ -2029,14 +2097,15 @@ function syncUpdateBannerButtons() {
   if (!updateRestartBtn) return;
   updateRestartBtn.hidden = false;
   if (macInAppUpdates && isMacPlatform) {
+    const canInstall = updateState.downloaded && !!updateState.version;
     const busy = !!updateState.version && !updateState.downloaded;
-    updateRestartBtn.disabled = false;
-    updateRestartBtn.textContent = updateState.downloaded ? 'Install update' : 'Install update';
+    updateRestartBtn.disabled = !canInstall && !busy;
+    updateRestartBtn.textContent = 'Install update';
     updateRestartBtn.title = updateState.downloaded
       ? 'Smiley will restart with the new version'
       : busy
         ? 'Download in progress — click to install when ready'
-        : 'Install the available update';
+        : 'Check for updates first';
     return;
   }
   updateRestartBtn.disabled = !updateState.downloaded;
@@ -2227,26 +2296,27 @@ function handleUpdateStatus(data) {
       break;
     case 'downloaded':
       updateCheckingToastShown = false;
+      if (!data.version) break;
       updateState.downloaded = true;
       updateState.manualInstall = false;
       updateState.percent = 100;
       updateState.dismissed = false;
-      updateState.version = data.version || updateState.version;
+      updateState.version = data.version;
       updateState.dmgDownloading = false;
       updateState.dmgReady = false;
       setUpdateBannerProgress(100, false);
       syncUpdateBannerButtons();
       if (updateBannerText) {
-        const ver = data.version ? `v${data.version}` : 'update';
+        const ver = formatUpdateVersion(data.version);
         updateBannerText.textContent = macInAppUpdates
-          ? `Update ${ver} ready — Smiley will restart with the new version`
-          : `Update ${ver} ready — restart to apply`;
+          ? `${ver} ready — Smiley will restart with the new version`
+          : `${ver} ready — restart to apply`;
       }
       updateBanner?.classList.add('visible');
       showToast(
         macInAppUpdates
-          ? `Update v${data.version} ready! Click Install update.`
-          : `Update v${data.version} ready! Restart to apply.`,
+          ? `${formatUpdateVersion(data.version)} ready! Click Install update.`
+          : `${formatUpdateVersion(data.version)} ready! Restart to apply.`,
         'success',
       );
       break;
@@ -2723,6 +2793,20 @@ async function init() {
   });
 
   // IPC events
+  window.smiley.onConfigChanged((data) => {
+    if (data?.musicNowPlaying !== undefined) currentSettings.musicNowPlaying = data.musicNowPlaying !== false;
+    if (data?.musicNowPlayingAlbumArt !== undefined) {
+      currentSettings.musicNowPlayingAlbumArt = data.musicNowPlayingAlbumArt !== false;
+    }
+  });
+
+  window.smiley.onNowPlayingUpdate((track) => {
+    nowPlayingTrack = track;
+    if (selectedActivityId !== 'listening') return;
+    const activity = findActivity('listening');
+    if (activity) applyNowPlayingPreview(activity);
+  });
+
   window.smiley.onStatus((data) => {
     if (data.settings) {
       currentSettings = { ...currentSettings, ...data.settings };
