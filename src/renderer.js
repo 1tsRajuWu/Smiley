@@ -50,6 +50,8 @@ const settingsTabs = document.querySelectorAll('.settings-tab');
 const settingsPanels = document.querySelectorAll('.settings-panel');
 const autoConnectToggle = $('#autoConnectToggle');
 const minimizeTrayToggle = $('#minimizeTrayToggle');
+const autoCheckUpdatesToggle = $('#autoCheckUpdatesToggle');
+const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
@@ -91,7 +93,12 @@ function showToast(message, type = 'success') {
   el.className = `toast ${type}`;
   el.textContent = message;
   toastContainer.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  const duration = type === 'subtle' ? 2200 : 3000;
+  const fadeDelay = duration - 300;
+  setTimeout(() => el.remove(), duration);
+  if (type === 'subtle') {
+    el.style.animation = `toastIn 0.3s ease, toastOut 0.3s ease ${fadeDelay}ms forwards`;
+  }
 }
 
 function setConnectionStatus(connected, error) {
@@ -458,6 +465,8 @@ function openSettings(tab = 'general') {
     donateBanner.href = DONATION_URL;
     autoConnectToggle.checked = cfg.autoConnect !== false;
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
+    if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
+    if (autoInstallUpdatesToggle) autoInstallUpdatesToggle.checked = cfg.autoInstallUpdates !== false;
     showTimerToggle.checked = cfg.showTimer !== false;
     animationsToggle.checked = cfg.animationsEnabled !== false;
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
@@ -491,6 +500,8 @@ async function handleSaveSettings(e) {
   const newSettings = {
     autoConnect: autoConnectToggle.checked,
     minimizeToTray: minimizeTrayToggle.checked,
+    autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
+    autoInstallUpdates: autoInstallUpdatesToggle?.checked !== false,
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
     theme: currentSettings.theme || 'dark',
@@ -670,7 +681,8 @@ function syncUpdateBannerButtons() {
 function handleUpdateStatus(data) {
   switch (data.status) {
     case 'checking':
-      showToast('Checking for updates...');
+      if (data.silent) showToast('Checking for updates...', 'subtle');
+      else showToast('Checking for updates...');
       break;
     case 'dev-mode':
       showToast(data.message || 'Updates are only available in installed releases.');
@@ -699,6 +711,7 @@ function handleUpdateStatus(data) {
       syncUpdateBannerButtons();
       break;
     case 'up-to-date':
+      if (data.silent) break;
       hideUpdateBanner();
       showToast('You are on the latest version!');
       break;

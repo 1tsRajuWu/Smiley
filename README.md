@@ -152,8 +152,8 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 - Respects **prefers-reduced-motion** for lighter animations on low-end devices
 
 **🔄 Auto-updates**
-- Packaged builds check [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) on launch
-- Downloads in background → "Restart to update" prompt
+- Packaged builds check [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) on startup (toggle in Settings → General)
+- Downloads in the background → banner with **Restart to update** (or applies on quit when auto-install is on)
 - Manual check from Settings or tray menu
 
 ---
@@ -305,7 +305,7 @@ Gear icon in the app, or tray → **Settings**.
 
 | Tab | What's in there |
 |-----|-----------------|
-| **General** | Auto-connect, minimize to tray, check for updates |
+| **General** | Auto-connect, minimize to tray, auto-check/install updates, manual check |
 | **Appearance** | Session timer toggle, 11 themes |
 | **Animations** | Enable/disable GIFs, upload custom animation |
 | **Advanced** | Start on login, global hotkey, export/import settings |
@@ -319,14 +319,14 @@ Hit **Save & Connect**. Header pill turns green when Discord is connected.
 
 Installed from a packaged build (`.exe`, `.dmg`, AppImage, `.deb`)?
 
-1. Smiley checks GitHub Releases ~5 seconds after launch
-2. Newer version? Downloads in the background
-3. Banner + dialog → **Restart to update**
-4. Done — no manual re-download
-
-Also: **Settings → Check for Updates** or tray menu.
+1. **Settings → General → Check for updates on startup** (on by default) — Smiley checks GitHub Releases ~3 seconds after launch
+2. **Install updates automatically** (on by default) — downloads in the background and applies when you restart or quit
+3. When an update is ready, a banner appears with **Restart** to apply immediately
+4. You can also use **Check for Updates** in Settings or the tray menu anytime
 
 > Dev builds (`npm start`) don't auto-update. Pull from git instead.
+
+> **Windows portable** (`Smiley-Portable-*.exe`) does not support in-app updates — use the NSIS installer (`Smiley-Setup-*.exe`).
 
 Maintainers: see [docs/RELEASING.md](docs/RELEASING.md)
 

@@ -167,6 +167,8 @@ const DEFAULT_CONFIG = {
   minimizeToTray: true,
   launchAtLogin: false,
   hotkeyEnabled: true,
+  autoCheckUpdates: true,
+  autoInstallUpdates: true,
   recentActivities: [],
   favoriteActivities: [],
 };
@@ -832,6 +834,17 @@ let updateDownloaded = false;
 let lastDownloadPercent = 0;
 let downloadStallTimer = null;
 let updaterListenersAttached = false;
+let silentUpdateCheck = false;
+
+function applyUpdaterSettings() {
+  if (!isPackaged) return;
+  try {
+    const autoUpdater = getAutoUpdater();
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
+    autoUpdater.autoRunAppAfterInstall = false;
+  } catch (_) {}
+}
 
 function clearDownloadStallTimer() {
   if (downloadStallTimer) {
@@ -937,7 +950,7 @@ function waitForManualUpdateCheck(timeoutMs = 45000) {
   });
 }
 
-async function checkForUpdates(manual = false) {
+async function checkForUpdates(manual = false, silent = false) {
   if (!isPackaged) {
     const result = {
       ok: true,
@@ -948,6 +961,8 @@ async function checkForUpdates(manual = false) {
     return result;
   }
 
+  silentUpdateCheck = silent;
+
   if (manual) {
     sendUpdateStatus({ status: 'checking' });
     const waitPromise = waitForManualUpdateCheck();
@@ -955,6 +970,7 @@ async function checkForUpdates(manual = false) {
       await getAutoUpdater().checkForUpdates();
       return await waitPromise;
     } catch (err) {
+      silentUpdateCheck = false;
       console.error('[updater]', err.message);
       const formatted = formatUpdateError(err);
       sendUpdateStatus(formatted);
@@ -967,9 +983,10 @@ async function checkForUpdates(manual = false) {
     await getAutoUpdater().checkForUpdates();
     return { ok: true, status: 'checking' };
   } catch (err) {
+    silentUpdateCheck = false;
     console.error('[updater]', err.message);
     const formatted = formatUpdateError(err);
-    sendUpdateStatus(formatted);
+    if (!silent) sendUpdateStatus(formatted);
     return formatted;
   }
 }
@@ -1010,9 +1027,7 @@ function installPendingUpdate() {
 function setupAutoUpdater() {
   try {
     const autoUpdater = getAutoUpdater();
-    autoUpdater.autoDownload = isPackaged;
-    autoUpdater.autoInstallOnAppQuit = false;
-    autoUpdater.autoRunAppAfterInstall = false;
+    applyUpdaterSettings();
     autoUpdater.allowPrerelease = false;
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
@@ -1026,10 +1041,11 @@ function setupAutoUpdater() {
     updaterListenersAttached = true;
 
     getAutoUpdater().on('checking-for-update', () => {
-      sendUpdateStatus({ status: 'checking' });
+      sendUpdateStatus({ status: 'checking', silent: silentUpdateCheck });
     });
 
     getAutoUpdater().on('update-available', (info) => {
+      silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
       if (updateDownloaded && pendingUpdateVersion === info.version) {
         sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
@@ -1052,7 +1068,9 @@ function setupAutoUpdater() {
       const payload = {
         status: 'up-to-date',
         version: info?.version || APP_VERSION,
+        silent: silentUpdateCheck,
       };
+      silentUpdateCheck = false;
       sendUpdateStatus(payload);
       resolveManualUpdate({ ok: true, status: 'up-to-date', version: payload.version });
     });
@@ -1069,6 +1087,7 @@ function setupAutoUpdater() {
 
     getAutoUpdater().on('update-downloaded', (info) => {
       clearDownloadStallTimer();
+      silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
       updateDownloaded = true;
       lastDownloadPercent = 100;
@@ -1079,6 +1098,7 @@ function setupAutoUpdater() {
     getAutoUpdater().on('error', (err) => {
       console.error('[updater]', err.message);
       clearDownloadStallTimer();
+      silentUpdateCheck = false;
       updateDownloaded = false;
       lastDownloadPercent = 0;
       const formatted = formatUpdateError(err);
@@ -1166,6 +1186,8 @@ function setupIPC() {
     launchAtLogin: config.launchAtLogin === true,
     hotkeyEnabled: config.hotkeyEnabled !== false,
     hotkey: GLOBAL_HOTKEY,
+    autoCheckUpdates: config.autoCheckUpdates !== false,
+    autoInstallUpdates: config.autoInstallUpdates !== false,
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     version: APP_VERSION,
@@ -1186,6 +1208,7 @@ function setupIPC() {
     saveConfig(data);
     applyLaunchAtLogin();
     registerGlobalHotkey();
+    applyUpdaterSettings();
     updateTrayMenu();
     if (config.autoConnect !== false && !rpcClient) return connectRPC();
     return { connected: !!rpcClient };
@@ -1314,6 +1337,7 @@ function setupIPC() {
       saveConfig(imported);
       applyLaunchAtLogin();
       registerGlobalHotkey();
+      applyUpdaterSettings();
       broadcastStatus();
       updateTrayMenu();
       return { success: true };
@@ -1351,9 +1375,9 @@ app.whenReady().then(async () => {
     });
   }
 
-  // Check for updates after 5s (installed app only)
-  if (isPackaged && !isRunningFromDmg()) {
-    setTimeout(() => checkForUpdates(false), 5000);
+  // Auto-check for updates shortly after launch (installed NSIS/dmg builds only)
+  if (isPackaged && !isRunningFromDmg() && !isPortableBuild() && config.autoCheckUpdates !== false) {
+    setTimeout(() => checkForUpdates(false, true), 3000);
   }
 
   if (config.autoConnect !== false) {
