@@ -24,20 +24,20 @@ Smiley ships with a bundled Discord Client ID. Download, run, pick something —
 
 ---
 
-## Download (v2.1.8)
+## Download (v2.1.9)
 
 | Platform | File | Notes |
 |----------|------|-------|
-| **Windows** (installer) | [Smiley-Setup-2.1.8.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-Setup-2.1.8.exe) | Recommended. Start menu + desktop shortcut. |
-| **Windows** (portable) | [Smiley-Portable-2.1.8.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-Portable-2.1.8.exe) | No install — run from anywhere. |
-| **macOS** Apple Silicon | [Smiley-2.1.8-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8-arm64.dmg) | M1/M2/M3/M4 Macs. |
-| **macOS** Intel | [Smiley-2.1.8-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8-x64.dmg) | Pre-2020 Intel Macs. |
-| **Linux** AppImage | [Smiley-2.1.8.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8.AppImage) | `chmod +x` then run. Most distros. |
-| **Linux** .deb | [Smiley-2.1.8.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8.deb) | Debian / Ubuntu / derivatives. |
+| **Windows** (installer) | [Smiley-Setup-2.1.9.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-Setup-2.1.9.exe) | Recommended. Start menu + desktop shortcut. |
+| **Windows** (portable) | [Smiley-Portable-2.1.9.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-Portable-2.1.9.exe) | No install — run from anywhere. |
+| **macOS** Apple Silicon | [Smiley-2.1.9-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-arm64.dmg) | M1/M2/M3/M4 Macs. |
+| **macOS** Intel | [Smiley-2.1.9-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-x64.dmg) | Pre-2020 Intel Macs. |
+| **Linux** AppImage | [Smiley-2.1.9.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9.AppImage) | `chmod +x` then run. Most distros. |
+| **Linux** .deb | [Smiley-2.1.9.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9.deb) | Debian / Ubuntu / derivatives. |
 
 **One-click buttons**
 
-[Windows installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-Setup-2.1.8.exe) · [Windows portable](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-Portable-2.1.8.exe) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8-arm64.dmg) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8-x64.dmg) · [Linux AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8.AppImage) · [Linux .deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.8/Smiley-2.1.8.deb)
+[Windows installer](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-Setup-2.1.9.exe) · [Windows portable](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-Portable-2.1.9.exe) · [Mac ARM](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-arm64.dmg) · [Mac Intel](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9-x64.dmg) · [Linux AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9.AppImage) · [Linux .deb](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.9/Smiley-2.1.9.deb)
 
 ---
 
@@ -118,25 +118,25 @@ If you already extracted the app, skip the first line. Right-click → **Open** 
 
 ### Windows
 
-1. Download `Smiley-Setup-2.1.8.exe` (or the portable `.exe`).
+1. Download `Smiley-Setup-2.1.9.exe` (or the portable `.exe`).
 2. Run the installer. If **SmartScreen** warns "Windows protected your PC", click **More info** → **Run anyway** — the app is not code-signed yet.
 3. Launch Smiley from Start or desktop shortcut. Keep Discord desktop open.
 
-**Portable:** no installer; double-click `Smiley-Portable-2.1.8.exe`.
+**Portable:** no installer; double-click `Smiley-Portable-2.1.9.exe`.
 
 ### Linux
 
 **AppImage**
 
 ```bash
-chmod +x Smiley-2.1.8.AppImage
-./Smiley-2.1.8.AppImage
+chmod +x Smiley-2.1.9.AppImage
+./Smiley-2.1.9.AppImage
 ```
 
 **Debian / Ubuntu**
 
 ```bash
-sudo dpkg -i Smiley-2.1.8.deb
+sudo dpkg -i Smiley-2.1.9.deb
 ```
 
 Launch from your app menu. Discord must be the desktop client (`.deb` / Flatpak / native package — not web-only).
