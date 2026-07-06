@@ -2,8 +2,11 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, saf
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const RPC = require('discord-rpc');
 const pkg = require('./package.json');
+
+function getRPC() {
+  return require('discord-rpc');
+}
 
 function getAutoUpdater() {
   return require('electron-updater').autoUpdater;
@@ -288,7 +291,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
       allowRunningInsecureContent: false,
       webSecurity: true,
       experimentalFeatures: false,
@@ -383,6 +386,7 @@ async function connectRPC() {
     try { await rpcClient.destroy(); } catch (_) {}
     rpcClient = null;
   }
+  const RPC = getRPC();
   RPC.register(clientId);
   rpcClient = new RPC.Client({ transport: 'ipc' });
   return new Promise((resolve) => {
