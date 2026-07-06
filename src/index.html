@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https://media1.tenor.com https://media0.giphy.com https://media1.giphy.com https://i.giphy.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com https://media1.tenor.com https://tenor.com https://giphy.com https://i.giphy.com;"
     />
     <title>Smiley</title>
     <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png" />
@@ -118,7 +118,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v3.1.9</span>
+        <span class="footer-version" id="footerVersion">Smiley v3.2.0</span>
         <a href="#" class="footer-link" id="footerBugReport">Report a bug</a>
         <span class="footer-hint" id="footerShortcuts"></span>
       </footer>
@@ -234,6 +234,11 @@
                 <div class="custom-animation-list" id="customAnimationList"></div>
               </div>
             </div>
+            <div class="field">
+              <span class="field-label">My custom activities</span>
+              <p class="field-hint">Activities you created appear under <strong>My Activities</strong>. Uploaded GIFs preview in-app; paste a direct HTTPS GIF URL for Discord.</p>
+              <div class="custom-activities-settings-list" id="customActivitiesSettingsList"></div>
+            </div>
           </div>
           <div class="settings-panel" data-panel="advanced">
             <div class="field toggle-field">
@@ -275,6 +280,55 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="checkUpdateBtn">Check for Updates</button>
           <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save &amp; Connect</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Create / Edit Activity Modal -->
+    <dialog class="modal" id="createActivityModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="createActivityTitle">✨ Create Activity</h2>
+          <button type="button" class="btn-close" id="closeCreateActivity">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label class="field-label" for="customActivityDetails">Title / Details <span class="required">*</span></label>
+            <input type="text" id="customActivityDetails" maxlength="128" placeholder="Eating" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="customActivityState">Subtitle / State</label>
+            <input type="text" id="customActivityState" maxlength="128" placeholder="Pizza night" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="customActivityEmoji">Emoji</label>
+            <input type="text" id="customActivityEmoji" maxlength="8" value="✨" placeholder="✨" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span class="field-label">GIF</span>
+            <p class="field-hint gif-discord-hint">Paste a direct HTTPS GIF URL (Tenor/Giphy) for Discord. Uploaded files preview in Smiley only.</p>
+            <div class="gif-source-tabs" role="tablist">
+              <button type="button" class="gif-source-tab active" data-source="url" role="tab" aria-selected="true">Paste URL</button>
+              <button type="button" class="gif-source-tab" data-source="upload" role="tab" aria-selected="false">Upload file</button>
+            </div>
+            <div class="gif-source-panel" id="gifUrlPanel">
+              <div class="gif-url-row">
+                <input type="url" id="customActivityGifUrl" placeholder="https://media.tenor.com/… or Giphy link" autocomplete="off" />
+                <button type="button" class="btn btn-secondary" id="resolveGifBtn">Preview</button>
+              </div>
+            </div>
+            <div class="gif-source-panel" id="gifUploadPanel" hidden>
+              <button type="button" class="btn btn-secondary" id="pickActivityGifBtn">Choose GIF, WebP, or PNG…</button>
+              <p class="field-hint">Max 5MB. Discord needs a public HTTPS GIF URL — uploads are for in-app preview only.</p>
+            </div>
+            <div class="custom-activity-gif-preview" id="customActivityGifPreview" hidden>
+              <img id="customActivityGifPreviewImg" alt="GIF preview" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelCreateActivity">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveCreateActivity">Save</button>
         </div>
       </div>
     </dialog>

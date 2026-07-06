@@ -66,7 +66,8 @@ Smiley ships with a bundled Discord Client ID. You don't need the Developer Port
 ## Features
 
 - **Activity picker** — 5 categories, 32 presets, search, favorites, recent activities, keyboard shortcuts (`Ctrl/Cmd+1–5`, `Ctrl/Cmd+K`, `Esc`)
-- **Animated presence** — live GIFs from [nekos.best](https://nekos.best) & [waifu.pics](https://waifu.pics); custom uploads in Settings (max 5 MB)
+- **Create your own activity** — custom title, emoji, and GIF (paste a Tenor/Giphy URL for Discord; uploads preview in-app)
+- **Animated presence** — curated anime GIFs per activity; live fallbacks from [nekos.best](https://nekos.best) & [waifu.pics](https://waifu.pics)
 - **11 themes** — Dark, Midnight, Ocean, Sakura, Low Light (OLED), Sunset, Forest, Lavender, Cyber, Coffee, Rose
 - **System integration** — tray icon, minimize to tray, auto-connect, global hotkey (`Cmd/Ctrl+Shift+S`), start on login, export/import settings
 - **Auto-updates** — checks [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) on startup (packaged builds only)

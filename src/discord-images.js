@@ -8,7 +8,7 @@ const FETCH_TIMEOUT_MS = 6000;
 const DISCORD_IMAGE_MAX_LEN = 512;
 const FETCH_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'Smiley/3.1.9 (Discord Rich Presence)',
+  'User-Agent': 'Smiley/3.2.0 (Discord Rich Presence)',
 };
 
 /** Per-category API config — nekos GIF endpoint + waifu still fallback */
@@ -27,6 +27,7 @@ export const NEKOS_ENDPOINTS = Object.fromEntries(
 
 /** Per-activity nekos.best endpoint — must match activity meaning */
 export const ACTIVITY_NEKOS_ENDPOINTS = {
+  'eating-pizza': 'feed',
   'eating-sushi': 'nom',
   'eating-ramen': 'feed',
   'eating-burger': 'bite',
@@ -61,6 +62,7 @@ export const ACTIVITY_NEKOS_ENDPOINTS = {
 
 /** Extra nekos endpoints to try when the primary is rate-limited */
 export const ACTIVITY_NEKOS_ALTERNATES = {
+  'eating-pizza': ['feed', 'nom'],
   'eating-sushi': ['nom', 'bite'],
   'eating-ramen': ['feed', 'nom'],
   'eating-burger': ['bite', 'nom'],
@@ -103,6 +105,7 @@ export const VERIFIED_FALLBACKS = {
   chill: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif',
   work: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif',
   social: 'https://nekos.best/api/v2/wave/810920bc-280c-42f3-ade8-33a780484af0.gif',
+  'eating-pizza': 'https://nekos.best/api/v2/feed/b9abbae0-3b59-437e-b866-3402c2c7f22e.gif',
   'eating-sushi': 'https://nekos.best/api/v2/nom/0d6e98ff-6a91-4d5d-b3cd-ede275f78f71.gif',
   'eating-ramen': 'https://nekos.best/api/v2/feed/e480b6f8-aa99-4f36-b112-7bda61bf4ab8.gif',
   'eating-burger': 'https://nekos.best/api/v2/bite/cdff6f6e-5bdf-47ce-9d54-01c9bcdebb3c.gif',
@@ -134,38 +137,47 @@ export const VERIFIED_FALLBACKS = {
   shopping: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif',
 };
 
-/** Curated SFW Tenor GIFs that match each activity (verified HTTP 200) */
+/** Curated SFW Tenor/Giphy GIFs per activity (user-provided + verified HTTP 200) */
 export const ACTIVITY_TENOR_FALLBACKS = {
+  'eating-pizza': 'https://media1.tenor.com/m/i-xS-A_DTCEAAAAC/pizza-food.gif',
   'eating-sushi': 'https://media.tenor.com/KE361QFenNcAAAAM/anime-refei%C3%A7%C3%A3o-jap%C3%A3o-comida.gif',
-  'eating-ramen': 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif',
-  'eating-burger': 'https://media.tenor.com/uk9xO0xpWoIAAAAM/burger-eating.gif',
-  'eating-tacos': 'https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif',
-  'eating-snacks': 'https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif',
-  cooking: 'https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif',
-  'eating-dessert': 'https://media.tenor.com/DTRz6D1e5ZEAAAAM/eating-dessert-happily.gif',
-  gaming: 'https://media.tenor.com/9tbKJeCFPaUAAAAd/konata-gaming.gif',
-  ranked: 'https://media.tenor.com/o52AZQZ_PloAAAAM/kick-anime.gif',
-  coop: 'https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif',
-  retro: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif',
-  speedrun: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif',
-  'vr-gaming': 'https://media.tenor.com/qIvEeou-1FIAAAAM/play-network-anime-girl.gif',
-  sleeping: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif',
-  napping: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif',
+  'eating-ramen': 'https://media1.tenor.com/m/nwM1UzOjtAoAAAAC/anime-naruto.gif',
+  'eating-burger':
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExYXd4Y3ZlODF5NjI4aG9qanB0YjV5YzQ3Z2ZwNDgweW9rZjFzbGY3diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/aW9HiiooRmdwdG0bPc/giphy.gif',
+  'eating-tacos': 'https://media1.tenor.com/m/tz1kb3yen6wAAAAC/uwu-taco.gif',
+  'eating-snacks': 'https://media1.tenor.com/m/DtK1un8uLS0AAAAC/himouto-umaru-chan.gif',
+  cooking:
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3VlZXQyeWQ0MnRhOXlyYnpscjYzYXJ1OTg5djEzcXphZjM0cnY2cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/p0dFF6nzn1DZKKyNdo/giphy.gif',
+  'eating-dessert': 'https://media1.tenor.com/m/DQDtfEaDA5AAAAAC/cake-eat.gif',
+  gaming: 'https://media1.tenor.com/m/9tbKJeCFPaUAAAAC/konata-gaming.gif',
+  ranked: 'https://media1.tenor.com/m/IwyNIipPItQAAAAC/anime-naruto.gif',
+  coop: 'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExOTNsbWV1ZzV6Yzk1eHFsYWtlbmZqMTB6NjkxNnVhZWxybjc3cTFxMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qCr3LLomOJUfGUYOZx/giphy.gif',
+  retro: 'https://media1.tenor.com/m/pqzUICCf7XYAAAAC/potz-power.gif',
+  speedrun: 'https://media1.tenor.com/m/NazVGclCYHEAAAAC/agnes-tachyon-tachyon.gif',
+  'vr-gaming': 'https://media1.tenor.com/m/hvmj5kz64Q4AAAAC/boxing-oculus.gif',
+  sleeping: 'https://media1.tenor.com/m/lptw_sFe1DYAAAAC/sleep-anime.gif',
+  napping: 'https://media1.tenor.com/m/y-nFVMnj_g4AAAAC/d4dj-d4dj-petit-mix.gif',
   reading: 'https://media.tenor.com/rJxGy9CYwHoAAAAM/anime-read.gif',
-  listening: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif',
-  meditating: 'https://media.tenor.com/H2TduYuD5S0AAAAM/anime-miss-kobayashis-dragon-maid.gif',
-  bath: 'https://media.tenor.com/M3nkdB81tkQAAAAM/virgin-road-anime-relaxed.gif',
-  studying: 'https://media.tenor.com/etfl8OlhPIYAAAAM/studying-anime-girl.gif',
-  meeting: 'https://media.tenor.com/_9W9bVa4AHgAAAAM/wavi-anime.gif',
-  focus: 'https://media.tenor.com/qhe3ahMJ_i0AAAAM/anime-anime-pat.gif',
+  listening: 'https://media1.tenor.com/m/FhCrIhUtPmoAAAAC/headphones-listening-to-music.gif',
+  meditating: 'https://media1.tenor.com/m/hnlwW6KsH1sAAAAC/kanna-kamui.gif',
+  bath: 'https://media1.tenor.com/m/hnlz1koTh6gAAAAC/ba12.gif',
+  studying:
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTI1dmpjNDZ6bGJpd2s0OWg2ZThtaGk3ZGNka2x4a3Rrb3kxMWZsaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/6XX4V0O8a0xdS/giphy.gif',
+  meeting:
+    'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExOG9oaWNyZnRnY3pwa3ZudXE3cXlsam42c203dm0wdXJ4YnVqa2E2OSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WyZ1D8gXF7QQsRkXw5/giphy.gif',
+  focus: 'https://media1.tenor.com/m/t8rp6pY-Wl8AAAAC/typing-anime-coding.gif',
   designing: 'https://media.tenor.com/zoWI1vGHkecAAAAM/good-morning-marin-kitagawa.gif',
-  writing: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif',
-  streaming: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif',
-  watching: 'https://media.tenor.com/P8jCycbR6k8AAAAM/yosuke-tickets.gif',
-  traveling: 'https://media.tenor.com/gPjII19ICdIAAAAM/road-road-trip-move-dragon-ball-anime-tyan-vibe-car.gif',
-  gym: 'https://media.tenor.com/0weeqPoyCWIAAAAM/how-heavy-are-the-dumbbells-that-you-lift-dumbbell-nan-kilo-moteru.gif',
-  partying: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif',
-  shopping: 'https://media.tenor.com/9M34adQOtNwAAAAM/shopping-hi.gif',
+  writing: 'https://media1.tenor.com/m/EL7zfInn_vsAAAAC/taking-notes-noting.gif',
+  streaming:
+    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcXpueTE0dHJuMHU2ZWcycG1ocXNmYXkxMWp4cnBuMzJubHJxZjJxNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2Y7tZMmIpwV6Lnc5QC/giphy.gif',
+  watching:
+    'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWNlcHU0bnF3ODFvZXN4d3V3MjYzbXh3cmt5djg2dThsbmt3dTM2aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/p55iGp1XppSv4WiV2y/giphy.gif',
+  traveling:
+    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeW53NGliMGVmMDB0N3l2eXd4MngybHFzbmI1eG94Z3dqZ3QwbGJiYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6YfXCRvjzATblkJy/giphy.gif',
+  gym: 'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZWZhanI0aDI0eHlnYW54eWo5amVpM3V5aTdhenp6eWVnNmtyemxveCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ZJ25E2hJ5IpfvgkxYE/giphy.gif',
+  partying: 'https://media1.tenor.com/m/uRlxzRNgp2MAAAAC/anime-girl.gif',
+  shopping:
+    'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjN3aXA4N3BzcnUxMXI3bHk3ZmgwMWdkb2h0N3R4d2lmdHBwbzdidiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WgRsfKIC2WbJDpyLB7/giphy.gif',
 };
 
 /** Session cache — keyed by activity.id */
@@ -292,12 +304,18 @@ export function getActivityFallbackUrls(activity) {
   ]);
 }
 
+function isPreviewImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (isValidDiscordImageUrl(url)) return true;
+  return /^file:\/\//i.test(url) || url.startsWith('data:');
+}
+
 function isValidCacheEntry(entry, activityId) {
   return (
     entry &&
     entry.activityId === activityId &&
-    isValidDiscordImageUrl(entry.url) &&
-    isValidDiscordImageUrl(entry.discordUrl)
+    isPreviewImageUrl(entry.url) &&
+    (entry.discordUrl == null || isValidDiscordImageUrl(entry.discordUrl))
   );
 }
 
@@ -345,6 +363,27 @@ export async function resolveDiscordImageUrl(
 
   if (bustCache) clearActivityImageCacheEntry(activity.id);
 
+  if (activity.isCustom || activity.category === 'custom') {
+    const cached = readCache(activity.id);
+    if (cached) return { ...cached, fallbacks: cached.fallbacks || [] };
+
+    const discord = isValidDiscordImageUrl(activity.gifUrl) ? activity.gifUrl : null;
+    const local = activity.localGifPath || activity.previewUrl || null;
+    const preview = discord || local;
+    const result = buildResult(activity.id, {
+      url: preview,
+      discordUrl: discord,
+      source: discord
+        ? 'Custom GIF'
+        : preview
+          ? 'Custom · preview only (add URL for Discord)'
+          : 'Custom',
+      fallbacks: uniqueUrls([local, discord].filter((u) => u && u !== preview)),
+    });
+    if (preview || discord) return cacheResult(activity.id, result);
+    return result;
+  }
+
   if (customDataUrl) {
     return buildResult(activity.id, {
       url: customDataUrl,
@@ -366,6 +405,19 @@ export async function resolveDiscordImageUrl(
 
   const cached = readCache(activity.id);
   if (cached) return { ...cached, fallbacks };
+
+  // Curated GIF — same URL in app preview and Discord (skip random API rotation)
+  if (isValidDiscordImageUrl(tenor)) {
+    return cacheResult(
+      activity.id,
+      buildResult(activity.id, {
+        url: tenor,
+        discordUrl: tenor,
+        source: 'Curated GIF',
+        fallbacks,
+      })
+    );
+  }
 
   const waifuTag = getWaifuTag(activity);
   const nekosEndpoints = getNekosEndpoints(activity);
@@ -396,18 +448,6 @@ export async function resolveDiscordImageUrl(
         })
       );
     }
-  }
-
-  if (isValidDiscordImageUrl(tenor)) {
-    return cacheResult(
-      activity.id,
-      buildResult(activity.id, {
-        url: tenor,
-        discordUrl: tenor,
-        source: 'Tenor · fallback',
-        fallbacks,
-      })
-    );
   }
 
   return cacheResult(

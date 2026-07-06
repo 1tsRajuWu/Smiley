@@ -559,6 +559,33 @@ body[data-platform="darwin"] #minimizeBtn { display: none; }
 .custom-animation-item .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: var(--transition); }
 .custom-animation-item .btn-delete:hover { background: rgba(247,118,142,0.15); }
 
+/* Custom activities */
+.activity-card.is-create-card { border-style: dashed; background: transparent; }
+.activity-card.is-create-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+.activity-card.is-create-card .activity-emoji { font-size: 1.8rem; opacity: 0.85; }
+.activity-card.is-custom .activity-custom-actions { position: absolute; bottom: 6px; left: 6px; right: 6px; display: flex; justify-content: center; gap: 4px; opacity: 0; transition: opacity 0.15s ease; }
+.activity-card.is-custom:hover .activity-custom-actions,
+.activity-card.is-custom:focus-within .activity-custom-actions { opacity: 1; }
+.activity-custom-btn { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; transition: var(--transition); }
+.activity-custom-btn:hover { border-color: var(--border-hover); color: var(--text); }
+.activity-custom-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+.gif-source-tabs { display: flex; gap: 8px; margin: 8px 0 10px; }
+.gif-source-tab { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: var(--transition); }
+.gif-source-tab:hover { border-color: var(--border-hover); }
+.gif-source-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.gif-url-row { display: flex; gap: 8px; }
+.gif-url-row input { flex: 1; }
+.gif-discord-hint { color: #e0af68; margin-bottom: 4px; }
+.custom-activity-gif-preview { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-xs); overflow: hidden; background: var(--bg-card); max-height: 180px; display: flex; align-items: center; justify-content: center; }
+.custom-activity-gif-preview img { max-width: 100%; max-height: 180px; object-fit: contain; display: block; }
+.custom-activities-settings-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.custom-activity-settings-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xs); }
+.custom-activity-settings-item img { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.custom-activity-settings-item .meta { flex: 1; min-width: 0; }
+.custom-activity-settings-item .meta strong { display: block; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.custom-activity-settings-item .meta span { font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.required { color: var(--danger); }
+
 /* Wallpaper settings */
 .wallpaper-field { margin-top: 4px; }
 .wallpaper-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }

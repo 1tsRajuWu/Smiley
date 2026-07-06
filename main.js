@@ -172,6 +172,7 @@ const DEFAULT_CONFIG = {
   autoInstallUpdates: true,
   recentActivities: [],
   favoriteActivities: [],
+  customActivities: [],
   migrationNoticeShown: false,
   installWarningShown: false,
 };
@@ -249,6 +250,7 @@ function trackRecentActivity(activity) {
     mainWindow.webContents.send('config-changed', {
       recentActivities: recent,
       favoriteActivities: config.favoriteActivities || [],
+      customActivities: config.customActivities || [],
     });
   }
 }
@@ -266,6 +268,7 @@ function toggleFavoriteActivity(id) {
     mainWindow.webContents.send('config-changed', {
       recentActivities: config.recentActivities || [],
       favoriteActivities: favorites,
+      customActivities: config.customActivities || [],
     });
   }
   return favorites;
@@ -1234,6 +1237,10 @@ function wallpaperPathToUrl(filePath) {
   }
 }
 
+function filePathToUrl(filePath) {
+  return wallpaperPathToUrl(filePath);
+}
+
 // ─── Custom Animations ───────────────────────────────────────────────
 const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -1296,6 +1303,171 @@ function imageToDataUrl(filePath) {
   } catch { return null; }
 }
 
+// ─── Custom Activities ───────────────────────────────────────────────
+const MAX_CUSTOM_ACTIVITIES = 20;
+const CUSTOM_ACTIVITY_TEXT_MAX = 128;
+const GIF_URL_FETCH_TIMEOUT = 8000;
+
+function getCustomActivitiesDir() {
+  const dir = getUserDataPath('custom-activities');
+  ensureDir(dir);
+  return dir;
+}
+
+function sanitizeActivityText(text, maxLen = CUSTOM_ACTIVITY_TEXT_MAX) {
+  if (!text || typeof text !== 'string') return '';
+  return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim().slice(0, maxLen);
+}
+
+function sanitizeEmoji(emoji) {
+  const s = sanitizeActivityText(emoji || '✨', 8);
+  return s || '✨';
+}
+
+function isValidGifUrlInput(url) {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!/^https:\/\//i.test(trimmed)) return false;
+  const lower = trimmed.toLowerCase();
+  if (/\.gif(\?|#|$)/i.test(lower)) return true;
+  if (/tenor\.com|media\.tenor\.com|giphy\.com|i\.giphy\.com|media\d*\.giphy\.com/i.test(lower)) return true;
+  return false;
+}
+
+function httpGetText(url, { maxRedirects = 5, timeout = GIF_URL_FETCH_TIMEOUT } = {}) {
+  return new Promise((resolve, reject) => {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      reject(new Error('Invalid URL'));
+      return;
+    }
+    const lib = parsed.protocol === 'http:' ? require('http') : require('https');
+    const req = lib.get(
+      url,
+      {
+        headers: { 'User-Agent': `Smiley/${APP_VERSION} (Discord Rich Presence)`, Accept: 'text/html,application/json,*/*' },
+        timeout,
+      },
+      (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && maxRedirects > 0) {
+          const next = res.headers.location.startsWith('http')
+            ? res.headers.location
+            : new URL(res.headers.location, url).href;
+          httpGetText(next, { maxRedirects: maxRedirects - 1, timeout }).then(resolve).catch(reject);
+          return;
+        }
+        let body = '';
+        res.on('data', (chunk) => {
+          body += chunk;
+          if (body.length > 600000) {
+            req.destroy();
+            reject(new Error('Response too large'));
+          }
+        });
+        res.on('end', () => resolve({ status: res.statusCode, body, finalUrl: url }));
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timed out'));
+    });
+  });
+}
+
+function extractTenorGifFromHtml(html) {
+  if (!html) return null;
+  const match = html.match(/https:\/\/media\d*\.tenor\.com\/[^"'\s<>]+\.gif/i);
+  return match ? match[0] : null;
+}
+
+function extractGiphyId(url) {
+  const mediaMatch = url.match(/giphy\.com\/media\/([a-zA-Z0-9]+)/i);
+  if (mediaMatch) return mediaMatch[1];
+  const slug = url.split('/').pop()?.split('?')[0] || '';
+  const parts = slug.split('-');
+  const last = parts[parts.length - 1];
+  if (last && /^[a-zA-Z0-9]{5,}$/.test(last)) return last;
+  return null;
+}
+
+async function resolveGifUrl(rawUrl) {
+  const trimmed = String(rawUrl || '').trim();
+  if (!isValidGifUrlInput(trimmed)) {
+    return { success: false, error: 'URL must be HTTPS and a .gif link or Tenor/Giphy page' };
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (/^https:\/\/media\.tenor\.com\/.+\.gif/i.test(trimmed)) {
+    return { success: true, url: trimmed };
+  }
+  if (/^https:\/\/(i\.giphy\.com|media\d*\.giphy\.com)\//i.test(trimmed) && /\.gif/i.test(trimmed)) {
+    return { success: true, url: trimmed };
+  }
+  if (/\.gif(\?|#|$)/i.test(trimmed)) {
+    return { success: true, url: trimmed };
+  }
+
+  if (/tenor\.com/i.test(lower)) {
+    try {
+      const { body } = await httpGetText(trimmed);
+      const direct = extractTenorGifFromHtml(body);
+      if (direct) return { success: true, url: direct };
+    } catch (err) {
+      return { success: false, error: err.message || 'Could not resolve Tenor URL' };
+    }
+    return { success: false, error: 'Could not find GIF on Tenor page' };
+  }
+
+  if (/giphy\.com/i.test(lower)) {
+    const gifId = extractGiphyId(trimmed);
+    if (gifId) {
+      const candidate = `https://i.giphy.com/${gifId}.gif`;
+      return { success: true, url: candidate };
+    }
+    try {
+      const { body } = await httpGetText(trimmed);
+      const match = body.match(/https:\/\/i\.giphy\.com\/[a-zA-Z0-9]+\.gif/i)
+        || body.match(/https:\/\/media\d*\.giphy\.com\/media\/[a-zA-Z0-9]+\/giphy\.gif/i);
+      if (match) return { success: true, url: match[0] };
+    } catch (err) {
+      return { success: false, error: err.message || 'Could not resolve Giphy URL' };
+    }
+    return { success: false, error: 'Could not resolve Giphy URL' };
+  }
+
+  return { success: false, error: 'Unsupported GIF URL' };
+}
+
+async function saveCustomActivityGif(sourcePath) {
+  const v = validateImageFile(sourcePath);
+  if (!v.valid) return v;
+  const dir = getCustomActivitiesDir();
+  const hash = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const ext = path.extname(sourcePath).toLowerCase();
+  const destName = sanitizeFilename(`activity-${hash}${ext}`);
+  const destPath = path.join(dir, destName);
+  try {
+    fs.copyFileSync(sourcePath, destPath);
+    const previewUrl = filePathToUrl(destPath);
+    return { valid: true, path: destPath, name: destName, previewUrl };
+  } catch {
+    return { valid: false, error: 'Save failed' };
+  }
+}
+
+function broadcastConfigChanged(extra = {}) {
+  if (!mainWindow?.webContents) return;
+  mainWindow.webContents.send('config-changed', {
+    recentActivities: config.recentActivities || [],
+    favoriteActivities: config.favoriteActivities || [],
+    customActivities: config.customActivities || [],
+    ...extra,
+  });
+}
+
 // ─── IPC ─────────────────────────────────────────────────────────────
 function setupIPC() {
   ipcMain.handle('get-config', () => ({
@@ -1314,6 +1486,7 @@ function setupIPC() {
     autoInstallUpdates: config.autoInstallUpdates !== false,
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
+    customActivities: config.customActivities || [],
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
     osPlatform: process.platform,
@@ -1418,6 +1591,125 @@ function setupIPC() {
     } catch (err) { return { success: false, error: err.message }; }
   });
 
+  ipcMain.handle('get-custom-activities', () => config.customActivities || []);
+
+  ipcMain.handle('resolve-gif-url', async (_, url) => resolveGifUrl(url));
+
+  ipcMain.handle('pick-custom-activity-gif', async () => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select GIF for Activity',
+      filters: [{ name: 'Images', extensions: ['gif', 'webp', 'png'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths[0]) return { canceled: true };
+    const saveResult = await saveCustomActivityGif(result.filePaths[0]);
+    if (!saveResult.valid) return { error: saveResult.error };
+    return {
+      success: true,
+      fileName: saveResult.name,
+      previewUrl: saveResult.previewUrl,
+      path: saveResult.path,
+    };
+  });
+
+  ipcMain.handle('save-custom-activity', async (_, data) => {
+    const activities = [...(config.customActivities || [])];
+    const isEdit = Boolean(data?.id);
+    if (!isEdit && activities.length >= MAX_CUSTOM_ACTIVITIES) {
+      return { success: false, error: `Maximum ${MAX_CUSTOM_ACTIVITIES} custom activities` };
+    }
+
+    const details = sanitizeActivityText(data?.details);
+    if (!details) return { success: false, error: 'Title is required' };
+
+    const state = sanitizeActivityText(data?.state);
+    const emoji = sanitizeEmoji(data?.emoji);
+    let gifUrl = null;
+    let localGifPath = null;
+    let localFileName = null;
+
+    if (data?.gifUrl) {
+      const resolved = await resolveGifUrl(data.gifUrl);
+      if (!resolved.success) return { success: false, error: resolved.error };
+      gifUrl = resolved.url;
+    } else if (data?.keepGifUrl) {
+      const existing = activities.find((a) => a.id === data.id);
+      gifUrl = existing?.gifUrl || null;
+    }
+
+    if (data?.localFileName) {
+      const safeName = sanitizeFilename(data.localFileName);
+      const filePath = path.join(getCustomActivitiesDir(), safeName);
+      const resolvedDir = path.resolve(getCustomActivitiesDir());
+      const resolvedPath = path.resolve(filePath);
+      if (resolvedPath.startsWith(resolvedDir + path.sep) && fs.existsSync(resolvedPath)) {
+        localFileName = safeName;
+        localGifPath = filePathToUrl(resolvedPath);
+      }
+    } else if (isEdit && data?.keepLocalFile) {
+      const existing = activities.find((a) => a.id === data.id);
+      localFileName = existing?.localFileName || null;
+      localGifPath = existing?.localGifPath || null;
+    }
+
+    if (!gifUrl && !localGifPath) {
+      return { success: false, error: 'Add a GIF URL or upload a file' };
+    }
+
+    const id = isEdit ? String(data.id) : `custom-${crypto.randomUUID()}`;
+    const existingIdx = activities.findIndex((a) => a.id === id);
+    const entry = {
+      id,
+      details,
+      state,
+      emoji,
+      category: 'custom',
+      gifUrl,
+      localGifPath,
+      localFileName,
+      createdAt: existingIdx >= 0 ? (activities[existingIdx].createdAt || Date.now()) : Date.now(),
+    };
+
+    if (existingIdx >= 0) {
+      const old = activities[existingIdx];
+      if (old.localFileName && old.localFileName !== localFileName) {
+        try {
+          const oldPath = path.join(getCustomActivitiesDir(), sanitizeFilename(old.localFileName));
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        } catch (_) {}
+      }
+      activities[existingIdx] = entry;
+    } else {
+      activities.push(entry);
+    }
+
+    saveConfig({ customActivities: activities });
+    broadcastConfigChanged();
+    return { success: true, activity: entry };
+  });
+
+  ipcMain.handle('delete-custom-activity', (_, id) => {
+    if (!id) return { success: false, error: 'Invalid id' };
+    const activities = [...(config.customActivities || [])];
+    const idx = activities.findIndex((a) => a.id === id);
+    if (idx < 0) return { success: false, error: 'Not found' };
+    const removed = activities.splice(idx, 1)[0];
+    if (removed.localFileName) {
+      try {
+        const fp = path.join(getCustomActivitiesDir(), sanitizeFilename(removed.localFileName));
+        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      } catch (_) {}
+    }
+    saveConfig({
+      customActivities: activities,
+      favoriteActivities: (config.favoriteActivities || []).filter((f) => f !== id),
+      recentActivities: (config.recentActivities || []).filter((r) => r.id !== id),
+    });
+    broadcastConfigChanged();
+    return { success: true };
+  });
+
   ipcMain.handle('pick-wallpaper', async () => {
     if (!mainWindow) return { canceled: true };
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -1506,6 +1798,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
+  ensureDir(getUserDataPath('custom-activities'));
   ensureDir(getUserDataPath('wallpapers'));
   applyLaunchAtLogin();
   createWindow();

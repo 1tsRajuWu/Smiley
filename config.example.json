@@ -6,5 +6,6 @@
   "customAnimation": null,
   "windowState": { "width": 1100, "height": 780 },
   "autoConnect": true,
-  "minimizeToTray": true
+  "minimizeToTray": true,
+  "customActivities": []
 }

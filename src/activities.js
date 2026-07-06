@@ -26,6 +26,15 @@ export const ACTIVITY_CATEGORIES = [
     fallbackGif: 'https://nekos.best/api/v2/nom/0d6e98ff-6a91-4d5d-b3cd-ede275f78f71.gif',
     activities: [
       {
+        id: 'eating-pizza',
+        details: 'Eating',
+        state: 'Pizza night 🍕',
+        emoji: '🍕',
+        nekosEndpoint: 'feed',
+        largeImageKey: 'pizza',
+        largeImageText: 'Pizza',
+      },
+      {
         id: 'eating-sushi',
         details: 'Eating',
         state: 'Sushi run 🍣',
@@ -338,6 +347,17 @@ export const ACTIVITY_CATEGORIES = [
     ],
   },
 ];
+
+/** User-created activities — `activities` filled at runtime from config */
+export const CUSTOM_CATEGORY = {
+  id: 'custom',
+  label: 'My Activities',
+  emoji: '✨',
+  color: '#bb9af7',
+  activities: [],
+};
+
+export const ACTIVITY_CATEGORIES_WITH_CUSTOM = [...ACTIVITY_CATEGORIES, CUSTOM_CATEGORY];
 
 export const ALL_ACTIVITIES = ACTIVITY_CATEGORIES.flatMap((c) =>
   c.activities.map((a) => ({

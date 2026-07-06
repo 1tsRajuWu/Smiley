@@ -1,10 +1,11 @@
-import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES } from './activities.js';
+import { ACTIVITY_CATEGORIES, ACTIVITY_CATEGORIES_WITH_CUSTOM, CUSTOM_CATEGORY, ALL_ACTIVITIES } from './activities.js';
 import {
   resolveDiscordImageUrl,
   discordImageFields,
   getActivityFallbackUrls,
   getTenorFallback,
   clearActivityImageCacheEntry,
+  isValidDiscordImageUrl,
 } from './discord-images.js';
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
@@ -89,6 +90,25 @@ const recentSection = $('#recentSection');
 const recentChips = $('#recentChips');
 const sessionBadge = $('#sessionBadge');
 
+// Create activity modal refs
+const createActivityModal = $('#createActivityModal');
+const closeCreateActivity = $('#closeCreateActivity');
+const cancelCreateActivity = $('#cancelCreateActivity');
+const saveCreateActivity = $('#saveCreateActivity');
+const createActivityTitle = $('#createActivityTitle');
+const customActivityDetails = $('#customActivityDetails');
+const customActivityState = $('#customActivityState');
+const customActivityEmoji = $('#customActivityEmoji');
+const customActivityGifUrl = $('#customActivityGifUrl');
+const resolveGifBtn = $('#resolveGifBtn');
+const pickActivityGifBtn = $('#pickActivityGifBtn');
+const gifUrlPanel = $('#gifUrlPanel');
+const gifUploadPanel = $('#gifUploadPanel');
+const customActivityGifPreview = $('#customActivityGifPreview');
+const customActivityGifPreviewImg = $('#customActivityGifPreviewImg');
+const customActivitiesSettingsList = $('#customActivitiesSettingsList');
+const gifSourceTabs = document.querySelectorAll('.gif-source-tab');
+
 // ─── State ───────────────────────────────────────────────────────────
 let activeCategory = ACTIVITY_CATEGORIES[0].id;
 let selectedActivityId = null;
@@ -108,11 +128,58 @@ let gifLoadGeneration = 0;
 let lastGifActivityId = null;
 let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+let customActivitiesConfig = [];
+let createActivityDraft = {
+  editingId: null,
+  gifSource: 'url',
+  resolvedGifUrl: null,
+  localFileName: null,
+  previewUrl: null,
+  keepGifUrl: false,
+  keepLocalFile: false,
+};
+
+// ─── Custom activity helpers ─────────────────────────────────────────
+function customConfigToActivity(ca) {
+  const httpsUrl = isValidDiscordImageUrl(ca.gifUrl) ? ca.gifUrl : null;
+  const localUrl = ca.localGifPath || null;
+  const previewUrl = httpsUrl || localUrl;
+  return {
+    id: ca.id,
+    details: ca.details,
+    state: ca.state || '',
+    emoji: ca.emoji || '✨',
+    category: 'custom',
+    categoryColor: CUSTOM_CATEGORY.color,
+    isCustom: true,
+    gifUrl: ca.gifUrl || null,
+    previewUrl,
+    localGifPath: localUrl,
+    largeImageText: ca.details,
+    fallbackGif: httpsUrl || previewUrl,
+  };
+}
+
+function getAllActivitiesMerged() {
+  return [...ALL_ACTIVITIES, ...customActivitiesConfig.map(customConfigToActivity)];
+}
+
+function findActivity(id) {
+  return getAllActivitiesMerged().find((a) => a.id === id) || null;
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function formatShortcutHint(mac = isMacPlatform) {
-  if (mac) return '⌘1–5 categories · ⌘K search · Esc clear';
-  return 'Ctrl+1–5 categories · Ctrl+K search · Esc clear';
+  if (mac) return '⌘1–6 categories · ⌘K search · Esc clear';
+  return 'Ctrl+1–6 categories · Ctrl+K search · Esc clear';
 }
 
 function updateFooterShortcuts(mac = isMacPlatform) {
@@ -288,7 +355,8 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
     return;
   }
 
-  const category = ACTIVITY_CATEGORIES.find((c) => c.id === activity.category);
+  const category = ACTIVITY_CATEGORIES_WITH_CUSTOM.find((c) => c.id === activity.category)
+    || ACTIVITY_CATEGORIES.find((c) => c.id === activity.category);
   previewCard.classList.add('active');
   previewCard.style.setProperty('--card-glow', `${category?.color || '#7aa2f7'}33`);
 
@@ -329,8 +397,8 @@ function setCharacterLabel(activity) {
   characterLabel.textContent = `${activity.emoji} ${activity.state || activity.details}`;
 }
 
-async function loadActivityGif(activity, { bustCache = false, updateRpc = false, rpcPayload = null } = {}) {
-  if (!activity) return;
+async function applyActivityGif(activity, { bustCache = false } = {}) {
+  if (!activity) return null;
 
   const generation = ++gifLoadGeneration;
   lastGifActivityId = activity.id;
@@ -338,21 +406,14 @@ async function loadActivityGif(activity, { bustCache = false, updateRpc = false,
   characterLoading.style.display = 'flex';
 
   try {
-    const { url, discordUrl, source, fallbacks } = await resolveGifUrl(activity, { bustCache });
-    if (selectedActivityId !== activity.id || generation !== gifLoadGeneration) return;
+    const resolved = await resolveGifUrl(activity, { bustCache });
+    if (selectedActivityId !== activity.id || generation !== gifLoadGeneration) return null;
 
-    currentGifUrl = url;
-    currentDiscordImageUrl = discordUrl;
-    setPreviewDisplay(activity, url, fallbacks, { generation });
-    setCharacterDisplay(url, source, fallbacks, { generation, activity });
-
-    if (updateRpc && rpcPayload && discordUrl) {
-      const initialUrl = rpcPayload.discordImageUrl || rpcPayload.largeImageUrl;
-      if (discordUrl !== initialUrl) {
-        const imageFields = discordImageFields(activity, discordUrl);
-        window.smiley.setActivity({ ...rpcPayload, ...imageFields }, false).catch(() => {});
-      }
-    }
+    currentGifUrl = resolved.url;
+    currentDiscordImageUrl = resolved.discordUrl;
+    setPreviewDisplay(activity, resolved.url, resolved.fallbacks, { generation });
+    setCharacterDisplay(resolved.url, resolved.source, resolved.fallbacks, { generation, activity });
+    return resolved;
   } catch {
     if (selectedActivityId === activity.id && generation === gifLoadGeneration) {
       characterLoading.style.display = 'none';
@@ -361,25 +422,49 @@ async function loadActivityGif(activity, { bustCache = false, updateRpc = false,
         characterRetry.onclick = () => retryActivityGif(activity);
       }
     }
+    return null;
   }
 }
 
-function retryActivityGif(activity) {
-  if (!activity) return;
-  clearActivityImageCacheEntry(activity.id);
-  loadActivityGif(activity, { bustCache: true, updateRpc: true, rpcPayload: buildRpcPayload(activity) });
+/** @deprecated use applyActivityGif */
+async function loadActivityGif(activity, opts = {}) {
+  return applyActivityGif(activity, opts);
 }
 
-function buildRpcPayload(activity) {
-  const fallbackUrls = getActivityFallbackUrls(activity);
-  const initialImage = getTenorFallback(activity) || fallbackUrls[0] || null;
-  const fallbackFields = discordImageFields(activity, initialImage);
+async function retryActivityGif(activity) {
+  if (!activity) return;
+  clearActivityImageCacheEntry(activity.id);
+  const resolved = await applyActivityGif(activity, { bustCache: true });
+  if (resolved?.discordUrl && selectedActivityId === activity.id) {
+    const rpcPayload = buildRpcPayload(activity, resolved.discordUrl);
+    window.smiley.setActivity(rpcPayload, false).catch(() => {});
+  }
+}
+
+function buildRpcPayload(activity, discordUrl) {
+  if (activity?.isCustom) {
+    const imageUrl = discordUrl || (isValidDiscordImageUrl(activity.gifUrl) ? activity.gifUrl : null);
+    const fields = imageUrl ? discordImageFields(activity, imageUrl) : {};
+    return {
+      id: activity.id,
+      details: activity.details,
+      state: activity.state,
+      category: activity.category,
+      ...fields,
+    };
+  }
+  const imageUrl =
+    discordUrl ||
+    getTenorFallback(activity) ||
+    getActivityFallbackUrls(activity)[0] ||
+    null;
+  const imageFields = discordImageFields(activity, imageUrl);
   return {
     id: activity.id,
     details: activity.details,
     state: activity.state,
     category: activity.category,
-    ...fallbackFields,
+    ...imageFields,
   };
 }
 
@@ -394,12 +479,12 @@ async function updatePreview(activity) {
     return;
   }
 
-  await loadActivityGif(activity);
+  await applyActivityGif(activity);
 }
 
 // ─── Activity Grid ───────────────────────────────────────────────────
 function renderCategoryTabs() {
-  categoryTabs.innerHTML = ACTIVITY_CATEGORIES.map(
+  categoryTabs.innerHTML = ACTIVITY_CATEGORIES_WITH_CUSTOM.map(
     (cat) => `
     <button class="category-tab${cat.id === activeCategory ? ' active' : ''}" data-category="${cat.id}"
       style="${cat.id === activeCategory ? `--tab-color: ${cat.color}` : ''}" role="tab" aria-selected="${cat.id === activeCategory}">
@@ -439,9 +524,9 @@ function renderRecentChips() {
   recentSection.hidden = false;
   recentChips.innerHTML = items
     .map((item) => {
-      const act = ALL_ACTIVITIES.find((a) => a.id === item.id);
+      const act = findActivity(item.id);
       const emoji = act?.emoji || '⭐';
-      return `<button type="button" class="quick-chip" data-id="${item.id}" title="${item.state || item.details}">${emoji} ${item.details}</button>`;
+      return `<button type="button" class="quick-chip" data-id="${item.id}" title="${escapeHtml(item.state || item.details)}">${emoji} ${escapeHtml(item.details)}</button>`;
     })
     .join('');
   recentChips.querySelectorAll('.quick-chip').forEach((chip) => {
@@ -452,9 +537,13 @@ function renderRecentChips() {
 function getFilteredActivities() {
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
-    return ALL_ACTIVITIES.filter(
+    return getAllActivitiesMerged().filter(
       (a) => a.details.toLowerCase().includes(q) || a.state?.toLowerCase().includes(q) || a.emoji.includes(q)
     );
+  }
+  if (activeCategory === 'custom') {
+    const list = customActivitiesConfig.map(customConfigToActivity);
+    return sortWithFavorites(list);
   }
   const cat = ACTIVITY_CATEGORIES.find((c) => c.id === activeCategory);
   const list = cat ? cat.activities.map((a) => ({ ...a, category: cat.id, categoryColor: cat.color })) : [];
@@ -463,27 +552,47 @@ function getFilteredActivities() {
 
 function renderActivityGrid() {
   const activities = getFilteredActivities();
-  if (activities.length === 0) {
+  const showCreateCard = activeCategory === 'custom' && !searchQuery.trim();
+  const isEmpty = activities.length === 0 && !showCreateCard;
+
+  if (isEmpty) {
     activityGrid.innerHTML = '<div class="empty-state">No activities match your search</div>';
     return;
   }
 
-  activityGrid.innerHTML = activities
+  const cardsHtml = activities
     .map(
       (a, i) => {
         const isFav = favoriteIds.includes(a.id);
+        const customActions = a.isCustom
+          ? `<div class="activity-custom-actions">
+              <button type="button" class="activity-custom-btn" data-edit="${a.id}" title="Edit">Edit</button>
+              <button type="button" class="activity-custom-btn danger" data-delete="${a.id}" title="Delete">Delete</button>
+            </div>`
+          : '';
         return `
-    <div class="activity-card${a.id === selectedActivityId ? ' selected' : ''}${isFav ? ' favorited' : ''}" data-id="${a.id}" role="button" tabindex="0"
+    <div class="activity-card${a.id === selectedActivityId ? ' selected' : ''}${isFav ? ' favorited' : ''}${a.isCustom ? ' is-custom' : ''}" data-id="${a.id}" role="button" tabindex="0"
       style="--card-accent: ${a.categoryColor || '#7aa2f7'}; animation-delay: ${i * 30}ms">
       <button type="button" class="activity-fav${isFav ? ' active' : ''}" data-fav="${a.id}" title="${isFav ? 'Unpin' : 'Pin'}">${isFav ? '★' : '☆'}</button>
       <span class="activity-emoji">${a.emoji}</span>
-      <span class="activity-name">${a.details}</span>
-      <span class="activity-state">${a.state || ''}</span>
+      <span class="activity-name">${escapeHtml(a.details)}</span>
+      <span class="activity-state">${escapeHtml(a.state || '')}</span>
+      ${customActions}
     </div>
   `;
       }
     )
     .join('');
+
+  const createCardHtml = showCreateCard
+    ? `<div class="activity-card is-create-card" data-create="true" role="button" tabindex="0" style="--card-accent: ${CUSTOM_CATEGORY.color}">
+        <span class="activity-emoji">＋</span>
+        <span class="activity-name">Create activity</span>
+        <span class="activity-state">Add your own GIF</span>
+      </div>`
+    : '';
+
+  activityGrid.innerHTML = cardsHtml + createCardHtml;
 
   activityGrid.querySelectorAll('.activity-fav').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
@@ -493,7 +602,33 @@ function renderActivityGrid() {
     });
   });
 
-  activityGrid.querySelectorAll('.activity-card').forEach((card) => {
+  activityGrid.querySelectorAll('[data-edit]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openCreateActivityModal(btn.dataset.edit);
+    });
+  });
+
+  activityGrid.querySelectorAll('[data-delete]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await handleDeleteCustomActivity(btn.dataset.delete);
+    });
+  });
+
+  const createCard = activityGrid.querySelector('[data-create="true"]');
+  if (createCard) {
+    const openCreate = () => openCreateActivityModal();
+    createCard.addEventListener('click', openCreate);
+    createCard.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openCreate();
+      }
+    });
+  }
+
+  activityGrid.querySelectorAll('.activity-card:not(.is-create-card)').forEach((card) => {
     card.addEventListener('click', () => selectActivity(card.dataset.id));
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -505,23 +640,27 @@ function renderActivityGrid() {
 }
 
 async function selectActivity(id) {
-  const activity = ALL_ACTIVITIES.find((a) => a.id === id);
+  const activity = findActivity(id);
   if (!activity) return;
 
   const isReselect = selectedActivityId === id;
   selectedActivityId = id;
   renderActivityGrid();
 
-  // Clear stale GIF immediately — don't block on fetch
   clearGifDisplay();
   setCharacterLabel(activity);
   setPreviewDisplay(activity, null);
   characterLoading.style.display = 'flex';
 
-  const rpcPayload = buildRpcPayload(activity);
-  const result = await window.smiley.setActivity(rpcPayload, !isReselect);
+  const resolved = await applyActivityGif(activity);
+  if (!resolved || selectedActivityId !== id) return;
 
-  loadActivityGif(activity, { updateRpc: true, rpcPayload });
+  if (activity.isCustom && !resolved.discordUrl) {
+    showToast('Uploaded GIF shows in Smiley only — add a HTTPS GIF URL for Discord', 'error');
+  }
+
+  const rpcPayload = buildRpcPayload(activity, resolved.discordUrl);
+  const result = await window.smiley.setActivity(rpcPayload, !isReselect);
 
   if (result?.error) {
     showToast(result.error, 'error');
@@ -535,7 +674,7 @@ async function selectActivity(id) {
 }
 
 async function handleCopy() {
-  const activity = selectedActivityId ? ALL_ACTIVITIES.find((a) => a.id === selectedActivityId) : null;
+  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
   if (!activity) return;
   const text = activity.state ? `${activity.details} — ${activity.state}` : activity.details;
   const result = await window.smiley.copyText(text);
@@ -581,6 +720,7 @@ function openSettings(tab = 'general') {
 
     switchSettingsTab(tab);
     loadCustomAnimationsList();
+    renderCustomActivitiesSettingsList();
 
     if (cfg.version) {
       footerVersion.textContent = `Smiley v${cfg.version}`;
@@ -753,6 +893,211 @@ async function handleResetWallpaper() {
   showToast('Wallpaper reset');
 }
 
+// ─── Custom Activities (create / edit) ───────────────────────────────
+function resetCreateActivityDraft() {
+  createActivityDraft = {
+    editingId: null,
+    gifSource: 'url',
+    resolvedGifUrl: null,
+    localFileName: null,
+    previewUrl: null,
+    keepGifUrl: false,
+    keepLocalFile: false,
+  };
+}
+
+function setGifSourceTab(source) {
+  createActivityDraft.gifSource = source;
+  gifSourceTabs.forEach((tab) => {
+    const active = tab.dataset.source === source;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  if (gifUrlPanel) gifUrlPanel.hidden = source !== 'url';
+  if (gifUploadPanel) gifUploadPanel.hidden = source !== 'upload';
+}
+
+function showGifPreview(url) {
+  if (!url || !customActivityGifPreview || !customActivityGifPreviewImg) return;
+  customActivityGifPreview.hidden = false;
+  customActivityGifPreviewImg.src = url;
+}
+
+function hideGifPreview() {
+  if (customActivityGifPreview) customActivityGifPreview.hidden = true;
+  if (customActivityGifPreviewImg) customActivityGifPreviewImg.removeAttribute('src');
+}
+
+function openCreateActivityModal(editId = null) {
+  resetCreateActivityDraft();
+  if (customActivityDetails) customActivityDetails.value = '';
+  if (customActivityState) customActivityState.value = '';
+  if (customActivityEmoji) customActivityEmoji.value = '✨';
+  if (customActivityGifUrl) customActivityGifUrl.value = '';
+  hideGifPreview();
+  setGifSourceTab('url');
+
+  if (editId) {
+    const existing = customActivitiesConfig.find((a) => a.id === editId);
+    if (!existing) return;
+    createActivityDraft.editingId = editId;
+    createActivityDraft.keepGifUrl = Boolean(existing.gifUrl);
+    createActivityDraft.keepLocalFile = Boolean(existing.localFileName);
+    createActivityDraft.resolvedGifUrl = existing.gifUrl || null;
+    createActivityDraft.localFileName = existing.localFileName || null;
+    createActivityDraft.previewUrl = existing.gifUrl || existing.localGifPath || null;
+    if (createActivityTitle) createActivityTitle.textContent = '✏️ Edit Activity';
+    if (customActivityDetails) customActivityDetails.value = existing.details;
+    if (customActivityState) customActivityState.value = existing.state || '';
+    if (customActivityEmoji) customActivityEmoji.value = existing.emoji || '✨';
+    if (existing.gifUrl && customActivityGifUrl) customActivityGifUrl.value = existing.gifUrl;
+    if (existing.localFileName) setGifSourceTab('upload');
+    if (createActivityDraft.previewUrl) showGifPreview(createActivityDraft.previewUrl);
+  } else if (createActivityTitle) {
+    createActivityTitle.textContent = '✨ Create Activity';
+  }
+
+  if (createActivityModal) createActivityModal.showModal();
+}
+
+async function handleResolveGifPreview() {
+  const raw = customActivityGifUrl?.value?.trim();
+  if (!raw) {
+    showToast('Paste a GIF URL first', 'error');
+    return;
+  }
+  const result = await window.smiley.resolveGifUrl(raw);
+  if (!result?.success) {
+    showToast(result?.error || 'Could not resolve URL', 'error');
+    return;
+  }
+  createActivityDraft.resolvedGifUrl = result.url;
+  createActivityDraft.keepGifUrl = false;
+  showGifPreview(result.url);
+  showToast('GIF preview loaded');
+}
+
+async function handlePickActivityGif() {
+  const result = await window.smiley.pickCustomActivityGif();
+  if (result.canceled) return;
+  if (result.error) {
+    showToast(result.error, 'error');
+    return;
+  }
+  createActivityDraft.localFileName = result.fileName;
+  createActivityDraft.previewUrl = result.previewUrl;
+  createActivityDraft.keepLocalFile = false;
+  showGifPreview(result.previewUrl);
+  showToast('File ready — add a URL too for Discord');
+}
+
+async function handleSaveCustomActivity() {
+  const details = customActivityDetails?.value?.trim();
+  if (!details) {
+    showToast('Title is required', 'error');
+    customActivityDetails?.focus();
+    return;
+  }
+
+  const payload = {
+    id: createActivityDraft.editingId || undefined,
+    details,
+    state: customActivityState?.value?.trim() || '',
+    emoji: customActivityEmoji?.value?.trim() || '✨',
+  };
+
+  if (createActivityDraft.gifSource === 'url') {
+    const rawUrl = customActivityGifUrl?.value?.trim();
+    if (rawUrl) payload.gifUrl = rawUrl;
+  }
+
+  if (createActivityDraft.localFileName) {
+    payload.localFileName = createActivityDraft.localFileName;
+  }
+
+  if (createActivityDraft.editingId) {
+    if (!payload.gifUrl && createActivityDraft.keepGifUrl) payload.keepGifUrl = true;
+    if (!payload.localFileName && createActivityDraft.keepLocalFile) payload.keepLocalFile = true;
+  }
+
+  if (!payload.gifUrl && !payload.localFileName && !payload.keepGifUrl && !payload.keepLocalFile) {
+    showToast('Add a GIF URL or upload a file', 'error');
+    return;
+  }
+
+  const result = await window.smiley.saveCustomActivity(payload);
+  if (!result?.success) {
+    showToast(result?.error || 'Could not save activity', 'error');
+    return;
+  }
+
+  customActivitiesConfig = await window.smiley.getCustomActivities();
+  if (createActivityModal?.open) createActivityModal.close();
+  activeCategory = 'custom';
+  renderCategoryTabs();
+  renderActivityGrid();
+  renderCustomActivitiesSettingsList();
+  showToast(createActivityDraft.editingId ? 'Activity updated' : 'Activity created');
+}
+
+async function handleDeleteCustomActivity(id) {
+  const existing = customActivitiesConfig.find((a) => a.id === id);
+  if (!existing) return;
+  const result = await window.smiley.deleteCustomActivity(id);
+  if (!result?.success) {
+    showToast(result?.error || 'Delete failed', 'error');
+    return;
+  }
+  customActivitiesConfig = await window.smiley.getCustomActivities();
+  if (selectedActivityId === id) {
+    selectedActivityId = null;
+    await updatePreview(null);
+  }
+  renderActivityGrid();
+  renderRecentChips();
+  renderCustomActivitiesSettingsList();
+  showToast('Activity deleted');
+}
+
+async function loadCustomActivitiesConfig() {
+  try {
+    customActivitiesConfig = (await window.smiley.getCustomActivities()) || [];
+  } catch {
+    customActivitiesConfig = [];
+  }
+}
+
+function renderCustomActivitiesSettingsList() {
+  if (!customActivitiesSettingsList) return;
+  if (!customActivitiesConfig.length) {
+    customActivitiesSettingsList.innerHTML = '<p class="field-hint">No custom activities yet — use the <strong>My Activities</strong> tab to create one.</p>';
+    return;
+  }
+  customActivitiesSettingsList.innerHTML = customActivitiesConfig
+    .map((ca) => {
+      const thumb = ca.gifUrl || ca.localGifPath || '';
+      const thumbHtml = thumb
+        ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />`
+        : '<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">✨</span>';
+      return `
+      <div class="custom-activity-settings-item" data-id="${escapeHtml(ca.id)}">
+        ${thumbHtml}
+        <div class="meta">
+          <strong>${escapeHtml(ca.emoji)} ${escapeHtml(ca.details)}</strong>
+          <span>${escapeHtml(ca.state || '')}${ca.gifUrl ? '' : ' · preview only'}</span>
+        </div>
+        <button type="button" class="btn-delete" data-delete-settings="${escapeHtml(ca.id)}" title="Delete">🗑️</button>
+      </div>`;
+    })
+    .join('');
+
+  customActivitiesSettingsList.querySelectorAll('[data-delete-settings]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await handleDeleteCustomActivity(btn.dataset.deleteSettings);
+    });
+  });
+}
+
 // ─── Custom Animations ───────────────────────────────────────────────
 async function loadCustomAnimationsList() {
   try {
@@ -790,7 +1135,7 @@ function renderCustomAnimationsList() {
       if (anim) {
         activeCustomAnimation = anim.dataUrl;
         renderCustomAnimationsList();
-        const activity = selectedActivityId ? ALL_ACTIVITIES.find((a) => a.id === selectedActivityId) : null;
+        const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
         if (activity) updatePreview(activity);
         showToast('Custom animation selected!');
       }
@@ -805,7 +1150,7 @@ function renderCustomAnimationsList() {
       if (result.success) {
         if (activeCustomAnimation && customAnimations.find((a) => a.name === name)?.dataUrl === activeCustomAnimation) {
           activeCustomAnimation = null;
-          const activity = selectedActivityId ? ALL_ACTIVITIES.find((a) => a.id === selectedActivityId) : null;
+          const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
           if (activity) updatePreview(activity);
           else updatePreview(null);
         }
@@ -822,7 +1167,7 @@ async function handleUploadAnimation() {
   if (result.error) { showToast(result.error, 'error'); return; }
   activeCustomAnimation = result.dataUrl;
   await loadCustomAnimationsList();
-  const activity = selectedActivityId ? ALL_ACTIVITIES.find((a) => a.id === selectedActivityId) : null;
+  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
   if (activity) updatePreview(activity);
   showToast('Custom animation uploaded!');
 }
@@ -1054,16 +1399,24 @@ async function init() {
   minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
   setupModalClose(settingsModal, closeSettings);
   setupModalClose(legalModal, closeLegal);
+  setupModalClose(createActivityModal, closeCreateActivity);
+  if (cancelCreateActivity) cancelCreateActivity.addEventListener('click', () => createActivityModal?.close());
+  if (saveCreateActivity) saveCreateActivity.addEventListener('click', handleSaveCustomActivity);
+  if (resolveGifBtn) resolveGifBtn.addEventListener('click', handleResolveGifPreview);
+  if (pickActivityGifBtn) pickActivityGifBtn.addEventListener('click', handlePickActivityGif);
+  gifSourceTabs.forEach((tab) => {
+    tab.addEventListener('click', () => setGifSourceTab(tab.dataset.source));
+  });
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
   if (copyBtn) copyBtn.addEventListener('click', handleCopy);
 
   document.addEventListener('keydown', (e) => {
     const mod = e.metaKey || e.ctrlKey;
-    if (mod && e.key >= '1' && e.key <= '5') {
+    if (mod && e.key >= '1' && e.key <= '6') {
       e.preventDefault();
       const idx = parseInt(e.key, 10) - 1;
-      const cat = ACTIVITY_CATEGORIES[idx];
+      const cat = ACTIVITY_CATEGORIES_WITH_CUSTOM[idx];
       if (cat) {
         activeCategory = cat.id;
         searchQuery = '';
@@ -1207,6 +1560,9 @@ async function init() {
       if (result.canceled) return;
       if (result.success) {
         showToast('Settings imported — reopen Settings to review');
+        await loadCustomActivitiesConfig();
+        renderCategoryTabs();
+        renderActivityGrid();
         openSettings('advanced');
       } else showToast(result.error || 'Import failed', 'error');
     });
@@ -1251,6 +1607,11 @@ async function init() {
       favoriteIds = data.favoriteActivities;
       renderActivityGrid();
     }
+    if (data.customActivities) {
+      customActivitiesConfig = data.customActivities;
+      renderActivityGrid();
+      renderCustomActivitiesSettingsList();
+    }
   });
 
   // IPC events
@@ -1267,7 +1628,9 @@ async function init() {
       if (aboutVersion) aboutVersion.textContent = `Smiley v${data.version}`;
     }
     if (data.activity) {
-      const match = ALL_ACTIVITIES.find((a) => a.details === data.activity.details && a.state === data.activity.state);
+      const match = findActivity(data.activity.id) || getAllActivitiesMerged().find(
+        (a) => a.details === data.activity.details && a.state === data.activity.state
+      );
       if (match) {
         selectedActivityId = match.id;
         renderActivityGrid();
@@ -1290,6 +1653,7 @@ async function init() {
   currentSettings = { ...currentSettings, ...cfg };
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
+  await loadCustomActivitiesConfig();
   applyPlatformUI(cfg);
   wallpaperSettings = {
     filename: cfg.customWallpaper?.filename || null,
@@ -1313,7 +1677,9 @@ async function init() {
   // Restore previous activity
   const status = await window.smiley.getStatus();
   if (status.activity) {
-    const match = ALL_ACTIVITIES.find((a) => a.details === status.activity.details && a.state === status.activity.state);
+    const match = findActivity(status.activity.id) || getAllActivitiesMerged().find(
+      (a) => a.details === status.activity.details && a.state === status.activity.state
+    );
     if (match) {
       selectedActivityId = match.id;
       renderActivityGrid();
