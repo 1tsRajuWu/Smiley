@@ -1239,10 +1239,8 @@ async function handleClearCache() {
   }
 }
 
-async function handleSaveSettings(e) {
-  if (e) e.preventDefault();
-
-  const newSettings = {
+function buildSettingsPayload() {
+  return {
     autoConnect: autoConnectToggle.checked,
     minimizeToTray: minimizeTrayToggle.checked,
     autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
@@ -1262,6 +1260,34 @@ async function handleSaveSettings(e) {
       ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
       : null,
   };
+}
+
+function collectPendingConfigForFlush() {
+  const patch = {
+    theme: currentSettings.theme || 'dark',
+    uiVersion: currentSettings.uiVersion === 'v1' ? 'v1' : 'v2',
+    activityGifChoice: activityGifChoices,
+    customWallpaper: wallpaperSettings.filename
+      ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
+      : null,
+  };
+  if (settingsModal?.open) {
+    Object.assign(patch, buildSettingsPayload());
+  }
+  return patch;
+}
+
+async function flushPendingConfig() {
+  if (!window.smiley?.saveConfig) return;
+  await window.smiley.saveConfig(collectPendingConfigForFlush());
+}
+
+window.__smileyFlushPendingConfig = flushPendingConfig;
+
+async function handleSaveSettings(e) {
+  if (e) e.preventDefault();
+
+  const newSettings = buildSettingsPayload();
 
   const result = await window.smiley.saveConfig(newSettings);
   settingsModal.close();

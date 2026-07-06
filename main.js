@@ -35,6 +35,8 @@ if (!gotSingleInstanceLock) {
   app.quit();
 }
 
+app.isQuitting = false;
+
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
 const isPackaged = app.isPackaged;
@@ -302,6 +304,12 @@ function loadConfig() {
         fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
         return;
       }
+      if (Object.keys(decrypted).length === 0) {
+        console.error('[loadConfig] config.secure could not be decrypted — using defaults for this session');
+        config = { ...DEFAULT_CONFIG };
+        delete config.clientId;
+        return;
+      }
       config = { ...DEFAULT_CONFIG, ...decrypted };
       delete config.clientId;
       return;
@@ -421,15 +429,40 @@ function showOneTimeDialog(notice, configKey) {
   });
 }
 
+function flushConfigToDisk() {
+  try {
+    const securePath = getUserDataPath('config.secure');
+    const tmpPath = `${securePath}.tmp`;
+    fs.writeFileSync(tmpPath, JSON.stringify(encryptConfig(config), null, 2));
+    fs.renameSync(tmpPath, securePath);
+  } catch (e) {
+    console.error('[flushConfig]', e.message);
+  }
+}
+
 function saveConfig(data) {
   const { clientId: _c, donationUrl: _d, ...safeData } = data || {};
   const patch = sanitizeConfigPatch(safeData);
   config = { ...config, ...patch, donationUrl: DONATION_URL };
+  flushConfigToDisk();
+}
+
+function shouldCloseToTray() {
+  if (process.platform === 'darwin') return true;
+  return config.minimizeToTray !== false;
+}
+
+async function flushRendererPendingConfig() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const wc = mainWindow.webContents;
+  if (!wc || wc.isDestroyed()) return;
   try {
-    const securePath = getUserDataPath('config.secure');
-    fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
+    await wc.executeJavaScript(
+      '(async () => { if (typeof window.__smileyFlushPendingConfig === "function") await window.__smileyFlushPendingConfig(); })()',
+      true,
+    );
   } catch (e) {
-    console.error('[saveConfig]', e.message);
+    console.error('[flushRendererPendingConfig]', e.message);
   }
 }
 
@@ -680,7 +713,7 @@ function saveWindowState() {
       maximized: mainWindow.isMaximized(),
     };
     fs.writeFileSync(getUserDataPath('window-state.json'), JSON.stringify(state, null, 2));
-    saveConfig({ windowState: { width: bounds.width, height: bounds.height } });
+    saveConfig({ windowState: state });
   } catch (_) {}
 }
 
@@ -930,12 +963,26 @@ function createWindow() {
     if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
   });
 
+  let closingToTray = false;
   mainWindow.on('close', (e) => {
-    saveWindowState();
-    if (config.minimizeToTray !== false && !app.isQuitting) {
+    if (shouldCloseToTray() && !app.isQuitting) {
       e.preventDefault();
-      mainWindow.hide();
+      if (closingToTray) return;
+      closingToTray = true;
+      (async () => {
+        try {
+          await flushRendererPendingConfig();
+          saveWindowState();
+          flushConfigToDisk();
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+        } finally {
+          closingToTray = false;
+        }
+      })();
+      return;
     }
+    saveWindowState();
+    flushConfigToDisk();
   });
 
   mainWindow.on('resize', () => saveWindowState());
@@ -2668,11 +2715,17 @@ function setupIPC() {
   ipcMain.handle('is-window-maximized', () => ({
     isMaximized: !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized()),
   }));
-  ipcMain.handle('close-window', () => {
-    if (mainWindow) {
-      if (config.minimizeToTray !== false) mainWindow.hide();
-      else { app.isQuitting = true; app.quit(); }
+  ipcMain.handle('close-window', async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (shouldCloseToTray() && !app.isQuitting) {
+      await flushRendererPendingConfig();
+      saveWindowState();
+      flushConfigToDisk();
+      mainWindow.hide();
+      return;
     }
+    app.isQuitting = true;
+    app.quit();
   });
 
   ipcMain.handle('export-settings', async () => {
@@ -2796,7 +2849,9 @@ app.on('activate', () => {
 app.on('before-quit', async () => {
   app.isQuitting = true;
   globalShortcut.unregisterAll();
+  await flushRendererPendingConfig();
   saveWindowState();
+  flushConfigToDisk();
   if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
 });
 
