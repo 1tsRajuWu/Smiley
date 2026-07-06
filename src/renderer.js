@@ -17,7 +17,6 @@ import {
 } from './discord-images.js';
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
-const GITHUB_SPONSORS_URL = 'https://github.com/sponsors/1tsRajuWu';
 const GITHUB_RELEASES_URL = 'https://github.com/1tsRajuWu/Smiley/releases/latest';
 const SHOW_UPI_DONATE = false;
 const UPI_ID = 'therajind.07@oksbi';
@@ -55,7 +54,6 @@ const saveSettingsBtn = $('#saveSettingsBtn');
 const closeSettings = $('#closeSettings');
 const donateBanner = $('#donateBanner');
 const donatePaypalBtn = $('#donatePaypalBtn');
-const donateGithubBtn = $('#donateGithubBtn');
 const donateUpiBtn = $('#donateUpiBtn');
 const donateUpiQrBtn = $('#donateUpiQrBtn');
 const upiQrModal = $('#upiQrModal');
@@ -88,10 +86,8 @@ const bugReportEmailLink = $('#bugReportEmailLink');
 const reviewLink = $('#reviewLink');
 const footerBugReport = $('#footerBugReport');
 const footerReview = $('#footerReview');
-const footerSponsor = $('#footerSponsor');
 const footerShortcuts = $('#footerShortcuts');
 const supportPaypalLink = $('#supportPaypalLink');
-const supportGithubLink = $('#supportGithubLink');
 
 // Wallpaper settings refs
 const uploadWallpaperBtn = $('#uploadWallpaperBtn');
@@ -2107,13 +2103,6 @@ async function init() {
       window.smiley.openExternal(DONATION_URL);
     });
   }
-  if (donateGithubBtn) {
-    donateGithubBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.smiley.openExternal(GITHUB_SPONSORS_URL);
-    });
-  }
   if (donateUpiBtn) {
     donateUpiBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -2140,7 +2129,7 @@ async function init() {
       window.smiley.openExternal(link.href);
     });
   });
-  [supportPaypalLink, supportGithubLink, footerSponsor].forEach((link) => {
+  [supportPaypalLink].forEach((link) => {
     if (!link) return;
     link.addEventListener('click', (e) => {
       e.preventDefault();
