@@ -121,8 +121,11 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 
 | Platform | File | Downloads |
 |----------|------|-----------|
+| Windows | [**Smiley-Setup-4.1.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.1.0.exe) | 0 |
 | macOS Apple Silicon | [**Smiley-4.1.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.0-arm64.dmg) | 0 |
 | macOS Intel | [**Smiley-4.1.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.0-x64.dmg) | 0 |
+| Linux (AppImage) | [**Smiley-4.1.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.0.AppImage) | 0 |
+| Linux (.deb) | [**Smiley-4.1.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.0.deb) | 0 |
 <!-- DOWNLOADS_END -->
 
 > **Needs:** Discord **desktop** app (not browser), macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](docs/MINIMUM-REQUIREMENTS.md)
