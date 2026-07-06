@@ -421,25 +421,49 @@ function collectMyGifs() {
   return items;
 }
 
+/** My GIFs row only belongs on the My Activities tab or when a custom activity is selected. */
+function shouldShowMyGifsSection(activity) {
+  if (!activity) return false;
+  return activeCategory === 'custom' || activity.isCustom === true || String(activity.id).startsWith('custom-');
+}
+
+function canLoadPickerThumb(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (/^https?:\/\//i.test(url)) return true;
+  if (/^data:image\//i.test(url)) return true;
+  return false;
+}
+
+/** Picker thumbs: nekos permalinks often fail as <img src> in Electron — show Tenor preview instead. */
+function getPickerThumbSrc(option) {
+  if (isNekosBestUrl(option.url) && option.fallbackUrl) return option.fallbackUrl;
+  if (canLoadPickerThumb(option.url)) return option.url;
+  if (option.fallbackUrl && canLoadPickerThumb(option.fallbackUrl)) return option.fallbackUrl;
+  return null;
+}
+
 function renderGifOptionButton(option, selectedId) {
   const selected = option.id === selectedId;
   const previewOnly = option.previewOnly ? ' preview-only' : '';
   const fallbackAttr = option.fallbackUrl
     ? ` data-fallback-url="${escapeHtml(option.fallbackUrl)}"`
     : '';
-  const nekosAttr = isNekosBestUrl(option.url) ? ' referrerpolicy="no-referrer"' : '';
+  const thumbSrc = getPickerThumbSrc(option);
   const genderBadge = option.gender === 'girl'
     ? '<span class="gif-gender-badge girl" aria-hidden="true">👧</span>'
     : option.gender === 'boy'
       ? '<span class="gif-gender-badge boy" aria-hidden="true">👦</span>'
       : '';
+  const thumbInner = thumbSrc
+    ? `<img src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" decoding="async" />`
+    : '<span class="gif-option-placeholder" aria-hidden="true">🎬</span>';
   return `
     <button type="button" class="gif-option${selected ? ' selected' : ''}${previewOnly}"
       role="option" aria-selected="${selected}" data-choice="${escapeHtml(option.id)}"${fallbackAttr}
       title="${escapeHtml(option.label)}${option.previewOnly ? ' (app preview only)' : ''}">
       <span class="gif-option-thumb">
         ${genderBadge}
-        <img src="${escapeHtml(option.url)}" alt="" loading="lazy" decoding="async"${nekosAttr} />
+        ${thumbInner}
       </span>
       <span class="gif-option-label">${escapeHtml(option.label)}</span>
     </button>`;
@@ -459,41 +483,40 @@ function syncGifGenderTabs() {
   });
 }
 
-function bindGifPickerThumbFallbacks(strip) {
+function showGifPickerThumbPlaceholder(img) {
+  const thumb = img.closest('.gif-option-thumb');
+  if (!thumb) return;
+  img.remove();
+  if (!thumb.querySelector('.gif-option-placeholder')) {
+    const ph = document.createElement('span');
+    ph.className = 'gif-option-placeholder';
+    ph.setAttribute('aria-hidden', 'true');
+    ph.textContent = '🎬';
+    thumb.appendChild(ph);
+  }
+}
+
+function bindGifPickerThumbFallbacks(strip, activity) {
   if (!strip) return;
+  const tenor = activity ? getTenorFallback(activity) : null;
   strip.querySelectorAll('.gif-option-thumb img').forEach((img) => {
     const btn = img.closest('.gif-option');
     const fallback = btn?.dataset?.fallbackUrl;
-    if (!fallback) return;
     img.addEventListener('error', () => {
-      if (img.dataset.fallbackTried === '1') return;
-      img.dataset.fallbackTried = '1';
-      img.src = fallback;
+      const tried = Number(img.dataset.fallbackTried || '0');
+      if (tried === 0 && fallback && img.src !== fallback) {
+        img.dataset.fallbackTried = '1';
+        img.src = fallback;
+        return;
+      }
+      if (tried <= 1 && tenor && img.src !== tenor) {
+        img.dataset.fallbackTried = '2';
+        img.src = tenor;
+        return;
+      }
+      showGifPickerThumbPlaceholder(img);
     }, { once: false });
   });
-}
-
-async function refreshNekosPickerThumbs(activity) {
-  if (!activity?.id) return;
-  const strips = [gifPickerStrip, gifPickerMyStrip].filter(Boolean);
-  const tasks = [];
-  for (const strip of strips) {
-    const nekoOptions = strip.querySelectorAll('.gif-option[data-choice$="-nekos"], .gif-option img[src*="nekos.best"]');
-    for (const node of nekoOptions) {
-      const btn = node.classList?.contains('gif-option') ? node : node.closest('.gif-option');
-      if (!btn) continue;
-      const img = btn.querySelector('img');
-      if (!img || img.dataset.nekosRefreshed === '1') continue;
-      tasks.push(
-        fetchNekosGifForActivity(activity.id, img.getAttribute('src') || img.src).then((fresh) => {
-          if (!fresh || selectedActivityId !== activity.id) return;
-          img.dataset.nekosRefreshed = '1';
-          img.src = fresh;
-        })
-      );
-    }
-  }
-  await Promise.allSettled(tasks);
 }
 
 function bindGifPickerStrip(strip, activity, onSelect) {
@@ -535,13 +558,14 @@ function renderGifPicker(activity) {
 
   const selectedId = getSavedGifChoiceId(activity);
   const visiblePresets = filterGifOptionsByGender(presetOptions);
-  gifPickerSection.hidden = visiblePresets.length === 0 && collectMyGifs().length === 0;
+  const showMyGifs = shouldShowMyGifsSection(activity);
+  const myGifs = showMyGifs
+    ? collectMyGifs().filter((g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id))
+    : [];
+  gifPickerSection.hidden = visiblePresets.length === 0 && myGifs.length === 0;
   gifPickerStrip.innerHTML = visiblePresets.map((o) => renderGifOptionButton(o, selectedId)).join('');
   syncGifGenderTabs();
 
-  const myGifs = collectMyGifs().filter(
-    (g) => !presetOptions.some((p) => p.url === g.url || p.id === g.id)
-  );
   if (gifPickerMyGifs && gifPickerMyStrip) {
     if (myGifs.length) {
       gifPickerMyGifs.hidden = false;
@@ -554,9 +578,8 @@ function renderGifPicker(activity) {
   }
 
   bindGifPickerStrip(gifPickerStrip, activity, onGifOptionSelect);
-  bindGifPickerThumbFallbacks(gifPickerStrip);
-  bindGifPickerThumbFallbacks(gifPickerMyStrip);
-  refreshNekosPickerThumbs(activity);
+  bindGifPickerThumbFallbacks(gifPickerStrip, activity);
+  bindGifPickerThumbFallbacks(gifPickerMyStrip, activity);
 }
 
 function scheduleSaveGifChoices() {
@@ -920,6 +943,8 @@ function renderCategoryTabs() {
       renderCategoryTabs();
       preloadActiveCategoryGifs();
       renderActivityGrid();
+      const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
+      if (activity) renderGifPicker(activity);
     });
   });
 }
