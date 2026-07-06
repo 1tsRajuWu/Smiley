@@ -498,7 +498,30 @@ function broadcastStatus() {
 
 // ─── Auto Updater ────────────────────────────────────────────────────
 let pendingUpdateVersion = null;
+let updateDownloaded = false;
+let lastDownloadPercent = 0;
+let downloadStallTimer = null;
 let updaterListenersAttached = false;
+
+function clearDownloadStallTimer() {
+  if (downloadStallTimer) {
+    clearTimeout(downloadStallTimer);
+    downloadStallTimer = null;
+  }
+}
+
+function resetDownloadStallTimer() {
+  clearDownloadStallTimer();
+  downloadStallTimer = setTimeout(() => {
+    if (!updateDownloaded && lastDownloadPercent > 0 && lastDownloadPercent < 100) {
+      sendUpdateStatus({
+        status: 'download-stalled',
+        percent: lastDownloadPercent,
+        error: 'Update download stalled. Try again later.',
+      });
+    }
+  }, 60000);
+}
 
 function formatUpdateError(err) {
   const msg = String(err?.message || err || '').toLowerCase();
@@ -601,7 +624,7 @@ async function checkForUpdates(manual = false) {
 }
 
 function installPendingUpdate() {
-  if (!isPackaged || !pendingUpdateVersion) return false;
+  if (!isPackaged || !pendingUpdateVersion || !updateDownloaded) return false;
   app.isQuitting = true;
   autoUpdater.quitAndInstall(false, true);
   return true;
@@ -609,8 +632,8 @@ function installPendingUpdate() {
 
 function setupAutoUpdater() {
   try {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.autoDownload = isPackaged;
+    autoUpdater.autoInstallOnAppQuit = isPackaged;
     autoUpdater.allowPrerelease = false;
     autoUpdater.logger = console;
 
@@ -623,13 +646,24 @@ function setupAutoUpdater() {
 
     autoUpdater.on('update-available', (info) => {
       pendingUpdateVersion = info.version;
-      const payload = { status: 'available', version: info.version };
+      if (updateDownloaded && pendingUpdateVersion === info.version) {
+        sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        return;
+      }
+      updateDownloaded = false;
+      lastDownloadPercent = 0;
+      clearDownloadStallTimer();
+      const payload = { status: 'available', version: info.version, percent: 0 };
       sendUpdateStatus(payload);
       resolveManualUpdate({ ok: true, status: 'available', version: info.version });
     });
 
     autoUpdater.on('update-not-available', (info) => {
       pendingUpdateVersion = null;
+      updateDownloaded = false;
+      lastDownloadPercent = 0;
+      clearDownloadStallTimer();
       const payload = {
         status: 'up-to-date',
         version: info?.version || APP_VERSION,
@@ -639,31 +673,28 @@ function setupAutoUpdater() {
     });
 
     autoUpdater.on('download-progress', (progress) => {
+      lastDownloadPercent = Math.min(99, Math.round(progress.percent || 0));
+      resetDownloadStallTimer();
       sendUpdateStatus({
         status: 'downloading',
-        percent: Math.round(progress.percent),
+        percent: lastDownloadPercent,
+        version: pendingUpdateVersion,
       });
     });
 
     autoUpdater.on('update-downloaded', (info) => {
+      clearDownloadStallTimer();
       pendingUpdateVersion = info.version;
-      sendUpdateStatus({ status: 'downloaded', version: info.version });
-      if (mainWindow) {
-        dialog.showMessageBox(mainWindow, {
-          type: 'info',
-          title: 'Update Ready',
-          message: `Smiley v${info.version} has been downloaded.`,
-          detail: 'Restart now to install the update, or it will apply when you quit.',
-          buttons: ['Restart Now', 'Later'],
-          defaultId: 0,
-        }).then(({ response }) => {
-          if (response === 0) installPendingUpdate();
-        });
-      }
+      updateDownloaded = true;
+      lastDownloadPercent = 100;
+      sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
+      resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
     });
 
     autoUpdater.on('error', (err) => {
       console.error('[updater]', err.message);
+      clearDownloadStallTimer();
+      updateDownloaded = false;
       const formatted = formatUpdateError(err);
       sendUpdateStatus(formatted);
       resolveManualUpdate(formatted);
@@ -878,6 +909,7 @@ function setupIPC() {
 
 // ─── App Lifecycle ───────────────────────────────────────────────────
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null);
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
   applyLaunchAtLogin();

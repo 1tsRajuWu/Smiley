@@ -30,6 +30,7 @@ export const ACTIVITY_NEKOS_ENDPOINTS = {
   'eating-snacks': 'nom',
   'cooking': 'feed',
   'eating-dessert': 'bite',
+  'coding': 'bored',
   'gaming': 'yeet',
   'ranked': 'yeet',
   'coop': 'hug',

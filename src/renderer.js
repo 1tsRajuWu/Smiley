@@ -70,6 +70,7 @@ let customAnimations = [];
 let activeCustomAnimation = null;
 let currentGifUrl = null;
 let currentDiscordImageUrl = null;
+let updateState = { downloaded: false, dismissed: false, percent: 0 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
@@ -123,12 +124,16 @@ function setCharacterDisplay(url, source) {
   characterLoading.style.display = 'none';
   if (!url) {
     characterGif.style.display = 'none';
+    characterGif.classList.remove('character-gif-loaded');
     characterSource.textContent = '';
     return;
   }
+  characterGif.classList.remove('character-gif-loaded');
+  characterGif.onload = () => characterGif.classList.add('character-gif-loaded');
+  characterGif.onerror = () => characterGif.classList.remove('character-gif-loaded');
   characterGif.src = url;
   characterGif.style.display = 'block';
-  characterGif.onload = () => characterGif.classList.add('character-gif-loaded');
+  if (characterGif.complete) characterGif.classList.add('character-gif-loaded');
   characterSource.textContent = source;
 }
 
@@ -501,6 +506,18 @@ async function showLegal(type) {
 }
 
 // ─── Update Status ───────────────────────────────────────────────────
+function hideUpdateBanner() {
+  updateBanner?.classList.remove('visible');
+}
+
+function syncUpdateBannerButtons() {
+  if (!updateRestartBtn) return;
+  updateRestartBtn.disabled = !updateState.downloaded;
+  updateRestartBtn.title = updateState.downloaded
+    ? 'Restart to install update'
+    : 'Available after download completes';
+}
+
 function handleUpdateStatus(data) {
   switch (data.status) {
     case 'checking':
@@ -513,23 +530,43 @@ function handleUpdateStatus(data) {
       showToast(data.message || 'No release on GitHub yet — open github.com/1tsRajuWu/Smiley/releases');
       break;
     case 'available':
+      updateState = { downloaded: false, dismissed: false, percent: 0 };
+      syncUpdateBannerButtons();
       showToast(`Update v${data.version} available! Downloading...`);
-      if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}…`;
+      if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}… 0%`;
       updateBanner?.classList.add('visible');
       break;
     case 'downloading':
-      if (updateBannerText) updateBannerText.textContent = `Downloading update… ${data.percent || 0}%`;
+      updateState.percent = data.percent ?? updateState.percent;
+      if (updateState.dismissed) break;
+      if (updateBannerText) {
+        updateBannerText.textContent = `Downloading update… ${updateState.percent}%`;
+      }
       updateBanner?.classList.add('visible');
+      syncUpdateBannerButtons();
       break;
     case 'up-to-date':
+      hideUpdateBanner();
       showToast('You are on the latest version!');
       break;
     case 'downloaded':
-      if (updateBannerText) updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
+      updateState.downloaded = true;
+      updateState.percent = 100;
+      updateState.dismissed = false;
+      syncUpdateBannerButtons();
+      if (updateBannerText) {
+        updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
+      }
       updateBanner?.classList.add('visible');
       showToast(`Update v${data.version} ready! Restart to apply.`);
       break;
+    case 'download-stalled':
+      updateState.dismissed = true;
+      hideUpdateBanner();
+      showToast(data.error || 'Update download stalled. Try again later.', 'error');
+      break;
     case 'error':
+      hideUpdateBanner();
       if (data.expected) {
         showToast(data.message || data.error || 'Update check unavailable.');
       } else {
@@ -631,6 +668,10 @@ async function init() {
         showToast(`Update v${result.version} found — downloading…`);
         return;
       }
+      if (result.status === 'downloaded') {
+        showToast(`Update v${result.version} ready — restart to apply.`);
+        return;
+      }
       if (result.status === 'no-release') {
         showToast(result.message || 'No release on GitHub yet — download from Releases page.');
         return;
@@ -671,9 +712,19 @@ async function init() {
     });
   }
 
-  if (updateDismissBtn) updateDismissBtn.addEventListener('click', () => updateBanner?.classList.remove('visible'));
+  if (updateDismissBtn) {
+    updateDismissBtn.addEventListener('click', () => {
+      updateState.dismissed = true;
+      hideUpdateBanner();
+    });
+  }
   if (updateRestartBtn) {
+    updateRestartBtn.disabled = true;
     updateRestartBtn.addEventListener('click', async () => {
+      if (!updateState.downloaded) {
+        showToast('Download still in progress — try again when ready', 'error');
+        return;
+      }
       const result = await window.smiley.installUpdate();
       if (!result?.success) showToast('No update ready — check again in a moment', 'error');
     });
