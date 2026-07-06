@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "Discord Rich Presence with animated anime GIFs",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -122,8 +122,7 @@
           "target": "AppImage",
           "arch": [
             "x64"
-          ],
-          "license": "license.txt"
+          ]
         },
         {
           "target": "deb",
@@ -186,6 +185,9 @@
           "name": "INSTALL.txt"
         }
       ]
+    },
+    "appImage": {
+      "license": "license.txt"
     }
   }
 }
