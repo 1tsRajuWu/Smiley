@@ -22,7 +22,7 @@
     "description": "Discord Rich Presence desktop app with animated anime GIF status picker for Windows, macOS, and Linux.",
     "applicationCategory": "DesktopApplication",
     "operatingSystem": "Windows, macOS, Linux",
-    "softwareVersion": "4.0.7",
+    "softwareVersion": "4.0.8",
     "offers": {
       "@type": "Offer",
       "price": "0",
@@ -233,6 +233,19 @@
       text-align: center;
     }
 
+
+    .platform-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .btn-download.is-disabled {
+      pointer-events: none;
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 540px) {
       .download-card {
         flex-wrap: wrap;
@@ -252,65 +265,70 @@
       <img class="logo" src="icon.png" width="96" height="96" alt="Smiley app icon">
       <h1>Smiley</h1>
       <p class="tagline">Discord Rich Presence with <strong>animated anime GIF</strong> status — for Windows, macOS, and Linux.</p>
-      <span class="version-badge">Latest · v4.0.7</span>
+      <span class="version-badge" id="version-badge">Latest · …</span>
     </header>
 
-    <section class="downloads" aria-label="Download options">
-      <article class="download-card">
+    <section class="downloads" aria-label="Download options" id="downloads">
+      <article class="download-card" data-platform="windows">
         <div class="platform-icon" aria-hidden="true">🪟</div>
         <div class="platform-info">
           <div class="platform-name">Windows</div>
-          <div class="platform-file">Smiley-Setup-4.0.7.exe</div>
+          <div class="platform-file" data-file>Loading…</div>
+          <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.7.exe">
+        <a class="btn-download" data-href href="#" aria-disabled="true">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
         </a>
       </article>
 
-      <article class="download-card">
+      <article class="download-card" data-platform="mac-arm64">
         <div class="platform-icon" aria-hidden="true">🍎</div>
         <div class="platform-info">
           <div class="platform-name">macOS · Apple Silicon</div>
-          <div class="platform-file">Smiley-4.0.7-arm64.dmg</div>
+          <div class="platform-file" data-file>Loading…</div>
+          <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7-arm64.dmg">
+        <a class="btn-download" data-href href="#" aria-disabled="true">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
         </a>
       </article>
 
-      <article class="download-card">
+      <article class="download-card" data-platform="mac-x64">
         <div class="platform-icon" aria-hidden="true">🍎</div>
         <div class="platform-info">
           <div class="platform-name">macOS · Intel</div>
-          <div class="platform-file">Smiley-4.0.7-x64.dmg</div>
+          <div class="platform-file" data-file>Loading…</div>
+          <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7-x64.dmg">
+        <a class="btn-download" data-href href="#" aria-disabled="true">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
         </a>
       </article>
 
-      <article class="download-card">
+      <article class="download-card" data-platform="linux-appimage">
         <div class="platform-icon" aria-hidden="true">🐧</div>
         <div class="platform-info">
           <div class="platform-name">Linux · AppImage</div>
-          <div class="platform-file">Smiley-4.0.7.AppImage</div>
+          <div class="platform-file" data-file>Loading…</div>
+          <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7.AppImage">
+        <a class="btn-download" data-href href="#" aria-disabled="true">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
         </a>
       </article>
 
-      <article class="download-card">
+      <article class="download-card" data-platform="linux-deb">
         <div class="platform-icon" aria-hidden="true">🐧</div>
         <div class="platform-info">
           <div class="platform-name">Linux · Debian / Ubuntu</div>
-          <div class="platform-file">Smiley-4.0.7.deb</div>
+          <div class="platform-file" data-file>Loading…</div>
+          <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" href="https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7.deb">
+        <a class="btn-download" data-href href="#" aria-disabled="true">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
         </a>
@@ -328,5 +346,113 @@
       <p class="requirements">Requires Discord desktop app · macOS 11+ · Windows 10 (1809+) · Ubuntu 20.04+</p>
     </footer>
   </div>
+
+  <script>
+  (function () {
+    var REPO = '1tsRajuWu/Smiley';
+    var API = 'https://api.github.com/repos/' + REPO;
+
+    var platforms = {
+      windows: {
+        test: function (name) { return /^Smiley-Setup-.*\.exe$/i.test(name); }
+      },
+      'mac-arm64': {
+        test: function (name) { return /^Smiley-.*-arm64\.dmg$/i.test(name); }
+      },
+      'mac-x64': {
+        test: function (name) { return /^Smiley-.*-x64\.dmg$/i.test(name); }
+      },
+      'linux-appimage': {
+        test: function (name) { return /^Smiley-.*\.AppImage$/i.test(name); }
+      },
+      'linux-deb': {
+        test: function (name) { return /^Smiley-.*\.deb$/i.test(name); }
+      }
+    };
+
+    function latestDownloadUrl(assetName) {
+      return 'https://github.com/' + REPO + '/releases/latest/download/' + assetName;
+    }
+
+    function findAsset(releases, testFn) {
+      for (var i = 0; i < releases.length; i++) {
+        var rel = releases[i];
+        var assets = rel.assets || [];
+        for (var j = 0; j < assets.length; j++) {
+          var asset = assets[j];
+          if (testFn(asset.name)) {
+            var onLatest = i === 0;
+            return {
+              name: asset.name,
+              tag: rel.tag_name,
+              url: onLatest ? latestDownloadUrl(asset.name) : asset.browser_download_url
+            };
+          }
+        }
+      }
+      return null;
+    }
+
+    function setCard(platformId, hit, latestTag) {
+      var card = document.querySelector('[data-platform="' + platformId + '"]');
+      if (!card) return;
+      var fileEl = card.querySelector('[data-file]');
+      var noteEl = card.querySelector('[data-note]');
+      var btn = card.querySelector('[data-href]');
+
+      if (!hit) {
+        fileEl.textContent = 'Coming soon';
+        noteEl.hidden = false;
+        noteEl.textContent = 'No build available yet for this platform.';
+        btn.classList.add('is-disabled');
+        btn.setAttribute('aria-disabled', 'true');
+        btn.removeAttribute('href');
+        return;
+      }
+
+      fileEl.textContent = hit.name;
+      btn.href = hit.url;
+      btn.classList.remove('is-disabled');
+      btn.removeAttribute('aria-disabled');
+
+      if (hit.tag !== latestTag) {
+        noteEl.hidden = false;
+        noteEl.textContent = 'Latest release (' + latestTag + ') has no build yet — using ' + hit.tag + '.';
+      } else {
+        noteEl.hidden = true;
+        noteEl.textContent = '';
+      }
+    }
+
+    fetch(API + '/releases?per_page=30')
+      .then(function (r) { return r.json(); })
+      .then(function (releases) {
+        if (!Array.isArray(releases) || !releases.length) return;
+        var latestTag = releases[0].tag_name;
+        var version = latestTag.replace(/^v/, '');
+        var badge = document.getElementById('version-badge');
+        if (badge) badge.textContent = 'Latest · ' + latestTag;
+
+        var schema = document.querySelector('script[type="application/ld+json"]');
+        if (schema) {
+          try {
+            var data = JSON.parse(schema.textContent);
+            data.softwareVersion = version;
+            schema.textContent = JSON.stringify(data, null, 2);
+          } catch (e) { /* ignore */ }
+        }
+
+        Object.keys(platforms).forEach(function (id) {
+          var testFn = platforms[id].test;
+          setCard(id, findAsset(releases, testFn), latestTag);
+        });
+      })
+      .catch(function () {
+        var badge = document.getElementById('version-badge');
+        if (badge) badge.textContent = 'Latest · see GitHub releases';
+      });
+  })();
+  </script>
+
 </body>
 </html>
