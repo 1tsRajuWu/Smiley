@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════════════
+// YOU ARE HERE: Electron MAIN process (backend)
+// ─ UI lives in src/ (renderer.js, index.html)
+// ─ Bridge: preload.js exposes window.smiley → IPC handlers below
+// ─ Project map: PROJECT-STRUCTURE.md
+// ═══════════════════════════════════════════════════════════════════════
 const os = require('os');
 const { execFile, spawn } = require('child_process');
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session } = require('electron');

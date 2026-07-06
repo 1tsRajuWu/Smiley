@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════════════
+// YOU ARE HERE: Preload bridge (renderer ↔ main)
+// ─ Adds window.smiley.* — UI must use this, not require('electron')
+// ─ Pair each method with ipcMain.handle in main.js
+// ─ Project map: PROJECT-STRUCTURE.md
+// ═══════════════════════════════════════════════════════════════════════
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('smiley', {

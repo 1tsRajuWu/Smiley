@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════════════
+// YOU ARE HERE: Renderer UI logic (what the user sees)
+// ─ Markup: index.html │ Styles: styles-v2.css │ Data: activities.js, discord-images.js
+// ─ Backend calls: window.smiley.* (see ../preload.js → ../main.js)
+// ─ Project map: ../PROJECT-STRUCTURE.md
+// ═══════════════════════════════════════════════════════════════════════
 import { ACTIVITY_CATEGORIES, ACTIVITY_CATEGORIES_WITH_CUSTOM, CUSTOM_CATEGORY, ALL_ACTIVITIES } from './activities.js';
 import {
   resolveDiscordImageUrl,

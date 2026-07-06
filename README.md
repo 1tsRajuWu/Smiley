@@ -4,6 +4,8 @@ Platforms: Windows, macOS, Linux. Author: Himanshu Raj (1tsRajuWu / 1tsRaj).
 Download: https://1tsrajuwu.github.io/Smiley/
 -->
 
+**New to the code?** Read **[PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)** — folder map, core files, and data flow for newcomers.
+
 <div align="center">
 
 # Smiley
@@ -182,7 +184,7 @@ npm run build:win    # Windows installer
 npm run build:linux  # AppImage + .deb
 ```
 
-More in [docs/](docs/) · [About the author](docs/ABOUT.md)
+More in [docs/](docs/) · [Project structure (code map)](PROJECT-STRUCTURE.md) · [About the author](docs/ABOUT.md)
 
 </details>
 
