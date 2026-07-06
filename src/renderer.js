@@ -124,6 +124,9 @@ const musicNowPlayingToggle = $('#musicNowPlayingToggle');
 const musicNowPlayingAlbumArtToggle = $('#musicNowPlayingAlbumArtToggle');
 const shareInstallStatsField = $('#shareInstallStatsField');
 const shareInstallStatsToggle = $('#shareInstallStatsToggle');
+const privacyConsentModal = $('#privacyConsentModal');
+const privacyConsentAcceptBtn = $('#privacyConsentAcceptBtn');
+const privacyConsentDeclineBtn = $('#privacyConsentDeclineBtn');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
@@ -246,11 +249,25 @@ function customConfigToActivity(ca) {
     categoryColor: CUSTOM_CATEGORY.color,
     isCustom: true,
     gifUrl: ca.gifUrl || null,
+    localFileName: ca.localFileName || null,
     previewUrl,
     localGifPath: localUrl,
     largeImageText: ca.details,
     fallbackGif: httpsUrl || previewUrl,
   };
+}
+
+async function ensureCustomActivityPreview(activity) {
+  if (!activity?.isCustom || activity.localGifPath || !activity.localFileName) return activity;
+  try {
+    const result = await window.smiley.resolveCustomActivityPreview(activity.localFileName);
+    if (result?.url) {
+      activity.localGifPath = result.url;
+      if (!activity.previewUrl) activity.previewUrl = result.url;
+      if (!activity.fallbackGif) activity.fallbackGif = result.url;
+    }
+  } catch (_) {}
+  return activity;
 }
 
 function getAllActivitiesMerged() {
@@ -495,7 +512,7 @@ function applyPlatformUI(cfg = {}) {
     shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
   }
   if (shareInstallStatsToggle) {
-    shareInstallStatsToggle.checked = cfg.installTrackingEnabled === false;
+    shareInstallStatsToggle.checked = cfg.installTrackingEnabled === true;
   }
   applyUpiVisibility();
 }
@@ -1411,8 +1428,11 @@ function renderActivityGrid() {
 }
 
 async function selectActivity(id) {
-  const activity = findActivity(id);
+  let activity = findActivity(id);
   if (!activity) return;
+  if (activity.isCustom) {
+    activity = await ensureCustomActivityPreview(activity);
+  }
 
   const isReselect = selectedActivityId === id;
   const prevId = selectedActivityId;
@@ -1519,7 +1539,7 @@ function openSettings(tab = 'general') {
     if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
     if (autoInstallUpdatesToggle) autoInstallUpdatesToggle.checked = cfg.autoInstallUpdates !== false;
     if (shareInstallStatsToggle) {
-      shareInstallStatsToggle.checked = cfg.installTrackingEnabled === false;
+      shareInstallStatsToggle.checked = cfg.installTrackingEnabled === true;
     }
     if (shareInstallStatsField) shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
     showTimerToggle.checked = cfg.showTimer !== false;
@@ -1635,7 +1655,7 @@ function buildSettingsPayload() {
     minimizeToTray: minimizeTrayToggle.checked,
     autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
     autoInstallUpdates: autoInstallUpdatesToggle?.checked !== false,
-    installTrackingEnabled: shareInstallStatsToggle?.checked !== true,
+    installTrackingEnabled: shareInstallStatsToggle?.checked === true,
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
     musicNowPlaying: musicNowPlayingToggle?.checked !== false,
@@ -2582,12 +2602,14 @@ async function init() {
     }).catch(() => {
       customActivitiesConfig = [];
     }),
+  ]);
+  scheduleDeferredWork(() => {
     window.smiley.getCustomAnimations().then((list) => {
       customAnimations = list || [];
     }).catch(() => {
       customAnimations = [];
-    }),
-  ]);
+    });
+  });
 
   settingsBtn.addEventListener('click', () => openSettings('general'));
   if (minimizeBtn) minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
@@ -2606,6 +2628,29 @@ async function init() {
   setupModalClose(legalModal, closeLegal);
   setupModalClose(createActivityModal, closeCreateActivity);
   setupModalClose(upiQrModal, closeUpiQr);
+  setupModalClose(privacyConsentModal);
+
+  async function submitInstallConsent(enabled) {
+    try {
+      await window.smiley.saveInstallConsent({ enabled: enabled === true });
+      currentSettings.installConsentShown = true;
+      currentSettings.installTrackingEnabled = enabled === true;
+      if (shareInstallStatsToggle) shareInstallStatsToggle.checked = enabled === true;
+    } catch (_) {}
+    privacyConsentModal?.close();
+  }
+
+  if (privacyConsentAcceptBtn) {
+    privacyConsentAcceptBtn.addEventListener('click', () => submitInstallConsent(true));
+  }
+  if (privacyConsentDeclineBtn) {
+    privacyConsentDeclineBtn.addEventListener('click', () => submitInstallConsent(false));
+  }
+  privacyConsentModal?.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    submitInstallConsent(false);
+  });
+
   if (cancelCreateActivity) cancelCreateActivity.addEventListener('click', () => createActivityModal?.close());
   if (saveCreateActivity) saveCreateActivity.addEventListener('click', handleSaveCustomActivity);
   if (resolveGifBtn) resolveGifBtn.addEventListener('click', handleResolveGifPreview);
@@ -2976,15 +3021,26 @@ async function init() {
     }
   });
 
+  let lastNowPlayingMetaSig = '';
   window.smiley.onNowPlayingUpdate((track) => {
+    const metaSig = track
+      ? [track.title, track.artist, track.album, track.isPlaying ? '1' : '0', track.device || ''].join('\0')
+      : '';
+    const metaChanged = metaSig !== lastNowPlayingMetaSig;
+    lastNowPlayingMetaSig = metaSig;
+
     nowPlayingTrack = track;
     if (track?.artworkUrl) nowPlayingArtworkUrl = track.artworkUrl;
     if (selectedActivityId !== 'listening') return;
     const activity = findActivity('listening');
-    if (activity) applyNowPlayingPreview(activity);
+    if (!activity) return;
+
+    if (!metaChanged && track?.title && nowPlayingProgressTimer) return;
+
+    applyNowPlayingPreview(activity);
     clearNowPlayingProgressTimer();
     if (track?.title) {
-      nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 1000);
+      nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 2000);
     }
   });
 
@@ -3060,6 +3116,10 @@ async function init() {
   // Prompt setup when Client ID is missing
   if (!cfg.hasValidClientId) {
     setConnectionStatus(false, 'Discord not configured');
+  }
+
+  if (cfg.needsInstallConsent && privacyConsentModal) {
+    privacyConsentModal.showModal();
   }
 
   // Restore previous activity

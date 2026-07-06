@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Raj (@1tsRaj)** — last updated 8 July 2026 (v5.0.7)
+**Raj (@1tsRaj)** — last updated 8 July 2026 (v5.0.8)
 
 ## The basics
 

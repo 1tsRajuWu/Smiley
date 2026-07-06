@@ -1,20 +1,105 @@
 /**
- * Smiley security layer — AES-256-GCM encryption for local data and exports.
- * See SECURITY.md for the full threat model and E2EE scope.
+ * Smiley security layer — AES-256-GCM, OS keychain, E2EE exports, encrypted user files.
+ * See SECURITY.md for the full threat model.
  */
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
+const path = require('path');
 
 const ALG = 'aes-256-gcm';
 const IV_BYTES = 16;
-const TAG_BYTES = 16;
 const KEY_BYTES = 32;
 
 const SALT_V1 = 'smiley-salt-v1';
 const SALT_V3 = 'smiley-salt-v3-e2ee';
 const EXPORT_KDF_SALT = 'smiley-export-e2ee-v1';
 const APP_ID = 'com.smiley.rpc';
+const MASTER_KEY_FILE = 'master-key.enc';
+const ENCRYPTED_FILE_EXT = '.senc';
+
+const SCRYPT_EXPORT_V1 = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+const SCRYPT_EXPORT_V2 = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+
+let safeStorageApi = null;
+let masterKey = null;
+let keychainActive = false;
+let userDataPathRef = null;
+/** Cached derived keys — scrypt is expensive; never run it per file read. */
+let cachedKeys = null;
+let cachedKeysForPath = null;
+let lazyEncryptQueue = Promise.resolve();
+
+function clearKeyCache() {
+  cachedKeys = null;
+  cachedKeysForPath = null;
+}
+
+function buildKeyCache(userDataPath) {
+  if (cachedKeys && cachedKeysForPath === userDataPath) return cachedKeys;
+  const keys = [];
+  if (isKeychainActive()) keys.push({ v: 4, key: masterKey });
+  keys.push({ v: 3, key: deriveDeviceKeyV3(userDataPath) });
+  keys.push({ v: 1, key: deriveDeviceKeyV1(userDataPath) });
+  cachedKeys = keys;
+  cachedKeysForPath = userDataPath;
+  return keys;
+}
+
+function getLocalEncryptionKeys(userDataPath) {
+  return buildKeyCache(userDataPath);
+}
+
+function getPrimaryLocalKey(userDataPath) {
+  const keys = buildKeyCache(userDataPath);
+  return keys[0];
+}
+
+function getKeyForVersion(userDataPath, version) {
+  const keys = buildKeyCache(userDataPath);
+  return keys.find((k) => k.v === version) || keys[0];
+}
+function initSecurity(userDataPath, safeStorage) {
+  userDataPathRef = userDataPath;
+  safeStorageApi = safeStorage || null;
+  masterKey = null;
+  keychainActive = false;
+  clearKeyCache();
+
+  if (!userDataPath) return { keychain: false };
+
+  try {
+    if (safeStorageApi?.isEncryptionAvailable?.()) {
+      const keyPath = path.join(userDataPath, MASTER_KEY_FILE);
+      if (fs.existsSync(keyPath)) {
+        const blob = fs.readFileSync(keyPath);
+        const decoded = safeStorageApi.decryptString(blob);
+        masterKey = Buffer.from(decoded, 'base64');
+      } else {
+        masterKey = crypto.randomBytes(KEY_BYTES);
+        const blob = safeStorageApi.encryptString(masterKey.toString('base64'));
+        fs.writeFileSync(keyPath, blob);
+      }
+      if (masterKey.length === KEY_BYTES) {
+        keychainActive = true;
+      }
+    }
+  } catch (e) {
+    console.warn('[security] OS keychain unavailable, using device-bound key:', e.message);
+    masterKey = null;
+    keychainActive = false;
+  }
+
+  if (userDataPath) {
+    buildKeyCache(userDataPath);
+  }
+
+  return { keychain: keychainActive };
+}
+
+function isKeychainActive() {
+  return keychainActive && masterKey?.length === KEY_BYTES;
+}
 
 function deriveDeviceKeyV1(userDataPath) {
   return crypto.scryptSync(userDataPath, SALT_V1, KEY_BYTES);
@@ -28,16 +113,36 @@ function deriveDeviceKeyV3(userDataPath) {
     os.arch(),
     APP_ID,
   ].join('\0');
-  return crypto.scryptSync(entropy, SALT_V3, KEY_BYTES, { N: 16384, r: 8, p: 1 });
+  return crypto.scryptSync(entropy, SALT_V3, KEY_BYTES, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
 }
 
-function deriveExportKey(passphrase, saltHex) {
+function deriveExportKey(passphrase, saltHex, kdfVersion = 2) {
   const salt = Buffer.from(saltHex, 'hex');
-  return crypto.scryptSync(String(passphrase), Buffer.concat([Buffer.from(EXPORT_KDF_SALT), salt]), KEY_BYTES, {
-    N: 16384,
-    r: 8,
-    p: 1,
-  });
+  const params = kdfVersion >= 2 ? SCRYPT_EXPORT_V2 : SCRYPT_EXPORT_V1;
+  return crypto.scryptSync(
+    String(passphrase),
+    Buffer.concat([Buffer.from(EXPORT_KDF_SALT), salt]),
+    KEY_BYTES,
+    params,
+  );
+}
+
+function aesEncryptBuffer(buffer, key) {
+  const iv = crypto.randomBytes(IV_BYTES);
+  const cipher = crypto.createCipheriv(ALG, key, iv);
+  const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+  return {
+    iv: iv.toString('base64'),
+    data: encrypted.toString('base64'),
+    tag: cipher.getAuthTag().toString('base64'),
+  };
+}
+
+function aesDecryptBuffer(envelope, key) {
+  const decipher = crypto.createDecipheriv(ALG, key, Buffer.from(envelope.iv, 'base64'));
+  decipher.setAuthTag(Buffer.from(envelope.tag, 'base64'));
+  const data = Buffer.from(envelope.data, 'base64');
+  return Buffer.concat([decipher.update(data), decipher.final()]);
 }
 
 function aesEncrypt(plainText, key) {
@@ -60,12 +165,14 @@ function aesDecrypt(envelope, key) {
   return decrypted;
 }
 
-function encryptJson(plainObj, userDataPath, { version = 3 } = {}) {
+function encryptJson(plainObj, userDataPath, { version } = {}) {
   try {
     const json = JSON.stringify(plainObj);
-    const key = version === 1 ? deriveDeviceKeyV1(userDataPath) : deriveDeviceKeyV3(userDataPath);
-    const { iv, data, tag } = aesEncrypt(json, key);
-    return { v: version, alg: ALG, iv, data, tag };
+    const primary = version
+      ? getLocalEncryptionKeys(userDataPath).find((k) => k.v === version) || getPrimaryLocalKey(userDataPath)
+      : getPrimaryLocalKey(userDataPath);
+    const { iv, data, tag } = aesEncrypt(json, primary.key);
+    return { v: primary.v, alg: ALG, iv, data, tag };
   } catch (e) {
     console.error('[security.encryptJson]', e.message);
     return { v: 0, data: JSON.stringify(plainObj) };
@@ -78,11 +185,15 @@ function decryptJson(envelope, userDataPath) {
     if (envelope.v === 2) return { __keychainMigration: true };
     if (envelope.v === 0) return JSON.parse(envelope.data || '{}');
 
-    const tryVersions = envelope.v === 1
-      ? [{ v: 1, key: deriveDeviceKeyV1(userDataPath) }]
-      : [{ v: 3, key: deriveDeviceKeyV3(userDataPath) }, { v: 1, key: deriveDeviceKeyV1(userDataPath) }];
+    const order = envelope.v === 1
+      ? [getKeyForVersion(userDataPath, 1)]
+      : envelope.v === 3
+        ? [getKeyForVersion(userDataPath, 3), getKeyForVersion(userDataPath, 4), getKeyForVersion(userDataPath, 1)]
+        : envelope.v === 4
+          ? [getKeyForVersion(userDataPath, 4), getKeyForVersion(userDataPath, 3), getKeyForVersion(userDataPath, 1)]
+          : getLocalEncryptionKeys(userDataPath);
 
-    for (const { key } of tryVersions) {
+    for (const { key } of order) {
       try {
         const decrypted = aesDecrypt(envelope, key);
         return JSON.parse(decrypted);
@@ -96,7 +207,7 @@ function decryptJson(envelope, userDataPath) {
 }
 
 function writeSecureJson(filePath, plainObj, userDataPath) {
-  const envelope = encryptJson(plainObj, userDataPath, { version: 3 });
+  const envelope = encryptJson(plainObj, userDataPath);
   const tmpPath = `${filePath}.tmp-${process.pid}`;
   fs.writeFileSync(tmpPath, JSON.stringify(envelope, null, 2));
   fs.renameSync(tmpPath, filePath);
@@ -150,7 +261,8 @@ function migratePlaintextFile(plainPath, securePath, userDataPath, transform) {
 
 function encryptExport(plainObj, passphrase) {
   const salt = crypto.randomBytes(16);
-  const key = deriveExportKey(passphrase, salt.toString('hex'));
+  const kdfVersion = 2;
+  const key = deriveExportKey(passphrase, salt.toString('hex'), kdfVersion);
   const json = JSON.stringify(plainObj);
   const { iv, data, tag } = aesEncrypt(json, key);
   return {
@@ -158,6 +270,7 @@ function encryptExport(plainObj, passphrase) {
     type: 'smiley-export',
     alg: ALG,
     kdf: 'scrypt',
+    kdfVersion,
     salt: salt.toString('hex'),
     iv,
     data,
@@ -170,7 +283,8 @@ function decryptExport(envelope, passphrase) {
   if (!envelope || envelope.type !== 'smiley-export' || !envelope.salt) {
     throw new Error('Not a Smiley encrypted export');
   }
-  const key = deriveExportKey(passphrase, envelope.salt);
+  const kdfVersion = envelope.kdfVersion || 1;
+  const key = deriveExportKey(passphrase, envelope.salt, kdfVersion);
   const decrypted = aesDecrypt(envelope, key);
   const parsed = JSON.parse(decrypted);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -179,8 +293,121 @@ function decryptExport(envelope, passphrase) {
   return parsed;
 }
 
+function mimeFromExt(ext) {
+  const map = {
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+  };
+  return map[String(ext || '').toLowerCase()] || 'application/octet-stream';
+}
+
+function isEncryptedFileEnvelope(parsed) {
+  return parsed && parsed.type === 'smiley-file' && parsed.alg === ALG && parsed.data;
+}
+
+function writeEncryptedBinaryFile(filePath, buffer, userDataPath, meta = {}) {
+  const primary = getPrimaryLocalKey(userDataPath);
+  const { iv, data, tag } = aesEncryptBuffer(buffer, primary.key);
+  const envelope = {
+    v: 1,
+    type: 'smiley-file',
+    alg: ALG,
+    keyVersion: primary.v,
+    iv,
+    data,
+    tag,
+    mime: meta.mime || 'application/octet-stream',
+    origExt: meta.origExt || path.extname(filePath),
+  };
+  const tmp = `${filePath}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, JSON.stringify(envelope));
+  fs.renameSync(tmp, filePath);
+  return envelope;
+}
+
+function readEncryptedBinaryFile(filePath, userDataPath) {
+  if (!fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath);
+  try {
+    const parsed = JSON.parse(raw.toString('utf8'));
+    if (isEncryptedFileEnvelope(parsed)) {
+      const tryOrder = [];
+      if (parsed.keyVersion) tryOrder.push(getKeyForVersion(userDataPath, parsed.keyVersion));
+      for (const entry of getLocalEncryptionKeys(userDataPath)) {
+        if (!tryOrder.some((k) => k.key === entry.key)) tryOrder.push(entry);
+      }
+      for (const { key } of tryOrder) {
+        try {
+          const buffer = aesDecryptBuffer(parsed, key);
+          return {
+            buffer,
+            mime: parsed.mime || 'application/octet-stream',
+            origExt: parsed.origExt || '',
+          };
+        } catch (_) {}
+      }
+      return null;
+    }
+  } catch (_) {}
+  const ext = path.extname(filePath);
+  scheduleLazyMediaEncryption(filePath, userDataPath);
+  return { buffer: raw, mime: mimeFromExt(ext), origExt: ext, legacy: true };
+}
+
+function scheduleLazyMediaEncryption(plainPath, userDataPath) {
+  if (!plainPath || plainPath.endsWith(ENCRYPTED_FILE_EXT)) return;
+  lazyEncryptQueue = lazyEncryptQueue.then(() => new Promise((resolve) => {
+    setImmediate(() => {
+      try {
+        migratePlainMediaFile(plainPath, userDataPath);
+      } catch (_) {}
+      resolve();
+    });
+  }));
+}
+
+function encryptedMediaName(baseName) {
+  const safe = String(baseName || 'file').replace(/\.senc$/i, '');
+  return safe.endsWith(ENCRYPTED_FILE_EXT) ? safe : `${safe}${ENCRYPTED_FILE_EXT}`;
+}
+
+function migratePlainMediaFile(plainPath, userDataPath) {
+  if (!fs.existsSync(plainPath)) return null;
+  if (plainPath.endsWith(ENCRYPTED_FILE_EXT)) return plainPath;
+  try {
+    const buffer = fs.readFileSync(plainPath);
+    const ext = path.extname(plainPath);
+    const destPath = `${plainPath}${ENCRYPTED_FILE_EXT}`;
+    writeEncryptedBinaryFile(destPath, buffer, userDataPath, { mime: mimeFromExt(ext), origExt: ext });
+    secureUnlink(plainPath);
+    return destPath;
+  } catch (e) {
+    console.warn('[security.migratePlainMediaFile]', plainPath, e.message);
+    return plainPath;
+  }
+}
+
+function migrateMediaDirectory(dir, userDataPath) {
+  if (!dir || !fs.existsSync(dir)) return 0;
+  let migrated = 0;
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    try {
+      if (!fs.statSync(full).isFile()) continue;
+      if (name.endsWith(ENCRYPTED_FILE_EXT)) continue;
+      scheduleLazyMediaEncryption(full, userDataPath);
+      migrated += 1;
+    } catch (_) {}
+  }
+  return migrated;
+}
+
 function encryptSecret(value, userDataPath) {
-  return encryptJson({ value: String(value) }, userDataPath, { version: 3 });
+  return encryptJson({ value: String(value) }, userDataPath);
 }
 
 function decryptSecret(envelope, userDataPath) {
@@ -209,9 +436,7 @@ function isTlsUrl(url) {
   }
 }
 
-/** Key names that must never be stored, exported, or forwarded over IPC. */
 const SENSITIVE_KEY_RE = /(?:^|_)(token|password|passwd|secret|credential|api[_-]?key|auth|bearer|session|cookie|private[_-]?key|access[_-]?token|refresh[_-]?token|discord[_-]?(?:token|secret|password)|bot[_-]?token|user[_-]?token|client[_-]?secret)(?:$|_)/i;
-
 const SENSITIVE_VALUE_RE = /^(?:mfa\.[A-Za-z0-9_-]{20,}|[A-Za-z0-9_-]{23,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,})$/;
 
 function isSensitiveKey(key) {
@@ -315,8 +540,27 @@ function redactForLog(value) {
   }
 }
 
+function createIpcRateLimiter(limitsByChannel = {}) {
+  const buckets = new Map();
+  return {
+    check(channel) {
+      const ms = limitsByChannel[channel];
+      if (!ms) return true;
+      const now = Date.now();
+      const last = buckets.get(channel) || 0;
+      if (now - last < ms) return false;
+      buckets.set(channel, now);
+      return true;
+    },
+  };
+}
+
 module.exports = {
   ALG,
+  ENCRYPTED_FILE_EXT,
+  MASTER_KEY_FILE,
+  initSecurity,
+  isKeychainActive,
   deriveDeviceKeyV1,
   deriveDeviceKeyV3,
   encryptJson,
@@ -335,4 +579,13 @@ module.exports = {
   sanitizeNowPlayingTrack,
   sanitizeActivitySnapshot,
   redactForLog,
+  writeEncryptedBinaryFile,
+  readEncryptedBinaryFile,
+  encryptedMediaName,
+  migratePlainMediaFile,
+  migrateMediaDirectory,
+  clearKeyCache,
+  scheduleLazyMediaEncryption,
+  mimeFromExt,
+  createIpcRateLimiter,
 };

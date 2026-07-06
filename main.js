@@ -13,7 +13,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 const os = require('os');
 const { spawn } = require('child_process');
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -36,6 +36,15 @@ const {
   sanitizeNowPlayingTrack,
   sanitizeActivitySnapshot,
   redactForLog,
+  initSecurity,
+  isKeychainActive,
+  writeEncryptedBinaryFile,
+  readEncryptedBinaryFile,
+  encryptedMediaName,
+  migrateMediaDirectory,
+  ENCRYPTED_FILE_EXT,
+  createIpcRateLimiter,
+  mimeFromExt,
 } = require('./electron/security');
 
 function getRPC() {
@@ -44,10 +53,6 @@ function getRPC() {
 
 function getAutoUpdater() {
   return require('electron-updater').autoUpdater;
-}
-
-if (app?.commandLine) {
-  app.commandLine.appendSwitch('disable-background-timer-throttling');
 }
 
 function isPortableBuild() {
@@ -504,15 +509,17 @@ const CONFIG_PATCH_KEYS = new Set([
   'autoCheckUpdates', 'autoInstallUpdates', 'installTrackingEnabled', 'shareAnonymousInstallStats',
   'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'activityProfiles', 'rotateFavorites', 'sessionStats',
-  'migrationNoticeShown', 'installWarningShown', 'musicNowPlaying', 'musicNowPlayingAlbumArt',
+  'migrationNoticeShown', 'installWarningShown', 'installConsentShown',
+  'musicNowPlaying', 'musicNowPlayingAlbumArt',
 ]);
 const MAX_ACTIVITY_PROFILES = 8;
 const MAX_PROFILE_ACTIVITIES = 10;
 const MAX_COPY_TEXT_LEN = 2000;
 const MAX_IMPORT_BYTES = 512 * 1024;
-/** 0 = apply Discord presence updates immediately (no client-side throttle). */
-const PRESENCE_UPDATE_COOLDOWN_MS = 0;
-const STATUS_BROADCAST_DEBOUNCE_MS = 0;
+/** Discord RPC client-side spacing (ms). Music metadata uses applyMusicPresence directly. */
+const PRESENCE_UPDATE_COOLDOWN_MS = 5000;
+const STATUS_BROADCAST_DEBOUNCE_MS = 500;
+const TRAY_MENU_DEBOUNCE_MS = 2000;
 
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
@@ -529,7 +536,8 @@ const DEFAULT_CONFIG = {
   hotkeyEnabled: true,
   autoCheckUpdates: true,
   autoInstallUpdates: true,
-  installTrackingEnabled: true,
+  installTrackingEnabled: false,
+  installConsentShown: false,
   recentActivities: [],
   favoriteActivities: [],
   customActivities: [],
@@ -548,16 +556,27 @@ let configMigrationNotice = null;
 function normalizeInstallTrackingConfig(raw) {
   const cfg = { ...raw };
   if (cfg.installTrackingEnabled === undefined) {
-    cfg.installTrackingEnabled = true;
+    cfg.installTrackingEnabled = false;
   } else {
-    cfg.installTrackingEnabled = cfg.installTrackingEnabled !== false;
+    cfg.installTrackingEnabled = cfg.installTrackingEnabled === true;
+  }
+  if (cfg.installConsentShown === undefined) {
+    cfg.installConsentShown = false;
+  } else {
+    cfg.installConsentShown = cfg.installConsentShown === true;
   }
   delete cfg.shareAnonymousInstallStats;
   return cfg;
 }
 
 function isInstallTrackingEnabled() {
-  return config.installTrackingEnabled !== false;
+  return config.installTrackingEnabled === true;
+}
+
+function needsInstallConsentPrompt() {
+  return isPackaged
+    && !!loadRegistryConfig(__dirname)
+    && config.installConsentShown !== true;
 }
 
 function loadConfig() {
@@ -762,6 +781,7 @@ function sanitizeConfigPatch(data) {
       case 'autoInstallUpdates':
       case 'migrationNoticeShown':
       case 'installWarningShown':
+      case 'installConsentShown':
       case 'musicNowPlaying':
       case 'musicNowPlayingAlbumArt':
         out[key] = val === true;
@@ -921,12 +941,21 @@ let sessionStart = null;
 let currentTrayIcon = 'default';
 let pausedPresenceSnapshot = null;
 let musicSync = null;
+let trayMenuRefreshTimer = null;
+
+function scheduleTrayMenuRefresh() {
+  if (trayMenuRefreshTimer) return;
+  trayMenuRefreshTimer = setTimeout(() => {
+    trayMenuRefreshTimer = null;
+    updateTrayMenu();
+  }, TRAY_MENU_DEBOUNCE_MS);
+}
 
 function getMusicSync() {
   if (!musicSync) {
     musicSync = createMusicSync({
       getConfig: () => config,
-      applyPresence,
+      applyMusicPresence,
       sendToRenderer: (track, artworkUrl) => {
         if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
           const safe = sanitizeNowPlayingTrack(track);
@@ -934,7 +963,6 @@ function getMusicSync() {
           mainWindow.webContents.send('now-playing-update', safe);
         }
       },
-      updateTrayMenu,
       isPaused: isPresencePaused,
     });
   }
@@ -1362,11 +1390,11 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      // macOS: sandbox true breaks native file dialogs / tray in some Electron builds
       sandbox: process.platform !== 'darwin',
       allowRunningInsecureContent: false,
       webSecurity: true,
       experimentalFeatures: false,
+      devTools: isDev || !isPackaged,
     },
     title: APP_DISPLAY_NAME,
     icon: getAppIcon(),
@@ -1387,6 +1415,17 @@ function createWindow() {
       notifyTrayOnlyStartup();
     }
     if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
+    if (isPackaged && !isDev) {
+      mainWindow.webContents.on('devtools-opened', () => {
+        try { mainWindow.webContents.closeDevTools(); } catch (_) {}
+      });
+      mainWindow.webContents.on('before-input-event', (event, input) => {
+        const key = String(input.key || '').toLowerCase();
+        if (key === 'f12' || (input.control && input.shift && key === 'i') || (input.meta && input.alt && key === 'i')) {
+          event.preventDefault();
+        }
+      });
+    }
   });
 
   let closingToTray = false;
@@ -1624,7 +1663,8 @@ async function applyPresence(activity) {
     if (!result.connected) return result;
   }
   try {
-    if (currentActivity?.id && sessionStart) {
+    const sameActivity = currentActivity?.id && currentActivity.id === activity.id;
+    if (currentActivity?.id && sessionStart && !sameActivity) {
       recordSessionStatsForActivity(currentActivity.id, sessionStart);
     }
     pausedPresenceSnapshot = null;
@@ -1635,6 +1675,25 @@ async function applyPresence(activity) {
     updateTrayIcon(activity.category);
     updateTrayMenu();
     broadcastStatus();
+    return { success: true };
+  } catch (err) {
+    rpcClient = null;
+    return { success: false, error: err.message || 'Failed to set presence' };
+  }
+}
+
+/** Lightweight path for now-playing metadata — avoids disk writes & tray rebuild spam. */
+async function applyMusicPresence(activity) {
+  if (!rpcClient) {
+    const result = await connectRPC();
+    if (!result.connected) return result;
+  }
+  try {
+    pausedPresenceSnapshot = null;
+    const payload = await buildActivityPayload(activity);
+    await rpcClient.setActivity(payload);
+    currentActivity = activity;
+    scheduleTrayMenuRefresh();
     return { success: true };
   } catch (err) {
     rpcClient = null;
@@ -2629,8 +2688,9 @@ function setupAutoUpdater() {
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = console;
 
-    // Windows NSIS + macOS zip: skip publisher signature check (unsigned / ad-hoc builds).
-    if (process.platform === 'win32' || process.platform === 'darwin') {
+    // Verify update signatures in packaged builds unless explicitly skipped (unsigned local builds).
+    const shouldVerifyUpdates = isPackaged && process.env.SMILEY_SKIP_UPDATE_VERIFY !== '1';
+    if (!shouldVerifyUpdates && (process.platform === 'win32' || process.platform === 'darwin')) {
       autoUpdater.verifyUpdateCodeSignature = async () => null;
     }
 
@@ -2823,25 +2883,32 @@ function saveWallpaper(sourcePath) {
   }
   const dir = getWallpapersDir();
   const hash = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const destName = sanitizeFilename(`wallpaper-${hash}${ext}`);
+  const destName = sanitizeFilename(`wallpaper-${hash}${ext}${ENCRYPTED_FILE_EXT}`);
   const destPath = path.join(dir, destName);
   try {
-    fs.copyFileSync(sourcePath, destPath);
+    const buffer = fs.readFileSync(sourcePath);
+    writeEncryptedBinaryFile(destPath, buffer, getUserDataRoot(), { mime: mimeFromExt(ext), origExt: ext });
     return { valid: true, path: destPath, filename: destName };
   } catch {
     return { valid: false, error: 'Save failed' };
   }
 }
 
-function resolveWallpaperPath(filename) {
+function resolveUserMediaFile(dir, filename) {
   if (!filename || typeof filename !== 'string') return null;
-  const dir = getWallpapersDir();
   const safeName = sanitizeFilename(path.basename(filename));
-  const filePath = path.resolve(path.join(dir, safeName));
   const resolvedDir = path.resolve(dir);
-  if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) return null;
-  if (!fs.existsSync(filePath)) return null;
-  return filePath;
+  const tryPath = (name) => {
+    const filePath = path.resolve(path.join(dir, name));
+    if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) return null;
+    if (!fs.existsSync(filePath)) return null;
+    return filePath;
+  };
+  return tryPath(safeName) || tryPath(encryptedMediaName(safeName)) || null;
+}
+
+function resolveWallpaperPath(filename) {
+  return resolveUserMediaFile(getWallpapersDir(), filename);
 }
 
 function deleteWallpaperFile(filename) {
@@ -2898,16 +2965,16 @@ async function saveCustomAnimation(sourcePath) {
   const dir = getCustomAnimationsDir();
   const hash = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const ext = path.extname(sourcePath).toLowerCase();
-  const destName = sanitizeFilename(`custom-${hash}${ext}`);
+  const destName = sanitizeFilename(`custom-${hash}${ext}${ENCRYPTED_FILE_EXT}`);
   const destPath = path.join(dir, destName);
   try {
-    fs.copyFileSync(sourcePath, destPath);
-    // Keep last 10
+    const buffer = fs.readFileSync(sourcePath);
+    writeEncryptedBinaryFile(destPath, buffer, getUserDataRoot(), { mime: mimeFromExt(ext), origExt: ext });
     const files = fs.readdirSync(dir)
       .map(f => ({ name: f, time: fs.statSync(path.join(dir, f)).mtime }))
       .sort((a, b) => b.time - a.time);
     if (files.length > 10) {
-      files.slice(10).forEach(f => { try { fs.unlinkSync(path.join(dir, f.name)); } catch (_) {} });
+      files.slice(10).forEach(f => { try { secureUnlink(path.join(dir, f.name)); } catch (_) {} });
     }
     return { valid: true, path: destPath, name: destName };
   } catch (err) { return { valid: false, error: 'Save failed' }; }
@@ -2917,17 +2984,17 @@ function getCustomAnimationsList() {
   const dir = getCustomAnimationsDir();
   try {
     return fs.readdirSync(dir)
-      .filter(f => ALLOWED_EXTS.includes(path.extname(f).toLowerCase()))
+      .filter((f) => f.endsWith(ENCRYPTED_FILE_EXT) || ALLOWED_EXTS.includes(path.extname(f).toLowerCase()))
       .map(f => ({ name: f, path: path.join(dir, f) }));
   } catch { return []; }
 }
 
 function imageToDataUrl(filePath) {
   try {
-    const buffer = fs.readFileSync(filePath);
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = ext === '.svg' ? 'image/svg+xml' : ext === '.gif' ? 'image/gif' : ext === '.webp' ? 'image/webp' : 'image/png';
-    return `data:${mime};base64,${buffer.toString('base64')}`;
+    const result = readEncryptedBinaryFile(filePath, getUserDataRoot());
+    if (!result?.buffer) return null;
+    const mime = result.mime || mimeFromExt(result.origExt || path.extname(filePath));
+    return `data:${mime};base64,${result.buffer.toString('base64')}`;
   } catch { return null; }
 }
 
@@ -2946,10 +3013,9 @@ function enrichCustomActivity(entry) {
   if (!entry || typeof entry !== 'object') return entry;
   let localGifPath = entry.localGifPath || null;
   if (entry.localFileName) {
-    const safeName = sanitizeFilename(entry.localFileName);
-    const filePath = path.join(getCustomActivitiesDir(), safeName);
-    if (fs.existsSync(filePath)) {
-      localGifPath = filePathToUrl(filePath);
+    const filePath = resolveUserMediaFile(getCustomActivitiesDir(), entry.localFileName);
+    if (filePath) {
+      localGifPath = imageToDataUrl(filePath) || filePathToUrl(filePath);
     }
   }
   return { ...entry, localGifPath };
@@ -3100,11 +3166,12 @@ async function saveCustomActivityGif(sourcePath) {
   const dir = getCustomActivitiesDir();
   const hash = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const ext = path.extname(sourcePath).toLowerCase();
-  const destName = sanitizeFilename(`activity-${hash}${ext}`);
+  const destName = sanitizeFilename(`activity-${hash}${ext}${ENCRYPTED_FILE_EXT}`);
   const destPath = path.join(dir, destName);
   try {
-    fs.copyFileSync(sourcePath, destPath);
-    const previewUrl = filePathToUrl(destPath);
+    const buffer = fs.readFileSync(sourcePath);
+    writeEncryptedBinaryFile(destPath, buffer, getUserDataRoot(), { mime: mimeFromExt(ext), origExt: ext });
+    const previewUrl = imageToDataUrl(destPath);
     return { valid: true, path: destPath, name: destName, previewUrl };
   } catch {
     return { valid: false, error: 'Save failed' };
@@ -3268,6 +3335,7 @@ function getUserDataEssentialPaths() {
     getUserDataPath(WINDOW_STATE_LEGACY),
     getUserDataPath('install-id.secure'),
     getUserDataPath('install-id'),
+    getUserDataPath('master-key.enc'),
     getUserDataPath('custom-activities'),
     getUserDataPath('custom-animations'),
     getUserDataPath('wallpapers'),
@@ -3351,7 +3419,51 @@ function runStartupCacheMaintenance() {
 }
 
 // ─── IPC ─────────────────────────────────────────────────────────────
+let ipcGuardInstalled = false;
+const ipcRateLimiter = createIpcRateLimiter({
+  'export-settings': 5000,
+  'import-settings': 5000,
+  'resolve-gif-url': 800,
+  'open-external': 400,
+  'save-install-consent': 2000,
+});
+
+function isTrustedIpcEvent(event) {
+  try {
+    if (!mainWindow || mainWindow.isDestroyed()) return false;
+    if (event.sender !== mainWindow.webContents) return false;
+    const url = event.senderFrame?.url || event.sender.getURL?.() || '';
+    return url.startsWith('file://');
+  } catch {
+    return false;
+  }
+}
+
+function installIpcGuard() {
+  if (ipcGuardInstalled) return;
+  ipcGuardInstalled = true;
+  const originalHandle = ipcMain.handle.bind(ipcMain);
+  ipcMain.handle = (channel, listener) => {
+    originalHandle(channel, async (event, ...args) => {
+      if (!isTrustedIpcEvent(event)) {
+        console.warn('[ipc] blocked untrusted sender:', channel);
+        throw new Error('Unauthorized IPC request');
+      }
+      if (!ipcRateLimiter.check(channel)) {
+        return { success: false, error: 'Too many requests — try again shortly' };
+      }
+      return listener(event, ...args);
+    });
+  };
+}
+
+function migrateUserMediaToEncrypted() {
+  // Removed: bulk sync encryption at startup froze macOS (scrypt + large GIF reads on main thread).
+  // Legacy plain files are encrypted lazily in the background via scheduleLazyMediaEncryption().
+}
+
 function setupIPC() {
+  installIpcGuard();
   ipcMain.handle('get-config', () => ({
     hasValidClientId: !!getClientId(),
     donationUrl: DONATION_URL,
@@ -3370,6 +3482,9 @@ function setupIPC() {
     installTrackingEnabled: isInstallTrackingEnabled(),
     shareAnonymousInstallStats: isInstallTrackingEnabled(),
     installRegistryConfigured: !!loadRegistryConfig(__dirname),
+    installConsentShown: config.installConsentShown === true,
+    needsInstallConsent: needsInstallConsentPrompt(),
+    securityKeychain: isKeychainActive(),
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
@@ -3568,7 +3683,7 @@ function setupIPC() {
 
   ipcMain.handle('get-custom-animations', () => {
     return getCustomAnimationsList()
-      .map(item => {
+      .map((item) => {
         const dataUrl = imageToDataUrl(item.path);
         return dataUrl ? { name: item.name, dataUrl } : null;
       })
@@ -3590,8 +3705,19 @@ function setupIPC() {
     } catch (err) { return { success: false, error: err.message }; }
   });
 
+  ipcMain.handle('resolve-custom-activity-preview', (_, localFileName) => {
+    if (typeof localFileName !== 'string' || !localFileName.trim()) return { url: null };
+    const filePath = resolveUserMediaFile(getCustomActivitiesDir(), localFileName.trim());
+    if (!filePath) return { url: null };
+    const url = imageToDataUrl(filePath);
+    return { url: url || null };
+  });
+
   ipcMain.handle('get-custom-activities', () =>
-    (config.customActivities || []).map(enrichCustomActivity),
+    (config.customActivities || []).map((entry) => {
+      if (!entry?.localFileName) return { ...entry, localGifPath: entry.localGifPath || null };
+      return { ...entry, localGifPath: null };
+    }),
   );
 
   ipcMain.handle('resolve-gif-url', async (_, url) => {
@@ -3643,13 +3769,10 @@ function setupIPC() {
     }
 
     if (data?.localFileName) {
-      const safeName = sanitizeFilename(data.localFileName);
-      const filePath = path.join(getCustomActivitiesDir(), safeName);
-      const resolvedDir = path.resolve(getCustomActivitiesDir());
-      const resolvedPath = path.resolve(filePath);
-      if (resolvedPath.startsWith(resolvedDir + path.sep) && fs.existsSync(resolvedPath)) {
-        localFileName = safeName;
-        localGifPath = filePathToUrl(resolvedPath);
+      const filePath = resolveUserMediaFile(getCustomActivitiesDir(), data.localFileName);
+      if (filePath) {
+        localFileName = sanitizeFilename(path.basename(filePath));
+        localGifPath = imageToDataUrl(filePath) || filePathToUrl(filePath);
       }
     } else if (isEdit && data?.keepLocalFile) {
       const existing = activities.find((a) => a.id === data.id);
@@ -3725,14 +3848,14 @@ function setupIPC() {
     if (result.canceled || !result.filePaths[0]) return { canceled: true };
     const saveResult = saveWallpaper(result.filePaths[0]);
     if (!saveResult.valid) return { error: saveResult.error };
-    const url = wallpaperPathToUrl(saveResult.path);
+    const url = imageToDataUrl(saveResult.path);
     if (!url) return { error: 'Could not read image' };
     return { success: true, filename: saveResult.filename, url };
   });
 
   ipcMain.handle('get-wallpaper-path', (_, filename) => {
     const filePath = resolveWallpaperPath(filename);
-    const url = wallpaperPathToUrl(filePath);
+    const url = filePath ? imageToDataUrl(filePath) : null;
     return url ? { url } : { url: null };
   });
 
@@ -3777,6 +3900,18 @@ function setupIPC() {
     app.quit();
   });
 
+  ipcMain.handle('save-install-consent', (_, { enabled } = {}) => {
+    const allow = enabled === true;
+    saveConfig({
+      installConsentShown: true,
+      installTrackingEnabled: allow,
+    });
+    if (isPackaged && allow) {
+      setImmediate(() => maybeRegisterInstall());
+    }
+    return { success: true, installTrackingEnabled: allow };
+  });
+
   ipcMain.handle('export-settings', async (_, { passphrase } = {}) => {
     if (!mainWindow) return { canceled: true };
     const pass = typeof passphrase === 'string' ? passphrase.trim() : '';
@@ -3788,20 +3923,14 @@ function setupIPC() {
       defaultPath: 'smiley-settings.smiley',
       filters: [
         { name: 'Encrypted Smiley Settings', extensions: ['smiley'] },
-        { name: 'JSON (legacy)', extensions: ['json'] },
       ],
     });
     if (result.canceled || !result.filePath) return { canceled: true };
     const exportData = stripSensitiveFields({ ...config });
     delete exportData.clientId;
-    const isLegacyJson = result.filePath.toLowerCase().endsWith('.json');
-    if (isLegacyJson) {
-      fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2));
-    } else {
-      const envelope = encryptExport(exportData, pass);
-      fs.writeFileSync(result.filePath, JSON.stringify(envelope, null, 2));
-    }
-    return { success: true, path: result.filePath, encrypted: !isLegacyJson };
+    const envelope = encryptExport(exportData, pass);
+    fs.writeFileSync(result.filePath, JSON.stringify(envelope, null, 2));
+    return { success: true, path: result.filePath, encrypted: true };
   });
 
   ipcMain.handle('reset-window-position', () => resetWindowPosition());
@@ -3902,6 +4031,7 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.smiley.rpc');
   }
   Menu.setApplicationMenu(null);
+  initSecurity(app.getPath('userData'), safeStorage);
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
   ensureDir(getUserDataPath('custom-activities'));
@@ -3956,6 +4086,10 @@ app.on('activate', () => {
 app.on('before-quit', async () => {
   app.isQuitting = true;
   globalShortcut.unregisterAll();
+  if (trayMenuRefreshTimer) {
+    clearTimeout(trayMenuRefreshTimer);
+    trayMenuRefreshTimer = null;
+  }
   if (musicSync) await musicSync.stop();
   await flushRendererPendingConfig();
   saveWindowState();

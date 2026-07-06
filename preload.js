@@ -30,7 +30,8 @@ contextBridge.exposeInMainWorld('smiley', {
   getWallpaperPath: (filename) => ipcRenderer.invoke('get-wallpaper-path', filename),
   deleteWallpaper: (filename) => ipcRenderer.invoke('delete-wallpaper', filename),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
-  exportSettings: (opts) => ipcRenderer.invoke('export-settings', opts),
+  resolveCustomActivityPreview: (localFileName) =>
+    ipcRenderer.invoke('resolve-custom-activity-preview', localFileName),
   importSettings: (opts) => ipcRenderer.invoke('import-settings', opts),
   toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),
   pausePresence: () => ipcRenderer.invoke('pause-presence'),
