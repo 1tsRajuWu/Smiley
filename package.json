@@ -1,8 +1,8 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "2.1.7",
-  "description": "Discord Rich Presence with animated anime characters and beautiful UI",
+  "version": "2.1.8",
+  "description": "Discord Rich Presence with animated anime GIFs",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
   "license": "SEE LICENSE IN LICENSE",
@@ -131,7 +131,7 @@
       "maintainer": "Raj (1tsRaj)",
       "vendor": "Raj (1tsRaj)",
       "synopsis": "Discord Rich Presence with animated characters",
-      "description": "Set your Discord status with beautiful animated anime characters",
+      "description": "Set your Discord status with animated anime GIFs",
       "artifactName": "Smiley-${version}.${ext}"
     },
     "nsis": {
