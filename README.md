@@ -34,8 +34,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
+| Windows | [Smiley-Setup-4.1.4.exe](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.1.4.exe) |
 | macOS Apple Silicon | [Smiley-4.1.4-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4-arm64.dmg) |
 | macOS Intel | [Smiley-4.1.4-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4-x64.dmg) |
+| Linux (AppImage) | [Smiley-4.1.4.AppImage](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4.AppImage) |
+| Linux (.deb) | [Smiley-4.1.4.deb](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.4.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
