@@ -1,8 +1,9 @@
 /**
- * Smiley Mobile — activity companion (v3.1.0)
+ * Smiley Mobile — activity companion (v3.1.4)
  * No Discord RPC on mobile; preview GIFs + copy status for desktop use.
  */
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { Clipboard } from '@capacitor/clipboard';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Preferences } from '@capacitor/preferences';
@@ -12,7 +13,9 @@ import { resolveDiscordImageUrl, getActivityFallbackUrls } from './discord-image
 
 const STORAGE_KEY = 'smiley-mobile-settings';
 const FAVORITES_KEY = 'smiley-mobile-favorites';
-const VERSION = '3.1.0';
+const VERSION = '3.1.4';
+const RELEASES_URL = 'https://github.com/1tsRajuWu/Smiley/releases/latest';
+const BUG_REPORT_REPO = 'https://github.com/1tsRajuWu/Smiley/issues/new';
 
 const isNative = Capacitor.isNativePlatform();
 
@@ -60,6 +63,8 @@ const els = {
   animationsToggle: $('animationsToggle'),
   themeOptions: $('themeOptions'),
   toastContainer: $('toastContainer'),
+  downloadLatestBtn: $('downloadLatestBtn'),
+  reportBugBtn: $('reportBugBtn'),
 };
 
 async function storageGet(key) {
@@ -75,6 +80,46 @@ async function storageSet(key, value) {
     await Preferences.set({ key, value });
   } else {
     localStorage.setItem(key, value);
+  }
+}
+
+function getPlatformLabel() {
+  if (isNative) {
+    const platform = Capacitor.getPlatform();
+    return `${platform} · ${navigator.userAgent}`;
+  }
+  return navigator.userAgent;
+}
+
+function buildBugReportBody() {
+  return [
+    `**Version:** ${VERSION} (mobile)`,
+    `**OS / Platform:** ${getPlatformLabel()}`,
+    '',
+    '**Steps to reproduce:**',
+    '1. ',
+    '',
+    '**Expected behavior:**',
+    '',
+    '**Actual behavior:**',
+    '',
+  ].join('\n');
+}
+
+function buildBugReportUrl() {
+  const params = new URLSearchParams({
+    template: 'bug_report.md',
+    labels: 'bug',
+    body: buildBugReportBody(),
+  });
+  return `${BUG_REPORT_REPO}?${params}`;
+}
+
+async function openExternal(url) {
+  if (isNative) {
+    await Browser.open({ url });
+  } else {
+    window.open(url, '_blank', 'noopener');
   }
 }
 
@@ -356,6 +401,22 @@ function bindEvents() {
     state.theme = chip.dataset.theme;
     applyTheme();
     await saveSettings();
+  });
+
+  els.downloadLatestBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openExternal(RELEASES_URL);
+  });
+
+  els.reportBugBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openExternal(buildBugReportUrl());
+  });
+
+  const footerBugReport = $('footerBugReport');
+  footerBugReport?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openExternal(buildBugReportUrl());
   });
 }
 

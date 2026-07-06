@@ -1,3 +1,4 @@
+const os = require('os');
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -1202,6 +1203,7 @@ function setupIPC() {
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     version: APP_VERSION,
+    platform: `${process.platform} ${os.release()}`,
   }));
 
   ipcMain.handle('toggle-favorite', (_, id) => toggleFavoriteActivity(id));

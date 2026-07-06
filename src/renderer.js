@@ -44,6 +44,9 @@ const closeLegal = $('#closeLegal');
 const tosLink = $('#tosLink');
 const privacyLink = $('#privacyLink');
 const licenseLink = $('#licenseLink');
+const bugReportLink = $('#bugReportLink');
+const bugReportEmailLink = $('#bugReportEmailLink');
+const footerBugReport = $('#footerBugReport');
 
 // Settings refs
 const settingsTabs = document.querySelectorAll('.settings-tab');
@@ -620,6 +623,53 @@ function setupDragDrop() {
   customAnimationDrop.addEventListener('click', handleUploadAnimation);
 }
 
+// ─── Bug Report ──────────────────────────────────────────────────────
+const BUG_REPORT_REPO = 'https://github.com/1tsRajuWu/Smiley/issues/new';
+
+function buildBugReportBody(version, platform) {
+  return [
+    `**Version:** ${version}`,
+    `**OS / Platform:** ${platform}`,
+    '',
+    '**Steps to reproduce:**',
+    '1. ',
+    '',
+    '**Expected behavior:**',
+    '',
+    '**Actual behavior:**',
+    '',
+  ].join('\n');
+}
+
+function buildBugReportUrl(version, platform) {
+  const params = new URLSearchParams({
+    template: 'bug_report.md',
+    labels: 'bug',
+    body: buildBugReportBody(version, platform),
+  });
+  return `${BUG_REPORT_REPO}?${params}`;
+}
+
+function buildBugReportEmailUrl(version, platform) {
+  const subject = encodeURIComponent(`Smiley Bug Report (v${version})`);
+  const body = encodeURIComponent(buildBugReportBody(version, platform));
+  return `mailto:1tsRajuWu@users.noreply.github.com?subject=${subject}&body=${body}`;
+}
+
+async function openBugReport() {
+  const cfg = await window.smiley.getConfig();
+  const version = cfg.version || 'unknown';
+  const platform = cfg.platform || navigator.userAgent;
+  window.smiley.openExternal(buildBugReportUrl(version, platform));
+}
+
+async function openBugReportEmail() {
+  const cfg = await window.smiley.getConfig();
+  const version = cfg.version || 'unknown';
+  const platform = cfg.platform || navigator.userAgent;
+  window.smiley.openExternal(buildBugReportEmailUrl(version, platform));
+}
+
 // ─── Legal Modal ─────────────────────────────────────────────────────
 async function showLegal(type) {
   const titles = { license: 'License Agreement', tos: 'Terms of Service', privacy: 'Privacy Policy' };
@@ -863,6 +913,9 @@ async function init() {
   if (licenseLink) licenseLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('license'); });
   if (tosLink) tosLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('tos'); });
   if (privacyLink) privacyLink.addEventListener('click', (e) => { e.preventDefault(); showLegal('privacy'); });
+  if (bugReportLink) bugReportLink.addEventListener('click', (e) => { e.preventDefault(); openBugReport(); });
+  if (bugReportEmailLink) bugReportEmailLink.addEventListener('click', (e) => { e.preventDefault(); openBugReportEmail(); });
+  if (footerBugReport) footerBugReport.addEventListener('click', (e) => { e.preventDefault(); openBugReport(); });
 
   async function triggerUpdateCheck() {
     showToast('Checking for updates...');

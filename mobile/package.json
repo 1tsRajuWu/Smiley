@@ -1,8 +1,8 @@
 {
   "name": "smiley-mobile",
-  "version": "3.1.0",
+  "version": "3.1.4",
   "private": true,
-  "description": "Smiley v3.1.0 — Capacitor companion for Android & iOS",
+  "description": "Smiley v3.1.4 — Capacitor companion for Android & iOS",
   "scripts": {
     "build:www": "node scripts/build-www.js",
     "build": "npm run build:www && vite build",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
+    "@capacitor/browser": "^6.0.6",
     "@capacitor/clipboard": "^6.0.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/haptics": "^6.0.2",

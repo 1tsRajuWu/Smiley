@@ -322,6 +322,7 @@ html, body {
 
 .field-label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; }
 .field-hint { font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px; }
+.btn-block { width: 100%; margin-top: 8px; }
 .about-link { display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; text-decoration: none; font-size: 0.85rem; }
 
 .toggle-field { display: flex; justify-content: space-between; align-items: center; }

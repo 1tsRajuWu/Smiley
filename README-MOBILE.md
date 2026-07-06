@@ -1,4 +1,4 @@
-# Smiley Mobile — Android & iOS (v3.1.0)
+# Smiley Mobile — Android & iOS (v3.1.4)
 
 Companion app for browsing activities, previewing anime GIFs, and copying status text.
 
@@ -20,9 +20,23 @@ Companion app for browsing activities, previewing anime GIFs, and copying status
 
 | Platform | Install |
 |----------|---------|
-| **Android** | [Smiley-3.1.0-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.0/Smiley-3.1.0-android-debug.apk) · Sideload · Android 8+ |
+| **Android** | [Smiley-3.1.4-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.4/Smiley-3.1.4-android-debug.apk) · Sideload · Android 8+ |
 | **iOS** | Build in Xcode — [instructions below](#ios) · no IPA download (Apple policy) |
 | **PWA** | Open `mobile/dist/index.html` via `npm run preview` → Add to Home Screen |
+
+### Android install (sideload)
+
+1. **Use Chrome** on your phone — tap the APK link above (or **Settings → Download latest** in the app).
+2. When prompted, tap **Download** and **wait until the download fully completes** (progress bar finishes — not stuck at “Downloading…”).
+3. Open your **Downloads** folder (or tap the completed notification) and tap the APK to install.
+4. If Android blocks the install, enable **Install unknown apps** (or **Install unknown apps from this source**) for **Chrome** (or your browser) in system Settings.
+
+**Download stuck at 100% / “Downloading…”?**
+
+- Tap **Cancel**, then try the [direct APK link](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.4/Smiley-3.1.4-android-debug.apk) again.
+- Or open [latest release](https://github.com/1tsRajuWu/Smiley/releases/latest) in the browser and download `Smiley-*-android-debug.apk` from the assets list.
+- Try **Firefox** if Chrome keeps hanging.
+- The latest APK should be **~3.5–4 MB+**. If the file is much smaller or an old version (e.g. 3.0.2), clear the partial download and grab the current release.
 
 ## Quick start (developers)
 
@@ -94,7 +108,7 @@ mobile/
 └── capacitor.config.json
 ```
 
-Shared data (`activities.js`, `discord-images.js`, assets) is copied from `../src` on each build so mobile stays aligned with desktop v3.1.0.
+Shared data (`activities.js`, `discord-images.js`, assets) is copied from `../src` on each build so mobile stays aligned with desktop v3.1.4.
 
 ## Honest limitation: why no Rich Presence on phone?
 
@@ -106,12 +120,15 @@ Smiley talks to the **Discord desktop client** over a local IPC socket (`discord
 
 - **GIF previews** — toggle nekos.best / waifu.pics loading
 - **Themes** — Dark, Midnight, Ocean, Sakura, Low Light (OLED)
+- **Download latest** — opens GitHub Releases in your browser for the newest APK
+- **Report a bug** — opens a pre-filled GitHub issue for the developer
 - Favorites persist via Capacitor Preferences (native) or localStorage (web)
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
+| APK download stuck | Cancel, use [direct link](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.4/Smiley-3.1.4-android-debug.apk), or try Firefox — see [Android install](#android-install-sideload) |
 | GIF won't load | Check internet; APIs may rate-limit — fallback GIFs still work |
 | Copy fails on web | Use HTTPS or localhost; grant clipboard permission |
 | Android build fails | Open Android Studio → SDK Manager → install SDK 34 |
@@ -119,8 +136,8 @@ Smiley talks to the **Discord desktop client** over a local IPC socket (`discord
 
 ## Version
 
-Aligned with **Smiley desktop v3.1.0**. See [Releases](https://github.com/1tsRajuWu/Smiley/releases).
+Aligned with **Smiley desktop v3.1.4**. See [Releases](https://github.com/1tsRajuWu/Smiley/releases).
 
 ---
 
-© Raj ([@1tsRaj](https://github.com/1tsRaj)) — [Terms](../ToS.md) · [Privacy](../PRIVACY.md)
+© Raj ([@1tsRaj](https://github.com/1tsRaj)) — [Terms](../ToS.md) · [Privacy](../PRIVACY.md) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug)
