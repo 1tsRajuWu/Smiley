@@ -9,8 +9,9 @@ function getAutoUpdater() {
   return require('electron-updater').autoUpdater;
 }
 
-// Keep timers/RPC responsive when window is in background
-app.commandLine.appendSwitch('disable-background-timer-throttling');
+if (app?.commandLine) {
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+}
 
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
