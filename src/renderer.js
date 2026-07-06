@@ -553,6 +553,7 @@ async function handleSaveSettings(e) {
 
   donateBanner.href = DONATION_URL;
   applyTheme(newSettings.theme);
+  await applyWallpaper(wallpaperSettings);
 
   const timerEl = $('#previewTimer');
   if (timerEl) timerEl.style.display = newSettings.showTimer !== false ? '' : 'none';
