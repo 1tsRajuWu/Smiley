@@ -5,6 +5,9 @@ const { createNowPlayingService, trackMetaSignature, getLiveProgress } = require
 
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
+/** Minimum gap between Discord RPC music updates — prevents main-thread / IPC floods. */
+const MUSIC_PRESENCE_MIN_MS = 5000;
+const RENDERER_UPDATE_MIN_MS = 1500;
 const artworkCache = new Map();
 
 function truncate(text, max = DISCORD_TEXT_LIMIT) {
@@ -39,9 +42,8 @@ function buildMusicTimestamps(track) {
 
 function createMusicSync({
   getConfig,
-  applyPresence,
+  applyMusicPresence,
   sendToRenderer,
-  updateTrayMenu,
   isPaused,
 }) {
   let service = null;
@@ -49,6 +51,18 @@ function createMusicSync({
   let lastMetaSignature = '';
   let artworkRequestId = 0;
   let lastArtworkKey = '';
+  let lastPresencePushAt = 0;
+  let presencePushInFlight = false;
+  let pendingPresenceArgs = null;
+  let presencePushTimer = null;
+  let lastRendererPushAt = 0;
+
+  function sendRendererUpdate(track, artworkUrl) {
+    const now = Date.now();
+    if (track && now - lastRendererPushAt < RENDERER_UPDATE_MIN_MS) return;
+    lastRendererPushAt = now;
+    sendToRenderer?.(track, artworkUrl || (track ? getCachedArtwork(track) : null));
+  }
 
   async function fetchItunesArtwork(title, artist) {
     const cacheKey = `${title}\0${artist}`.toLowerCase();
@@ -146,12 +160,55 @@ function createMusicSync({
     return activity;
   }
 
-  async function pushPresence(track, artworkUrl) {
+  async function pushPresenceNow(track, artworkUrl) {
     const activity = buildPresenceActivity(track, artworkUrl);
     if (!activity) return;
-    await applyPresence(activity);
-    sendToRenderer?.(track, artworkUrl || getCachedArtwork(track));
-    updateTrayMenu?.();
+    presencePushInFlight = true;
+    try {
+      await applyMusicPresence(activity);
+      lastPresencePushAt = Date.now();
+      sendRendererUpdate(track, artworkUrl);
+    } finally {
+      presencePushInFlight = false;
+      if (pendingPresenceArgs) {
+        const next = pendingPresenceArgs;
+        pendingPresenceArgs = null;
+        queuePresencePush(next.track, next.artworkUrl, { force: true });
+      }
+    }
+  }
+
+  function queuePresencePush(track, artworkUrl, { force = false } = {}) {
+    const now = Date.now();
+    const waitMs = force ? 0 : Math.max(0, MUSIC_PRESENCE_MIN_MS - (now - lastPresencePushAt));
+
+    if (presencePushInFlight) {
+      pendingPresenceArgs = { track, artworkUrl };
+      return;
+    }
+
+    if (presencePushTimer) {
+      clearTimeout(presencePushTimer);
+      presencePushTimer = null;
+    }
+
+    if (waitMs === 0) {
+      pushPresenceNow(track, artworkUrl).catch(() => {});
+      return;
+    }
+
+    pendingPresenceArgs = { track, artworkUrl };
+    presencePushTimer = setTimeout(() => {
+      presencePushTimer = null;
+      const pending = pendingPresenceArgs;
+      pendingPresenceArgs = null;
+      if (!pending || !activityTemplate) return;
+      pushPresenceNow(pending.track, pending.artworkUrl).catch(() => {});
+    }, waitMs);
+  }
+
+  function pushPresence(track, artworkUrl, options) {
+    queuePresencePush(track, artworkUrl, options);
   }
 
   async function handleTrackUpdate(track) {
@@ -165,37 +222,40 @@ function createMusicSync({
     const cacheKey = getArtworkCacheKey(track);
     let artworkUrl = track?.artworkUrl || getCachedArtwork(track);
 
-    if (metaChanged) {
-      await pushPresence(track, artworkUrl);
+    if (!metaChanged) return;
 
-      if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return;
-      if (artworkUrl) return;
+    pushPresence(track, artworkUrl);
 
-      const requestId = ++artworkRequestId;
-      lastArtworkKey = cacheKey;
-      resolveArtwork(track, config).then((url) => {
-        if (requestId !== artworkRequestId || !url) return;
-        if (lastArtworkKey !== cacheKey) return;
-        pushPresence(track, url).catch(() => {});
-      }).catch(() => {});
-      return;
-    }
+    if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return;
+    if (artworkUrl) return;
 
-    sendToRenderer?.(track, artworkUrl);
+    const requestId = ++artworkRequestId;
+    lastArtworkKey = cacheKey;
+    resolveArtwork(track, config).then((url) => {
+      if (requestId !== artworkRequestId || !url) return;
+      if (lastArtworkKey !== cacheKey) return;
+      pushPresence(track, url, { force: true });
+    }).catch(() => {});
   }
 
-  function ensureRunning() {
-    if (service) {
-      service.stop().catch(() => {});
-      service = null;
+  let stoppingPromise = null;
+
+  async function ensureRunning() {
+    if (service) return;
+    if (stoppingPromise) {
+      try { await stoppingPromise; } catch (_) {}
     }
-    service = createNowPlayingService({
+    if (service) return;
+    const next = createNowPlayingService({
       onUpdate: handleTrackUpdate,
-      pollIntervalMs: 500,
     });
-    service.start().catch((err) => {
+    service = next;
+    try {
+      await next.start();
+    } catch (err) {
+      if (service === next) service = null;
       console.warn('[music-sync] failed to start:', err.message);
-    });
+    }
   }
 
   function start(templateActivity) {
@@ -216,19 +276,27 @@ function createMusicSync({
     };
     lastMetaSignature = '';
     lastArtworkKey = '';
-    ensureRunning();
+    ensureRunning().catch(() => {});
   }
 
   function stop(resetTemplate = true) {
-    if (service) {
-      service.stop().catch(() => {});
-      service = null;
+    const active = service;
+    service = null;
+    if (presencePushTimer) {
+      clearTimeout(presencePushTimer);
+      presencePushTimer = null;
+    }
+    pendingPresenceArgs = null;
+    if (active) {
+      stoppingPromise = active.stop().catch(() => {}).finally(() => {
+        if (stoppingPromise) stoppingPromise = null;
+      });
     }
     lastMetaSignature = '';
     lastArtworkKey = '';
     artworkRequestId += 1;
     if (resetTemplate) activityTemplate = null;
-    sendToRenderer?.(null, null);
+    sendRendererUpdate(null, null);
   }
 
   function getTemplate() {
@@ -255,7 +323,7 @@ function createMusicSync({
     getCurrentTrackLabel,
     handleConfigChange(enabled) {
       if (!activityTemplate) return;
-      if (enabled) ensureRunning();
+      if (enabled) ensureRunning().catch(() => {});
       else stop(false);
     },
   };

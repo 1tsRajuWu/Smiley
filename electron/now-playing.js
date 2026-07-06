@@ -1,9 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════
 // Now playing — system media detection (Spotify, Apple Music, YT Music, …)
-// macOS: JXA + MediaRemote (works on 15.4+) with AppleScript fallback.
-// Windows/Linux: native bindings or shell fallbacks.
+// macOS: lightweight JXA poll (MediaRemote). Avoids rapid osascript / AppleScript.
 // ═══════════════════════════════════════════════════════════════════════
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
@@ -11,6 +10,12 @@ const { promisify } = require('util');
 const execFileAsync = promisify(execFile);
 
 const MAC_JXA_SCRIPT = path.join(__dirname, 'now-playing-mac.jxa.js');
+
+/** macOS: each osascript spawn loads MediaRemote — low frequency avoids system freezes. */
+const DEFAULT_POLL_MS = process.platform === 'darwin' ? 15000 : 3000;
+const MIN_POLL_MS = process.platform === 'darwin' ? 12000 : 1500;
+const MAC_OSASCRIPT_TIMEOUT_MS = 3500;
+const MAC_POLL_BACKOFF_MAX_MS = 60000;
 
 const NATIVE_PACKAGES = {
   win32: [
@@ -97,9 +102,6 @@ function normalizeTrack(raw) {
   if (!progressMs && elapsedSec > 0) progressMs = Math.round(elapsedSec * 1000);
   if (!durationMs && durationSec > 0) durationMs = Math.round(durationSec * 1000);
 
-  // Always anchor live extrapolation to poll time — MR timestamp is song start, not sample time.
-  const updatedAt = Date.now();
-
   return {
     title: title || 'Unknown track',
     artist,
@@ -109,7 +111,7 @@ function normalizeTrack(raw) {
     artworkUrl,
     progressMs,
     durationMs,
-    updatedAt,
+    updatedAt: Date.now(),
     playbackRate: Number(raw.playbackRate) || (isPlaying ? 1 : 0),
   };
 }
@@ -122,7 +124,9 @@ function getLiveProgress(track) {
   const age = Math.max(0, Date.now() - (Number(track.updatedAt) || Date.now()));
   const rate = Number(track.playbackRate) || 1;
   return {
-    progressMs: Math.min(durationMs || base + age, base + Math.round(age * rate)),
+    progressMs: durationMs > 0
+      ? Math.min(durationMs, base + Math.round(age * rate))
+      : base + Math.round(age * rate),
     durationMs,
   };
 }
@@ -150,79 +154,105 @@ function trackMetaSignature(track) {
   ].join('\0');
 }
 
-async function pollMacJXA() {
-  if (!fs.existsSync(MAC_JXA_SCRIPT)) return null;
-  try {
-    const { stdout } = await execFileAsync(
-      'osascript',
-      ['-l', 'JavaScript', MAC_JXA_SCRIPT],
-      { timeout: 5000 },
-    );
-    const line = String(stdout || '').trim();
-    if (!line) return null;
-    const data = JSON.parse(line);
-    return normalizeTrack(data);
-  } catch {
-    return null;
-  }
+let macPollInFlight = false;
+let macPollChild = null;
+let macPollFailures = 0;
+let macPollBackoffMs = 0;
+
+function macPollDelayMs(baseMs) {
+  if (process.platform !== 'darwin') return baseMs;
+  return baseMs + macPollBackoffMs;
 }
 
-async function pollMacAppleScript() {
-  const script = `
-set output to ""
-try
-  tell application "System Events"
-    set spotifyRunning to exists (processes where name is "Spotify")
-    set musicRunning to exists (processes where name is "Music")
-  end tell
-  if spotifyRunning then
-    tell application "Spotify"
-      set ps to player state as string
-      if ps is "playing" or ps is "paused" then
-        set t to current track
-        set output to "Spotify|" & name of t & "|" & artist of t & "|" & album of t & "|" & ps
-      end if
-    end tell
-  end if
-  if output is "" and musicRunning then
-    tell application "Music"
-      set ps to player state as string
-      if ps is "playing" or ps is "paused" then
-        set t to current track
-        set output to "Music|" & name of t & "|" & artist of t & "|" & album of t & "|" & ps
-      end if
-    end tell
-  end if
-end try
-return output
-`;
-
-  try {
-    const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: 5000 });
-    const line = String(stdout || '').trim();
-    if (!line) return null;
-    const [source, title, artist, album, status] = line.split('|');
-    return normalizeTrack({
-      title,
-      artist,
-      album,
-      device: source,
-      isPlaying: status === 'playing',
-    });
-  } catch {
-    return null;
+function noteMacPollResult(track) {
+  if (process.platform !== 'darwin') return;
+  if (track === undefined) {
+    macPollFailures = Math.min(macPollFailures + 1, 12);
+    macPollBackoffMs = Math.min(MAC_POLL_BACKOFF_MAX_MS, macPollFailures * 5000);
+    return;
   }
+  macPollFailures = 0;
+  macPollBackoffMs = 0;
+}
+
+function killMacPollChild() {
+  if (!macPollChild) return;
+  try {
+    macPollChild.kill('SIGKILL');
+  } catch (_) {}
+  macPollChild = null;
+  macPollInFlight = false;
+}
+
+function pollMacJXA() {
+  if (!fs.existsSync(MAC_JXA_SCRIPT)) return Promise.resolve(null);
+  if (macPollInFlight) return Promise.resolve(undefined);
+
+  macPollInFlight = true;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      macPollInFlight = false;
+      if (macPollChild === child) macPollChild = null;
+      resolve(value);
+    };
+
+    const child = spawn('osascript', ['-l', 'JavaScript', MAC_JXA_SCRIPT], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      windowsHide: true,
+    });
+    macPollChild = child;
+
+    let stdout = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+      if (stdout.length > 65536) {
+        killMacPollChild();
+        finish(null);
+      }
+    });
+
+    const timer = setTimeout(() => {
+      killMacPollChild();
+      finish(null);
+    }, MAC_OSASCRIPT_TIMEOUT_MS);
+
+    child.on('error', () => {
+      clearTimeout(timer);
+      finish(null);
+    });
+
+    child.on('close', () => {
+      clearTimeout(timer);
+      const line = String(stdout || '').trim();
+      if (!line) {
+        finish(null);
+        return;
+      }
+      try {
+        finish(normalizeTrack(JSON.parse(line)));
+      } catch {
+        finish(null);
+      }
+    });
+  });
 }
 
 async function pollMacNowPlaying() {
-  const jxa = await pollMacJXA();
-  if (jxa) return jxa;
-  return pollMacAppleScript();
+  const track = await pollMacJXA();
+  return track === undefined ? undefined : track;
 }
 
+let linuxPollInFlight = false;
+let winPollInFlight = false;
+
 async function pollLinuxPlayerctl() {
-  const script = "playerctl -s metadata --format '{{playerName}}|{{status}}|{{title}}|{{artist}}|{{album}}' 2>/dev/null | head -1";
+  if (linuxPollInFlight) return undefined;
+  linuxPollInFlight = true;
   try {
+    const script = "playerctl -s metadata --format '{{playerName}}|{{status}}|{{title}}|{{artist}}|{{album}}' 2>/dev/null | head -1";
     const { stdout } = await execFileAsync('bash', ['-lc', script], { timeout: 4000 });
     const line = String(stdout || '').trim();
     if (!line) return null;
@@ -237,11 +267,16 @@ async function pollLinuxPlayerctl() {
     });
   } catch {
     return null;
+  } finally {
+    linuxPollInFlight = false;
   }
 }
 
 async function pollWindowsMedia() {
-  const ps = `
+  if (winPollInFlight) return undefined;
+  winPollInFlight = true;
+  try {
+    const ps = `
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 $asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation\`1' })[0]
 Function Await($WinRtTask, $ResultType) {
@@ -259,7 +294,6 @@ $status = [string]$playback.PlaybackStatus
 $app = $session.SourceAppUserModelId
 Write-Output ($app + '|' + $status + '|' + $props.Title + '|' + $props.Artist + '|' + $props.AlbumTitle)
 `;
-  try {
     const { stdout } = await execFileAsync(
       'powershell.exe',
       ['-NoProfile', '-NonInteractive', '-Command', ps],
@@ -278,6 +312,8 @@ Write-Output ($app + '|' + $status + '|' + $props.Title + '|' + $props.Artist + 
     });
   } catch {
     return null;
+  } finally {
+    winPollInFlight = false;
   }
 }
 
@@ -288,39 +324,57 @@ async function pollCurrentTrack() {
   return null;
 }
 
-function createNowPlayingService({ onUpdate, pollIntervalMs = 500 } = {}) {
+function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } = {}) {
+  if (process.env.SMILEY_DISABLE_NOW_PLAYING === '1') {
+    return {
+      isNative: false,
+      async start() {},
+      async stop() {},
+    };
+  }
+
   const NativeNowPlaying = loadNativeNowPlaying();
   let nativePlayer = null;
   let pollTimer = null;
   let lastMetaSignature = '';
   let running = false;
-  const pollEveryMs = Math.max(250, pollIntervalMs || 500);
+  const pollEveryMs = Math.max(MIN_POLL_MS, pollIntervalMs || DEFAULT_POLL_MS);
 
-  const emit = (raw, { force = false } = {}) => {
+  const emit = (raw) => {
     const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
     const metaSig = trackMetaSignature(track);
-    if (!force && metaSig === lastMetaSignature && track) {
-      onUpdate?.(track);
-      return;
-    }
-    if (metaSig !== lastMetaSignature) lastMetaSignature = metaSig;
+    if (metaSig === lastMetaSignature) return;
+    lastMetaSignature = metaSig;
     onUpdate?.(track);
   };
 
-  const pollOnce = async () => {
+  const scheduleNextPoll = () => {
     if (!running) return;
-    try {
-      const track = await pollCurrentTrack();
-      emit(track);
-    } catch (err) {
-      if (process.env.SMILEY_DEV) console.warn('[now-playing] poll failed:', err.message);
-    }
+    pollTimer = setTimeout(async () => {
+      pollTimer = null;
+      if (!running) return;
+      try {
+        const track = await pollCurrentTrack();
+        noteMacPollResult(track);
+        if (track !== undefined) emit(track);
+      } catch (err) {
+        noteMacPollResult(undefined);
+        if (process.env.SMILEY_DEV) console.warn('[now-playing] poll failed:', err.message);
+      }
+      scheduleNextPoll();
+    }, macPollDelayMs(pollEveryMs));
   };
 
   const startPolling = async () => {
-    await pollOnce();
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(pollOnce, pollEveryMs);
+    if (pollTimer) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+    try {
+      const track = await pollCurrentTrack();
+      if (track !== undefined) emit(track);
+    } catch (_) {}
+    scheduleNextPoll();
   };
 
   return {
@@ -334,7 +388,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 500 } = {}) {
         try {
           nativePlayer = new NativeNowPlaying((event) => emit(event));
           await nativePlayer.subscribe();
-          await startPolling();
+          // Native events push track changes — avoid stacking a poll loop on top.
           return;
         } catch (err) {
           nativePlayer = null;
@@ -347,9 +401,12 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = 500 } = {}) {
     async stop() {
       running = false;
       if (pollTimer) {
-        clearInterval(pollTimer);
+        clearTimeout(pollTimer);
         pollTimer = null;
       }
+      killMacPollChild();
+      macPollFailures = 0;
+      macPollBackoffMs = 0;
       if (nativePlayer) {
         try {
           await nativePlayer.unsubscribe();
@@ -369,4 +426,5 @@ module.exports = {
   getLiveProgress,
   loadNativeNowPlaying,
   pollCurrentTrack,
+  DEFAULT_POLL_MS,
 };

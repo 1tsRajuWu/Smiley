@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://*.tenor.com https://*.giphy.com https://*.nekos.best https://*.waifu.pics; connect-src 'self' https://*.waifu.pics https://*.nekos.best https://*.tenor.com https://*.giphy.com;"
+      content="default-src 'self'; base-uri 'self'; frame-ancestors 'none'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://*.tenor.com https://*.giphy.com https://*.nekos.best https://*.waifu.pics; connect-src 'self' https://*.waifu.pics https://*.nekos.best https://*.tenor.com https://*.giphy.com;"
     />
     <title>Smiley</title>
     <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png" />
@@ -150,7 +150,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v5.0.7</span>
+        <span class="footer-version" id="footerVersion">Smiley v5.0.8</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -229,8 +229,8 @@
             </div>
             <div class="field toggle-field" id="shareInstallStatsField" hidden>
               <div>
-                <span class="field-label">Don't share install data</span>
-                <p class="field-hint" style="margin:4px 0 0;">Opt out of install/usage reporting. On by default: install ID, IP (server-side), platform, version, and timestamps. Transmitted over HTTPS only. No Discord username or token. See <a href="#" class="legal-link" data-legal="privacy">Privacy</a>, <a href="#" class="legal-link" data-legal="tos">Terms</a>, and <a href="#" class="legal-link" data-legal="security">Security</a>.</p>
+                <span class="field-label">Share anonymous install data</span>
+                <p class="field-hint" style="margin:4px 0 0;">Opt in to help improve Smiley. Sends install ID, hashed IP, platform, version, and timestamps over HTTPS only. Off by default. No Discord username or token. See <a href="#" class="legal-link" data-legal="privacy">Privacy</a>, <a href="#" class="legal-link" data-legal="tos">Terms</a>, and <a href="#" class="legal-link" data-legal="security">Security</a>.</p>
               </div>
               <label class="toggle"><input type="checkbox" id="shareInstallStatsToggle" /><span class="toggle-slider"></span></label>
             </div>
@@ -447,6 +447,24 @@
           <p class="upi-qr-id"><code>therajind.07@oksbi</code></p>
           <p class="field-hint">Scan with any UPI app or copy the ID below.</p>
           <button type="button" class="btn btn-primary" id="upiQrCopyBtn">Copy UPI ID</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Privacy consent (first launch, packaged builds with install registry) -->
+    <dialog class="modal" id="privacyConsentModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Privacy &amp; security</h2>
+        </div>
+        <div class="modal-body">
+          <p>Smiley encrypts your settings locally (AES-256-GCM). Your Discord login token and username are <strong>never</strong> read or stored.</p>
+          <p>Optionally share anonymous install stats (platform, version, hashed IP) to help improve the app. This is <strong>off by default</strong> and uses HTTPS only.</p>
+          <p class="field-hint">You can change this anytime in Settings → General. See our <a href="#" class="legal-link" data-legal="privacy">Privacy Policy</a> and <a href="#" class="legal-link" data-legal="security">Security</a> docs.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="privacyConsentDeclineBtn">No thanks</button>
+          <button type="button" class="btn btn-primary" id="privacyConsentAcceptBtn">Share anonymous stats</button>
         </div>
       </div>
     </dialog>

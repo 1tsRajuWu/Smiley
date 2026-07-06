@@ -6,7 +6,7 @@ Smiley’s **main process** entry point is still **`main.js` at the repo root** 
 |------|---------|
 | `security.js` | AES-256-GCM encryption — local data at rest + passphrase E2EE exports |
 | `install-registry.js` | Default-on install/usage tracking (Supabase over HTTPS) |
-| `now-playing.js` | System media detection (Spotify, Apple Music, YouTube Music, …) |
+| `now-playing.js` | System media detection — **macOS polls every 8s** (osascript is expensive) |
 | `now-playing-mac.jxa.js` | macOS JXA script — reads system Now Playing via MediaRemote (15.4+) |
 | `music-sync.js` | Keeps Discord presence in sync while **Listening to music** is active |
 

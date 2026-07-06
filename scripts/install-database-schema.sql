@@ -63,7 +63,7 @@ create index if not exists installs_app_version_idx on public.installs (app_vers
 
 comment on table public.installs is 'Smiley installs — one row per install_id; IP/country captured server-side from request headers.';
 comment on column public.installs.install_id is 'Random UUID on device; not linked to Discord username or OS login.';
-comment on column public.installs.ip_address is 'Client public IP from x-forwarded-for / x-real-ip on REST.';
+comment on column public.installs.ip_address is 'SHA-256 hash of client IP + static salt (not raw IP).';
 comment on column public.installs.country_code is 'ISO 3166-1 alpha-2 from edge headers or IP geolocation.';
 comment on column public.installs.country_name is 'Country name from IP geolocation (ipwho.is).';
 comment on column public.installs.city is 'City from edge headers or IP geolocation.';
@@ -102,7 +102,10 @@ begin
   );
 
   if forwarded is not null then
-    new.ip_address := trim(split_part(forwarded, ',', 1));
+    new.ip_address := encode(
+      digest(trim(split_part(forwarded, ',', 1)) || ':smiley-ip-hash-v1', 'sha256'),
+      'hex'
+    );
   end if;
 
   country_hdr := coalesce(
