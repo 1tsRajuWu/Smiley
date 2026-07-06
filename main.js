@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage, globalShortcut, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage, globalShortcut, clipboard, screen, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -14,6 +14,23 @@ function getAutoUpdater() {
 
 if (app?.commandLine) {
   app.commandLine.appendSwitch('disable-background-timer-throttling');
+}
+
+function isPortableBuild() {
+  if (process.platform !== 'win32') return false;
+  if (process.env.PORTABLE_EXECUTABLE_DIR) return true;
+  return /portable/i.test(path.basename(process.execPath));
+}
+
+// Portable: keep settings beside the exe instead of shared %APPDATA%
+if (isPortableBuild()) {
+  const portableBase = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath);
+  app.setPath('userData', path.join(portableBase, 'SmileyData'));
+}
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
 }
 
 // ─── Constants ───────────────────────────────────────────────────────
@@ -268,12 +285,115 @@ let sessionStart = null;
 let currentTrayIcon = 'default';
 
 // ─── Window State ────────────────────────────────────────────────────
+const FIRST_SHOW_MARKER = '.first-window-shown';
+const PORTABLE_INIT_MARKER = '.portable-initialized';
+
+function normalizeWindowState(state = {}) {
+  const width = Math.max(900, Math.min(state.width || 1100, 4000));
+  const height = Math.max(650, Math.min(state.height || 780, 3000));
+  let x = state.x;
+  let y = state.y;
+
+  const displays = screen.getAllDisplays();
+  const workArea = screen.getPrimaryDisplay().workArea;
+
+  const centered = () => ({
+    width,
+    height,
+    x: Math.round(workArea.x + (workArea.width - width) / 2),
+    y: Math.round(workArea.y + (workArea.height - height) / 2),
+    maximized: !!state.maximized,
+  });
+
+  if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y)) {
+    return centered();
+  }
+
+  const minVisible = 80;
+  const intersects = displays.some((display) => {
+    const area = display.workArea;
+    const overlapW = Math.min(x + width, area.x + area.width) - Math.max(x, area.x);
+    const overlapH = Math.min(y + height, area.y + area.height) - Math.max(y, area.y);
+    return overlapW >= minVisible && overlapH >= minVisible;
+  });
+
+  return intersects ? { width, height, x, y, maximized: !!state.maximized } : centered();
+}
+
 function getWindowState() {
+  const statePath = getUserDataPath('window-state.json');
+  const portableFirstRun = isPortableBuild() && !fs.existsSync(getUserDataPath(PORTABLE_INIT_MARKER));
+  let state;
+
+  if (portableFirstRun) {
+    state = { ...DEFAULT_CONFIG.windowState };
+    try {
+      fs.writeFileSync(getUserDataPath(PORTABLE_INIT_MARKER), new Date().toISOString());
+    } catch (_) {}
+  } else {
+    try {
+      if (fs.existsSync(statePath)) state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    } catch (_) {}
+    state = state || config.windowState || { ...DEFAULT_CONFIG.windowState };
+  }
+
+  return normalizeWindowState(state);
+}
+
+function shouldStartInTrayOnly() {
+  if (config.minimizeToTray === false) return false;
+  try {
+    const login = app.getLoginItemSettings();
+    return login.wasOpenedAtLogin === true && config.launchAtLogin === true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function shouldForceShowOnStartup() {
+  return !fs.existsSync(getUserDataPath(FIRST_SHOW_MARKER));
+}
+
+function markFirstWindowShown() {
+  try {
+    fs.writeFileSync(getUserDataPath(FIRST_SHOW_MARKER), new Date().toISOString());
+  } catch (_) {}
+}
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isVisible()) mainWindow.show();
+  mainWindow.focus();
+}
+
+function resetWindowPosition() {
+  const state = normalizeWindowState({ ...DEFAULT_CONFIG.windowState });
   try {
     const statePath = getUserDataPath('window-state.json');
-    if (fs.existsSync(statePath)) return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    if (fs.existsSync(statePath)) fs.unlinkSync(statePath);
   } catch (_) {}
-  return config.windowState || { width: 1100, height: 780 };
+  saveConfig({ windowState: { width: state.width, height: state.height } });
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+    mainWindow.setBounds({ x: state.x, y: state.y, width: state.width, height: state.height });
+    showMainWindow();
+  }
+  return { success: true };
+}
+
+function notifyTrayOnlyStartup() {
+  if (!tray || process.platform !== 'win32') return;
+  const body = 'Smiley is running in the system tray. Double-click the tray icon to open.';
+  try {
+    if (Notification.isSupported()) {
+      new Notification({ title: 'Smiley', body }).show();
+      return;
+    }
+  } catch (_) {}
+  try {
+    tray.displayBalloon?.({ title: 'Smiley', content: body });
+  } catch (_) {}
 }
 
 function saveWindowState() {
@@ -353,8 +473,13 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
     if (state.maximized) mainWindow.maximize();
+    if (shouldForceShowOnStartup() || !shouldStartInTrayOnly()) {
+      showMainWindow();
+      markFirstWindowShown();
+    } else {
+      notifyTrayOnlyStartup();
+    }
     if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
   });
 
@@ -376,9 +501,7 @@ function createTray() {
   tray = new Tray(icon);
   tray.setToolTip('Smiley — Discord Rich Presence');
   updateTrayMenu();
-  tray.on('double-click', () => {
-    if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
-  });
+  tray.on('double-click', () => showMainWindow());
 }
 
 function updateTrayMenu() {
@@ -1049,6 +1172,8 @@ function setupIPC() {
     return { success: true, path: result.filePath };
   });
 
+  ipcMain.handle('reset-window-position', () => resetWindowPosition());
+
   ipcMain.handle('import-settings', async () => {
     if (!mainWindow) return { canceled: true };
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -1118,8 +1243,18 @@ app.whenReady().then(async () => {
   }
 });
 
+if (gotSingleInstanceLock) {
+  app.on('second-instance', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) showMainWindow();
+    else createWindow();
+  });
+}
+
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('activate', () => { if (mainWindow) mainWindow.show(); else createWindow(); });
+app.on('activate', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) showMainWindow();
+  else createWindow();
+});
 app.on('before-quit', async () => {
   app.isQuitting = true;
   globalShortcut.unregisterAll();

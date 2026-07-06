@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld('smiley', {
   toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
-  closeWindow: () => ipcRenderer.invoke('close-window'),
+  resetWindowPosition: () => ipcRenderer.invoke('reset-window-position'),
   onStatus: (callback) => ipcRenderer.on('rpc-status', (_, data) => callback(data)),
   onInitialConnect: (callback) => ipcRenderer.on('initial-connect', (_, data) => callback(data)),
   onOpenSettings: (callback) => ipcRenderer.on('open-settings', () => callback()),

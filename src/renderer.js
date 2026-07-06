@@ -55,6 +55,7 @@ const hotkeyToggle = $('#hotkeyToggle');
 const hotkeyHint = $('#hotkeyHint');
 const exportSettingsBtn = $('#exportSettingsBtn');
 const importSettingsBtn = $('#importSettingsBtn');
+const resetWindowBtn = $('#resetWindowBtn');
 const updateBanner = $('#updateBanner');
 const updateBannerText = $('#updateBannerText');
 const updateRestartBtn = $('#updateRestartBtn');
@@ -870,6 +871,14 @@ async function init() {
         showToast('Settings imported — reopen Settings to review');
         openSettings('advanced');
       } else showToast(result.error || 'Import failed', 'error');
+    });
+  }
+
+  if (resetWindowBtn) {
+    resetWindowBtn.addEventListener('click', async () => {
+      const result = await window.smiley.resetWindowPosition();
+      if (result?.success) showToast('Window position reset');
+      else showToast(result?.error || 'Could not reset window', 'error');
     });
   }
 
