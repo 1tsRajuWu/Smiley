@@ -60,13 +60,22 @@ function isRunningFromDmg() {
 }
 
 function getInstallLocationWarning() {
+  if (process.platform !== 'darwin' || !isPackaged) return null;
   if (isRunningFromDmg()) {
-    return 'Drag Smiley to the Applications folder once, then open it from Applications — not from this disk image.';
+    return {
+      title: 'Install Smiley to Applications',
+      message: 'Smiley is running from the installer disk image.',
+      detail: 'Drag Smiley to the Applications folder once, then open it from Applications — not from this disk image.\n\nIf you already see multiple Smiley apps, delete the extras and keep only /Applications/Smiley.app.',
+    };
   }
   try {
     const bundlePath = app.getAppPath();
     if (!bundlePath.startsWith('/Applications' + path.sep)) {
-      return 'Move Smiley to /Applications and launch it from there for updates and auto-launch to work correctly.';
+      return {
+        title: 'Install Smiley to Applications',
+        message: 'Smiley is not in the Applications folder.',
+        detail: 'Move Smiley to /Applications and launch it from there for updates and auto-launch to work correctly.\n\nIf you already see multiple Smiley apps, delete the extras and keep only /Applications/Smiley.app.',
+      };
     }
   } catch (_) {}
   return null;
@@ -1214,9 +1223,9 @@ app.whenReady().then(async () => {
     mainWindow.webContents.once('did-finish-load', () => {
       dialog.showMessageBox(mainWindow, {
         type: 'warning',
-        title: 'Install Smiley to Applications',
-        message: 'Smiley is running from the installer disk image.',
-        detail: `${installWarning}\n\nIf you already see multiple Smiley apps, delete the extras and keep only /Applications/Smiley.app.`,
+        title: installWarning.title,
+        message: installWarning.message,
+        detail: installWarning.detail,
         buttons: ['OK'],
       });
     });
