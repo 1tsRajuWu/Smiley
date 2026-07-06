@@ -9,7 +9,7 @@
 Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Developer Portal. No config files. Just download and go.
 
 [![release](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge)](https://github.com/1tsRajuWu/Smiley/releases/latest)
-[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-5865F2?style=for-the-badge)](#download)
+[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](#download)
 [![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey?style=for-the-badge)](LICENSE)
 
 **[Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Smiley.Native](README-NATIVE.md) (lightweight)
@@ -20,23 +20,23 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 ## Download
 
-**Current release: v3.1.6** — or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
+**Current release: v3.1.7** — or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
 
-> **System requirements:** macOS 11+, Windows 10 (1809+) / 11, Linux Ubuntu 20.04+, Android 8+. Apple Silicon Macs (M1–M5) use the **arm64** DMG. Details: [docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md).
+> **System requirements:** macOS 11+, Windows 10 (1809+) / 11, Linux Ubuntu 20.04+. Apple Silicon Macs (M1–M5) use the **arm64** DMG. Details: [docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md).
 
 ### Windows
 
 | | Download | Notes |
 |---|----------|-------|
-| **Installer** (recommended) | [Smiley-Setup-3.1.6.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-Setup-3.1.6.exe) | Windows 10 (1809+) / 11 · Start menu + desktop shortcut |
-| **Portable** | [Smiley-Portable-3.1.6.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-Portable-3.1.6.exe) | No install — settings in `SmileyData` beside the exe |
+| **Installer** (recommended) | [Smiley-Setup-3.1.7.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-Setup-3.1.7.exe) | Windows 10 (1809+) / 11 · Start menu + desktop shortcut |
+| **Portable** | [Smiley-Portable-3.1.7.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-Portable-3.1.7.exe) | No install — settings in `SmileyData` beside the exe |
 
 ### macOS
 
 | Chip | Download |
 |------|----------|
-| **Apple Silicon** (M1–M5) | [Smiley-3.1.6-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-3.1.6-arm64.dmg) |
-| **Intel** (pre-2020 Macs) | [Smiley-3.1.6-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-3.1.6-x64.dmg) |
+| **Apple Silicon** (M1–M5) | [Smiley-3.1.7-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-3.1.7-arm64.dmg) |
+| **Intel** (pre-2020 Macs) | [Smiley-3.1.7-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-3.1.7-x64.dmg) |
 
 > macOS might block the first launch — that's Gatekeeper, not a virus. See [Installing → macOS](#macos).
 
@@ -44,16 +44,8 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 | Format | Download | Notes |
 |--------|----------|-------|
-| **AppImage** | [Smiley-3.1.6.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-3.1.6.AppImage) | Works on most distros — `chmod +x` then run |
-| **.deb** | [Smiley-3.1.6.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-3.1.6.deb) | Debian / Ubuntu / Mint |
-
-### Android
-
-| Platform | Download | Rich Presence? |
-|----------|----------|----------------|
-| **Android** | [Smiley-3.1.6-android-debug.apk](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-3.1.6-android-debug.apk) | Companion only — browse, preview GIFs, copy status |
-
-Phones can't talk to Discord the way desktop does. Use the Android app to pick an activity on the go, then set it on your PC with the Windows/Mac/Linux app above.
+| **AppImage** | [Smiley-3.1.7.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-3.1.7.AppImage) | Works on most distros — `chmod +x` then run |
+| **.deb** | [Smiley-3.1.7.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-3.1.7.deb) | Debian / Ubuntu / Mint |
 
 ### Smiley.Native — for low-end PCs (~25 MB)
 
@@ -85,17 +77,17 @@ Smiley ships with a bundled Discord Client ID. You don't need the Developer Port
 
 ### Before you start
 
-- Discord **desktop** app running — browser and mobile Discord won't work for Rich Presence
+- Discord **desktop** app running — browser Discord won't work for Rich Presence
 - Internet for GIF images
 - Not **Invisible** on Discord
 
 ### Windows
 
-1. Download [Smiley-Setup-3.1.6.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-Setup-3.1.6.exe) and run it.
+1. Download [Smiley-Setup-3.1.7.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-Setup-3.1.7.exe) and run it.
 2. If **SmartScreen** appears → **More info** → **Run anyway** (not code-signed yet — [source is here](https://github.com/1tsRajuWu/Smiley)).
 3. Launch from Start or desktop. Keep Discord desktop open.
 
-**Portable:** [Smiley-Portable-3.1.6.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-Portable-3.1.6.exe) — settings live in a `SmileyData` folder next to the exe.
+**Portable:** [Smiley-Portable-3.1.7.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.7/Smiley-Portable-3.1.7.exe) — settings live in a `SmileyData` folder next to the exe.
 
 ### macOS
 
@@ -117,18 +109,10 @@ xattr -cr /Applications/Smiley.app
 ### Linux
 
 ```bash
-chmod +x Smiley-3.1.6.AppImage && ./Smiley-3.1.6.AppImage
+chmod +x Smiley-3.1.7.AppImage && ./Smiley-3.1.7.AppImage
 # or
-sudo dpkg -i Smiley-3.1.6.deb
+sudo dpkg -i Smiley-3.1.7.deb
 ```
-
-### Android
-
-1. On your phone, open the [APK link](https://github.com/1tsRajuWu/Smiley/releases/download/v3.1.6/Smiley-3.1.6-android-debug.apk) in **Chrome** and wait for the download to finish.
-2. Tap the completed file in Downloads to install.
-3. If blocked, enable **Install unknown apps** for Chrome in system Settings.
-
-**Download stuck?** Cancel and retry the link, or grab `Smiley-*-android-debug.apk` from [latest release](https://github.com/1tsRajuWu/Smiley/releases/latest). Try Firefox if Chrome hangs.
 
 ---
 
@@ -138,7 +122,7 @@ Smiley talks to the **Discord desktop app** over local IPC — same way games do
 
 | You need | Why |
 |----------|-----|
-| Discord **desktop** open | Browser + mobile can't receive IPC |
+| Discord **desktop** open | Browser can't receive IPC |
 | Not Invisible | Discord hides presence when invisible |
 
 Click **Clear** in Smiley (or tray → Clear Status) to wipe it.
@@ -177,8 +161,6 @@ npm run build:win    # Windows Setup + Portable (x64)
 npm run build:linux  # AppImage + .deb (x64)
 ```
 
-Android APK: `cd mobile && npm install && npm run apk:debug` — see [mobile/README.md](mobile/README.md).
-
 ---
 
 ## Support
@@ -204,7 +186,7 @@ Not <strong>notarized</strong> yet. See <a href="#macos">Installing → macOS</a
 <details>
 <summary><strong>Can I use this on my phone?</strong></summary>
 
-Not for Rich Presence — that needs desktop Discord on your PC. The <a href="#android">Android companion app</a> lets you browse activities and copy status text.
+Not right now — Smiley is <strong>desktop only</strong> (Windows, macOS, Linux). Discord Rich Presence needs the desktop Discord client on your PC.
 </details>
 
 <details>

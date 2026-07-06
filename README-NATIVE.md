@@ -123,10 +123,6 @@ User settings stored in:
 - Windows: `%APPDATA%\Smiley.Native\settings.json`
 - macOS: `~/Library/Application Support/Smiley.Native/settings.json`
 
-## Android companion
-
-Discord Rich Presence **requires the desktop Discord client**. The Android app cannot set presence via the same IPC. See [mobile/README.md](mobile/README.md).
-
 ## Which app to use?
 
 Use **Smiley (Electron)** — the only supported desktop app. See [README.md](README.md).

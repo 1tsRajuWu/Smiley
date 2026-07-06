@@ -1,16 +1,16 @@
-name: Mobile Android APK
+# PAUSED — Mobile/Android builds are not distributed (desktop-only focus).
+# Re-enable tag triggers below when resuming mobile releases.
+name: Mobile Android APK (disabled)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
   android:
+    if: false  # disabled — do not build APK until mobile resumes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
