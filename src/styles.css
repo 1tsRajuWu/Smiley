@@ -769,6 +769,7 @@ body.has-window-controls .app-header {
 .gif-url-row { display: flex; gap: 8px; }
 .gif-url-row input { flex: 1; }
 .gif-discord-hint { color: #e0af68; margin-bottom: 4px; }
+.discord-rpc-hint { color: #e0af68; margin: 8px 0 0; padding: 0 4px; }
 .custom-activity-gif-preview { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-xs); overflow: hidden; background: var(--bg-card); max-height: 180px; display: flex; align-items: center; justify-content: center; }
 .custom-activity-gif-preview img { max-width: 100%; max-height: 180px; object-fit: contain; display: block; }
 .custom-activities-settings-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }

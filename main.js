@@ -38,6 +38,7 @@ if (!gotSingleInstanceLock) {
 const isDev = process.argv.includes('--dev');
 const isPackaged = app.isPackaged;
 const APP_VERSION = pkg.version;
+const APP_DISPLAY_NAME = 'Smiley';
 const GLOBAL_HOTKEY = 'CommandOrControl+Shift+S';
 const EXAMPLE_CONFIG = path.join(__dirname, 'config.example.json');
 const DISCORD_APP_CONFIG = path.join(__dirname, 'discord.app.json');
@@ -159,6 +160,57 @@ const MAC_ADHOC_DISTRIBUTION = true;
 const DEFAULT_RPC_BUTTONS = [
   { label: 'Download Smiley', url: GITHUB_RELEASES_URL },
 ];
+// SSRF guard — only fetch GIFs from known CDNs
+const ALLOWED_GIF_HOSTS = [
+  'tenor.com',
+  'giphy.com',
+  'nekos.best',
+  'waifu.pics',
+];
+
+function isAllowedGifHost(hostname) {
+  if (!hostname || typeof hostname !== 'string') return false;
+  const h = hostname.toLowerCase().replace(/^www\./, '');
+  return ALLOWED_GIF_HOSTS.some((allowed) => h === allowed || h.endsWith(`.${allowed}`));
+}
+
+function isAllowedGifUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    return isAllowedGifHost(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+const ALLOWED_EXTERNAL_HOSTS = [
+  'github.com',
+  'paypal.me',
+  'discord.com',
+  'discord.gg',
+];
+
+function isAllowedExternalUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const h = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    return ALLOWED_EXTERNAL_HOSTS.some((allowed) => h === allowed || h.endsWith(`.${allowed}`));
+  } catch {
+    return false;
+  }
+}
+
+const CONFIG_PATCH_KEYS = new Set([
+  'theme', 'showTimer', 'animationsEnabled', 'customAnimation', 'customWallpaper',
+  'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
+  'autoCheckUpdates', 'autoInstallUpdates', 'recentActivities', 'favoriteActivities',
+  'customActivities', 'activityGifChoice', 'migrationNoticeShown', 'installWarningShown',
+]);
+const MAX_COPY_TEXT_LEN = 2000;
+const MAX_IMPORT_BYTES = 512 * 1024;
+
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
   theme: 'dark',
@@ -324,13 +376,107 @@ function showOneTimeDialog(notice, configKey) {
 
 function saveConfig(data) {
   const { clientId: _c, donationUrl: _d, ...safeData } = data || {};
-  config = { ...config, ...safeData, donationUrl: DONATION_URL };
+  const patch = sanitizeConfigPatch(safeData);
+  config = { ...config, ...patch, donationUrl: DONATION_URL };
   try {
     const securePath = getUserDataPath('config.secure');
     fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
   } catch (e) {
     console.error('[saveConfig]', e.message);
   }
+}
+
+function sanitizeConfigPatch(data) {
+  if (!data || typeof data !== 'object') return {};
+  const out = {};
+  for (const key of CONFIG_PATCH_KEYS) {
+    if (!(key in data)) continue;
+    const val = data[key];
+    switch (key) {
+      case 'theme':
+        if (typeof val === 'string') out.theme = val.replace(/[^a-z0-9_-]/gi, '').slice(0, 32) || 'dark';
+        break;
+      case 'showTimer':
+      case 'animationsEnabled':
+      case 'autoConnect':
+      case 'minimizeToTray':
+      case 'launchAtLogin':
+      case 'hotkeyEnabled':
+      case 'autoCheckUpdates':
+      case 'autoInstallUpdates':
+      case 'migrationNoticeShown':
+      case 'installWarningShown':
+        out[key] = val === true;
+        break;
+      case 'customAnimation':
+      case 'customWallpaper':
+        out[key] = typeof val === 'string' ? sanitizeFilename(val).slice(0, 100) : null;
+        break;
+      case 'windowState':
+        if (val && typeof val === 'object') {
+          out.windowState = {
+            width: Math.min(Math.max(Number(val.width) || 1100, 900), 3840),
+            height: Math.min(Math.max(Number(val.height) || 780, 650), 2160),
+            x: Number.isFinite(val.x) ? val.x : undefined,
+            y: Number.isFinite(val.y) ? val.y : undefined,
+            maximized: val.maximized === true,
+          };
+        }
+        break;
+      case 'recentActivities':
+        if (Array.isArray(val)) {
+          out.recentActivities = val.slice(0, 5).map((item) => ({
+            id: typeof item?.id === 'string' ? item.id.slice(0, 64) : '',
+            details: sanitizeActivityText(item?.details, 128),
+            state: sanitizeActivityText(item?.state, 128),
+            category: typeof item?.category === 'string' ? item.category.slice(0, 32) : undefined,
+          })).filter((item) => item.id && item.details);
+        }
+        break;
+      case 'favoriteActivities':
+        if (Array.isArray(val)) {
+          out.favoriteActivities = val
+            .filter((id) => typeof id === 'string')
+            .map((id) => id.slice(0, 64))
+            .slice(0, 10);
+        }
+        break;
+      case 'customActivities':
+        if (Array.isArray(val)) out.customActivities = val.slice(0, 20);
+        break;
+      case 'activityGifChoice':
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          const choices = {};
+          for (const [k, v] of Object.entries(val).slice(0, 100)) {
+            if (typeof k === 'string' && typeof v === 'string') {
+              choices[k.slice(0, 64)] = v.slice(0, 512);
+            }
+          }
+          out.activityGifChoice = choices;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  return out;
+}
+
+function sanitizeIncomingActivity(activity) {
+  if (!activity || typeof activity !== 'object') return null;
+  const details = sanitizeActivityText(activity.details);
+  if (!details) return null;
+  return {
+    ...activity,
+    id: typeof activity.id === 'string' ? activity.id.slice(0, 64) : undefined,
+    details,
+    state: sanitizeActivityText(activity.state),
+    largeImageText: sanitizeActivityText(activity.largeImageText, 128) || details,
+    discordImageUrl: typeof activity.discordImageUrl === 'string' ? activity.discordImageUrl.slice(0, 2048) : undefined,
+    largeImageUrl: typeof activity.largeImageUrl === 'string' ? activity.largeImageUrl.slice(0, 2048) : undefined,
+    fallbackGif: typeof activity.fallbackGif === 'string' ? activity.fallbackGif.slice(0, 2048) : undefined,
+    category: typeof activity.category === 'string' ? activity.category.slice(0, 32) : undefined,
+  };
 }
 
 // ─── State ───────────────────────────────────────────────────────────
@@ -691,16 +837,19 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      // macOS: sandbox true breaks native file dialogs / tray in some Electron builds
+      sandbox: process.platform !== 'darwin',
       allowRunningInsecureContent: false,
       webSecurity: true,
       experimentalFeatures: false,
     },
+    title: APP_DISPLAY_NAME,
     icon: getAppIcon(),
   });
 
   mainWindow.setMenu(null);
   mainWindow.setMenuBarVisibility(false);
+  mainWindow.setTitle(APP_DISPLAY_NAME);
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 
   mainWindow.once('ready-to-show', () => {
@@ -739,7 +888,7 @@ function createWindow() {
 function createTray() {
   const icon = getTrayIconFromApp();
   tray = new Tray(icon);
-  tray.setToolTip('Smiley — Discord Rich Presence');
+  tray.setToolTip(APP_DISPLAY_NAME);
   updateTrayMenu();
   tray.on('double-click', () => showMainWindow());
 }
@@ -821,7 +970,7 @@ async function connectRPC() {
   });
 }
 
-function buildActivityPayload(activity) {
+async function buildActivityPayload(activity) {
   const payload = {
     details: activity.details,
     state: activity.state || undefined,
@@ -831,11 +980,23 @@ function buildActivityPayload(activity) {
 
   // Discord shows the app/bot logo when the image key is missing or invalid.
   // Always use a direct HTTPS GIF URL resolved for this activity.
-  const imageUrl =
+  let imageUrl =
     activity.discordImageUrl ||
     activity.largeImageUrl ||
     (activity.largeImageKey && /^https?:\/\//i.test(activity.largeImageKey) ? activity.largeImageKey : null) ||
     activity.fallbackGif;
+
+  // Last-resort: remap hosts Discord's proxy cannot fetch (nekos/waifu → Tenor)
+  if (imageUrl && /nekos\.best|waifu\.pics/i.test(imageUrl)) {
+    try {
+      const { resolveDiscordRpcImageUrl } = await import('./src/discord-images.js');
+      imageUrl = resolveDiscordRpcImageUrl(activity, imageUrl);
+      if (isDev) console.warn('[RPC] remapped untrusted host to:', imageUrl);
+    } catch (err) {
+      if (isDev) console.warn('[RPC] untrusted image host, remap failed:', err.message);
+      imageUrl = null;
+    }
+  }
 
   if (imageUrl) {
     payload.largeImageKey = imageUrl;
@@ -858,7 +1019,7 @@ async function applyPresence(activity) {
     if (!result.connected) return result;
   }
   try {
-    const payload = buildActivityPayload(activity);
+    const payload = await buildActivityPayload(activity);
     await rpcClient.setActivity(payload);
     currentActivity = activity;
     trackRecentActivity(activity);
@@ -873,8 +1034,10 @@ async function applyPresence(activity) {
 }
 
 async function schedulePresenceUpdate(activity, isNewSession) {
+  const safeActivity = sanitizeIncomingActivity(activity);
+  if (!safeActivity) return { success: false, error: 'Invalid activity' };
   if (isNewSession) sessionStart = Date.now();
-  pendingUpdate = activity;
+  pendingUpdate = safeActivity;
   if (updateTimer) return { success: true, queued: true };
 
   const run = async () => {
@@ -1430,9 +1593,10 @@ function isValidGifUrlInput(url) {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
   if (!/^https:\/\//i.test(trimmed)) return false;
+  if (!isAllowedGifUrl(trimmed)) return false;
   const lower = trimmed.toLowerCase();
   if (/\.gif(\?|#|$)/i.test(lower)) return true;
-  if (/tenor\.com|media\.tenor\.com|giphy\.com|i\.giphy\.com|media\d*\.giphy\.com/i.test(lower)) return true;
+  if (/tenor\.com|giphy\.com/i.test(lower)) return true;
   return false;
 }
 
@@ -1445,11 +1609,15 @@ function httpGetText(url, { maxRedirects = 5, timeout = GIF_URL_FETCH_TIMEOUT } 
       reject(new Error('Invalid URL'));
       return;
     }
+    if (!isAllowedGifUrl(url)) {
+      reject(new Error('URL host not allowed'));
+      return;
+    }
     const lib = parsed.protocol === 'http:' ? require('http') : require('https');
     const req = lib.get(
       url,
       {
-        headers: { 'User-Agent': `Smiley/${APP_VERSION} (Discord Rich Presence)`, Accept: 'text/html,application/json,*/*' },
+        headers: { 'User-Agent': `Smiley/${APP_VERSION}`, Accept: 'text/html,application/json,*/*' },
         timeout,
       },
       (res) => {
@@ -1457,6 +1625,10 @@ function httpGetText(url, { maxRedirects = 5, timeout = GIF_URL_FETCH_TIMEOUT } 
           const next = res.headers.location.startsWith('http')
             ? res.headers.location
             : new URL(res.headers.location, url).href;
+          if (!isAllowedGifUrl(next)) {
+            reject(new Error('Redirect to disallowed host'));
+            return;
+          }
           httpGetText(next, { maxRedirects: maxRedirects - 1, timeout }).then(resolve).catch(reject);
           return;
         }
@@ -1509,6 +1681,9 @@ async function resolveGifUrl(rawUrl) {
     return { success: true, url: trimmed };
   }
   if (/\.gif(\?|#|$)/i.test(trimmed)) {
+    if (!isAllowedGifUrl(trimmed)) {
+      return { success: false, error: 'GIF host not allowed' };
+    }
     return { success: true, url: trimmed };
   }
 
@@ -1598,11 +1773,14 @@ function setupIPC() {
     platform: `${process.platform} ${os.release()}`,
   }));
 
-  ipcMain.handle('toggle-favorite', (_, id) => toggleFavoriteActivity(id));
+  ipcMain.handle('toggle-favorite', (_, id) => {
+    if (typeof id !== 'string' || !id.trim()) return config.favoriteActivities || [];
+    return toggleFavoriteActivity(id.trim().slice(0, 64));
+  });
   ipcMain.handle('copy-text', (_, text) => {
     try {
       if (typeof text !== 'string' || !text.trim()) return { success: false };
-      clipboard.writeText(text.trim());
+      clipboard.writeText(text.trim().slice(0, MAX_COPY_TEXT_LEN));
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
@@ -1684,8 +1862,9 @@ function setupIPC() {
   });
 
   ipcMain.handle('delete-custom-animation', (_, name) => {
+    if (typeof name !== 'string' || !name.trim()) return { success: false, error: 'Invalid name' };
     const dir = getCustomAnimationsDir();
-    const safeName = sanitizeFilename(name);
+    const safeName = sanitizeFilename(name.trim());
     const filePath = path.resolve(path.join(dir, safeName));
     const resolvedDir = path.resolve(dir);
     if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) {
@@ -1699,7 +1878,10 @@ function setupIPC() {
 
   ipcMain.handle('get-custom-activities', () => config.customActivities || []);
 
-  ipcMain.handle('resolve-gif-url', async (_, url) => resolveGifUrl(url));
+  ipcMain.handle('resolve-gif-url', async (_, url) => {
+    if (typeof url !== 'string') return { success: false, error: 'Invalid URL' };
+    return resolveGifUrl(url.slice(0, 2048));
+  });
 
   ipcMain.handle('pick-custom-activity-gif', async () => {
     if (!mainWindow) return { canceled: true };
@@ -1796,9 +1978,10 @@ function setupIPC() {
   });
 
   ipcMain.handle('delete-custom-activity', (_, id) => {
-    if (!id) return { success: false, error: 'Invalid id' };
+    if (typeof id !== 'string' || !id.trim()) return { success: false, error: 'Invalid id' };
+    const safeId = id.trim().slice(0, 64);
     const activities = [...(config.customActivities || [])];
-    const idx = activities.findIndex((a) => a.id === id);
+    const idx = activities.findIndex((a) => a.id === safeId);
     if (idx < 0) return { success: false, error: 'Not found' };
     const removed = activities.splice(idx, 1)[0];
     if (removed.localFileName) {
@@ -1809,8 +1992,8 @@ function setupIPC() {
     }
     saveConfig({
       customActivities: activities,
-      favoriteActivities: (config.favoriteActivities || []).filter((f) => f !== id),
-      recentActivities: (config.recentActivities || []).filter((r) => r.id !== id),
+      favoriteActivities: (config.favoriteActivities || []).filter((f) => f !== safeId),
+      recentActivities: (config.recentActivities || []).filter((r) => r.id !== safeId),
     });
     broadcastConfigChanged();
     return { success: true };
@@ -1841,9 +2024,15 @@ function setupIPC() {
 
   ipcMain.handle('open-external', (_, url) => {
     try {
-      const parsed = new URL(url);
-      if (!['http:', 'https:'].includes(parsed.protocol)) return { success: false, error: 'Invalid protocol' };
-      shell.openExternal(url);
+      if (typeof url !== 'string' || !url.trim()) return { success: false, error: 'Invalid URL' };
+      const trimmed = url.trim().slice(0, 2048);
+      const parsed = new URL(trimmed);
+      if (parsed.protocol === 'mailto:') {
+        shell.openExternal(trimmed);
+        return { success: true };
+      }
+      if (!isAllowedExternalUrl(trimmed)) return { success: false, error: 'URL not allowed' };
+      shell.openExternal(trimmed);
       return { success: true };
     } catch { return { success: false, error: 'Invalid URL' }; }
   });
@@ -1890,9 +2079,16 @@ function setupIPC() {
     });
     if (result.canceled || !result.filePaths[0]) return { canceled: true };
     try {
+      const stat = fs.statSync(result.filePaths[0]);
+      if (stat.size > MAX_IMPORT_BYTES) {
+        return { success: false, error: 'Settings file too large' };
+      }
       const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
+      if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
+        return { success: false, error: 'Invalid settings file' };
+      }
       delete imported.clientId;
-      saveConfig(imported);
+      saveConfig(sanitizeConfigPatch(imported));
       applyLaunchAtLogin();
       registerGlobalHotkey();
       applyUpdaterSettings();
@@ -1907,6 +2103,7 @@ function setupIPC() {
 
 // ─── App Lifecycle ───────────────────────────────────────────────────
 app.whenReady().then(async () => {
+  app.setName(APP_DISPLAY_NAME);
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.smiley.rpc');
   }
@@ -1939,7 +2136,7 @@ app.whenReady().then(async () => {
 
   // Auto-check for updates shortly after launch (installed NSIS/dmg builds only)
   if (isPackaged && !isRunningFromDmg() && !isPortableBuild() && config.autoCheckUpdates !== false) {
-    setTimeout(() => checkForUpdates(false, true), 3000);
+    setImmediate(() => checkForUpdates(false, true));
   }
 
   if (config.autoConnect !== false) {
@@ -1979,14 +2176,18 @@ app.on('before-quit', async () => {
 
 // Security: block navigation and new windows
 app.on('web-contents-created', (_, contents) => {
-  contents.on('new-window', (e, url) => { e.preventDefault(); shell.openExternal(url); });
-  contents.on('will-navigate', (e, url) => { if (url !== contents.getURL()) { e.preventDefault(); shell.openExternal(url); } });
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  contents.on('will-navigate', (e, navigationUrl) => {
+    if (navigationUrl !== contents.getURL()) e.preventDefault();
+  });
+  contents.on('will-attach-webview', (e) => e.preventDefault());
 });
 
 // Hide menu bar on every window (Windows shows File/Edit/View without this)
 app.on('browser-window-created', (_, win) => {
   win.setMenu(null);
   win.setMenuBarVisibility(false);
+  win.setTitle(APP_DISPLAY_NAME);
   if (!isDev) {
     win.webContents.on('before-input-event', (e, input) => {
       if (input.key && (input.control || input.meta) && input.shift && ['i', 'j', 'c'].includes(input.key.toLowerCase())) {

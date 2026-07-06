@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https://media1.tenor.com https://media0.giphy.com https://media1.giphy.com https://i.giphy.com https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com https://media1.tenor.com https://tenor.com https://giphy.com https://i.giphy.com;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' file:; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: file: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https://media.tenor.com https://media1.tenor.com https://media0.giphy.com https://media1.giphy.com https://i.giphy.com; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best https://media.tenor.com https://media1.tenor.com https://tenor.com https://giphy.com https://i.giphy.com;"
     />
     <title>Smiley</title>
     <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png" />
@@ -85,6 +85,10 @@
               </div>
             </div>
           </div>
+
+          <p class="field-hint discord-rpc-hint" id="discordRpcHint" hidden>
+            Discord still showing the Smiley icon? Quit and reopen Discord, then set your status again. v4.0.2+ sends Tenor GIFs only — Neko picks preview in-app but Discord uses curated Tenor links.
+          </p>
 
           <div class="preview-actions">
             <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>

@@ -1,7 +1,7 @@
 {
   "short_name": "Smiley",
-  "name": "Smiley - Discord Rich Presence",
-  "description": "Set your Discord status with animated characters (desktop companion required for RPC)",
+  "name": "Smiley",
+  "description": "Discord status with anime GIFs (desktop companion for RPC)",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#000000",

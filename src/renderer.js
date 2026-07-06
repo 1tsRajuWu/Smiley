@@ -11,6 +11,9 @@ import {
   isValidDiscordImageUrl,
   isNekosBestUrl,
   fetchNekosGifForActivity,
+  getInstantActivityImages,
+  resolveDiscordRpcImageUrl,
+  preloadActivitiesGifs,
 } from './discord-images.js';
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
@@ -24,6 +27,7 @@ const $ = (sel) => document.querySelector(sel);
 const connectionPill = $('#connectionPill');
 const connectionText = $('#connectionText');
 const previewCard = $('#previewCard');
+const discordRpcHint = $('#discordRpcHint');
 const previewEmoji = $('#previewEmoji');
 const previewGif = $('#previewGif');
 const previewDetails = $('#previewDetails');
@@ -153,6 +157,7 @@ let updateState = { downloaded: false, dismissed: false, percent: 0, version: nu
 let releasesUrl = GITHUB_RELEASES_URL;
 let macAdHocUpdates = false;
 let searchDebounceTimer = null;
+let lastRenderedGridKey = '';
 let recentActivities = [];
 let favoriteIds = [];
 let gifLoadGeneration = 0;
@@ -431,6 +436,7 @@ function bindGifPickerThumbFallbacks(strip) {
 async function refreshNekosPickerThumbs(activity) {
   if (!activity?.id) return;
   const strips = [gifPickerStrip, gifPickerMyStrip].filter(Boolean);
+  const tasks = [];
   for (const strip of strips) {
     const nekoOptions = strip.querySelectorAll('.gif-option[data-choice$="-nekos"], .gif-option img[src*="nekos.best"]');
     for (const node of nekoOptions) {
@@ -438,12 +444,16 @@ async function refreshNekosPickerThumbs(activity) {
       if (!btn) continue;
       const img = btn.querySelector('img');
       if (!img || img.dataset.nekosRefreshed === '1') continue;
-      const fresh = await fetchNekosGifForActivity(activity.id, img.getAttribute('src') || img.src);
-      if (!fresh || selectedActivityId !== activity.id) continue;
-      img.dataset.nekosRefreshed = '1';
-      img.src = fresh;
+      tasks.push(
+        fetchNekosGifForActivity(activity.id, img.getAttribute('src') || img.src).then((fresh) => {
+          if (!fresh || selectedActivityId !== activity.id) return;
+          img.dataset.nekosRefreshed = '1';
+          img.src = fresh;
+        })
+      );
     }
   }
+  await Promise.allSettled(tasks);
 }
 
 function bindGifPickerStrip(strip, activity, onSelect) {
@@ -509,36 +519,43 @@ function renderGifPicker(activity) {
 
 async function onGifOptionSelect(activityId, choiceId) {
   if (!activityId || !choiceId) return;
-  activityGifChoices = { ...activityGifChoices, [activityId]: choiceId };
-  await window.smiley.saveConfig({ activityGifChoice: activityGifChoices });
 
   const activity = findActivity(activityId);
   if (!activity || selectedActivityId !== activityId) return;
 
+  const instantUrl = resolveGifChoiceUrl(activityId, choiceId);
+  const fallbacks = getActivityFallbackUrls(activity);
+  const instantDiscord =
+    resolveDiscordRpcImageUrl(activity, instantUrl) || getTenorFallback(activity);
+
+  const generation = ++gifLoadGeneration;
+  lastGifActivityId = activityId;
+  currentGifUrl = instantUrl;
+  currentDiscordImageUrl = instantDiscord;
+  setPreviewDisplay(activity, instantUrl, fallbacks, { generation });
+  setCharacterDisplay(instantUrl, 'Chosen GIF', fallbacks, { generation, activity });
+
+  activityGifChoices = { ...activityGifChoices, [activityId]: choiceId };
+  void window.smiley.saveConfig({ activityGifChoice: activityGifChoices });
+
   clearActivityImageCacheEntry(activityId);
   renderGifPicker(activity);
 
-  const resolved = await applyActivityGif(activity, { bustCache: true });
-  if (!resolved || selectedActivityId !== activityId) return;
+  const rpcPayload = buildRpcPayload(activity, instantDiscord);
+  window.smiley.setActivity(rpcPayload, false).then((result) => {
+    if (result?.error) showToast(result.error, 'error');
+    else if (result?.queued) showToast('GIF updated (rate limited)', 'success');
+  });
 
-  if (choiceId.startsWith('custom-anim:') && !isValidDiscordImageUrl(resolved.discordUrl)) {
+  scheduleNekosPreviewRefresh(activity, instantUrl, generation);
+
+  if (choiceId.startsWith('custom-anim:') && !isValidDiscordImageUrl(instantDiscord)) {
     showToast('Custom upload shows in Smiley — add HTTPS URL for Discord', 'error');
   }
-
-  const rpcPayload = buildRpcPayload(activity, resolved.discordUrl);
-  const result = await window.smiley.setActivity(rpcPayload, false);
-  if (result?.error) showToast(result.error, 'error');
-  else if (result?.queued) showToast('GIF updated (rate limited)', 'success');
 }
 
 async function resolveGifUrl(activity, { bustCache = false } = {}) {
-  let preferredGifUrl = getPreferredGifUrl(activity);
-  const choiceId = activityGifChoices[activity?.id];
-  const wantsNekos = choiceId?.endsWith('-nekos') || isNekosBestUrl(preferredGifUrl);
-  if (wantsNekos && activity?.id) {
-    const fresh = await fetchNekosGifForActivity(activity.id, preferredGifUrl);
-    if (fresh) preferredGifUrl = fresh;
-  }
+  const preferredGifUrl = getPreferredGifUrl(activity);
   const { url, discordUrl, source, fallbacks } = await resolveDiscordImageUrl(activity, {
     animationsEnabled: currentSettings.animationsEnabled,
     customDataUrl: activeCustomAnimation,
@@ -546,6 +563,27 @@ async function resolveGifUrl(activity, { bustCache = false } = {}) {
     preferredGifUrl,
   });
   return { url, discordUrl, source, fallbacks };
+}
+
+function scheduleNekosPreviewRefresh(activity, hintUrl, generation) {
+  if (!activity?.id || activity.isCustom) return;
+  const choiceId = activityGifChoices[activity.id];
+  const wantsNekos = choiceId?.endsWith('-nekos') || isNekosBestUrl(hintUrl);
+  if (!wantsNekos) return;
+
+  fetchNekosGifForActivity(activity.id, hintUrl)
+    .then((fresh) => {
+      if (!fresh || selectedActivityId !== activity.id || generation !== gifLoadGeneration) return;
+      const fallbacks = getActivityFallbackUrls(activity);
+      currentGifUrl = fresh;
+      setPreviewDisplay(activity, fresh, fallbacks, { generation });
+      setCharacterDisplay(fresh, 'nekos.best · live', fallbacks, { generation, activity });
+      void resolveDiscordImageUrl(activity, {
+        animationsEnabled: currentSettings.animationsEnabled,
+        preferredGifUrl: fresh,
+      });
+    })
+    .catch(() => {});
 }
 
 function clearGifDisplay() {
@@ -598,6 +636,7 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
     return;
   }
 
+  if (source) characterSource.textContent = source;
   characterGif.classList.remove('character-gif-loaded');
   characterLoading.style.display = 'flex';
 
@@ -619,7 +658,6 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
       }
     },
   });
-  if (source) characterSource.textContent = source;
 }
 
 function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } = {}) {
@@ -635,6 +673,7 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
+    if (discordRpcHint) discordRpcHint.hidden = true;
     return;
   }
 
@@ -647,6 +686,7 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   previewState.textContent = activity.state || '';
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
+  if (discordRpcHint) discordRpcHint.hidden = false;
 
   if (gifUrl && currentSettings.animationsEnabled !== false) {
     previewEmoji.style.display = 'none';
@@ -685,8 +725,25 @@ async function applyActivityGif(activity, { bustCache = false } = {}) {
 
   const generation = ++gifLoadGeneration;
   lastGifActivityId = activity.id;
-  clearGifDisplay();
-  characterLoading.style.display = 'flex';
+  const preferredGifUrl = getPreferredGifUrl(activity);
+
+  const instant = getInstantActivityImages(activity, {
+    animationsEnabled: currentSettings.animationsEnabled,
+    customDataUrl: activeCustomAnimation,
+    bustCache,
+    preferredGifUrl,
+  });
+
+  currentGifUrl = instant.url;
+  currentDiscordImageUrl = instant.discordUrl;
+  setPreviewDisplay(activity, instant.url, instant.fallbacks, { generation });
+  setCharacterDisplay(instant.url, instant.source, instant.fallbacks, { generation, activity });
+  scheduleNekosPreviewRefresh(activity, preferredGifUrl || instant.url, generation);
+
+  if (!instant.needsAsyncResolve) {
+    if (selectedActivityId !== activity.id || generation !== gifLoadGeneration) return null;
+    return instant;
+  }
 
   try {
     const resolved = await resolveGifUrl(activity, { bustCache });
@@ -705,7 +762,7 @@ async function applyActivityGif(activity, { bustCache = false } = {}) {
         characterRetry.onclick = () => retryActivityGif(activity);
       }
     }
-    return null;
+    return instant.url ? instant : null;
   }
 }
 
@@ -784,9 +841,16 @@ function renderCategoryTabs() {
       searchQuery = '';
       searchInput.value = '';
       renderCategoryTabs();
+      preloadActiveCategoryGifs();
       renderActivityGrid();
     });
   });
+}
+
+function preloadActiveCategoryGifs() {
+  if (activeCategory === 'custom') return;
+  const cat = ACTIVITY_CATEGORIES.find((c) => c.id === activeCategory);
+  if (cat) preloadActivitiesGifs(cat.activities.map((a) => ({ ...a, category: cat.id })));
 }
 
 function sortWithFavorites(activities) {
@@ -836,6 +900,10 @@ function getFilteredActivities() {
 }
 
 function renderActivityGrid() {
+  const gridKey = `${activeCategory}|${searchQuery.trim().toLowerCase()}|${selectedActivityId}|${favoriteIds.join(',')}|${customActivitiesConfig.length}`;
+  if (gridKey === lastRenderedGridKey && activityGrid.children.length > 0) return;
+  lastRenderedGridKey = gridKey;
+
   const activities = getFilteredActivities();
   const showCreateCard = activeCategory === 'custom' && !searchQuery.trim();
   const isEmpty = activities.length === 0 && !showCreateCard;
@@ -932,21 +1000,48 @@ async function selectActivity(id) {
   selectedActivityId = id;
   renderActivityGrid();
 
-  clearGifDisplay();
   setCharacterLabel(activity);
-  setPreviewDisplay(activity, null);
-  characterLoading.style.display = 'flex';
   renderGifPicker(activity);
 
-  const resolved = await applyActivityGif(activity);
+  const generation = ++gifLoadGeneration;
+  lastGifActivityId = id;
+  const preferredGifUrl = getPreferredGifUrl(activity);
+  const instant = getInstantActivityImages(activity, {
+    animationsEnabled: currentSettings.animationsEnabled,
+    customDataUrl: activeCustomAnimation,
+    preferredGifUrl,
+  });
+
+  currentGifUrl = instant.url;
+  currentDiscordImageUrl = instant.discordUrl;
+  setPreviewDisplay(activity, instant.url, instant.fallbacks, { generation });
+  setCharacterDisplay(instant.url, instant.source, instant.fallbacks, { generation, activity });
+  scheduleNekosPreviewRefresh(activity, preferredGifUrl || instant.url, generation);
+
+  const rpcPayload = buildRpcPayload(activity, instant.discordUrl);
+  const rpcPromise = window.smiley.setActivity(rpcPayload, !isReselect);
+
+  const resolvePromise = instant.needsAsyncResolve
+    ? resolveGifUrl(activity)
+        .then((resolved) => {
+          if (selectedActivityId !== id || generation !== gifLoadGeneration) return null;
+          currentGifUrl = resolved.url;
+          currentDiscordImageUrl = resolved.discordUrl;
+          setPreviewDisplay(activity, resolved.url, resolved.fallbacks, { generation });
+          setCharacterDisplay(resolved.url, resolved.source, resolved.fallbacks, { generation, activity });
+          return resolved;
+        })
+        .catch(() => null)
+    : Promise.resolve(instant);
+
+  const [result] = await Promise.all([rpcPromise, resolvePromise]);
+  const resolved = await resolvePromise;
+
   if (!resolved || selectedActivityId !== id) return;
 
   if (activity.isCustom && !resolved.discordUrl) {
     showToast('Uploaded GIF shows in Smiley only — add a HTTPS GIF URL for Discord', 'error');
   }
-
-  const rpcPayload = buildRpcPayload(activity, resolved.discordUrl);
-  const result = await window.smiley.setActivity(rpcPayload, !isReselect);
 
   if (result?.error) {
     showToast(result.error, 'error');
@@ -1772,6 +1867,7 @@ function setupModalClose(dialog, closeBtn) {
 // ─── Initialization ──────────────────────────────────────────────────
 async function init() {
   renderCategoryTabs();
+  preloadActiveCategoryGifs();
   renderActivityGrid();
 
   settingsBtn.addEventListener('click', () => openSettings('general'));
@@ -1813,6 +1909,7 @@ async function init() {
         searchQuery = '';
         searchInput.value = '';
         renderCategoryTabs();
+        preloadActiveCategoryGifs();
         renderActivityGrid();
       }
       return;
@@ -1840,7 +1937,7 @@ async function init() {
     searchDebounceTimer = setTimeout(() => {
       searchQuery = e.target.value;
       renderActivityGrid();
-    }, 200);
+    }, 150);
   });
 
   settingsTabs.forEach((tab) => {

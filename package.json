@@ -1,8 +1,8 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "4.0.1",
-  "description": "Discord Rich Presence with animated anime GIFs",
+  "version": "4.0.2",
+  "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
   "copyright": "Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.",
@@ -82,6 +82,10 @@
       "identity": "-",
       "minimumSystemVersion": "11.0.0",
       "category": "public.app-category.social-networking",
+      "extendInfo": {
+        "CFBundleName": "Smiley",
+        "CFBundleDisplayName": "Smiley"
+      },
       "artifactName": "Smiley-${version}-${arch}.${ext}",
       "target": [
         {
@@ -106,6 +110,8 @@
     },
     "win": {
       "icon": "build/icon.ico",
+      "executableName": "Smiley",
+      "legalTrademarks": "Smiley",
       "verifyUpdateCodeSignature": false,
       "target": [
         {
@@ -145,8 +151,12 @@
       "category": "Network",
       "maintainer": "Raj (1tsRaj)",
       "vendor": "Raj (1tsRaj)",
-      "synopsis": "Discord Rich Presence with animated characters",
-      "description": "Set your Discord status with animated anime GIFs",
+      "synopsis": "Smiley",
+      "description": "Smiley — Discord status with anime GIFs",
+      "desktop": {
+        "Name": "Smiley",
+        "Comment": "Smiley"
+      },
       "artifactName": "Smiley-${version}.${ext}"
     },
     "nsis": {
@@ -155,6 +165,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Smiley",
+      "uninstallDisplayName": "Smiley",
       "license": "license.rtf",
       "artifactName": "Smiley-Setup-${version}.${ext}",
       "deleteAppDataOnUninstall": false
