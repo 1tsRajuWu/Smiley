@@ -48,13 +48,13 @@
           <!-- Character Stage with GIF -->
           <div class="character-stage" id="characterStage">
             <div class="character-container" id="characterContainer">
-              <img class="character-gif" id="characterGif" src="" alt="Character" style="display:none;" />
+              <img class="character-gif" id="characterGif" src="" alt="Character" loading="lazy" decoding="async" style="display:none;" />
               <div class="character-loading" id="characterLoading" style="display:none;">
                 <span class="loading-spinner">⏳</span>
-                <span>Loading character...</span>
+                <span>Loading…</span>
               </div>
             </div>
-            <div class="character-label" id="characterLabel">Pick an activity to see your character!</div>
+            <div class="character-label" id="characterLabel">Pick an activity</div>
             <div class="character-source" id="characterSource"></div>
           </div>
 
@@ -63,7 +63,7 @@
             <div class="discord-card-glow"></div>
             <div class="discord-card-inner">
               <div class="discord-art" id="previewArt">
-                <img class="discord-art-gif" id="previewGif" src="" alt="" style="display:none;" />
+                <img class="discord-art-gif" id="previewGif" src="" alt="" loading="lazy" decoding="async" style="display:none;" />
                 <span class="discord-art-emoji" id="previewEmoji">🍕</span>
               </div>
               <div class="discord-info">
@@ -73,12 +73,16 @@
                 <div class="discord-timer" id="previewTimer">
                   <span class="timer-icon">⏱</span>
                   <span id="timerText">0:00</span>
+                  <span class="session-badge" id="sessionBadge" hidden></span>
                 </div>
               </div>
             </div>
           </div>
 
-          <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
+          <div class="preview-actions">
+            <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
+            <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
+          </div>
 
           <!-- Donate Banner -->
           <a class="donate-banner" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener" id="donateBanner">
@@ -99,14 +103,20 @@
               <input type="search" id="searchInput" placeholder="Search activities…" autocomplete="off" />
             </div>
           </div>
+          <div class="quick-access" id="quickAccess">
+            <div class="quick-section" id="recentSection" hidden>
+              <span class="quick-label">Recent</span>
+              <div class="quick-chips" id="recentChips"></div>
+            </div>
+          </div>
           <div class="activity-grid" id="activityGrid"></div>
         </main>
       </div>
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v3.0.0</span>
-        <span class="footer-hint">© Raj (@1tsRaj)</span>
+        <span class="footer-version" id="footerVersion">Smiley v3.0.1</span>
+        <span class="footer-hint" id="footerShortcuts">⌘1–5 categories · ⌘K search · Esc clear</span>
       </footer>
     </div>
 

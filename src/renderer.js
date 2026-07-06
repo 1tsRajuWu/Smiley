@@ -15,6 +15,7 @@ const previewDetails = $('#previewDetails');
 const previewState = $('#previewState');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
+const copyBtn = $('#copyBtn');
 const categoryTabs = $('#categoryTabs');
 const activityGrid = $('#activityGrid');
 const searchInput = $('#searchInput');
@@ -58,6 +59,9 @@ const updateBanner = $('#updateBanner');
 const updateBannerText = $('#updateBannerText');
 const updateRestartBtn = $('#updateRestartBtn');
 const updateDismissBtn = $('#updateDismissBtn');
+const recentSection = $('#recentSection');
+const recentChips = $('#recentChips');
+const sessionBadge = $('#sessionBadge');
 
 // ─── State ───────────────────────────────────────────────────────────
 let activeCategory = ACTIVITY_CATEGORIES[0].id;
@@ -72,6 +76,8 @@ let currentGifUrl = null;
 let currentDiscordImageUrl = null;
 let updateState = { downloaded: false, dismissed: false, percent: 0 };
 let searchDebounceTimer = null;
+let recentActivities = [];
+let favoriteIds = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
@@ -107,8 +113,21 @@ function formatElapsed(ms) {
 function startTimer(start) {
   sessionStart = start;
   if (timerInterval) clearInterval(timerInterval);
-  if (!start) { timerText.textContent = '0:00'; return; }
-  const tick = () => { timerText.textContent = formatElapsed(Date.now() - sessionStart); };
+  if (!start) {
+    timerText.textContent = '0:00';
+    if (sessionBadge) sessionBadge.hidden = true;
+    return;
+  }
+  const tick = () => {
+    const elapsed = Date.now() - sessionStart;
+    timerText.textContent = formatElapsed(elapsed);
+    if (sessionBadge) {
+      const mins = Math.floor(elapsed / 60000);
+      sessionBadge.hidden = mins < 1;
+      if (mins >= 60) sessionBadge.textContent = `${Math.floor(mins / 60)}h ${mins % 60}m`;
+      else if (mins >= 1) sessionBadge.textContent = `${mins}m session`;
+    }
+  };
   tick();
   timerInterval = setInterval(tick, 1000);
 }
@@ -159,6 +178,7 @@ function setPreviewDisplay(activity, gifUrl) {
     previewDetails.textContent = 'Pick an activity';
     previewState.textContent = 'Your status appears here';
     clearBtn.disabled = true;
+    if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
     return;
   }
@@ -181,11 +201,12 @@ function setPreviewDisplay(activity, gifUrl) {
   previewDetails.textContent = activity.details;
   previewState.textContent = activity.state || '';
   clearBtn.disabled = false;
+  if (copyBtn) copyBtn.disabled = false;
 }
 
 function setCharacterLabel(activity) {
   if (!activity) {
-    characterLabel.textContent = 'Pick an activity to see your character!';
+    characterLabel.textContent = 'Pick an activity';
     return;
   }
   const labels = {
@@ -245,6 +266,36 @@ function renderCategoryTabs() {
   });
 }
 
+function sortWithFavorites(activities) {
+  if (!favoriteIds.length || searchQuery.trim()) return activities;
+  const favSet = new Set(favoriteIds);
+  const favs = favoriteIds
+    .map((id) => activities.find((a) => a.id === id))
+    .filter(Boolean);
+  const rest = activities.filter((a) => !favSet.has(a.id));
+  return [...favs, ...rest];
+}
+
+function renderRecentChips() {
+  if (!recentChips || !recentSection) return;
+  const items = (recentActivities || []).slice(0, 5);
+  if (!items.length) {
+    recentSection.hidden = true;
+    return;
+  }
+  recentSection.hidden = false;
+  recentChips.innerHTML = items
+    .map((item) => {
+      const act = ALL_ACTIVITIES.find((a) => a.id === item.id);
+      const emoji = act?.emoji || '⭐';
+      return `<button type="button" class="quick-chip" data-id="${item.id}" title="${item.state || item.details}">${emoji} ${item.details}</button>`;
+    })
+    .join('');
+  recentChips.querySelectorAll('.quick-chip').forEach((chip) => {
+    chip.addEventListener('click', () => selectActivity(chip.dataset.id));
+  });
+}
+
 function getFilteredActivities() {
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
@@ -253,7 +304,8 @@ function getFilteredActivities() {
     );
   }
   const cat = ACTIVITY_CATEGORIES.find((c) => c.id === activeCategory);
-  return cat ? cat.activities.map((a) => ({ ...a, category: cat.id, categoryColor: cat.color })) : [];
+  const list = cat ? cat.activities.map((a) => ({ ...a, category: cat.id, categoryColor: cat.color })) : [];
+  return sortWithFavorites(list);
 }
 
 function renderActivityGrid() {
@@ -265,19 +317,37 @@ function renderActivityGrid() {
 
   activityGrid.innerHTML = activities
     .map(
-      (a, i) => `
-    <button class="activity-card${a.id === selectedActivityId ? ' selected' : ''}" data-id="${a.id}"
-      style="--card-accent: ${a.categoryColor || '#7aa2f7'}; animation-delay: ${i * 30}ms" type="button">
+      (a, i) => {
+        const isFav = favoriteIds.includes(a.id);
+        return `
+    <div class="activity-card${a.id === selectedActivityId ? ' selected' : ''}${isFav ? ' favorited' : ''}" data-id="${a.id}" role="button" tabindex="0"
+      style="--card-accent: ${a.categoryColor || '#7aa2f7'}; animation-delay: ${i * 30}ms">
+      <button type="button" class="activity-fav${isFav ? ' active' : ''}" data-fav="${a.id}" title="${isFav ? 'Unpin' : 'Pin'}">${isFav ? '★' : '☆'}</button>
       <span class="activity-emoji">${a.emoji}</span>
       <span class="activity-name">${a.details}</span>
       <span class="activity-state">${a.state || ''}</span>
-    </button>
-  `
+    </div>
+  `;
+      }
     )
     .join('');
 
+  activityGrid.querySelectorAll('.activity-fav').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      favoriteIds = await window.smiley.toggleFavorite(btn.dataset.fav);
+      renderActivityGrid();
+    });
+  });
+
   activityGrid.querySelectorAll('.activity-card').forEach((card) => {
     card.addEventListener('click', () => selectActivity(card.dataset.id));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectActivity(card.dataset.id);
+      }
+    });
   });
 }
 
@@ -329,9 +399,18 @@ async function selectActivity(id) {
   } else if (result?.queued) {
     showToast('Update queued (Discord rate limit)', 'success');
   } else if (result?.success !== false) {
-    showToast(`Now showing: ${activity.details}`);
+    showToast(`Status set: ${activity.details}`);
     if (!isReselect) startTimer(Date.now());
   }
+}
+
+async function handleCopy() {
+  const activity = selectedActivityId ? ALL_ACTIVITIES.find((a) => a.id === selectedActivityId) : null;
+  if (!activity) return;
+  const text = activity.state ? `${activity.details} — ${activity.state}` : activity.details;
+  const result = await window.smiley.copyText(text);
+  if (result?.success) showToast('Copied to clipboard');
+  else showToast('Copy failed', 'error');
 }
 
 async function handleClear() {
@@ -339,7 +418,7 @@ async function handleClear() {
   selectedActivityId = null;
   renderActivityGrid();
   await updatePreview(null);
-  showToast('Presence cleared');
+  showToast('Status cleared');
 }
 
 // ─── Settings ────────────────────────────────────────────────────────
@@ -659,6 +738,40 @@ async function init() {
   setupModalClose(legalModal, closeLegal);
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
   clearBtn.addEventListener('click', handleClear);
+  if (copyBtn) copyBtn.addEventListener('click', handleCopy);
+
+  document.addEventListener('keydown', (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key >= '1' && e.key <= '5') {
+      e.preventDefault();
+      const idx = parseInt(e.key, 10) - 1;
+      const cat = ACTIVITY_CATEGORIES[idx];
+      if (cat) {
+        activeCategory = cat.id;
+        searchQuery = '';
+        searchInput.value = '';
+        renderCategoryTabs();
+        renderActivityGrid();
+      }
+      return;
+    }
+    if (mod && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (document.activeElement === searchInput && searchInput.value) {
+        searchQuery = '';
+        searchInput.value = '';
+        renderActivityGrid();
+        searchInput.blur();
+      } else if (selectedActivityId) {
+        handleClear();
+      }
+    }
+  });
 
   searchInput.addEventListener('input', (e) => {
     clearTimeout(searchDebounceTimer);
@@ -782,6 +895,17 @@ async function init() {
 
   window.smiley.onSelectActivity((id) => selectActivity(id));
 
+  window.smiley.onConfigChanged((data) => {
+    if (data.recentActivities) {
+      recentActivities = data.recentActivities;
+      renderRecentChips();
+    }
+    if (data.favoriteActivities) {
+      favoriteIds = data.favoriteActivities;
+      renderActivityGrid();
+    }
+  });
+
   // IPC events
   window.smiley.onStatus((data) => {
     if (data.donationUrl) donateBanner.href = DONATION_URL;
@@ -817,6 +941,9 @@ async function init() {
   // Initial config load
   const cfg = await window.smiley.getConfig();
   currentSettings = { ...currentSettings, ...cfg };
+  recentActivities = cfg.recentActivities || [];
+  favoriteIds = cfg.favoriteActivities || [];
+  renderRecentChips();
   applyTheme(cfg.theme || 'dark');
   if (cfg.version) {
     footerVersion.textContent = `Smiley v${cfg.version}`;

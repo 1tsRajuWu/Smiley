@@ -23,6 +23,11 @@
     "build:linux": "electron-builder --linux",
     "build:all": "electron-builder --mac --win --linux",
     "build:compat": "electron-builder --mac --win --linux",
+    "build:mobile:www": "node mobile/scripts/build-www.js",
+    "mobile:build": "cd mobile && npm install && npm run build",
+    "mobile:sync": "cd mobile && npm run sync",
+    "mobile:android": "cd mobile && npm run android",
+    "mobile:ios": "cd mobile && npm run ios",
     "publish": "electron-builder --publish always",
     "release:tag": "node -e \"const v=require('./package.json').version; console.log('Tag with: git tag v'+v+' && git push origin main --tags')\"",
     "postinstall": "electron-builder install-app-deps"
@@ -39,6 +44,8 @@
     "appId": "com.smiley.rpc",
     "productName": "Smiley",
     "copyright": "Copyright © 2025–2026 Raj (1tsRaj). All Rights Reserved.",
+    "compression": "maximum",
+    "asar": true,
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -47,18 +54,13 @@
       "main.js",
       "preload.js",
       "src/**/*",
+      "!src/**/*.map",
       "build/icon.png",
       "config.example.json",
       "discord.app.json",
-      "manifest.json",
+      "LICENSE",
       "ToS.md",
       "PRIVACY.md"
-    ],
-    "extraResources": [
-      {
-        "from": "src/assets/",
-        "to": "assets/"
-      }
     ],
     "publish": {
       "provider": "github",

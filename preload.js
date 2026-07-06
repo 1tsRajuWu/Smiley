@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('smiley', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   exportSettings: () => ipcRenderer.invoke('export-settings'),
   importSettings: () => ipcRenderer.invoke('import-settings'),
+  toggleFavorite: (id) => ipcRenderer.invoke('toggle-favorite', id),
+  copyText: (text) => ipcRenderer.invoke('copy-text', text),
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
   onStatus: (callback) => ipcRenderer.on('rpc-status', (_, data) => callback(data)),
@@ -22,4 +24,5 @@ contextBridge.exposeInMainWorld('smiley', {
   onOpenSettings: (callback) => ipcRenderer.on('open-settings', () => callback()),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
   onSelectActivity: (callback) => ipcRenderer.on('select-activity', (_, id) => callback(id)),
+  onConfigChanged: (callback) => ipcRenderer.on('config-changed', (_, data) => callback(data)),
 });

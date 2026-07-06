@@ -11,7 +11,7 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 <br>
 
 [![release](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge)](https://github.com/1tsRajuWu/Smiley/releases/latest)
-[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](#-download)
+[![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-5865F2?style=for-the-badge)](#-download)
 [![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey?style=for-the-badge)](LICENSE)
 
 <br>
@@ -60,9 +60,22 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 [![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.AppImage)
 [![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.deb)
 
+### 📱 Android & iPhone
+
+| Platform | Download | Rich Presence? |
+|----------|----------|----------------|
+| **Android** | [**Smiley-3.0.0-android-debug.apk**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-android-debug.apk) | ❌ Companion only — browse, preview GIFs, copy status |
+| **iPhone** | Build from source ([README-MOBILE.md](README-MOBILE.md)) | ❌ Same — needs Xcode + Apple Developer for device install |
+
+Phones can't talk to Discord the way desktop does. Use mobile to pick an activity on the go, then set it on your PC with the Windows/Mac/Linux app above.
+
+[![Download Android APK](https://img.shields.io/badge/🤖_Android-APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-android-debug.apk)
+
 ### ⚡ Smiley.Native — for low-end PCs (~25 MB)
 
 No Electron. No Chromium. Same Discord presence, way less RAM. Build from source or use prior release zips — see **[README-NATIVE.md](README-NATIVE.md)**.
+
+**Full mobile guide:** **[README-MOBILE.md](README-MOBILE.md)** (Capacitor 6 · build APK · iOS Xcode · PWA).
 
 ---
 
@@ -73,6 +86,8 @@ No Electron. No Chromium. Same Discord presence, way less RAM. Build from source
 | **macOS** | 11 Big Sur+ · Intel **x64** or Apple Silicon **arm64** DMG | 14 Sonoma+ · zip per chip |
 | **Windows** | 10 64-bit (build 1809+) or **Windows 11** · x64 Setup or Portable | Same · `win-x64.zip` |
 | **Linux** | Ubuntu 20.04+ / most x64 distros · AppImage or `.deb` | Ubuntu 22.04+ · `linux-x64.zip` |
+| **Android** | 8.0+ · sideload APK | — |
+| **iPhone** | iOS 14+ · build from `mobile/ios/` | — |
 
 - **M5 / M4 / M3 / M2 / M1 Mac** → `Smiley-{version}-arm64.dmg`
 - **Old Intel Mac** → `Smiley-{version}-x64.dmg`
@@ -101,9 +116,13 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 
 **🎯 Activity picker**
 - 5 categories — Food, Gaming, Chill, Work, Social — 32 presets total
-- Search by name or emoji
+- Search by name or emoji (debounced for smooth typing)
+- **Pin favorites** — star activities to keep them at the top of each category
+- **Recent activities** — last 5 picks as quick chips + tray submenu for one-click re-apply
+- **Keyboard shortcuts** — `Ctrl/Cmd+1–5` switch category, `Ctrl/Cmd+K` focus search, `Esc` clear search or presence
 - Live preview before it hits Discord
-- Session timer (how long you've been "doing the thing")
+- Session timer with duration badge (how long you've been "doing the thing")
+- **Quick copy** — copy status text to clipboard from the preview sidebar
 
 **🖼️ Animated Discord presence**
 - Large profile image = live GIF from [nekos.best](https://nekos.best) & [waifu.pics](https://waifu.pics) (SFW APIs)
@@ -115,11 +134,14 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 - Toggle session timer on/off
 
 **⚙️ System integration**
-- System tray — show window, clear status, check updates, quit
+- System tray — show window, clear status, recent activities, check updates, quit
 - Minimize to tray on close (default)
+- **Auto-connect** to Discord on launch (toggle in Settings)
 - Global hotkey **Cmd/Ctrl + Shift + S** to show/hide
 - Optional start on login
 - Export / import settings as JSON
+- API GIF responses cached per session (faster re-selects)
+- Respects **prefers-reduced-motion** for lighter animations on low-end devices
 
 **🔄 Auto-updates**
 - Packaged builds check [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) on launch
@@ -354,7 +376,7 @@ Not <strong>notarized</strong> yet (no Apple Developer cert). macOS 13+ may warn
 <details>
 <summary><strong>Can I use this on my phone?</strong></summary>
 
-No. Rich Presence needs the <strong>desktop</strong> Discord client on the same computer. See <code>mobile/README.md</code>.
+Not for Rich Presence — that needs desktop Discord on your PC. You <em>can</em> use the <a href="README-MOBILE.md">Android companion app</a> to browse activities and copy status text.
 </details>
 
 <details>

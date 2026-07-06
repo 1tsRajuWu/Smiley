@@ -327,6 +327,17 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .discord-state { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .discord-timer { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); opacity: 0; transform: translateY(4px); transition: var(--transition); }
 .discord-card.active .discord-timer { opacity: 1; transform: translateY(0); }
+.session-badge { margin-left: 4px; font-size: 0.68rem; color: var(--text-muted); background: var(--bg-elevated); padding: 1px 6px; border-radius: 4px; }
+.preview-actions { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+.preview-actions .btn { flex: 1; }
+.preview-actions .btn-copy { flex: 0 0 auto; font-size: 0.82rem; padding: 10px 12px; }
+.quick-access { padding: 0 4px 8px; }
+.quick-section { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.quick-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); flex-shrink: 0; }
+.quick-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 0.76rem; color: var(--text); cursor: pointer; transition: var(--transition); -webkit-app-region: no-drag; }
+.quick-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+.footer-hint { font-size: 0.72rem; color: var(--text-muted); }
 .timer-icon { font-size: 0.7rem; }
 
 /* Donate Banner — subtle, non-competing */
@@ -356,6 +367,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .activity-grid::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }
 
 .activity-card { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 12px; cursor: pointer; text-align: center; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; animation: cardIn 0.35s ease backwards; -webkit-app-region: no-drag; outline: none; }
+.activity-card.favorited { border-color: color-mix(in srgb, var(--card-accent, var(--accent)) 40%, var(--border)); }
+.activity-fav { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; border: none; background: var(--bg-elevated); border-radius: 50%; font-size: 0.75rem; line-height: 1; cursor: pointer; color: var(--text-muted); opacity: 0; transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease; -webkit-app-region: no-drag; }
+.activity-card:hover .activity-fav, .activity-fav.active, .activity-fav:focus-visible { opacity: 1; }
+.activity-fav.active { color: #e0af68; opacity: 1; }
+.activity-fav:hover { background: var(--accent-soft); color: #e0af68; }
 .activity-card:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 @keyframes cardIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } }
 .activity-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.25); background: var(--bg-elevated); }
@@ -519,4 +535,15 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
   .character-stage { flex: 1; min-width: 200px; }
   .character-container { width: 100px; height: 100px; }
   .donate-banner { flex: 1; min-width: 200px; }
+}
+
+/* Reduce motion for accessibility and low-end devices */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .brand-icon, .connection-pill.connected .connection-dot, .loading-spinner,
+  .discord-art-emoji, .activity-card { animation: none !important; }
 }

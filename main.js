@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage, globalShortcut, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -133,6 +133,7 @@ const DEFAULT_CONFIG = {
   launchAtLogin: false,
   hotkeyEnabled: true,
   recentActivities: [],
+  favoriteActivities: [],
 };
 let config = { ...DEFAULT_CONFIG };
 
@@ -190,6 +191,30 @@ function trackRecentActivity(activity) {
   };
   const recent = [entry, ...(config.recentActivities || []).filter((r) => r.id !== entry.id)].slice(0, 5);
   saveConfig({ recentActivities: recent });
+  if (mainWindow?.webContents) {
+    mainWindow.webContents.send('config-changed', {
+      recentActivities: recent,
+      favoriteActivities: config.favoriteActivities || [],
+    });
+  }
+}
+
+function toggleFavoriteActivity(id) {
+  if (!id) return config.favoriteActivities || [];
+  let favorites = [...(config.favoriteActivities || [])];
+  if (favorites.includes(id)) {
+    favorites = favorites.filter((f) => f !== id);
+  } else {
+    favorites = [id, ...favorites].slice(0, 10);
+  }
+  saveConfig({ favoriteActivities: favorites });
+  if (mainWindow?.webContents) {
+    mainWindow.webContents.send('config-changed', {
+      recentActivities: config.recentActivities || [],
+      favoriteActivities: favorites,
+    });
+  }
+  return favorites;
 }
 
 function applyLaunchAtLogin() {
@@ -892,8 +917,21 @@ function setupIPC() {
     launchAtLogin: config.launchAtLogin === true,
     hotkeyEnabled: config.hotkeyEnabled !== false,
     hotkey: GLOBAL_HOTKEY,
+    recentActivities: config.recentActivities || [],
+    favoriteActivities: config.favoriteActivities || [],
     version: APP_VERSION,
   }));
+
+  ipcMain.handle('toggle-favorite', (_, id) => toggleFavoriteActivity(id));
+  ipcMain.handle('copy-text', (_, text) => {
+    try {
+      if (typeof text !== 'string' || !text.trim()) return { success: false };
+      clipboard.writeText(text.trim());
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
 
   ipcMain.handle('save-config', async (_, data) => {
     saveConfig(data);
