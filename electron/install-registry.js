@@ -138,12 +138,16 @@ function postJson(url, headers, body, method = 'POST') {
 
 const GEO_LOOKUP_URL = 'https://ipwho.is/';
 
-function mapGeoToRow(geo) {
+function mapGeoToRow(geo, { extended = false } = {}) {
   if (!geo?.success) return null;
-  return {
+  const base = {
     country_code: geo.country_code ? String(geo.country_code).slice(0, 8).toUpperCase() : null,
+    region: geo.region ? String(geo.region).slice(0, 64) : (geo.region_code ? String(geo.region_code).slice(0, 16) : null),
+  };
+  if (!extended) return base;
+  return {
+    ...base,
     country_name: geo.country ? String(geo.country).slice(0, 64) : null,
-    region: geo.region_code ? String(geo.region_code).slice(0, 16) : (geo.region ? String(geo.region).slice(0, 64) : null),
     region_name: geo.region ? String(geo.region).slice(0, 64) : null,
     city: geo.city ? String(geo.city).slice(0, 64) : null,
     isp: geo.connection?.isp ? String(geo.connection.isp).slice(0, 128) : null,
@@ -154,10 +158,17 @@ function mapGeoToRow(geo) {
 async function enrichInstallGeo(registry, installId, headers) {
   try {
     const geo = await requestJson(GEO_LOOKUP_URL, { timeout: 8000 });
-    const patch = mapGeoToRow(geo);
+    let patch = mapGeoToRow(geo, { extended: true });
     if (!patch) return { skipped: true, reason: 'geo-lookup-failed' };
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs?install_id=eq.${encodeURIComponent(installId)}`;
-    await postJson(endpoint, headers, patch, 'PATCH');
+    try {
+      await postJson(endpoint, headers, patch, 'PATCH');
+    } catch (err) {
+      if (err.statusCode !== 400) throw err;
+      patch = mapGeoToRow(geo, { extended: false });
+      if (!patch) return { skipped: true, reason: 'geo-lookup-failed' };
+      await postJson(endpoint, headers, patch, 'PATCH');
+    }
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -175,19 +186,65 @@ function buildInstallRow({
   timezone,
   channel,
 }) {
-  return {
+  const row = {
     install_id: installId,
     platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
     arch: typeof arch === 'string' ? arch.slice(0, 16) : null,
     app_version: String(appVersion || 'unknown').slice(0, 32),
+    user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
+    consent_version: CONSENT_VERSION,
+  };
+  return row;
+}
+
+function buildExtendedPatch({
+  appVersion,
+  platform,
+  arch,
+  osRelease,
+  electronVersion,
+  locale,
+  timezone,
+  channel,
+}) {
+  return {
     os_version: typeof osRelease === 'string' ? osRelease.slice(0, 64) : null,
     electron_version: typeof electronVersion === 'string' ? electronVersion.slice(0, 32) : null,
     locale: typeof locale === 'string' ? locale.slice(0, 16) : null,
     timezone: typeof timezone === 'string' ? timezone.slice(0, 64) : null,
     channel: typeof channel === 'string' ? channel.slice(0, 32) : 'release',
-    user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
-    consent_version: CONSENT_VERSION,
   };
+}
+
+async function upsertInstallRow(endpoint, headers, installId, row, extendedPatch) {
+  const fullPatch = { ...row, ...extendedPatch };
+  const legacyPatch = { ...row };
+  delete fullPatch.install_id;
+  delete legacyPatch.install_id;
+
+  const patchUrl = `${endpoint}?install_id=eq.${encodeURIComponent(installId)}`;
+
+  try {
+    await postJson(endpoint, headers, { ...row, ...extendedPatch });
+    return;
+  } catch (err) {
+    if (err.statusCode === 400) {
+      try {
+        await postJson(endpoint, headers, row);
+      } catch (err2) {
+        if (err2.statusCode !== 409) throw err2;
+        await postJson(patchUrl, headers, legacyPatch, 'PATCH');
+      }
+      return;
+    }
+    if (err.statusCode !== 409) throw err;
+    try {
+      await postJson(patchUrl, headers, fullPatch, 'PATCH');
+    } catch (patchErr) {
+      if (patchErr.statusCode !== 400) throw patchErr;
+      await postJson(patchUrl, headers, legacyPatch, 'PATCH');
+    }
+  }
 }
 
 async function registerInstall({
@@ -226,6 +283,10 @@ async function registerInstall({
       channel,
     });
 
+    const extendedPatch = buildExtendedPatch({
+      appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
+    });
+
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
     const headers = {
       ...buildSupabaseHeaders(registry.supabaseAnonKey),
@@ -233,15 +294,7 @@ async function registerInstall({
     };
     try {
       if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
-      try {
-        await postJson(endpoint, headers, row);
-      } catch (err) {
-        // merge-duplicates upsert needs SELECT; anon only has insert/update. PATCH on duplicate.
-        if (err.statusCode !== 409) throw err;
-        const patchUrl = `${endpoint}?install_id=eq.${encodeURIComponent(installId)}`;
-        const { install_id: _id, ...patchBody } = row;
-        await postJson(patchUrl, headers, patchBody, 'PATCH');
-      }
+      await upsertInstallRow(endpoint, headers, installId, row, extendedPatch);
       await enrichInstallGeo(registry, installId, headers);
       return { success: true, installId };
     } catch (err) {

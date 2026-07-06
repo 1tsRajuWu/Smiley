@@ -89,7 +89,8 @@ async function main() {
       const geo = await fetchGeo(row.ip_address);
       const patch = mapGeo(geo, columns);
       if (!patch) continue;
-      if (row.country_code && patch.country_code === row.country_code && !patch.city) {
+      if (row.country_code && patch.country_code === row.country_code
+          && row.region && row.region.length > 2 && patch.region === row.region) {
         console.log(`Skip ${row.install_id.slice(0, 8)}…`);
         continue;
       }
