@@ -6,11 +6,21 @@ Former lightweight alternative (.NET / Avalonia). Historical dev docs are commen
 
 ---
 
-## ⬇️ Download
+## Minimum OS (build / historical releases)
 
-**No longer available.** Download the main Electron app from [README.md](README.md).
+Self-contained builds use **.NET 10** (`net10.0` in `Smiley.Native.csproj`) — no separate runtime install.
 
-<!--
+| Platform | Minimum OS | Architecture | Artifact |
+|----------|------------|--------------|----------|
+| **macOS** | **14 Sonoma** or later | arm64 (M1–M5), Intel x64 | `Smiley-Native-{version}-osx-arm64.zip` or `osx-x64.zip` |
+| **Windows** | Windows 10 64-bit (1809+) or Windows 11 | x64 | `Smiley-Native-{version}-win-x64.zip` |
+| **Linux** | Ubuntu 22.04+, Debian 12+, Fedora 42+ | x64 | `Smiley-Native-{version}-linux-x64.zip` |
+
+Native needs **macOS 14+** (stricter than Electron’s macOS 11+). On Macs running 11–13, use the [Electron build](README.md).
+
+Full matrix: **[docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)**
+
+---
 
 ## Electron vs Native
 

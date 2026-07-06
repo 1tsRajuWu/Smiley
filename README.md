@@ -16,7 +16,7 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 <br>
 
-**[⬇️ Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** &nbsp;·&nbsp; 🐛 [Report a bug](https://github.com/1tsRajuWu/Smiley/issues)
+**[⬇️ Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** &nbsp;·&nbsp; 🐛 [Report a bug](https://github.com/1tsRajuWu/Smiley/issues) &nbsp;·&nbsp; ⚡ [Smiley.Native](README-NATIVE.md) (lightweight)
 
 </div>
 
@@ -59,6 +59,27 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 [![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.AppImage)
 [![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.deb)
+
+### ⚡ Smiley.Native — for low-end PCs (~25 MB)
+
+No Electron. No Chromium. Same Discord presence, way less RAM. Build from source or use prior release zips — see **[README-NATIVE.md](README-NATIVE.md)**.
+
+---
+
+## 💻 System requirements
+
+| Platform | Smiley (Electron) | Smiley.Native |
+|----------|-------------------|---------------|
+| **macOS** | 11 Big Sur+ · Intel **x64** or Apple Silicon **arm64** DMG | 14 Sonoma+ · zip per chip |
+| **Windows** | 10 64-bit (build 1809+) or **Windows 11** · x64 Setup or Portable | Same · `win-x64.zip` |
+| **Linux** | Ubuntu 20.04+ / most x64 distros · AppImage or `.deb` | Ubuntu 22.04+ · `linux-x64.zip` |
+
+- **M5 / M4 / M3 / M2 / M1 Mac** → `Smiley-{version}-arm64.dmg`
+- **Old Intel Mac** → `Smiley-{version}-x64.dmg`
+- **Windows 10 and 11** both supported (64-bit only)
+- **Low RAM / old hardware** → [Smiley.Native](README-NATIVE.md)
+
+Full matrix: **[docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)**
 
 ---
 
@@ -298,9 +319,10 @@ npm start
 `discord.app.json` needs a Client ID from the [Discord Developer Portal](https://discord.com/developers/applications). **Releases bundle this** — only needed for local dev.
 
 ```bash
-npm run build:mac    # macOS .dmg
-npm run build:win    # Windows .exe
-npm run build:linux  # AppImage + .deb
+npm run build:mac    # macOS .dmg + .zip (x64 + arm64)
+npm run build:win    # Windows Setup + Portable (x64)
+npm run build:linux  # AppImage + .deb (x64)
+npm run build:compat # all platforms (minimum-OS compatibility matrix)
 ```
 
 ---
