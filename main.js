@@ -154,11 +154,12 @@ const GITHUB_REPO_URL =
     .replace(/\.git$/, '')
     .trim();
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
+const DOWNLOAD_PAGE_URL = 'https://1tsrajuwu.github.io/Smiley/';
 // package.json mac.identity is "-" (ad-hoc). Squirrel ShipIt validates update signatures
 // at install time — separate from electron-updater verifyUpdateCodeSignature (Windows).
 const MAC_ADHOC_DISTRIBUTION = true;
 const DEFAULT_RPC_BUTTONS = [
-  { label: 'Download Smiley', url: GITHUB_RELEASES_URL },
+  { label: 'Download Smiley', url: DOWNLOAD_PAGE_URL },
 ];
 // SSRF guard — only fetch GIFs from known CDNs
 const ALLOWED_GIF_HOSTS = [

@@ -1,7 +1,7 @@
 <!--
 Smiley — free Discord Rich Presence desktop app with animated anime GIF status picker.
 Platforms: Windows, macOS, Linux. Author: Himanshu Raj (1tsRajuWu / 1tsRaj).
-Download: https://github.com/1tsRajuWu/Smiley/releases/latest
+Download: https://1tsrajuwu.github.io/Smiley/
 Keywords: Discord Rich Presence, Discord RPC, animated status, anime GIF, Electron
 -->
 
@@ -15,21 +15,19 @@ Keywords: Discord Rich Presence, Discord RPC, animated status, anime GIF, Electr
 
 **Smiley** is a **Discord Rich Presence** app for **Windows, macOS, and Linux** that sets your profile status with **animated anime GIFs** — gaming, coding, eating, chilling, and more. No Developer Portal. No config files. Download, open Discord, click an activity. Done.
 
-[![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v4.0.0&color=5865F2)](https://github.com/1tsRajuWu/Smiley/releases/latest)
+[![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v4.0.7&color=5865F2)](https://1tsrajuwu.github.io/Smiley/)
 [![downloads](https://img.shields.io/github/downloads/1tsRajuWu/Smiley/total?style=for-the-badge&color=57F287)](https://github.com/1tsRajuWu/Smiley/releases)
-[![platform](https://img.shields.io/badge/desktop-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](#-download)
+[![platform](https://img.shields.io/badge/desktop-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](https://1tsrajuwu.github.io/Smiley/)
 [![Discord Rich Presence](https://img.shields.io/badge/Discord-Rich%20Presence-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/)
 [![license](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey?style=for-the-badge)](LICENSE)
 
 <br>
 
-[![Download for Windows](https://img.shields.io/badge/⬇️_Windows-Installer-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.0.exe)
-[![Download for macOS](https://img.shields.io/badge/⬇️_macOS-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0-arm64.dmg)
-[![Download for Linux](https://img.shields.io/badge/⬇️_Linux-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.0.AppImage)
+[![Download Smiley](https://img.shields.io/badge/⬇️_Download-Smiley-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://1tsrajuwu.github.io/Smiley/)
 
 <br>
 
-[All releases](https://github.com/1tsRajuWu/Smiley/releases/latest) · [About Raj & Smiley](docs/ABOUT.md) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Smiley.Native](README-NATIVE.md) (lightweight, ~25 MB)
+[All releases](https://github.com/1tsRajuWu/Smiley/releases) · [About Raj & Smiley](docs/ABOUT.md) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Smiley.Native](README-NATIVE.md) (lightweight, ~25 MB)
 
 </div>
 
@@ -43,7 +41,7 @@ Keywords: Discord Rich Presence, Discord RPC, animated status, anime GIF, Electr
 | **Status style** | Animated **anime GIF** per activity — synced in-app and on Discord |
 | **Platforms** | **Windows** · **macOS** (Apple Silicon + Intel) · **Linux** (AppImage, `.deb`) |
 | **Setup** | Bundled Client ID — no Discord Developer Portal |
-| **Download** | [Latest release](https://github.com/1tsRajuWu/Smiley/releases/latest) |
+| **Download** | [Download Smiley](https://1tsrajuwu.github.io/Smiley/) · [All releases](https://github.com/1tsRajuWu/Smiley/releases) |
 | **AI / crawler summary** | [llms.txt](llms.txt) |
 
 Smiley is **not open source** — source is visible for transparency; [personal-use download only](LEGAL.md).
@@ -114,15 +112,20 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 
 ## ⬇️ Download
 
+**[Download Smiley](https://1tsrajuwu.github.io/Smiley/)** — pick your platform (Windows, macOS, Linux). [All releases →](https://github.com/1tsRajuWu/Smiley/releases)
+
 <!-- DOWNLOADS_START -->
-**Latest: v4.0.6** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.6)
+**Latest: v4.0.7** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.7)
 
 **Total downloads (latest release):** 0 · [live stats on Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 
 | Platform | File | Downloads |
 |----------|------|-----------|
-| macOS Apple Silicon | [**Smiley-4.0.6-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.6-arm64.dmg) | 0 |
-| macOS Intel | [**Smiley-4.0.6-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.6-x64.dmg) | 0 |
+| Windows | [**Smiley-Setup-4.0.7.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.7.exe) | 0 |
+| macOS Apple Silicon | [**Smiley-4.0.7-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7-arm64.dmg) | 0 |
+| macOS Intel | [**Smiley-4.0.7-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7-x64.dmg) | 0 |
+| Linux (AppImage) | [**Smiley-4.0.7.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7.AppImage) | 0 |
+| Linux (.deb) | [**Smiley-4.0.7.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.7.deb) | 0 |
 <!-- DOWNLOADS_END -->
 
 > **Needs:** Discord **desktop** app (not browser), macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](docs/MINIMUM-REQUIREMENTS.md)
@@ -141,7 +144,7 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 
 ## 🚀 Quick start
 
-1. **Download** the installer for your OS ([table above](#-download)).
+1. **Download** from the [Smiley download page](https://1tsrajuwu.github.io/Smiley/) ([all releases](https://github.com/1tsRajuWu/Smiley/releases)).
 2. **Open Discord** — keep the **desktop** app running (browser tab won't work).
 3. **Pick an activity** — launch Smiley, click a category, choose what you're up to. Profile updates instantly.
 
@@ -282,14 +285,14 @@ Full details: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [NOTICE](NOTICE) · 
 
 <div align="center">
 
-**Smiley v4.0.0** — Discord Rich Presence · animated anime GIF status · Windows / macOS / Linux
+**Smiley v4.0.7** — Discord Rich Presence · animated anime GIF status · Windows / macOS / Linux
 
 Made with ♥ by [**Raj (1tsRajuWu)**](https://github.com/1tsRajuWu) · [About](docs/ABOUT.md) · [llms.txt](llms.txt)
 
-[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [⭐ Review](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj)
+[⬇️ Download](https://1tsrajuwu.github.io/Smiley/) · [All releases](https://github.com/1tsRajuWu/Smiley/releases) · [⭐ Review](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj)
 
 Enjoying Smiley? [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review)
 
 </div>
 
-<!-- schema: SoftwareApplication name=Smiley author=Himanshu Raj(1tsRajuWu) category=Discord Rich Presence platforms=Windows,macOS,Linux download=https://github.com/1tsRajuWu/Smiley/releases/latest -->
+<!-- schema: SoftwareApplication name=Smiley author=Himanshu Raj(1tsRajuWu) category=Discord Rich Presence platforms=Windows,macOS,Linux download=https://1tsrajuwu.github.io/Smiley/ -->
