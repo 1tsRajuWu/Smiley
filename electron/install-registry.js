@@ -60,6 +60,14 @@ function buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion
   return parts.join(' ').slice(0, 256);
 }
 
+function buildSupabaseHeaders(anonKey) {
+  const key = String(anonKey || '').trim();
+  const headers = { apikey: key };
+  // Legacy JWT anon keys need Bearer; sb_publishable_ keys must use apikey only.
+  if (key.startsWith('eyJ')) headers.Authorization = `Bearer ${key}`;
+  return headers;
+}
+
 function postJson(url, headers, body) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
@@ -126,8 +134,7 @@ async function registerInstall({
     try {
       if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
       await postJson(endpoint, {
-        apikey: registry.supabaseAnonKey,
-        Authorization: `Bearer ${registry.supabaseAnonKey}`,
+        ...buildSupabaseHeaders(registry.supabaseAnonKey),
         Prefer: 'resolution=merge-duplicates,return=minimal',
       }, row);
       return { success: true, installId };

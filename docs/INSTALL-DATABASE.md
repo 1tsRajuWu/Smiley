@@ -55,10 +55,12 @@ Copy the example file and fill in your keys (do **not** commit the real file):
 cp downloads.registry.example.json downloads.registry.json
 ```
 
-For **GitHub Actions** releases, add secrets:
+For **GitHub Actions** releases, add secrets (required — without these, installs stay at 0):
 
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `SUPABASE_URL` — e.g. `https://xxxxx.supabase.co`
+- `SUPABASE_ANON_KEY` — **Publishable** key (`sb_publishable_…`) or Legacy **anon** JWT
+
+Check: release workflow log should say `Install registry configured` (not “not set”).
 
 The release workflow creates `downloads.registry.json` per platform when secrets are set.
 
