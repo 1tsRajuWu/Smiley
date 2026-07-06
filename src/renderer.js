@@ -3,6 +3,8 @@ import {
   resolveDiscordImageUrl,
   discordImageFields,
   getActivityFallbackUrls,
+  getTenorFallback,
+  clearActivityImageCacheEntry,
 } from './discord-images.js';
 
 const DONATION_URL = 'https://paypal.me/1tsRaj';
@@ -34,6 +36,7 @@ const characterGif = $('#characterGif');
 const characterLoading = $('#characterLoading');
 const characterLabel = $('#characterLabel');
 const characterSource = $('#characterSource');
+const characterRetry = $('#characterRetry');
 const appEl = $('#app');
 const footerVersion = $('#footerVersion');
 const aboutVersion = $('#aboutVersion');
@@ -101,6 +104,8 @@ let updateState = { downloaded: false, dismissed: false, percent: 0 };
 let searchDebounceTimer = null;
 let recentActivities = [];
 let favoriteIds = [];
+let gifLoadGeneration = 0;
+let lastGifActivityId = null;
 let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 
@@ -112,6 +117,20 @@ function formatShortcutHint(mac = isMacPlatform) {
 
 function updateFooterShortcuts(mac = isMacPlatform) {
   if (footerShortcuts) footerShortcuts.textContent = formatShortcutHint(mac);
+}
+
+function applyPlatformUI(cfg = {}) {
+  let osPlatform = cfg.osPlatform;
+  if (!osPlatform && typeof cfg.isMac === 'boolean') {
+    osPlatform = cfg.isMac ? 'darwin' : 'win32';
+  }
+  if (!osPlatform && cfg.platform) {
+    osPlatform = String(cfg.platform).split(' ')[0];
+  }
+  if (osPlatform) document.body.dataset.platform = osPlatform;
+  if (typeof cfg.isMac === 'boolean') isMacPlatform = cfg.isMac;
+  updateFooterShortcuts(isMacPlatform);
+  if (minimizeBtn) minimizeBtn.hidden = isMacPlatform;
 }
 function showToast(message, type = 'success') {
   const el = document.createElement('div');
@@ -170,37 +189,57 @@ function startTimer(start) {
   timerInterval = setInterval(tick, 1000);
 }
 
-async function resolveGifUrl(activity) {
+async function resolveGifUrl(activity, { bustCache = false } = {}) {
   const { url, discordUrl, source, fallbacks } = await resolveDiscordImageUrl(activity, {
     animationsEnabled: currentSettings.animationsEnabled,
     customDataUrl: activeCustomAnimation,
+    bustCache,
   });
   return { url, discordUrl, source, fallbacks };
 }
 
+function clearGifDisplay() {
+  characterGif.classList.remove('character-gif-loaded');
+  characterGif.removeAttribute('src');
+  previewGif.classList.remove('loaded');
+  previewGif.removeAttribute('src');
+  if (characterRetry) characterRetry.hidden = true;
+}
+
 /** Load an <img> through a URL chain — hidden display:none blocks browser fetch. */
-function loadImageWithFallback(img, urls, { onSuccess, onFail } = {}) {
+function loadImageWithFallback(img, urls, { onSuccess, onFail, generation } = {}) {
   const queue = [...new Set(urls.filter(Boolean))];
   let index = 0;
 
   const tryNext = () => {
+    if (generation !== undefined && generation !== gifLoadGeneration) return;
     if (index >= queue.length) {
       onFail?.();
       return;
     }
     const nextUrl = queue[index++];
-    img.onload = () => onSuccess?.(nextUrl);
-    img.onerror = tryNext;
+    const onLoad = () => {
+      if (generation !== undefined && generation !== gifLoadGeneration) return;
+      onSuccess?.(nextUrl);
+    };
+    const onError = () => {
+      if (generation !== undefined && generation !== gifLoadGeneration) return;
+      tryNext();
+    };
+    img.onload = onLoad;
+    img.onerror = onError;
     img.loading = 'eager';
     img.decoding = 'async';
     img.src = nextUrl;
-    if (img.complete && img.naturalWidth > 0) onSuccess?.(nextUrl);
+    if (img.complete && img.naturalWidth > 0) onLoad();
   };
 
   tryNext();
 }
 
-function setCharacterDisplay(url, source, fallbackUrls = []) {
+function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activity } = {}) {
+  if (characterRetry) characterRetry.hidden = true;
+
   if (!url && !fallbackUrls.length) {
     characterLoading.style.display = 'none';
     characterGif.classList.remove('character-gif-loaded');
@@ -213,20 +252,27 @@ function setCharacterDisplay(url, source, fallbackUrls = []) {
   characterLoading.style.display = 'flex';
 
   loadImageWithFallback(characterGif, [url, ...fallbackUrls], {
+    generation,
     onSuccess: () => {
       characterLoading.style.display = 'none';
       characterGif.classList.add('character-gif-loaded');
+      characterSource.textContent = source;
+      if (characterRetry) characterRetry.hidden = true;
     },
     onFail: () => {
       characterLoading.style.display = 'none';
       characterGif.classList.remove('character-gif-loaded');
       characterSource.textContent = source ? `${source} · failed to load` : 'Image failed to load';
+      if (characterRetry && activity) {
+        characterRetry.hidden = false;
+        characterRetry.onclick = () => retryActivityGif(activity);
+      }
     },
   });
-  characterSource.textContent = source;
+  if (source) characterSource.textContent = source;
 }
 
-function setPreviewDisplay(activity, gifUrl, fallbackUrls = []) {
+function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } = {}) {
   if (!activity) {
     previewCard.classList.remove('active');
     previewCard.style.removeProperty('--card-glow');
@@ -253,7 +299,9 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = []) {
 
   if (gifUrl && currentSettings.animationsEnabled !== false) {
     previewEmoji.style.display = 'none';
+    previewGif.classList.remove('loaded');
     loadImageWithFallback(previewGif, [gifUrl, ...fallbackUrls], {
+      generation,
       onSuccess: () => {
         previewGif.classList.add('loaded');
         previewEmoji.style.display = 'none';
@@ -281,28 +329,69 @@ function setCharacterLabel(activity) {
   characterLabel.textContent = `${activity.emoji} ${activity.state || activity.details}`;
 }
 
+async function loadActivityGif(activity, { bustCache = false, updateRpc = false, rpcPayload = null } = {}) {
+  if (!activity) return;
+
+  const generation = ++gifLoadGeneration;
+  lastGifActivityId = activity.id;
+  clearGifDisplay();
+  characterLoading.style.display = 'flex';
+
+  try {
+    const { url, discordUrl, source, fallbacks } = await resolveGifUrl(activity, { bustCache });
+    if (selectedActivityId !== activity.id || generation !== gifLoadGeneration) return;
+
+    currentGifUrl = url;
+    currentDiscordImageUrl = discordUrl;
+    setPreviewDisplay(activity, url, fallbacks, { generation });
+    setCharacterDisplay(url, source, fallbacks, { generation, activity });
+
+    if (updateRpc && rpcPayload && discordUrl) {
+      const imageFields = discordImageFields(activity, discordUrl);
+      window.smiley.setActivity({ ...rpcPayload, ...imageFields }, false).catch(() => {});
+    }
+  } catch {
+    if (selectedActivityId === activity.id && generation === gifLoadGeneration) {
+      characterLoading.style.display = 'none';
+      if (characterRetry) {
+        characterRetry.hidden = false;
+        characterRetry.onclick = () => retryActivityGif(activity);
+      }
+    }
+  }
+}
+
+function retryActivityGif(activity) {
+  if (!activity) return;
+  clearActivityImageCacheEntry(activity.id);
+  loadActivityGif(activity, { bustCache: true, updateRpc: true, rpcPayload: buildRpcPayload(activity) });
+}
+
+function buildRpcPayload(activity) {
+  const fallbackUrls = getActivityFallbackUrls(activity);
+  const initialImage = getTenorFallback(activity) || fallbackUrls[0] || null;
+  const fallbackFields = discordImageFields(activity, initialImage);
+  return {
+    id: activity.id,
+    details: activity.details,
+    state: activity.state,
+    category: activity.category,
+    ...fallbackFields,
+  };
+}
+
 async function updatePreview(activity) {
   if (!activity) {
     setPreviewDisplay(null);
     setCharacterDisplay(null, '');
     setCharacterLabel(null);
+    clearGifDisplay();
     currentGifUrl = null;
     currentDiscordImageUrl = null;
     return;
   }
 
-  // Show loading state
-  characterGif.classList.remove('character-gif-loaded');
-  characterLoading.style.display = 'flex';
-
-  // Resolve GIF
-  const { url, discordUrl, source, fallbacks } = await resolveGifUrl(activity);
-  currentGifUrl = url;
-  currentDiscordImageUrl = discordUrl;
-
-  setPreviewDisplay(activity, url, fallbacks);
-  setCharacterDisplay(url, source, fallbacks);
-  setCharacterLabel(activity);
+  await loadActivityGif(activity);
 }
 
 // ─── Activity Grid ───────────────────────────────────────────────────
@@ -498,8 +587,7 @@ function openSettings(tab = 'general') {
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
 
-    if (typeof cfg.isMac === 'boolean') isMacPlatform = cfg.isMac;
-    updateFooterShortcuts(isMacPlatform);
+    applyPlatformUI(cfg);
 
     wallpaperSettings = {
       filename: cfg.customWallpaper?.filename || null,
@@ -1198,8 +1286,7 @@ async function init() {
   currentSettings = { ...currentSettings, ...cfg };
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
-  if (typeof cfg.isMac === 'boolean') isMacPlatform = cfg.isMac;
-  updateFooterShortcuts(isMacPlatform);
+  applyPlatformUI(cfg);
   wallpaperSettings = {
     filename: cfg.customWallpaper?.filename || null,
     blur: Number(cfg.customWallpaper?.blur) || 0,

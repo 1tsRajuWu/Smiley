@@ -597,6 +597,7 @@ function getAppIcon() {
 // ─── Window ──────────────────────────────────────────────────────────
 function createWindow() {
   const state = getWindowState();
+  const isMac = process.platform === 'darwin';
   mainWindow = new BrowserWindow({
     width: state.width || 1100,
     height: state.height || 780,
@@ -604,7 +605,8 @@ function createWindow() {
     minHeight: 650,
     x: state.x,
     y: state.y,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    titleBarStyle: isMac ? 'hiddenInset' : 'default',
+    ...(isMac ? { trafficLightPosition: { x: 14, y: 16 } } : {}),
     autoHideMenuBar: true,
     backgroundColor: '#1a1b26',
     show: false,
@@ -1282,6 +1284,7 @@ function setupIPC() {
     favoriteActivities: config.favoriteActivities || [],
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
+    osPlatform: process.platform,
     version: APP_VERSION,
     platform: `${process.platform} ${os.release()}`,
   }));
