@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "Discord Rich Presence with animated anime characters and beautiful UI",
   "main": "main.js",
   "author": "Raj (1tsRaj)",
@@ -61,8 +61,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "1tsRaj",
-      "repo": "smiley-rpc",
+      "owner": "1tsRajuWu",
+      "repo": "Smiley",
       "releaseType": "release"
     },
     "mac": {
