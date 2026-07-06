@@ -65,6 +65,20 @@ by **Raj ([@1tsRaj](https://github.com/1tsRaj))**
 
 > **macOS:** Right-click → **Open** if unsigned. **Windows:** **More info** → **Run anyway** if SmartScreen warns.
 
+### macOS says "damaged and can't be opened"?
+
+This usually means **Gatekeeper** blocked an unsigned download (the DMG is fine). Try:
+
+```bash
+# After downloading the DMG (before opening):
+xattr -cr ~/Downloads/Smiley-*.dmg
+
+# Or after copying Smiley.app to Applications:
+xattr -cr /Applications/Smiley.app
+```
+
+Then **right-click → Open** the first time (do not double-click). Smiley v2.1.8+ builds are ad-hoc signed to reduce this issue.
+
 ### Auto-updates
 
 Installed Smiley checks **GitHub Releases** on launch. Use **Settings → Check for Updates** anytime. **v2.1.7** ships [`latest-mac.yml`](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.7/latest-mac.yml) for macOS; `latest.yml` / `latest-linux.yml` are added when Windows/Linux builds are uploaded.

@@ -65,7 +65,9 @@
       "repo": "Smiley",
       "releaseType": "release"
     },
+    "afterSign": "scripts/afterSign-mac.js",
     "mac": {
+      "identity": "-",
       "category": "public.app-category.social-networking",
       "target": [
         {
