@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#0f1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' capacitor: ionic:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https://nekos.best https://cdn.nekos.best https://api.waifu.pics https://i.waifu.pics https:; connect-src 'self' https://api.waifu.pics https://nekos.best https://cdn.nekos.best;"
+    />
+    <title>Smiley</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-theme="dark">
+      <header class="header">
+        <div class="brand">
+          <img src="assets/icon.png" alt="" width="36" height="36" class="brand-logo" />
+          <div>
+            <h1>Smiley</h1>
+            <p class="tagline">Activity companion · v3.0.1</p>
+          </div>
+        </div>
+        <button class="btn-icon" id="settingsBtn" type="button" aria-label="Settings">⚙️</button>
+      </header>
+
+      <div class="desktop-banner" id="desktopBanner">
+        <span class="banner-icon">💻</span>
+        <p>
+          <strong>Desktop required for Discord status.</strong>
+          Pick an activity here, then copy it to Smiley on your PC.
+        </p>
+        <a
+          class="banner-link"
+          href="https://github.com/1tsRajuWu/Smiley/releases/latest"
+          target="_blank"
+          rel="noopener"
+          >Get desktop app</a
+        >
+      </div>
+
+      <section class="preview-panel" id="previewPanel">
+        <div class="character-stage">
+          <div class="character-container">
+            <img class="character-gif" id="characterGif" src="" alt="" hidden />
+            <div class="character-placeholder" id="characterPlaceholder">😊</div>
+            <div class="character-loading" id="characterLoading" hidden>
+              <span class="spinner" aria-hidden="true"></span>
+              <span>Loading…</span>
+            </div>
+          </div>
+          <p class="character-label" id="characterLabel">Pick an activity</p>
+          <p class="character-source" id="characterSource"></p>
+        </div>
+
+        <div class="discord-card" id="previewCard">
+          <div class="discord-card-inner">
+            <div class="discord-art" id="previewArt">
+              <img class="discord-art-gif" id="previewGif" src="" alt="" hidden />
+              <span class="discord-art-emoji" id="previewEmoji">🍕</span>
+            </div>
+            <div class="discord-info">
+              <div class="discord-app-name">Smiley</div>
+              <div class="discord-details" id="previewDetails">Pick an activity</div>
+              <div class="discord-state" id="previewState">Your status appears here</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-primary" id="copyBtn" type="button" disabled>
+            📋 Copy status
+          </button>
+          <button class="btn btn-secondary" id="favoriteBtn" type="button" disabled>
+            ☆ Favorite
+          </button>
+        </div>
+      </section>
+
+      <main class="picker-main">
+        <div class="search-wrap">
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="Search activities…"
+            autocomplete="off"
+            enterkeyhint="search"
+          />
+        </div>
+        <div class="activity-grid" id="activityGrid"></div>
+      </main>
+
+      <nav class="bottom-nav" id="bottomNav" role="tablist" aria-label="Categories"></nav>
+
+      <footer class="footer">
+        <span>© Raj (@1tsRaj)</span>
+        <a href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">GitHub</a>
+      </footer>
+    </div>
+
+    <dialog class="modal" id="settingsModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button type="button" class="btn-icon btn-close" id="closeSettings" aria-label="Close">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="field toggle-field">
+            <span class="field-label">Anime GIF previews</span>
+            <label class="toggle">
+              <input type="checkbox" id="animationsToggle" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="field">
+            <span class="field-label">Theme</span>
+            <div class="theme-options" id="themeOptions">
+              <button type="button" class="theme-chip active" data-theme="dark">Dark</button>
+              <button type="button" class="theme-chip" data-theme="midnight">Midnight</button>
+              <button type="button" class="theme-chip" data-theme="ocean">Ocean</button>
+              <button type="button" class="theme-chip" data-theme="sakura">Sakura</button>
+              <button type="button" class="theme-chip" data-theme="lowlight">Low Light</button>
+            </div>
+          </div>
+          <div class="field info-field">
+            <span class="field-label">About Smiley Mobile</span>
+            <p class="field-hint">
+              Mobile is a companion app. Discord Rich Presence only works with the
+              <strong>desktop</strong> Discord client on your computer.
+            </p>
+            <a
+              class="about-link"
+              href="https://github.com/1tsRajuWu/Smiley/releases/latest"
+              target="_blank"
+              rel="noopener"
+              >Download Smiley for Windows / Mac / Linux →</a
+            >
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

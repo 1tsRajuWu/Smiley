@@ -1,0 +1,83 @@
+name: Mobile Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Build web + sync Capacitor
+        working-directory: mobile
+        run: |
+          npm run build
+          npx cap sync android
+          node scripts/configure-native.js
+
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare APK artifact
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ] || [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "Smiley-${VERSION}-android-debug.apk"
+          ls -la "Smiley-${VERSION}-android-debug.apk"
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release upload "${GITHUB_REF_NAME}" "Smiley-${VERSION}-android-debug.apk" --clobber
+
+      - name: Upload to latest release (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          gh release upload "${TAG}" "Smiley-${VERSION}-android-debug.apk" --clobber || \
+            gh release create "${TAG}" "Smiley-${VERSION}-android-debug.apk" \
+              --title "Smiley v${VERSION}" \
+              --notes "Android companion APK (debug build)."
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smiley-android-debug-apk
+          path: Smiley-*-android-debug.apk

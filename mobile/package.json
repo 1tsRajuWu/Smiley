@@ -1,22 +1,32 @@
 {
   "name": "smiley-mobile",
-  "version": "2.1.0",
+  "version": "3.0.1",
   "private": true,
-  "description": "Capacitor shell for Smiley companion UI (no Discord RPC on mobile)",
+  "description": "Smiley v3.0.1 — Capacitor companion for Android & iOS",
   "scripts": {
-    "sync": "npx cap sync",
-    "android": "npx cap open android",
-    "ios": "npx cap open ios"
+    "build:www": "node scripts/build-www.js",
+    "build": "npm run build:www && vite build",
+    "dev": "npm run build:www && vite",
+    "preview": "vite preview --port 4173",
+    "sync": "npm run build && npx cap sync && node scripts/configure-native.js",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios",
+    "android": "npm run sync && npx cap open android",
+    "ios": "npm run sync && npx cap open ios",
+    "apk:debug": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
+    "@capacitor/clipboard": "^6.0.2",
     "@capacitor/core": "^6.2.0",
-    "@capacitor/ios": "^6.2.0"
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/preferences": "^6.0.3",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.2.0"
-  },
-  "capacitor": {
-    "note": "Run npm install from mobile/ then cap add android|ios"
+    "@capacitor/cli": "^6.2.0",
+    "vite": "^6.0.0"
   }
 }

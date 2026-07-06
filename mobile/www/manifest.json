@@ -1,0 +1,18 @@
+{
+  "short_name": "Smiley",
+  "name": "Smiley — Activity Companion",
+  "description": "Browse Discord activities, preview anime GIFs, copy status text. Desktop Smiley required for Rich Presence.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

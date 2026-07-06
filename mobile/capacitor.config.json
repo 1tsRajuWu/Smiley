@@ -1,14 +1,27 @@
 {
   "appId": "com.smiley.rpc.mobile",
   "appName": "Smiley",
-  "webDir": "../src",
+  "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "minWebViewVersion": 60
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "scrollEnabled": false
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 1500,
-      "backgroundColor": "#000000"
+      "launchShowDuration": 1200,
+      "backgroundColor": "#0f1117",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f1117"
     }
   }
 }

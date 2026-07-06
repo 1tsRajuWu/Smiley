@@ -1,0 +1,363 @@
+/**
+ * Smiley Mobile — activity companion (v3.0.1)
+ * No Discord RPC on mobile; preview GIFs + copy status for desktop use.
+ */
+import { Capacitor } from '@capacitor/core';
+import { Clipboard } from '@capacitor/clipboard';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Preferences } from '@capacitor/preferences';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES } from './activities.js';
+import { resolveActivityImage } from './discord-images.js';
+
+const STORAGE_KEY = 'smiley-mobile-settings';
+const FAVORITES_KEY = 'smiley-mobile-favorites';
+const VERSION = '3.0.1';
+
+const isNative = Capacitor.isNativePlatform();
+
+async function initNativeShell() {
+  if (!isNative) return;
+  try {
+    await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setBackgroundColor({ color: '#0f1117' });
+  } catch {
+    /* StatusBar not available on all platforms */
+  }
+}
+
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  category: ACTIVITY_CATEGORIES[0].id,
+  selected: null,
+  animations: true,
+  theme: 'dark',
+  favorites: new Set(),
+  search: '',
+};
+
+const els = {
+  app: $('app'),
+  bottomNav: $('bottomNav'),
+  activityGrid: $('activityGrid'),
+  searchInput: $('searchInput'),
+  characterGif: $('characterGif'),
+  characterPlaceholder: $('characterPlaceholder'),
+  characterLoading: $('characterLoading'),
+  characterLabel: $('characterLabel'),
+  characterSource: $('characterSource'),
+  previewCard: $('previewCard'),
+  previewGif: $('previewGif'),
+  previewEmoji: $('previewEmoji'),
+  previewDetails: $('previewDetails'),
+  previewState: $('previewState'),
+  copyBtn: $('copyBtn'),
+  favoriteBtn: $('favoriteBtn'),
+  settingsBtn: $('settingsBtn'),
+  settingsModal: $('settingsModal'),
+  closeSettings: $('closeSettings'),
+  animationsToggle: $('animationsToggle'),
+  themeOptions: $('themeOptions'),
+  toastContainer: $('toastContainer'),
+};
+
+async function storageGet(key) {
+  if (isNative) {
+    const { value } = await Preferences.get({ key });
+    return value;
+  }
+  return localStorage.getItem(key);
+}
+
+async function storageSet(key, value) {
+  if (isNative) {
+    await Preferences.set({ key, value });
+  } else {
+    localStorage.setItem(key, value);
+  }
+}
+
+async function loadSettings() {
+  const raw = await storageGet(STORAGE_KEY);
+  if (raw) {
+    try {
+      const s = JSON.parse(raw);
+      state.animations = s.animations !== false;
+      state.theme = s.theme || 'dark';
+    } catch { /* ignore */ }
+  }
+
+  const favRaw = await storageGet(FAVORITES_KEY);
+  if (favRaw) {
+    try {
+      state.favorites = new Set(JSON.parse(favRaw));
+    } catch { /* ignore */ }
+  }
+}
+
+async function saveSettings() {
+  await storageSet(STORAGE_KEY, JSON.stringify({ animations: state.animations, theme: state.theme }));
+}
+
+async function saveFavorites() {
+  await storageSet(FAVORITES_KEY, JSON.stringify([...state.favorites]));
+}
+
+function applyTheme() {
+  els.app.dataset.theme = state.theme;
+  els.animationsToggle.checked = state.animations;
+  els.themeOptions.querySelectorAll('.theme-chip').forEach((chip) => {
+    chip.classList.toggle('active', chip.dataset.theme === state.theme);
+  });
+}
+
+function toast(message, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  els.toastContainer.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+async function hapticLight() {
+  if (!isNative) return;
+  try {
+    await Haptics.impact({ style: ImpactStyle.Light });
+  } catch { /* noop */ }
+}
+
+function buildStatusText(activity) {
+  return `${activity.details}\n${activity.state}`;
+}
+
+function renderBottomNav() {
+  els.bottomNav.innerHTML = ACTIVITY_CATEGORIES.map(
+    (cat) => `
+    <button
+      type="button"
+      class="nav-tab${cat.id === state.category ? ' active' : ''}"
+      data-category="${cat.id}"
+      role="tab"
+      aria-selected="${cat.id === state.category}"
+      aria-label="${cat.label}"
+    >
+      <span class="nav-emoji">${cat.emoji}</span>
+      <span>${cat.label}</span>
+    </button>`
+  ).join('');
+
+  els.bottomNav.querySelectorAll('.nav-tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.category = btn.dataset.category;
+      state.search = '';
+      els.searchInput.value = '';
+      renderBottomNav();
+      renderActivities();
+      hapticLight();
+    });
+  });
+}
+
+function getFilteredActivities() {
+  const q = state.search.trim().toLowerCase();
+  let list = ALL_ACTIVITIES.filter((a) => a.category === state.category);
+  if (q) {
+    list = ALL_ACTIVITIES.filter(
+      (a) =>
+        a.details.toLowerCase().includes(q) ||
+        a.state.toLowerCase().includes(q) ||
+        a.emoji.includes(q) ||
+        a.id.includes(q)
+    );
+  }
+  return list;
+}
+
+function renderActivities() {
+  const list = getFilteredActivities();
+  if (!list.length) {
+    els.activityGrid.innerHTML = '<p class="empty-state">No activities found</p>';
+    return;
+  }
+
+  els.activityGrid.innerHTML = list
+    .map(
+      (a, i) => `
+    <button
+      type="button"
+      class="activity-card${state.selected?.id === a.id ? ' selected' : ''}"
+      data-id="${a.id}"
+      style="--card-accent:${a.categoryColor};animation-delay:${i * 25}ms"
+    >
+      <span class="activity-emoji">${a.emoji}</span>
+      <span class="activity-name">${a.details}</span>
+      <span class="activity-state">${a.state}</span>
+    </button>`
+    )
+    .join('');
+
+  els.activityGrid.querySelectorAll('.activity-card').forEach((card) => {
+    card.addEventListener('click', () => selectActivity(card.dataset.id));
+  });
+}
+
+async function selectActivity(id) {
+  const activity = ALL_ACTIVITIES.find((a) => a.id === id);
+  if (!activity) return;
+
+  state.selected = activity;
+  hapticLight();
+  renderActivities();
+  updatePreview(activity);
+  updateActions();
+}
+
+function updateActions() {
+  const has = !!state.selected;
+  els.copyBtn.disabled = !has;
+  els.favoriteBtn.disabled = !has;
+  const fav = state.selected && state.favorites.has(state.selected.id);
+  els.favoriteBtn.textContent = fav ? '★ Favorited' : '☆ Favorite';
+  els.favoriteBtn.classList.toggle('favorited', !!fav);
+}
+
+async function updatePreview(activity) {
+  els.previewCard.classList.add('active');
+  els.previewDetails.textContent = activity.details;
+  els.previewState.textContent = activity.state;
+  els.previewEmoji.textContent = activity.emoji;
+  els.characterLabel.textContent = `${activity.emoji} ${activity.details}`;
+
+  els.characterLoading.hidden = false;
+  els.characterGif.hidden = true;
+  els.characterPlaceholder.hidden = true;
+  els.previewGif.hidden = true;
+  els.previewEmoji.hidden = false;
+
+  try {
+    const { url, source } = await resolveActivityImage(activity, {
+      animationsEnabled: state.animations,
+    });
+    els.characterSource.textContent = source || '';
+
+    if (url && state.animations) {
+      const onLoad = () => {
+        els.characterGif.classList.add('loaded');
+        els.characterLoading.hidden = true;
+        els.characterGif.hidden = false;
+        els.characterPlaceholder.hidden = true;
+      };
+      els.characterGif.onload = onLoad;
+      els.characterGif.onerror = () => {
+        els.characterLoading.hidden = true;
+        els.characterGif.hidden = true;
+        els.characterPlaceholder.hidden = false;
+        els.characterPlaceholder.textContent = activity.emoji;
+      };
+      els.characterGif.classList.remove('loaded');
+      els.characterGif.src = url;
+
+      els.previewGif.src = url;
+      els.previewGif.hidden = false;
+      els.previewEmoji.hidden = true;
+      els.previewGif.onerror = () => {
+        els.previewGif.hidden = true;
+        els.previewEmoji.hidden = false;
+      };
+    } else {
+      els.characterLoading.hidden = true;
+      els.characterGif.hidden = true;
+      els.characterPlaceholder.hidden = false;
+      els.characterPlaceholder.textContent = activity.emoji;
+      els.previewGif.hidden = true;
+      els.previewEmoji.hidden = false;
+    }
+  } catch {
+    els.characterLoading.hidden = true;
+    els.characterPlaceholder.hidden = false;
+    els.characterPlaceholder.textContent = activity.emoji;
+  }
+}
+
+async function copyStatus() {
+  if (!state.selected) return;
+  const text = buildStatusText(state.selected);
+
+  try {
+    if (isNative) {
+      await Clipboard.write({ string: text });
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      throw new Error('Clipboard unavailable');
+    }
+    await hapticLight();
+    toast('Status copied! Paste in desktop Smiley or Discord.');
+  } catch {
+    toast('Could not copy — try selecting text manually', 'error');
+  }
+}
+
+async function toggleFavorite() {
+  if (!state.selected) return;
+  const id = state.selected.id;
+  if (state.favorites.has(id)) state.favorites.delete(id);
+  else state.favorites.add(id);
+  await saveFavorites();
+  updateActions();
+  await hapticLight();
+  toast(state.favorites.has(id) ? 'Added to favorites' : 'Removed from favorites');
+}
+
+function bindEvents() {
+  els.searchInput.addEventListener('input', (e) => {
+    state.search = e.target.value;
+    renderActivities();
+  });
+
+  els.copyBtn.addEventListener('click', copyStatus);
+  els.favoriteBtn.addEventListener('click', toggleFavorite);
+
+  els.settingsBtn.addEventListener('click', () => els.settingsModal.showModal());
+  els.closeSettings.addEventListener('click', () => els.settingsModal.close());
+  els.settingsModal.addEventListener('click', (e) => {
+    if (e.target === els.settingsModal) els.settingsModal.close();
+  });
+
+  els.animationsToggle.addEventListener('change', async (e) => {
+    state.animations = e.target.checked;
+    await saveSettings();
+    if (state.selected) updatePreview(state.selected);
+  });
+
+  els.themeOptions.addEventListener('click', async (e) => {
+    const chip = e.target.closest('.theme-chip');
+    if (!chip) return;
+    state.theme = chip.dataset.theme;
+    applyTheme();
+    await saveSettings();
+  });
+}
+
+async function init() {
+  await initNativeShell();
+  await loadSettings();
+  applyTheme();
+  renderBottomNav();
+  renderActivities();
+  bindEvents();
+
+  if (state.favorites.size) {
+    const firstFav = ALL_ACTIVITIES.find((a) => state.favorites.has(a.id));
+    if (firstFav) {
+      state.category = firstFav.category;
+      renderBottomNav();
+      await selectActivity(firstFav.id);
+    }
+  }
+
+  console.info(`Smiley Mobile v${VERSION} ready`);
+}
+
+init();

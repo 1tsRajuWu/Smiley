@@ -8,3 +8,23 @@ Smiley.Native/bin/
 Smiley.Native/obj/
 .DS_Store
 *.log
+
+# Mobile build artifacts (keep mobile/www source in git)
+mobile/dist/
+mobile/node_modules/
+mobile/www/activities.js
+mobile/www/discord-images.js
+mobile/www/assets/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/local.properties
+mobile/android/.idea/
+mobile/android/captures/
+mobile/android/*.iml
+mobile/ios/App/build/
+mobile/ios/App/Pods/
+mobile/ios/DerivedData/
+mobile/ios/*.xcworkspace/xcuserdata/
+mobile/ios/*.xcodeproj/xcuserdata/
+mobile/ios/*.xcodeproj/project.xcworkspace/xcuserdata/

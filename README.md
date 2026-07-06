@@ -24,7 +24,7 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 ## ⬇️ Download
 
-**Current release: v3.0.0** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
+**Current release: v3.0.1** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
 
 > **System requirements:** macOS 11+, Windows 10 (1809+) / 11, Linux Ubuntu 20.04+. Apple Silicon Macs (M1–**M5**) use the **arm64** DMG. Details: **[docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)**.
 
@@ -32,21 +32,21 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 | | Download | Notes |
 |---|----------|-------|
-| **Installer** (recommended) | [**Smiley-Setup-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Setup-3.0.0.exe) | Windows 10 (1809+) / 11 · Start menu + desktop shortcut |
-| **Portable** | [**Smiley-Portable-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Portable-3.0.0.exe) | No install — run from anywhere |
+| **Installer** (recommended) | [**Smiley-Setup-3.0.1.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-Setup-3.0.1.exe) | Windows 10 (1809+) / 11 · Start menu + desktop shortcut |
+| **Portable** | [**Smiley-Portable-3.0.1.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-Portable-3.0.1.exe) | No install — run from anywhere |
 
-[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Setup-3.0.0.exe)
-[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Portable-3.0.0.exe)
+[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-Setup-3.0.1.exe)
+[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-Portable-3.0.1.exe)
 
 ### 🍎 macOS
 
 | Chip | Download |
 |------|----------|
-| **Apple Silicon** (M1–M5) | [**Smiley-3.0.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-arm64.dmg) |
-| **Intel** (pre-2020 Macs) | [**Smiley-3.0.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-x64.dmg) |
+| **Apple Silicon** (M1–M5) | [**Smiley-3.0.1-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-arm64.dmg) |
+| **Intel** (pre-2020 Macs) | [**Smiley-3.0.1-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-x64.dmg) |
 
-[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-arm64.dmg)
-[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-x64.dmg)
+[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-arm64.dmg)
+[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-x64.dmg)
 
 > macOS might block the first launch — that's Gatekeeper, not a virus. See [Installing → macOS](#-macos) below.
 
@@ -54,22 +54,22 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 | Format | Download | Notes |
 |--------|----------|-------|
-| **AppImage** | [**Smiley-3.0.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.AppImage) | Works on most distros — `chmod +x` then run |
-| **.deb** | [**Smiley-3.0.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.deb) | Debian / Ubuntu / Mint |
+| **AppImage** | [**Smiley-3.0.1.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1.AppImage) | Works on most distros — `chmod +x` then run |
+| **.deb** | [**Smiley-3.0.1.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1.deb) | Debian / Ubuntu / Mint |
 
-[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.AppImage)
-[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.deb)
+[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1.AppImage)
+[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1.deb)
 
 ### 📱 Android & iPhone
 
 | Platform | Download | Rich Presence? |
 |----------|----------|----------------|
-| **Android** | [**Smiley-3.0.0-android-debug.apk**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-android-debug.apk) | ❌ Companion only — browse, preview GIFs, copy status |
+| **Android** | [**Smiley-3.0.1-android-debug.apk**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-android-debug.apk) | ❌ Companion only — browse, preview GIFs, copy status |
 | **iPhone** | Build from source ([README-MOBILE.md](README-MOBILE.md)) | ❌ Same — needs Xcode + Apple Developer for device install |
 
 Phones can't talk to Discord the way desktop does. Use mobile to pick an activity on the go, then set it on your PC with the Windows/Mac/Linux app above.
 
-[![Download Android APK](https://img.shields.io/badge/🤖_Android-APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-android-debug.apk)
+[![Download Android APK](https://img.shields.io/badge/🤖_Android-APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-3.0.1-android-debug.apk)
 
 ### ⚡ Smiley.Native — for low-end PCs (~25 MB)
 
@@ -184,12 +184,12 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 
 ### 🪟 Windows
 
-1. Download [**Smiley-Setup-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Setup-3.0.0.exe)
+1. Download [**Smiley-Setup-3.0.1.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-Setup-3.0.1.exe)
 2. Run the installer
 3. If **SmartScreen** pops up → **More info** → **Run anyway** (app isn't code-signed yet — it's safe, [source is here](https://github.com/1tsRajuWu/Smiley))
 4. Launch from Start or desktop shortcut. Discord desktop must be open.
 
-**Portable?** Grab [**Smiley-Portable-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Portable-3.0.0.exe) and double-click. No install needed.
+**Portable?** Grab [**Smiley-Portable-3.0.1.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.1/Smiley-Portable-3.0.1.exe) and double-click. No install needed.
 
 ---
 
@@ -253,14 +253,14 @@ From a cloned repo: `./scripts/install-mac.sh /Applications/Smiley.app`
 **AppImage** (most distros):
 
 ```bash
-chmod +x Smiley-3.0.0.AppImage
-./Smiley-3.0.0.AppImage
+chmod +x Smiley-3.0.1.AppImage
+./Smiley-3.0.1.AppImage
 ```
 
 **Debian / Ubuntu (.deb):**
 
 ```bash
-sudo dpkg -i Smiley-3.0.0.deb
+sudo dpkg -i Smiley-3.0.1.deb
 ```
 
 Launch from your app menu. Discord must be the **desktop** client — not web-only.
