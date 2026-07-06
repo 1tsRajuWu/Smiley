@@ -166,6 +166,8 @@ Smiley ships with a bundled Client ID. You don't touch the Developer Portal.
 
 ## 🔧 Troubleshooting
 
+**Mac (ad-hoc signed):** in-app restart updates often fail — download the latest **DMG** from [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases/latest) for major updates.
+
 <details>
 <summary><strong>macOS says it "can't verify" Smiley</strong></summary>
 

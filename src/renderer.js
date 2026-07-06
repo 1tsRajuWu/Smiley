@@ -145,7 +145,7 @@ let customAnimations = [];
 let activeCustomAnimation = null;
 let currentGifUrl = null;
 let currentDiscordImageUrl = null;
-let updateState = { downloaded: false, dismissed: false, percent: 0, version: null };
+let updateState = { downloaded: false, manualInstall: false, dismissed: false, percent: 0, version: null };
 let releasesUrl = GITHUB_RELEASES_URL;
 let macAdHocUpdates = false;
 let searchDebounceTimer = null;
@@ -162,6 +162,8 @@ let gifGenderFilter = 'all';
 let saveGifChoiceTimer = null;
 let updateCheckDebounceUntil = 0;
 let updateCheckingToastShown = false;
+let lastUpdateActionToastKey = '';
+let lastUpdateActionToastAt = 0;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -258,6 +260,12 @@ function showToast(message, type = 'success') {
 }
 
 function showUpdateActionToast(message, { label = 'Download from GitHub', url = releasesUrl } = {}) {
+  const key = `${message}|${url}`;
+  const now = Date.now();
+  if (key === lastUpdateActionToastKey && now - lastUpdateActionToastAt < 10000) return;
+  lastUpdateActionToastKey = key;
+  lastUpdateActionToastAt = now;
+
   const el = document.createElement('div');
   el.className = 'toast error toast-with-action';
   const text = document.createElement('span');
@@ -1754,7 +1762,10 @@ function isUpdateSignatureError(msg) {
     lower.includes('code requirement') ||
     lower.includes('satisfy specified code requirement') ||
     lower.includes('signature verification') ||
-    lower.includes('not signed')
+    lower.includes('invalid_signature') ||
+    lower.includes('not signed') ||
+    lower.includes('signed by the application owner') ||
+    lower.includes('shipit')
   );
 }
 
@@ -1766,8 +1777,8 @@ function buildManualUpdateMessage(version) {
 
 function syncUpdateBannerButtons() {
   if (!updateRestartBtn) return;
-  const macManual = macAdHocUpdates && updateState.downloaded;
-  updateRestartBtn.disabled = !updateState.downloaded && !macManual;
+  const macManual = macAdHocUpdates && (updateState.downloaded || updateState.manualInstall);
+  updateRestartBtn.disabled = !macManual && !updateState.downloaded;
   if (macManual) {
     updateRestartBtn.textContent = 'Get update';
     updateRestartBtn.title =
@@ -1798,7 +1809,7 @@ function handleUpdateStatus(data) {
       break;
     case 'available':
       updateCheckingToastShown = false;
-      updateState = { downloaded: false, dismissed: false, percent: 0, version: data.version || null };
+      updateState = { downloaded: false, manualInstall: false, dismissed: false, percent: 0, version: data.version || null };
       syncUpdateBannerButtons();
       showToast(`Update v${data.version} available! Downloading...`);
       if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}… 0%`;
@@ -1826,6 +1837,7 @@ function handleUpdateStatus(data) {
     case 'downloaded':
       updateCheckingToastShown = false;
       updateState.downloaded = true;
+      updateState.manualInstall = false;
       updateState.percent = 100;
       updateState.dismissed = false;
       updateState.version = data.version || updateState.version;
@@ -1846,7 +1858,7 @@ function handleUpdateStatus(data) {
       break;
     case 'download-stalled':
       updateCheckingToastShown = false;
-      updateState = { downloaded: false, dismissed: true, percent: 0, version: null };
+      updateState = { downloaded: false, manualInstall: false, dismissed: true, percent: 0, version: null };
       syncUpdateBannerButtons();
       hideUpdateBanner();
       showToast(data.error || 'Update download stalled. Try again later.', 'error');
@@ -1854,34 +1866,52 @@ function handleUpdateStatus(data) {
     case 'unsigned-update':
     case 'manual-install-required':
       updateCheckingToastShown = false;
-      updateState = { downloaded: false, dismissed: true, percent: 0, version: data.version || null };
+      updateState = {
+        downloaded: true,
+        manualInstall: true,
+        dismissed: false,
+        percent: 100,
+        version: data.version || null,
+      };
       syncUpdateBannerButtons();
-      hideUpdateBanner();
+      if (updateBannerText) {
+        const ver = data.version ? `v${data.version}` : 'update';
+        updateBannerText.textContent = `Update ${ver} ready — download from GitHub`;
+      }
+      updateBanner?.classList.add('visible');
       showUpdateActionToast(
-        data.message ||
-          `Update couldn't install automatically. Download ${data.version ? `v${data.version}` : 'the latest version'} from GitHub.`,
+        data.message || buildManualUpdateMessage(data.version),
         { url: data.releasesUrl || releasesUrl }
       );
       break;
     case 'error':
       updateCheckingToastShown = false;
-      updateState = { downloaded: false, dismissed: false, percent: 0, version: data.version || null };
+      updateState = {
+        downloaded: false,
+        manualInstall: false,
+        dismissed: false,
+        percent: 0,
+        version: data.version || null,
+      };
       syncUpdateBannerButtons();
       hideUpdateBanner();
       if (data.expected) {
-        showToast(data.message || data.error || 'Update check unavailable.');
-      } else if (isUpdateSignatureError(String(data.error || ''))) {
-        showUpdateActionToast(
-          buildManualUpdateMessage(data.version),
-          { url: data.releasesUrl || releasesUrl }
-        );
+        const friendly = data.message || data.error || 'Update check unavailable.';
+        if (isUpdateSignatureError(friendly)) {
+          showUpdateActionToast(buildManualUpdateMessage(data.version), {
+            url: data.releasesUrl || releasesUrl,
+          });
+        } else {
+          showToast(friendly);
+        }
+      } else if (isUpdateSignatureError(String(data.error || data.message || ''))) {
+        showUpdateActionToast(buildManualUpdateMessage(data.version), {
+          url: data.releasesUrl || releasesUrl,
+        });
       } else {
-        showUpdateActionToast(
-          data.error
-            ? `Update failed. ${buildManualUpdateMessage(data.version)}`
-            : buildManualUpdateMessage(data.version),
-          { url: data.releasesUrl || releasesUrl }
-        );
+        showUpdateActionToast(buildManualUpdateMessage(data.version), {
+          url: data.releasesUrl || releasesUrl,
+        });
       }
       break;
   }
@@ -2124,13 +2154,29 @@ async function init() {
   if (updateRestartBtn) {
     updateRestartBtn.disabled = true;
     updateRestartBtn.addEventListener('click', async () => {
+      if (macAdHocUpdates && (updateState.manualInstall || updateState.downloaded)) {
+        window.smiley.openExternal(releasesUrl);
+        return;
+      }
       if (!updateState.downloaded) {
         showToast('Download still in progress — try again when ready', 'error');
         return;
       }
       const result = await window.smiley.installUpdate();
       if (!result?.success) {
-        showToast(result?.error || 'No update ready — check again in a moment', 'error');
+        if (result?.status === 'manual-install-required') {
+          showUpdateActionToast(result.message || buildManualUpdateMessage(result.version), {
+            url: result.releasesUrl || releasesUrl,
+          });
+        } else if (isUpdateSignatureError(String(result?.error || ''))) {
+          showUpdateActionToast(buildManualUpdateMessage(result.version), {
+            url: result.releasesUrl || releasesUrl,
+          });
+        } else {
+          showUpdateActionToast(buildManualUpdateMessage(result?.version), {
+            url: result.releasesUrl || releasesUrl,
+          });
+        }
       }
     });
   }

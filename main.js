@@ -1159,12 +1159,16 @@ function resetDownloadStallTimer() {
   }, 60000);
 }
 
+function isMacAdHocUpdater() {
+  return process.platform === 'darwin' && MAC_ADHOC_DISTRIBUTION;
+}
+
 function buildManualInstallPayload(version = pendingUpdateVersion) {
   const verLabel = version ? `v${version}` : 'the latest version';
   return {
     ok: false,
     status: 'manual-install-required',
-    message: `Update couldn't install automatically. Download ${verLabel} from GitHub.`,
+    message: `Update ready — download ${verLabel} from GitHub (Mac builds install via DMG).`,
     version: version || null,
     releasesUrl: GITHUB_RELEASES_URL,
     expected: true,
@@ -1352,6 +1356,12 @@ function installPendingUpdate() {
     });
     return false;
   }
+  // Ad-hoc macOS: ShipIt always rejects quitAndInstall — manual DMG only
+  if (isMacAdHocUpdater()) {
+    const payload = buildManualInstallPayload();
+    sendUpdateStatus(payload);
+    return false;
+  }
   try {
     app.isQuitting = true;
     // macOS: don't force-run after install — avoids Squirrel spawning a second copy
@@ -1393,8 +1403,14 @@ function setupAutoUpdater() {
       silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
       if (updateDownloaded && pendingUpdateVersion === info.version) {
-        sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
-        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        if (isMacAdHocUpdater()) {
+          const payload = buildManualInstallPayload(info.version);
+          sendUpdateStatus(payload);
+          resolveManualUpdate(payload);
+        } else {
+          sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
+          resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        }
         return;
       }
       updateDownloaded = false;
@@ -1437,8 +1453,14 @@ function setupAutoUpdater() {
       pendingUpdateVersion = info.version;
       updateDownloaded = true;
       lastDownloadPercent = 100;
-      sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
-      resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+      if (isMacAdHocUpdater()) {
+        const payload = buildManualInstallPayload(info.version);
+        sendUpdateStatus(payload);
+        resolveManualUpdate(payload);
+      } else {
+        sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+      }
     });
 
     getAutoUpdater().on('error', (err) => {
@@ -1834,6 +1856,17 @@ function setupIPC() {
       return {
         success: false,
         error: 'Install Smiley to /Applications before updating. Drag once from the DMG, then relaunch from Applications.',
+      };
+    }
+    if (isMacAdHocUpdater()) {
+      const payload = buildManualInstallPayload();
+      sendUpdateStatus(payload);
+      return {
+        success: false,
+        status: 'manual-install-required',
+        message: payload.message,
+        releasesUrl: GITHUB_RELEASES_URL,
+        version: pendingUpdateVersion || null,
       };
     }
     if (!isUpdateReadyToInstall()) {
