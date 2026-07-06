@@ -1,6 +1,10 @@
 node_modules/
 dist/
+dist-native/
 config.json
 config.secure
+discord.app.json
+Smiley.Native/bin/
+Smiley.Native/obj/
 .DS_Store
 *.log

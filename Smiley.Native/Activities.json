@@ -5,7 +5,7 @@
     "emoji": "🍽️",
     "color": "#f7768e",
     "waifuTag": "neko",
-    "fallbackGif": "https://media.tenor.com/RVvnVPK-GU8AAAAC/anime-eating.gif",
+    "fallbackGif": "https://nekos.best/api/v2/nom/eaa199e9-2b86-4b15-87d1-53688e36d8ec.gif",
     "activities": [
       { "id": "eating-pizza", "details": "Eating", "state": "Pizza night 🍕", "emoji": "🍕" },
       { "id": "eating-sushi", "details": "Eating", "state": "Sushi run 🍣", "emoji": "🍣" },
@@ -23,7 +23,7 @@
     "emoji": "🎮",
     "color": "#7aa2f7",
     "waifuTag": "shinobu",
-    "fallbackGif": "https://media.tenor.com/Xy1U8f2w3xAAAAAC/anime-gaming.gif",
+    "fallbackGif": "https://nekos.best/api/v2/yeet/ae4dda45-2175-4576-b957-58dcc1362284.gif",
     "activities": [
       { "id": "gaming", "details": "Gaming", "state": "In the zone", "emoji": "🎮" },
       { "id": "ranked", "details": "Gaming", "state": "Ranked grind 🔥", "emoji": "🔥" },
@@ -39,7 +39,7 @@
     "emoji": "😌",
     "color": "#9ece6a",
     "waifuTag": "megumin",
-    "fallbackGif": "https://media.tenor.com/5QKQHH4m2xkAAAAC/anime-sleep.gif",
+    "fallbackGif": "https://nekos.best/api/v2/sleep/611a318f-1645-48f4-9cc0-099eb8d817d9.gif",
     "activities": [
       { "id": "sleeping", "details": "Sleeping", "state": "Do not disturb 💤", "emoji": "💤" },
       { "id": "napping", "details": "Napping", "state": "Power nap mode", "emoji": "😴" },
@@ -55,7 +55,7 @@
     "emoji": "💻",
     "color": "#bb9af7",
     "waifuTag": "awoo",
-    "fallbackGif": "https://media.tenor.com/7r-BGEoIoh4AAAAC/anime-typing.gif",
+    "fallbackGif": "https://nekos.best/api/v2/bored/82f8fec0-d651-4905-a739-5917d728f89f.gif",
     "activities": [
       { "id": "coding", "details": "Coding", "state": "Building something cool", "emoji": "💻" },
       { "id": "studying", "details": "Studying", "state": "Brain gains 📖", "emoji": "📖" },
@@ -71,7 +71,7 @@
     "emoji": "✨",
     "color": "#ff9e64",
     "waifuTag": "cry",
-    "fallbackGif": "https://media.tenor.com/1iSARpjQW0AAAAAC/anime-wave.gif",
+    "fallbackGif": "https://nekos.best/api/v2/wave/e6f276a8-11f1-4ad0-b1e0-3fa91678e2f4.gif",
     "activities": [
       { "id": "streaming", "details": "Streaming", "state": "Live now 📺", "emoji": "📺" },
       { "id": "watching", "details": "Watching", "state": "Movie night 🎬", "emoji": "🎬" },

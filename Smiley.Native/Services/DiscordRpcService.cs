@@ -11,6 +11,7 @@ public sealed class DiscordRpcService : IDisposable
     private DiscordRpcClient? _client;
     private DateTime _lastUpdate = DateTime.MinValue;
     private ActivityItem? _pending;
+    private string? _pendingImageUrl;
     private DateTime _sessionStart = DateTime.UtcNow;
 
     public bool IsConnected => _client?.IsInitialized == true;
@@ -29,10 +30,7 @@ public sealed class DiscordRpcService : IDisposable
         try
         {
             _client?.Dispose();
-            _client = new DiscordRpcClient(_clientId)
-            {
-                Logger = new ConsoleLogger { Level = LogLevel.Warning }
-            };
+            _client = new DiscordRpcClient(_clientId);
 
             _client.OnReady += (_, _) =>
             {
@@ -76,6 +74,7 @@ public sealed class DiscordRpcService : IDisposable
         if (elapsed < MinUpdateIntervalMs && CurrentActivity != null)
         {
             _pending = activity;
+            _pendingImageUrl = imageUrl;
             return true;
         }
 
@@ -106,7 +105,10 @@ public sealed class DiscordRpcService : IDisposable
             {
                 await Task.Delay(MinUpdateIntervalMs);
                 if (_pending != null)
-                    ApplyPresence(_pending, WaifuApiService.ResolveDiscordImage(null, _pending.FallbackGif));
+                {
+                    var img = _pendingImageUrl ?? _pending.FallbackGif;
+                    ApplyPresence(_pending, img);
+                }
             });
 
             return true;

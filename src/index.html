@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://api.waifu.pics;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://api.waifu.pics https://nekos.best;"
     />
     <title>Smiley</title>
     <link rel="stylesheet" href="styles.css" />
@@ -106,7 +106,7 @@
       <!-- Footer -->
       <footer class="footer">
         <span class="footer-version" id="footerVersion">Smiley v2.1.0</span>
-        <span class="footer-hint">Updates rate-limited to ~15s by Discord</span>
+        <span class="footer-hint">© Raj (@1tsRaj)</span>
       </footer>
     </div>
 
@@ -130,10 +130,12 @@
               <span class="field-label" style="color:var(--accent);">🔒 Discord Connected</span>
               <p class="field-hint" style="margin:0;">Smiley is pre-configured — just pick an activity and go!</p>
             </div>
-            <label class="field">
-              <span class="field-label">Donation link</span>
-              <input type="url" id="donationInput" placeholder="https://paypal.me/you" />
-            </label>
+            <div class="field" style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-xs);padding:12px 14px;">
+              <span class="field-label" style="color:var(--accent);">💝 Support the developer</span>
+              <p class="field-hint" style="margin:0;">
+                <a href="https://paypal.me/1tsRaj" id="supportPaypalLink" target="_blank" rel="noopener">paypal.me/1tsRaj</a>
+              </p>
+            </div>
             <div class="field toggle-field">
               <span class="field-label">Auto-connect on launch</span>
               <label class="toggle"><input type="checkbox" id="autoConnectToggle" checked /><span class="toggle-slider"></span></label>
@@ -215,7 +217,7 @@
               <div class="about-legal">
                 <a href="#" id="tosLink">Terms of Service</a> &middot; <a href="#" id="privacyLink">Privacy Policy</a>
               </div>
-              <p class="about-credit">Made with love for the Discord community</p>
+              <p class="about-credit">© Raj (@1tsRaj) — All Rights Reserved</p>
             </div>
           </div>
         </div>

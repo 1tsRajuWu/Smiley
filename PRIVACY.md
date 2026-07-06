@@ -1,6 +1,8 @@
 # Privacy Policy
 
-**Last Updated:** July 4, 2025
+**Copyright © 2025–2026 Raj (@1tsRaj). All Rights Reserved.**
+
+**Last Updated:** July 6, 2026
 
 ## 1. Overview
 

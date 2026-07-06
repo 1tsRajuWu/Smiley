@@ -1,20 +1,138 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Smiley.Native.ViewModels"
+        xmlns:models="using:Smiley.Native.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d"
         x:Class="Smiley.Native.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="Smiley.Native">
+        x:Name="RootWindow"
+        Title="Smiley"
+        Width="1000" Height="700"
+        MinWidth="800" MinHeight="560"
+        Background="#000000"
+        Foreground="#a9b1d6">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+  <Design.DataContext>
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+  <Grid RowDefinitions="Auto,*,Auto" Margin="20,16">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <TextBlock Text="😊" FontSize="28" />
+        <StackPanel Spacing="2">
+          <TextBlock Text="Smiley" FontSize="20" FontWeight="Bold" Foreground="#c0caf5" />
+          <TextBlock Text="Discord Rich Presence · Native" FontSize="11" Foreground="#565f89" />
+        </StackPanel>
+      </StackPanel>
+      <Border Grid.Column="1" CornerRadius="14" Padding="10,6" Background="#0a0a0f" BorderBrush="#1e1e28" BorderThickness="1">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Panel Width="8" Height="8">
+            <Ellipse Width="8" Height="8" Fill="#9ece6a" IsVisible="{Binding IsConnected}" />
+            <Ellipse Width="8" Height="8" Fill="#f7768e" IsVisible="{Binding !IsConnected}" />
+          </Panel>
+          <TextBlock Text="{Binding ConnectionStatus}" FontSize="12" Foreground="#565f89" />
+        </StackPanel>
+      </Border>
+    </Grid>
 
+    <Grid Grid.Row="1" ColumnDefinitions="280,*" ColumnSpacing="16">
+      <StackPanel Spacing="12">
+        <Border Background="#0a0a0f" BorderBrush="#1e1e28" BorderThickness="1" CornerRadius="12" Padding="16">
+          <StackPanel Spacing="10">
+            <TextBlock Text="LIVE PREVIEW" FontSize="10" LetterSpacing="1" Foreground="#414868" />
+            <Border Background="#111118" CornerRadius="10" Padding="14">
+              <Grid ColumnDefinitions="64,*" ColumnSpacing="12">
+                <Border Width="64" Height="64" CornerRadius="10" Background="#0a0a0f" VerticalAlignment="Top">
+                  <TextBlock Text="{Binding PreviewEmoji}" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock Text="Smiley" FontSize="10" FontWeight="Bold" Foreground="#565f89" />
+                  <TextBlock Text="{Binding PreviewDetails}" FontSize="14" FontWeight="SemiBold" Foreground="#c0caf5" />
+                  <TextBlock Text="{Binding PreviewState}" FontSize="12" Foreground="#565f89" />
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                    <TextBlock Text="⏱" FontSize="10" />
+                    <TextBlock Text="{Binding SessionTimerText}" FontSize="11" Foreground="#414868" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <TextBlock Text="{Binding CharacterLabel}" FontSize="12" Foreground="#565f89" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding GifSource}" FontSize="10" Foreground="#414868" />
+          </StackPanel>
+        </Border>
+
+        <Button Classes="danger" Content="Clear presence" Command="{Binding ClearPresenceCommand}" HorizontalAlignment="Stretch" />
+        <Button Classes="primary" Content="💝 Support Developer" Command="{Binding OpenDonationCommand}" HorizontalAlignment="Stretch" />
+
+        <Border Background="#0a0a0f" BorderBrush="#1e1e28" BorderThickness="1" CornerRadius="10" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Settings" FontWeight="SemiBold" />
+            <CheckBox Content="Anime animations (waifu.pics)" IsChecked="{Binding AnimationsEnabled}" />
+            <CheckBox Content="Minimize to tray" IsChecked="{Binding MinimizeToTray}" />
+            <CheckBox Content="Start with Windows" IsChecked="{Binding StartWithLogin}" />
+            <Button Classes="primary" Content="Save settings" Command="{Binding SaveSettingsCommand}" HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <Border Grid.Column="1" Background="#0a0a0f" BorderBrush="#1e1e28" BorderThickness="1" CornerRadius="12">
+        <DockPanel Margin="14">
+          <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,10">
+            <ItemsControl ItemsSource="{Binding Categories}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ActivityCategory">
+                  <Button Classes="nav-tab" Margin="0,0,6,6"
+                          Command="{Binding DataContext.SelectCategoryCommand, ElementName=RootWindow}"
+                          CommandParameter="{Binding}">
+                    <TextBlock>
+                      <Run Text="{Binding Emoji}" />
+                      <Run Text=" " />
+                      <Run Text="{Binding Label}" />
+                    </TextBlock>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBox Classes="search" PlaceholderText="Search activities…" Text="{Binding SearchQuery}" />
+          </StackPanel>
+
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding VisibleActivities}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ActivityItem">
+                  <Button Classes="activity-card" Margin="0,0,8,8" Width="130"
+                          Command="{Binding DataContext.SelectActivityCommand, ElementName=RootWindow}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                      <TextBlock Text="{Binding Emoji}" FontSize="28" HorizontalAlignment="Center" />
+                      <TextBlock Text="{Binding Details}" FontSize="13" FontWeight="SemiBold" Foreground="#c0caf5" HorizontalAlignment="Center" />
+                      <TextBlock Text="{Binding State}" FontSize="10" Foreground="#565f89" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="110" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,*">
+      <TextBlock Text="Smiley Native v2.1.0 · lightweight · low-end PC friendly" FontSize="11" Foreground="#414868" />
+      <TextBlock Grid.Column="1" Text="Discord updates ~15s apart" FontSize="11" Foreground="#414868" HorizontalAlignment="Right" />
+    </Grid>
+  </Grid>
 </Window>

@@ -85,8 +85,9 @@ function loadDiscordClientId() {
 }
 
 const BUNDLED_CLIENT_ID = loadDiscordClientId();
+const DONATION_URL = 'https://paypal.me/1tsRaj';
 const DEFAULT_CONFIG = {
-  donationUrl: 'https://paypal.me/1tsRaj',
+  donationUrl: DONATION_URL,
   theme: 'dark',
   showTimer: true,
   animationsEnabled: true,
@@ -186,8 +187,8 @@ function registerGlobalHotkey() {
 }
 
 function saveConfig(data) {
-  const { clientId: _ignored, ...safeData } = data || {};
-  config = { ...config, ...safeData };
+  const { clientId: _c, donationUrl: _d, ...safeData } = data || {};
+  config = { ...config, ...safeData, donationUrl: DONATION_URL };
   try {
     const securePath = getUserDataPath('config.secure');
     fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
@@ -347,7 +348,7 @@ function updateTrayMenu() {
     { label: 'Check for Updates', click: () => autoUpdater.checkForUpdatesAndNotify() },
     { label: 'Settings', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('open-settings'); } } },
     { type: 'separator' },
-    { label: 'Donate', click: () => shell.openExternal(config.donationUrl || 'https://paypal.me/1tsRaj') },
+    { label: 'Donate', click: () => shell.openExternal(DONATION_URL) },
     { type: 'separator' },
     { label: `Version ${APP_VERSION}`, enabled: false },
     { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } },
@@ -406,6 +407,9 @@ function buildActivityPayload(activity) {
   if (imageUrl) {
     payload.largeImageKey = imageUrl;
     payload.largeImageText = activity.largeImageText || activity.details;
+    if (isDev) console.log('[RPC] large_image:', imageUrl);
+  } else if (isDev) {
+    console.warn('[RPC] no image URL for activity', activity.details);
   }
 
   // No small_image — invalid asset keys show the bot logo as an overlay
@@ -476,7 +480,7 @@ function broadcastStatus() {
     activity: currentActivity,
     sessionStart,
     // clientId intentionally hidden from UI
-    donationUrl: config.donationUrl,
+    donationUrl: DONATION_URL,
     settings: {
       theme: config.theme || 'dark',
       showTimer: config.showTimer !== false,
@@ -484,7 +488,7 @@ function broadcastStatus() {
       customAnimation: config.customAnimation || null,
       minimizeToTray: config.minimizeToTray !== false,
       autoConnect: config.autoConnect !== false,
-      donationUrl: config.donationUrl || 'https://paypal.me/1tsRaj',
+      donationUrl: DONATION_URL,
     },
     version: APP_VERSION,
   });
@@ -604,7 +608,7 @@ function imageToDataUrl(filePath) {
 function setupIPC() {
   ipcMain.handle('get-config', () => ({
     hasValidClientId: !!getClientId(),
-    donationUrl: config.donationUrl || 'https://paypal.me/1tsRaj',
+    donationUrl: DONATION_URL,
     theme: config.theme || 'dark',
     showTimer: config.showTimer !== false,
     animationsEnabled: config.animationsEnabled !== false,

@@ -4,8 +4,16 @@
   "version": "2.1.0",
   "description": "Discord Rich Presence with animated anime characters and beautiful UI",
   "main": "main.js",
-  "author": "Smiley",
-  "license": "MIT",
+  "author": "Raj (1tsRaj)",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1tsRaj/smiley-rpc.git"
+  },
+  "homepage": "https://github.com/1tsRaj/smiley-rpc",
+  "bugs": {
+    "url": "https://github.com/1tsRaj/smiley-rpc/issues"
+  },
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
@@ -28,7 +36,7 @@
   "build": {
     "appId": "com.smiley.rpc",
     "productName": "Smiley",
-    "copyright": "Copyright © 2025 Smiley",
+    "copyright": "Copyright © 2025–2026 Raj (1tsRaj). All Rights Reserved.",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -84,7 +92,7 @@
           "arch": ["x64"]
         }
       ],
-      "publisherName": "Smiley"
+      "publisherName": "Raj (1tsRaj)"
     },
     "linux": {
       "target": [
@@ -99,8 +107,8 @@
       ],
       "icon": "build/icons",
       "category": "Network",
-      "maintainer": "Smiley",
-      "vendor": "Smiley",
+      "maintainer": "Raj (1tsRaj)",
+      "vendor": "Raj (1tsRaj)",
       "synopsis": "Discord Rich Presence with animated characters",
       "description": "Set your Discord status with beautiful animated anime characters"
     },

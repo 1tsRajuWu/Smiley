@@ -1,4 +1,7 @@
-import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES, fetchWaifuImage } from './activities.js';
+import { ACTIVITY_CATEGORIES, ALL_ACTIVITIES } from './activities.js';
+import { resolveActivityImage, discordImageFields } from './discord-images.js';
+
+const DONATION_URL = 'https://paypal.me/1tsRaj';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -20,7 +23,6 @@ const minimizeBtn = $('#minimizeBtn');
 const settingsModal = $('#settingsModal');
 const saveSettingsBtn = $('#saveSettingsBtn');
 const closeSettings = $('#closeSettings');
-const donationInput = $('#donationInput');
 const donateBanner = $('#donateBanner');
 const toastContainer = $('#toastContainer');
 const characterGif = $('#characterGif');
@@ -66,6 +68,7 @@ let currentSettings = {};
 let customAnimations = [];
 let activeCustomAnimation = null;
 let currentGifUrl = null;
+let currentDiscordImageUrl = null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
@@ -107,35 +110,12 @@ function startTimer(start) {
   timerInterval = setInterval(tick, 1000);
 }
 
-function discordImageForActivity(activity, gifUrl) {
-  const url =
-    (gifUrl && /^https?:\/\//i.test(gifUrl) ? gifUrl : null) ||
-    activity.fallbackGif ||
-    null;
-  if (url) {
-    return {
-      largeImageUrl: url,
-      largeImageText: activity.largeImageText || activity.details,
-      fallbackGif: activity.fallbackGif,
-    };
-  }
-  return { fallbackGif: activity.fallbackGif };
-}
-async function resolveGifUrl(category) {
-  if (activeCustomAnimation) return { url: activeCustomAnimation, source: 'Custom' };
-
-  const cat = ACTIVITY_CATEGORIES.find((c) => c.id === category);
-  if (!cat) return { url: null, source: '' };
-
-  // Try waifu.pics API with timeout
-  if (currentSettings.animationsEnabled !== false && cat.waifuTag) {
-    const url = await fetchWaifuImage(cat.waifuTag);
-    if (url) return { url, source: `waifu.pics · ${cat.label}` };
-  }
-
-  // Fallback to Tenor GIF
-  if (cat.fallbackGif) return { url: cat.fallbackGif, source: `tenor · ${cat.label}` };
-  return { url: null, source: '' };
+async function resolveGifUrl(activity) {
+  const { url, discordUrl, source } = await resolveActivityImage(activity, {
+    animationsEnabled: currentSettings.animationsEnabled,
+    customDataUrl: activeCustomAnimation,
+  });
+  return { url, discordUrl, source };
 }
 
 function setCharacterDisplay(url, source) {
@@ -206,6 +186,7 @@ async function updatePreview(activity) {
     setCharacterDisplay(null, '');
     setCharacterLabel(null);
     currentGifUrl = null;
+    currentDiscordImageUrl = null;
     return;
   }
 
@@ -214,8 +195,9 @@ async function updatePreview(activity) {
   characterLoading.style.display = 'flex';
 
   // Resolve GIF
-  const { url, source } = await resolveGifUrl(activity.category);
+  const { url, discordUrl, source } = await resolveGifUrl(activity);
   currentGifUrl = url;
+  currentDiscordImageUrl = discordUrl;
 
   // Update displays
   setPreviewDisplay(activity, url);
@@ -292,8 +274,7 @@ async function selectActivity(id) {
   // Update preview (includes async GIF loading)
   await updatePreview(activity);
 
-  // Pass HTTPS GIF URLs to Discord; local/data URLs fall back to uploaded asset keys
-  const imageFields = discordImageForActivity(activity, currentGifUrl);
+  const imageFields = discordImageFields(activity, currentDiscordImageUrl);
   const rpcPayload = {
     id: activity.id,
     details: activity.details,
@@ -327,7 +308,7 @@ async function handleClear() {
 function openSettings(tab = 'general') {
   window.smiley.getConfig().then((cfg) => {
     currentSettings = { ...cfg };
-    donationInput.value = cfg.donationUrl || 'https://paypal.me/1tsRaj';
+    donateBanner.href = DONATION_URL;
     autoConnectToggle.checked = cfg.autoConnect !== false;
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     showTimerToggle.checked = cfg.showTimer !== false;
@@ -356,10 +337,8 @@ function switchSettingsTab(tabId) {
 
 async function handleSaveSettings(e) {
   if (e) e.preventDefault();
-  const donationUrl = donationInput.value.trim() || 'https://paypal.me/1tsRaj';
 
   const newSettings = {
-    donationUrl,
     autoConnect: autoConnectToggle.checked,
     minimizeToTray: minimizeTrayToggle.checked,
     showTimer: showTimerToggle.checked,
@@ -373,7 +352,7 @@ async function handleSaveSettings(e) {
   const result = await window.smiley.saveConfig(newSettings);
   settingsModal.close();
 
-  if (donationUrl) donateBanner.href = donationUrl;
+  donateBanner.href = DONATION_URL;
   applyTheme(newSettings.theme);
 
   const timerEl = $('#previewTimer');
@@ -629,7 +608,7 @@ async function init() {
 
   // IPC events
   window.smiley.onStatus((data) => {
-    if (data.donationUrl) donateBanner.href = data.donationUrl;
+    if (data.donationUrl) donateBanner.href = DONATION_URL;
     if (data.settings) {
       currentSettings = { ...currentSettings, ...data.settings };
       applyTheme(data.settings.theme);
@@ -661,7 +640,7 @@ async function init() {
   currentSettings = { ...currentSettings, ...cfg };
   applyTheme(cfg.theme || 'dark');
   if (cfg.version) footerVersion.textContent = `Smiley v${cfg.version}`;
-  if (cfg.donationUrl) donateBanner.href = cfg.donationUrl;
+  donateBanner.href = DONATION_URL;
 
   // Prompt setup when Client ID is missing
   if (!cfg.hasValidClientId) {

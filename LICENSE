@@ -1,21 +1,34 @@
-MIT License
+Smiley — Proprietary Software License
+Copyright © 2025–2026 Raj (@1tsRaj). All Rights Reserved.
 
-Copyright (c) 2025 Smiley
+This software and associated documentation (the "Software") are the exclusive
+property of Raj (@1tsRaj). Unauthorized use is prohibited.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+PERMITTED USE
+You may download and run official releases of Smiley from the official
+repository only, for personal, non-commercial use:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  https://github.com/1tsRaj/smiley-rpc
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+PROHIBITED WITHOUT WRITTEN PERMISSION
+You may NOT, without prior written consent from Raj (@1tsRaj):
+
+  • Copy, redistribute, or re-upload the Software or any part of it
+  • Modify, fork, or create derivative works for public distribution
+  • Sell, sublicense, or use the Software commercially
+  • Remove or alter copyright, trademark, or attribution notices
+  • Pass off the Software as your own work
+
+OFFICIAL SOURCE
+The only authorized source for Smiley is the repository above. Builds,
+forks, or mirrors from other sources are not endorsed and may be unsafe.
+
+CONTACT
+For licensing inquiries or permission requests:
+
+  • PayPal: https://paypal.me/1tsRaj
+  • GitHub: https://github.com/1tsRaj
+
+DISCLAIMER
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. THE AUTHOR
+SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM USE OF THE SOFTWARE.

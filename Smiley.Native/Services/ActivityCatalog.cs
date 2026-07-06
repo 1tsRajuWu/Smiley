@@ -31,26 +31,36 @@ public static class ActivityCatalog
     {
         if (_categories != null) return;
 
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("Smiley.Native.Activities.json")
-            ?? throw new InvalidOperationException("Activities.json not embedded");
-
-        var categories = JsonSerializer.Deserialize<List<ActivityCategory>>(stream) ?? [];
-        var flat = new List<ActivityItem>();
-
-        foreach (var cat in categories)
+        var path = Path.Combine(AppContext.BaseDirectory, "Activities.json");
+        Stream stream;
+        if (File.Exists(path))
+            stream = File.OpenRead(path);
+        else
         {
-            foreach (var item in cat.Activities)
-            {
-                item.CategoryId = cat.Id;
-                item.CategoryColor = cat.Color;
-                item.FallbackGif = cat.FallbackGif;
-                item.WaifuTag = cat.WaifuTag;
-                flat.Add(item);
-            }
+            stream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("Smiley.Native.Activities.json")
+                ?? throw new InvalidOperationException("Activities.json not found");
         }
 
-        _categories = categories;
-        _all = flat;
+        using (stream)
+        {
+            var categories = JsonSerializer.Deserialize<List<ActivityCategory>>(stream) ?? [];
+            var flat = new List<ActivityItem>();
+
+            foreach (var cat in categories)
+            {
+                foreach (var item in cat.Activities)
+                {
+                    item.CategoryId = cat.Id;
+                    item.CategoryColor = cat.Color;
+                    item.FallbackGif = cat.FallbackGif;
+                    item.WaifuTag = cat.WaifuTag;
+                    flat.Add(item);
+                }
+            }
+
+            _categories = categories;
+            _all = flat;
+        }
     }
 }

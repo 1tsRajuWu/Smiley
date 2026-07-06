@@ -1,4 +1,4 @@
-// Anime GIF sources via waifu.pics (free, no API key)
+// Anime image APIs — see discord-images.js for resolution pipeline
 export const WAIFU_TAGS = {
   food: 'neko',
   gaming: 'shinobu',
@@ -7,14 +7,8 @@ export const WAIFU_TAGS = {
   social: 'cry',
 };
 
-// Reliable fallback GIFs (these are actual GIF URLs that work)
-export const FALLBACK_GIFS = {
-  food: 'https://media.tenor.com/RVvnVPK-GU8AAAAC/anime-eating.gif',
-  gaming: 'https://media.tenor.com/Xy1U8f2w3xAAAAAC/anime-gaming.gif',
-  chill: 'https://media.tenor.com/5QKQHH4m2xkAAAAC/anime-sleep.gif',
-  work: 'https://media.tenor.com/7r-BGEoIoh4AAAAC/anime-typing.gif',
-  social: 'https://media.tenor.com/1iSARpjQW0AAAAAC/anime-wave.gif',
-};
+// Re-export verified GIF fallbacks (nekos.best — Tenor URLs were 404)
+export { VERIFIED_FALLBACKS as FALLBACK_GIFS, fetchWaifuImage, fetchNekosBest } from './discord-images.js';
 
 export const ACTIVITY_CATEGORIES = [
   {
@@ -23,7 +17,7 @@ export const ACTIVITY_CATEGORIES = [
     emoji: '🍽️',
     color: '#f7768e',
     waifuTag: 'neko',
-    fallbackGif: 'https://media.tenor.com/RVvnVPK-GU8AAAAC/anime-eating.gif',
+    fallbackGif: 'https://nekos.best/api/v2/nom/eaa199e9-2b86-4b15-87d1-53688e36d8ec.gif',
     activities: [
       { id: 'eating-pizza', details: 'Eating', state: 'Pizza night 🍕', emoji: '🍕', largeImageKey: 'pizza', largeImageText: 'Pizza time' },
       { id: 'eating-sushi', details: 'Eating', state: 'Sushi run 🍣', emoji: '🍣', largeImageKey: 'sushi', largeImageText: 'Sushi' },
@@ -41,7 +35,7 @@ export const ACTIVITY_CATEGORIES = [
     emoji: '🎮',
     color: '#7aa2f7',
     waifuTag: 'shinobu',
-    fallbackGif: 'https://media.tenor.com/Xy1U8f2w3xAAAAAC/anime-gaming.gif',
+    fallbackGif: 'https://nekos.best/api/v2/yeet/ae4dda45-2175-4576-b957-58dcc1362284.gif',
     activities: [
       { id: 'gaming', details: 'Gaming', state: 'In the zone', emoji: '🎮', largeImageKey: 'gaming', largeImageText: 'Gaming' },
       { id: 'ranked', details: 'Gaming', state: 'Ranked grind 🔥', emoji: '🔥', largeImageKey: 'ranked', largeImageText: 'Ranked' },
@@ -57,7 +51,7 @@ export const ACTIVITY_CATEGORIES = [
     emoji: '😌',
     color: '#9ece6a',
     waifuTag: 'megumin',
-    fallbackGif: 'https://media.tenor.com/5QKQHH4m2xkAAAAC/anime-sleep.gif',
+    fallbackGif: 'https://nekos.best/api/v2/sleep/611a318f-1645-48f4-9cc0-099eb8d817d9.gif',
     activities: [
       { id: 'sleeping', details: 'Sleeping', state: 'Do not disturb 💤', emoji: '💤', largeImageKey: 'sleep', largeImageText: 'Sleeping' },
       { id: 'napping', details: 'Napping', state: 'Power nap mode', emoji: '😴', largeImageKey: 'nap', largeImageText: 'Napping' },
@@ -73,7 +67,7 @@ export const ACTIVITY_CATEGORIES = [
     emoji: '💻',
     color: '#bb9af7',
     waifuTag: 'awoo',
-    fallbackGif: 'https://media.tenor.com/7r-BGEoIoh4AAAAC/anime-typing.gif',
+    fallbackGif: 'https://nekos.best/api/v2/bored/82f8fec0-d651-4905-a739-5917d728f89f.gif',
     activities: [
       { id: 'coding', details: 'Coding', state: 'Building something cool', emoji: '💻', largeImageKey: 'coding', largeImageText: 'Coding' },
       { id: 'studying', details: 'Studying', state: 'Brain gains 📖', emoji: '📖', largeImageKey: 'studying', largeImageText: 'Studying' },
@@ -89,7 +83,7 @@ export const ACTIVITY_CATEGORIES = [
     emoji: '✨',
     color: '#ff9e64',
     waifuTag: 'cry',
-    fallbackGif: 'https://media.tenor.com/1iSARpjQW0AAAAAC/anime-wave.gif',
+    fallbackGif: 'https://nekos.best/api/v2/wave/e6f276a8-11f1-4ad0-b1e0-3fa91678e2f4.gif',
     activities: [
       { id: 'streaming', details: 'Streaming', state: 'Live now 📺', emoji: '📺', largeImageKey: 'streaming', largeImageText: 'Streaming' },
       { id: 'watching', details: 'Watching', state: 'Movie night 🎬', emoji: '🎬', largeImageKey: 'watching', largeImageText: 'Watching' },
@@ -102,20 +96,11 @@ export const ACTIVITY_CATEGORIES = [
 ];
 
 export const ALL_ACTIVITIES = ACTIVITY_CATEGORIES.flatMap((c) =>
-  c.activities.map((a) => ({ ...a, category: c.id, categoryColor: c.color, waifuTag: c.waifuTag, fallbackGif: c.fallbackGif }))
+  c.activities.map((a) => ({
+    ...a,
+    category: c.id,
+    categoryColor: c.color,
+    waifuTag: c.waifuTag,
+    fallbackGif: c.fallbackGif,
+  }))
 );
-
-// Fetch with timeout
-export async function fetchWaifuImage(tag) {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(`https://api.waifu.pics/sfw/${tag}`, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!response.ok) throw new Error('API error');
-    const data = await response.json();
-    return data.url || null;
-  } catch (e) {
-    return null;
-  }
-}
