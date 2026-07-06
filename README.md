@@ -116,17 +116,14 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 ## ⬇️ Download
 
 <!-- DOWNLOADS_START -->
-**Latest: v4.0.1** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.1)
+**Latest: v4.0.5** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.5)
 
 **Total downloads (latest release):** 0 · [live stats on Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 
 | Platform | File | Downloads |
 |----------|------|-----------|
-| Windows | [**Smiley-Setup-4.0.1.exe**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-Setup-4.0.1.exe) | 0 |
-| macOS Apple Silicon | [**Smiley-4.0.1-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.1-arm64.dmg) | 0 |
-| macOS Intel | [**Smiley-4.0.1-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.1-x64.dmg) | 0 |
-| Linux (AppImage) | [**Smiley-4.0.1.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.1.AppImage) | 0 |
-| Linux (.deb) | [**Smiley-4.0.1.deb**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.1.deb) | 0 |
+| macOS Apple Silicon | [**Smiley-4.0.5-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.5-arm64.dmg) | 0 |
+| macOS Intel | [**Smiley-4.0.5-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.0.5-x64.dmg) | 0 |
 <!-- DOWNLOADS_END -->
 
 > **Needs:** Discord **desktop** app (not browser), macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](docs/MINIMUM-REQUIREMENTS.md)
