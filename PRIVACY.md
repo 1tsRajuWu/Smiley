@@ -14,7 +14,7 @@ Smiley doesn't collect your data. Nothing leaves your machine except optional up
 | Theme, timer, window size | Your settings |
 | Custom GIFs you upload | Your files |
 
-Config is encrypted with OS keychain / DPAPI where available.
+Config is encrypted locally on disk (AES-256-GCM); nothing is stored in the system keychain.
 
 ## What talks to the internet
 

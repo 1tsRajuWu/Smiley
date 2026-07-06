@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage, globalShortcut, clipboard, screen, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -81,16 +81,17 @@ function getInstallLocationWarning() {
   return null;
 }
 
-// ─── Encryption (OS-level safeStorage + AES fallback) ────────────────
+// ─── Encryption (AES-256-GCM, no OS keychain) ──────────────────────
+const CONFIG_CIPHER_SALT = 'smiley-salt-v1';
+
+function getConfigCipherKey() {
+  return crypto.scryptSync(app.getPath('userData'), CONFIG_CIPHER_SALT, 32);
+}
+
 function encryptConfig(plainObj) {
   try {
     const json = JSON.stringify(plainObj);
-    if (safeStorage.isEncryptionAvailable()) {
-      const encrypted = safeStorage.encryptString(json);
-      return { v: 2, data: encrypted.toString('base64') };
-    }
-    // AES-256-GCM fallback
-    const key = crypto.scryptSync(app.getPath('userData'), 'smiley-salt-v1', 32);
+    const key = getConfigCipherKey();
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     let encrypted = cipher.update(json, 'utf8', 'base64');
@@ -105,15 +106,14 @@ function encryptConfig(plainObj) {
 function decryptConfig(encryptedObj) {
   try {
     if (!encryptedObj || typeof encryptedObj.v !== 'number') {
-      // Legacy plain JSON
       return encryptedObj || {};
     }
-    if (encryptedObj.v === 2 && safeStorage.isEncryptionAvailable()) {
-      const decrypted = safeStorage.decryptString(Buffer.from(encryptedObj.data, 'base64'));
-      return JSON.parse(decrypted);
+    if (encryptedObj.v === 2) {
+      // Legacy OS keychain format — intentionally not migrated (avoids keychain prompt)
+      return { __keychainMigration: true };
     }
     if (encryptedObj.v === 1) {
-      const key = crypto.scryptSync(app.getPath('userData'), 'smiley-salt-v1', 32);
+      const key = getConfigCipherKey();
       const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(encryptedObj.iv, 'base64'));
       decipher.setAuthTag(Buffer.from(encryptedObj.tag, 'base64'));
       let decrypted = decipher.update(encryptedObj.data, 'base64', 'utf8');
@@ -173,6 +173,7 @@ const DEFAULT_CONFIG = {
   favoriteActivities: [],
 };
 let config = { ...DEFAULT_CONFIG };
+let configMigrationNotice = null;
 
 function loadConfig() {
   const securePath = getUserDataPath('config.secure');
@@ -181,6 +182,16 @@ function loadConfig() {
     if (fs.existsSync(securePath)) {
       const raw = JSON.parse(fs.readFileSync(securePath, 'utf8'));
       const decrypted = decryptConfig(raw);
+      if (decrypted?.__keychainMigration) {
+        configMigrationNotice = {
+          title: 'Settings reset',
+          message: 'Smiley updated how settings are stored.',
+          detail: 'Your previous settings used macOS Keychain and could not be migrated automatically. Defaults were restored — you can reconfigure theme, favorites, and other preferences in Settings.',
+        };
+        config = { ...DEFAULT_CONFIG };
+        fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
+        return;
+      }
       config = { ...DEFAULT_CONFIG, ...decrypted };
       delete config.clientId;
       return;
@@ -1370,6 +1381,18 @@ app.whenReady().then(async () => {
         title: installWarning.title,
         message: installWarning.message,
         detail: installWarning.detail,
+        buttons: ['OK'],
+      });
+    });
+  }
+
+  if (configMigrationNotice && mainWindow) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: configMigrationNotice.title,
+        message: configMigrationNotice.message,
+        detail: configMigrationNotice.detail,
         buttons: ['OK'],
       });
     });
