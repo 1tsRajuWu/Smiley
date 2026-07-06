@@ -7,9 +7,9 @@
   --bg-card: #161922;
   --border: rgba(255,255,255,0.08);
   --border-hover: rgba(255,255,255,0.14);
-  --text: #e4e6ed;
-  --text-muted: #8b93a8;
-  --text-dim: #6b7288;
+  --text: #e8eaf2;
+  --text-muted: #a0a8bc;
+  --text-dim: #7a8298;
   --accent: #6b9fff;
   --accent-glow: rgba(107,159,255,0.22);
   --accent-soft: rgba(107,159,255,0.12);
@@ -74,9 +74,9 @@
   --bg-card: #08080c;
   --border: rgba(255,255,255,0.06);
   --border-hover: rgba(255,255,255,0.10);
-  --text: #c8c8d4;
-  --text-muted: #7a7a8c;
-  --text-dim: #5a5a6a;
+  --text: #d0d4e0;
+  --text-muted: #8e94a8;
+  --text-dim: #6a7080;
   --accent: #6a8ec8;
   --accent-glow: rgba(106,142,200,0.18);
   --accent-soft: rgba(106,142,200,0.10);
@@ -167,9 +167,9 @@
   --bg-card: #09090f;
   --border: rgba(0,255,245,0.10);
   --border-hover: rgba(0,255,245,0.18);
-  --text: #e4faf6;
-  --text-muted: #6ab8b4;
-  --text-dim: #3a7878;
+  --text: #e8faf8;
+  --text-muted: #7ec8c4;
+  --text-dim: #4a8888;
   --accent: #00e8de;
   --accent-glow: rgba(0,232,222,0.22);
   --accent-soft: rgba(0,232,222,0.10);
@@ -506,7 +506,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); -web
 .update-banner.visible { display: flex; }
 .update-banner-actions { display: flex; gap: 8px; }
 .update-banner .btn { padding: 6px 12px; font-size: 0.78rem; }
-.update-banner .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
+.update-banner #updateBannerText { font-weight: 500; color: var(--text); flex: 1; min-width: 0; }
 
 /* Responsive */
 @media (max-width: 900px) {

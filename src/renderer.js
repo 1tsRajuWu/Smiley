@@ -122,19 +122,30 @@ async function resolveGifUrl(activity) {
 }
 
 function setCharacterDisplay(url, source) {
-  characterLoading.style.display = 'none';
   if (!url) {
+    characterLoading.style.display = 'none';
     characterGif.style.display = 'none';
     characterGif.classList.remove('character-gif-loaded');
+    characterGif.removeAttribute('src');
     characterSource.textContent = '';
     return;
   }
   characterGif.classList.remove('character-gif-loaded');
-  characterGif.onload = () => characterGif.classList.add('character-gif-loaded');
-  characterGif.onerror = () => characterGif.classList.remove('character-gif-loaded');
+  characterLoading.style.display = 'flex';
+  characterGif.style.display = 'none';
+  const showGif = () => {
+    characterLoading.style.display = 'none';
+    characterGif.style.display = 'block';
+    characterGif.classList.add('character-gif-loaded');
+  };
+  const hideLoading = () => {
+    characterLoading.style.display = 'none';
+    characterGif.classList.remove('character-gif-loaded');
+  };
+  characterGif.onload = showGif;
+  characterGif.onerror = hideLoading;
   characterGif.src = url;
-  characterGif.style.display = 'block';
-  if (characterGif.complete) characterGif.classList.add('character-gif-loaded');
+  if (characterGif.complete && characterGif.naturalWidth > 0) showGif();
   characterSource.textContent = source;
 }
 
@@ -562,7 +573,10 @@ function handleUpdateStatus(data) {
       updateState.percent = data.percent ?? updateState.percent;
       if (updateState.dismissed) break;
       if (updateBannerText) {
-        updateBannerText.textContent = `Downloading update… ${updateState.percent}%`;
+        const pct = updateState.percent;
+        const ver = data.version ? `v${data.version}` : 'update';
+        updateBannerText.textContent =
+          pct >= 99 ? `Finishing download of ${ver}…` : `Downloading ${ver}… ${pct}%`;
       }
       updateBanner?.classList.add('visible');
       syncUpdateBannerButtons();

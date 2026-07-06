@@ -16,7 +16,7 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 <br>
 
-**[⬇️ Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** &nbsp;·&nbsp; 🐛 [Report a bug](https://github.com/1tsRajuWu/Smiley/issues) &nbsp;·&nbsp; ⚡ [Smiley.Native](README-NATIVE.md) (lightweight)
+**[⬇️ Download latest](https://github.com/1tsRajuWu/Smiley/releases/latest)** &nbsp;·&nbsp; 🐛 [Report a bug](https://github.com/1tsRajuWu/Smiley/issues)
 
 </div>
 
@@ -24,7 +24,7 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 ## ⬇️ Download
 
-**Current release: v2.1.12** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
+**Current release: v3.0.0** — pick your platform below, or grab everything from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest).
 
 > **System requirements:** macOS 11+, Windows 10 (1809+) / 11, Linux Ubuntu 20.04+. Apple Silicon Macs (M1–**M5**) use the **arm64** DMG. Details: **[docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)**.
 
@@ -32,21 +32,21 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 | | Download | Notes |
 |---|----------|-------|
-| **Installer** (recommended) | [**Smiley-Setup-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Setup-2.1.12.exe) | Start menu + desktop shortcut |
-| **Portable** | [**Smiley-Portable-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Portable-2.1.12.exe) | No install — run from anywhere |
+| **Installer** (recommended) | [**Smiley-Setup-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Setup-3.0.0.exe) | Windows 10 (1809+) / 11 · Start menu + desktop shortcut |
+| **Portable** | [**Smiley-Portable-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Portable-3.0.0.exe) | No install — run from anywhere |
 
-[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Setup-2.1.12.exe)
-[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Portable-2.1.12.exe)
+[![Download Windows Setup](https://img.shields.io/badge/🪟_Windows-Setup-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Setup-3.0.0.exe)
+[![Download Windows Portable](https://img.shields.io/badge/🪟_Portable-1E1E1E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Portable-3.0.0.exe)
 
 ### 🍎 macOS
 
 | Chip | Download |
 |------|----------|
-| **Apple Silicon** (M1/M2/M3/M4) | [**Smiley-2.1.12-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-arm64.dmg) |
-| **Intel** (pre-2020 Macs) | [**Smiley-2.1.12-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-x64.dmg) |
+| **Apple Silicon** (M1–M5) | [**Smiley-3.0.0-arm64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-arm64.dmg) |
+| **Intel** (pre-2020 Macs) | [**Smiley-3.0.0-x64.dmg**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-x64.dmg) |
 
-[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-arm64.dmg)
-[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12-x64.dmg)
+[![Download Mac ARM](https://img.shields.io/badge/🍎_Apple_Silicon-DMG-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-arm64.dmg)
+[![Download Mac Intel](https://img.shields.io/badge/🍎_Intel-DMG-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0-x64.dmg)
 
 > macOS might block the first launch — that's Gatekeeper, not a virus. See [Installing → macOS](#-macos) below.
 
@@ -54,24 +54,11 @@ Pick eating, gaming, coding, chilling… Smiley handles the rest. No Discord Dev
 
 | Format | Download | Notes |
 |--------|----------|-------|
-| **AppImage** | [**Smiley-2.1.12.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.AppImage) | Works on most distros — `chmod +x` then run |
-| **.deb** | [**Smiley-2.1.12.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.deb) | Debian / Ubuntu / Mint |
+| **AppImage** | [**Smiley-3.0.0.AppImage**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.AppImage) | Works on most distros — `chmod +x` then run |
+| **.deb** | [**Smiley-3.0.0.deb**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.deb) | Debian / Ubuntu / Mint |
 
-[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.AppImage)
-[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-2.1.12.deb)
-
-### ⚡ Smiley.Native — for low-end PCs (~25 MB)
-
-No Electron. No Chromium. Same Discord presence, way less RAM. Perfect if the full app feels heavy on your machine.
-
-| Platform | Download |
-|----------|----------|
-| Windows | [**Smiley-Native-2.1.12-win-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-win-x64.zip) |
-| macOS ARM | [**Smiley-Native-2.1.12-osx-arm64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-osx-arm64.zip) |
-| macOS Intel | [**Smiley-Native-2.1.12-osx-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-osx-x64.zip) |
-| Linux | [**Smiley-Native-2.1.12-linux-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Native-2.1.12-linux-x64.zip) |
-
-👉 Full details: **[README-NATIVE.md](README-NATIVE.md)**
+[![Download Linux AppImage](https://img.shields.io/badge/🐧_AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.AppImage)
+[![Download Linux deb](https://img.shields.io/badge/🐧_.deb-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-3.0.0.deb)
 
 ---
 
@@ -154,12 +141,12 @@ Smiley ships with a bundled Discord Client ID. You don't need to touch the Devel
 
 ### 🪟 Windows
 
-1. Download [**Smiley-Setup-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Setup-2.1.12.exe)
+1. Download [**Smiley-Setup-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Setup-3.0.0.exe)
 2. Run the installer
 3. If **SmartScreen** pops up → **More info** → **Run anyway** (app isn't code-signed yet — it's safe, [source is here](https://github.com/1tsRajuWu/Smiley))
 4. Launch from Start or desktop shortcut. Discord desktop must be open.
 
-**Portable?** Grab [**Smiley-Portable-2.1.12.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.12/Smiley-Portable-2.1.12.exe) and double-click. No install needed.
+**Portable?** Grab [**Smiley-Portable-3.0.0.exe**](https://github.com/1tsRajuWu/Smiley/releases/download/v3.0.0/Smiley-Portable-3.0.0.exe) and double-click. No install needed.
 
 ---
 
@@ -203,8 +190,7 @@ That means the app **crashed on launch**, not Gatekeeper. Try:
 1. Delete Smiley from Applications
 2. Re-download from [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 3. Run the terminal fix below, then install again
-4. Still crashing? Try **[Smiley.Native](README-NATIVE.md)** — lighter, no Chromium
-5. [Open an issue](https://github.com/1tsRajuWu/Smiley/issues) with your macOS version
+4. [Open an issue](https://github.com/1tsRajuWu/Smiley/issues) with your macOS version
 
 #### Terminal fix
 
@@ -224,14 +210,14 @@ From a cloned repo: `./scripts/install-mac.sh /Applications/Smiley.app`
 **AppImage** (most distros):
 
 ```bash
-chmod +x Smiley-2.1.12.AppImage
-./Smiley-2.1.12.AppImage
+chmod +x Smiley-3.0.0.AppImage
+./Smiley-3.0.0.AppImage
 ```
 
 **Debian / Ubuntu (.deb):**
 
 ```bash
-sudo dpkg -i Smiley-2.1.12.deb
+sudo dpkg -i Smiley-3.0.0.deb
 ```
 
 Launch from your app menu. Discord must be the **desktop** client — not web-only.
@@ -292,20 +278,6 @@ Also: **Settings → Check for Updates** or tray menu.
 > Dev builds (`npm start`) don't auto-update. Pull from git instead.
 
 Maintainers: see [docs/RELEASING.md](docs/RELEASING.md)
-
----
-
-## ⚡ Electron vs Smiley.Native
-
-| | 😊 Smiley (Electron) | ⚡ Smiley.Native |
-|---|---------------------|------------------|
-| Download size | ~150 MB+ | ~25–70 MB |
-| RAM | Higher | Lower |
-| Custom GIF upload | ✅ | ❌ |
-| Auto-update | ✅ | Opens Releases page |
-| Best for | Full experience | Low-end / old hardware |
-
-Both use the same Discord app ID and activity list. Pick what fits your machine.
 
 ---
 
@@ -375,12 +347,6 @@ Not for releases — bundled for you. Only if you clone and run <code>npm start<
 Discord <strong>desktop</strong> running? Not Invisible? No other app hogging RPC? Restart Discord, then Smiley.
 </details>
 
-<details>
-<summary><strong>Electron or Native — which one?</strong></summary>
-
-Same presence, different shell. Electron = full UI, custom uploads, auto-updates. Native = smaller, faster on weak PCs. <a href="README-NATIVE.md">README-NATIVE.md</a> has the details.
-</details>
-
 ---
 
 ## 📄 License & credits
@@ -401,6 +367,6 @@ Same presence, different shell. Electron = full UI, custom uploads, auto-updates
 
 **Made with 😊 by Raj**
 
-[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Issues](https://github.com/1tsRajuWu/Smiley/issues) · [Native build](README-NATIVE.md)
+[⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Issues](https://github.com/1tsRajuWu/Smiley/issues)
 
 </div>

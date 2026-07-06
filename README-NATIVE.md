@@ -1,25 +1,20 @@
 # ⚡ Smiley Native (.NET / Avalonia)
 
+> **Deprecated (v2.1.12+)** — Smiley.Native is no longer offered for download. Use the main **[Electron app](README.md)** instead. The `Smiley.Native/` source remains in the repo for development reference only.
+
 **Lightweight alternative to the Electron app** — recommended for low-end PCs.
 
 No Chromium. No Electron. Same Discord Rich Presence, way less RAM and disk space.
 
-👉 **Full app (Electron):** [README.md](README.md) · **Download Native builds:** [Releases v2.1.10](https://github.com/1tsRajuWu/Smiley/releases/tag/v2.1.10)
+👉 **Download the main app:** [README.md](README.md) · [Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 
 ---
 
-## ⬇️ Download (v2.1.10)
+## ⬇️ Download
 
-| Platform | Download |
-|----------|----------|
-| 🪟 Windows | [**Smiley-Native-2.1.10-win-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-win-x64.zip) |
-| 🍎 macOS ARM (M1+) | [**Smiley-Native-2.1.10-osx-arm64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-arm64.zip) |
-| 🍎 macOS Intel | [**Smiley-Native-2.1.10-osx-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-osx-x64.zip) |
-| 🐧 Linux | [**Smiley-Native-2.1.10-linux-x64.zip**](https://github.com/1tsRajuWu/Smiley/releases/download/v2.1.10/Smiley-Native-2.1.10-linux-x64.zip) |
+**No longer available.** Download the main Electron app from [README.md](README.md).
 
-Unzip and run `Smiley` (or `Smiley.exe` on Windows). Keep **Discord desktop** open.
-
----
+<!--
 
 ## Electron vs Native
 
@@ -47,7 +42,23 @@ Unzip and run `Smiley` (or `Smiley.exe` on Windows). Keep **Discord desktop** op
 
 ## Requirements
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) (or .NET 8+) — only for building from source
+### Minimum OS (end users)
+
+Self-contained builds bundle .NET 10 — no separate runtime install.
+
+| Platform | Minimum OS | Architecture | Artifact |
+|----------|------------|--------------|----------|
+| **macOS** | **14 Sonoma** or later | arm64 (M1–M5), Intel x64 | `Smiley-Native-{version}-osx-arm64.zip` or `osx-x64.zip` |
+| **Windows** | Windows 10 64-bit (1809+) or Windows 11 | x64 | `Smiley-Native-{version}-win-x64.zip` |
+| **Linux** | Ubuntu 22.04+, Debian 12+, Fedora 42+ | x64 | `Smiley-Native-{version}-linux-x64.zip` |
+
+Native needs **macOS 14+** (stricter than Electron’s macOS 11+). On Macs running 11–13, use the [Electron build](README.md) instead.
+
+Full matrix (Electron vs Native): **[docs/MINIMUM-REQUIREMENTS.md](docs/MINIMUM-REQUIREMENTS.md)**
+
+### Other
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) — only for building from source
 - **Discord desktop app** open (not Invisible mode)
 
 ## Run (development)
@@ -112,9 +123,4 @@ Discord Rich Presence **requires the desktop Discord client**. Mobile apps canno
 
 ## Which app to use?
 
-| Use case | App |
-|----------|-----|
-| Low-end PC, small download | **Smiley.Native** ⚡ |
-| Full web UI, auto-updater, custom animations upload | Smiley (Electron) 😊 |
-
-Both share the same Discord Application ID and activity list.
+Use **Smiley (Electron)** — the only supported desktop app. See [README.md](README.md).

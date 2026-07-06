@@ -60,13 +60,6 @@ Requires `GH_TOKEN` env var with `repo` scope, or logged-in `gh auth`.
 - Use **semver** in `package.json`: `MAJOR.MINOR.PATCH`
 - Tag must match: `v2.1.2` for version `2.1.2`
 
-## Smiley.Native (.NET)
-
-The lightweight native app does **not** auto-update yet. Users download new builds from GitHub Releases.
-
-- On startup, Native checks GitHub and opens the releases page if a newer version exists.
-- See [RELEASING-NATIVE.md](./RELEASING-NATIVE.md) for building native binaries.
-
 ## Troubleshooting
 
 | Problem | Fix |
