@@ -6,6 +6,10 @@
 
 const FETCH_TIMEOUT_MS = 6000;
 const DISCORD_IMAGE_MAX_LEN = 512;
+const FETCH_HEADERS = {
+  Accept: 'application/json',
+  'User-Agent': 'Smiley/3.1.4 (Discord Rich Presence)',
+};
 
 /** Per-category API config — nekos GIF endpoint + waifu still fallback */
 export const CATEGORY_SOURCES = {
@@ -21,15 +25,14 @@ export const NEKOS_ENDPOINTS = Object.fromEntries(
   Object.entries(CATEGORY_SOURCES).map(([k, v]) => [k, v.nekos])
 );
 
-/** Per-activity nekos.best overrides (when not set on activity object) */
+/** Per-activity nekos.best endpoint — must match activity meaning */
 export const ACTIVITY_NEKOS_ENDPOINTS = {
-  'eating-pizza': 'feed',
   'eating-sushi': 'nom',
   'eating-ramen': 'feed',
   'eating-burger': 'bite',
   'eating-tacos': 'nom',
   'eating-snacks': 'nom',
-  'cooking': 'feed',
+  cooking: 'feed',
   'eating-dessert': 'bite',
   gaming: 'yeet',
   ranked: 'kick',
@@ -43,8 +46,7 @@ export const ACTIVITY_NEKOS_ENDPOINTS = {
   listening: 'dance',
   meditating: 'cuddle',
   bath: 'happy',
-  coding: 'bored',
-  studying: 'bored',
+  studying: 'pat',
   meeting: 'wave',
   focus: 'pat',
   designing: 'smile',
@@ -57,17 +59,50 @@ export const ACTIVITY_NEKOS_ENDPOINTS = {
   shopping: 'happy',
 };
 
+/** Extra nekos endpoints to try when the primary is rate-limited */
+export const ACTIVITY_NEKOS_ALTERNATES = {
+  'eating-sushi': ['nom', 'bite'],
+  'eating-ramen': ['feed', 'nom'],
+  'eating-burger': ['bite', 'nom'],
+  'eating-tacos': ['nom', 'bite'],
+  'eating-snacks': ['nom', 'feed'],
+  cooking: ['feed', 'nom'],
+  'eating-dessert': ['bite', 'nom'],
+  gaming: ['yeet', 'dance'],
+  ranked: ['kick', 'yeet'],
+  coop: ['hug', 'wave'],
+  retro: ['dance', 'yeet'],
+  speedrun: ['run', 'kick'],
+  'vr-gaming': ['dance', 'yeet'],
+  sleeping: ['sleep'],
+  napping: ['sleep'],
+  reading: ['smile', 'wave'],
+  listening: ['dance', 'happy'],
+  meditating: ['cuddle', 'happy'],
+  bath: ['happy', 'cuddle'],
+  studying: ['pat', 'smile'],
+  meeting: ['wave', 'smile'],
+  focus: ['pat', 'smile'],
+  designing: ['smile', 'wink'],
+  writing: ['wink', 'smile'],
+  streaming: ['wave', 'dance'],
+  watching: ['happy', 'smile'],
+  traveling: ['run', 'wave'],
+  gym: ['kick', 'run'],
+  partying: ['dance', 'happy'],
+  shopping: ['happy', 'wave'],
+};
+
 /**
  * Verified direct HTTPS GIF URLs — used when live APIs fail.
- * Prefer nekos.best permalinks; Tenor links are UI-only tertiary fallbacks.
+ * Prefer nekos.best permalinks; Tenor links are curated tertiary fallbacks.
  */
 export const VERIFIED_FALLBACKS = {
   food: 'https://nekos.best/api/v2/nom/0d6e98ff-6a91-4d5d-b3cd-ede275f78f71.gif',
   gaming: 'https://nekos.best/api/v2/yeet/bd0af6f9-aabe-4d69-a467-4727ee6ebee0.gif',
   chill: 'https://nekos.best/api/v2/sleep/1d1824d2-eb00-4fa2-a56b-3aaf7edcc319.gif',
-  work: 'https://nekos.best/api/v2/bored/50930205-bb33-405e-84fd-c8d58c27e8a9.gif',
+  work: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif',
   social: 'https://nekos.best/api/v2/wave/810920bc-280c-42f3-ade8-33a780484af0.gif',
-  'eating-pizza': 'https://nekos.best/api/v2/feed/e480b6f8-aa99-4f36-b112-7bda61bf4ab8.gif',
   'eating-sushi': 'https://nekos.best/api/v2/nom/0d6e98ff-6a91-4d5d-b3cd-ede275f78f71.gif',
   'eating-ramen': 'https://nekos.best/api/v2/feed/e480b6f8-aa99-4f36-b112-7bda61bf4ab8.gif',
   'eating-burger': 'https://nekos.best/api/v2/bite/cdff6f6e-5bdf-47ce-9d54-01c9bcdebb3c.gif',
@@ -86,8 +121,7 @@ export const VERIFIED_FALLBACKS = {
   listening: 'https://nekos.best/api/v2/dance/2fa17d31-404a-4d50-b092-4448d403a59e.gif',
   meditating: 'https://nekos.best/api/v2/cuddle/e7e003a0-f6a2-4bed-84c8-66eb730a2abd.gif',
   bath: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif',
-  coding: 'https://nekos.best/api/v2/bored/50930205-bb33-405e-84fd-c8d58c27e8a9.gif',
-  studying: 'https://nekos.best/api/v2/bored/50930205-bb33-405e-84fd-c8d58c27e8a9.gif',
+  studying: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif',
   meeting: 'https://nekos.best/api/v2/wave/810920bc-280c-42f3-ade8-33a780484af0.gif',
   focus: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif',
   designing: 'https://nekos.best/api/v2/smile/f2dc0289-303a-44fa-9ad9-de84f20802c1.gif',
@@ -100,7 +134,41 @@ export const VERIFIED_FALLBACKS = {
   shopping: 'https://nekos.best/api/v2/happy/690a874e-0a3f-4d8e-ab3e-e0b6e82c993a.gif',
 };
 
-/** Session cache — same activity keeps the same resolved image until app restart */
+/** Curated SFW Tenor GIFs that match each activity (verified HTTP 200) */
+export const ACTIVITY_TENOR_FALLBACKS = {
+  'eating-sushi': 'https://media.tenor.com/KE361QFenNcAAAAM/anime-refei%C3%A7%C3%A3o-jap%C3%A3o-comida.gif',
+  'eating-ramen': 'https://media.tenor.com/3hCp28Y4JcUAAAAM/hungry-ramen.gif',
+  'eating-burger': 'https://media.tenor.com/uk9xO0xpWoIAAAAM/burger-eating.gif',
+  'eating-tacos': 'https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif',
+  'eating-snacks': 'https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif',
+  cooking: 'https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif',
+  'eating-dessert': 'https://media.tenor.com/DTRz6D1e5ZEAAAAM/eating-dessert-happily.gif',
+  gaming: 'https://media.tenor.com/9tbKJeCFPaUAAAAd/konata-gaming.gif',
+  ranked: 'https://media.tenor.com/o52AZQZ_PloAAAAM/kick-anime.gif',
+  coop: 'https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif',
+  retro: 'https://media.tenor.com/TxflfpxQNgcAAAAM/happy-dance.gif',
+  speedrun: 'https://media.tenor.com/mUIXigPWPuYAAAAM/anime-anime-girl-running.gif',
+  'vr-gaming': 'https://media.tenor.com/qIvEeou-1FIAAAAM/play-network-anime-girl.gif',
+  sleeping: 'https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif',
+  napping: 'https://media.tenor.com/aeDeYPV8t1IAAAAM/sleepy-sleep.gif',
+  reading: 'https://media.tenor.com/rJxGy9CYwHoAAAAM/anime-read.gif',
+  listening: 'https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif',
+  meditating: 'https://media.tenor.com/H2TduYuD5S0AAAAM/anime-miss-kobayashis-dragon-maid.gif',
+  bath: 'https://media.tenor.com/M3nkdB81tkQAAAAM/virgin-road-anime-relaxed.gif',
+  studying: 'https://media.tenor.com/etfl8OlhPIYAAAAM/studying-anime-girl.gif',
+  meeting: 'https://media.tenor.com/_9W9bVa4AHgAAAAM/wavi-anime.gif',
+  focus: 'https://media.tenor.com/qhe3ahMJ_i0AAAAM/anime-anime-pat.gif',
+  designing: 'https://media.tenor.com/zoWI1vGHkecAAAAM/good-morning-marin-kitagawa.gif',
+  writing: 'https://media.tenor.com/cwOI3DtZRzgAAAAM/anya-forger-taking-notes.gif',
+  streaming: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif',
+  watching: 'https://media.tenor.com/P8jCycbR6k8AAAAM/yosuke-tickets.gif',
+  traveling: 'https://media.tenor.com/gPjII19ICdIAAAAM/road-road-trip-move-dragon-ball-anime-tyan-vibe-car.gif',
+  gym: 'https://media.tenor.com/0weeqPoyCWIAAAAM/how-heavy-are-the-dumbbells-that-you-lift-dumbbell-nan-kilo-moteru.gif',
+  partying: 'https://media.tenor.com/ymPYRZ4YGbEAAAAM/partyhard-party.gif',
+  shopping: 'https://media.tenor.com/9M34adQOtNwAAAAM/shopping-hi.gif',
+};
+
+/** Session cache — keyed by activity.id */
 const sessionImageCache = new Map();
 
 export function clearActivityImageCache() {
@@ -130,10 +198,22 @@ function uniqueUrls(urls) {
 async function fetchJson(url, signal) {
   const response = await fetch(url, {
     signal,
-    headers: { Accept: 'application/json' },
+    headers: FETCH_HEADERS,
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
+}
+
+function getNekosEndpoints(activity) {
+  const primary = activity.nekosEndpoint || ACTIVITY_NEKOS_ENDPOINTS[activity.id];
+  const alternates = ACTIVITY_NEKOS_ALTERNATES[activity.id] || [];
+  const category = getCategorySources(activity.category).nekos;
+  const seen = new Set();
+  return [primary, ...alternates, category].filter((ep) => {
+    if (!ep || seen.has(ep)) return false;
+    seen.add(ep);
+    return true;
+  });
 }
 
 /** nekos.best — free SFW anime GIF API */
@@ -149,6 +229,15 @@ export async function fetchNekosBest(endpoint) {
   } catch {
     return null;
   }
+}
+
+/** Try multiple nekos endpoints until one succeeds */
+export async function fetchNekosWithRetry(endpoints) {
+  for (const endpoint of endpoints) {
+    const url = await fetchNekosBest(endpoint);
+    if (url) return { url, endpoint };
+  }
+  return null;
 }
 
 /** waifu.pics — free SFW anime image API */
@@ -170,14 +259,14 @@ function getCategorySources(category) {
   return CATEGORY_SOURCES[category] || CATEGORY_SOURCES.food;
 }
 
-function getNekosEndpoint(activity) {
-  if (activity.nekosEndpoint) return activity.nekosEndpoint;
-  return ACTIVITY_NEKOS_ENDPOINTS[activity.id] || getCategorySources(activity.category).nekos || 'neko';
-}
-
 function getWaifuTag(activity) {
   if (activity.waifuTag) return activity.waifuTag;
   return getCategorySources(activity.category).waifu || null;
+}
+
+export function getTenorFallback(activity) {
+  if (!activity) return null;
+  return activity.tenorFallback || ACTIVITY_TENOR_FALLBACKS[activity.id] || null;
 }
 
 export function getVerifiedFallback(activity) {
@@ -190,25 +279,32 @@ export function getVerifiedFallback(activity) {
   );
 }
 
-/** Ordered HTTPS fallbacks for <img> onerror chains (nekos → Tenor). */
+/** Ordered HTTPS fallbacks for <img> onerror chains */
 export function getActivityFallbackUrls(activity) {
   if (!activity) return [];
+  const verified = getVerifiedFallback(activity);
+  const tenor = getTenorFallback(activity);
   return uniqueUrls([
-    getVerifiedFallback(activity),
-    activity.tenorFallback,
+    verified,
+    tenor,
     VERIFIED_FALLBACKS[activity.category],
     VERIFIED_FALLBACKS.food,
   ]);
 }
 
-function isValidCacheEntry(entry) {
-  return entry && isValidDiscordImageUrl(entry.url) && isValidDiscordImageUrl(entry.discordUrl);
+function isValidCacheEntry(entry, activityId) {
+  return (
+    entry &&
+    entry.activityId === activityId &&
+    isValidDiscordImageUrl(entry.url) &&
+    isValidDiscordImageUrl(entry.discordUrl)
+  );
 }
 
 function readCache(activityId) {
   const cached = sessionImageCache.get(activityId);
   if (!cached) return null;
-  if (!isValidCacheEntry(cached)) {
+  if (!isValidCacheEntry(cached, activityId)) {
     sessionImageCache.delete(activityId);
     return null;
   }
@@ -216,105 +312,113 @@ function readCache(activityId) {
 }
 
 function cacheResult(activityId, result) {
-  if (!isValidCacheEntry(result)) return result;
-  sessionImageCache.set(activityId, result);
-  return result;
+  const entry = { ...result, activityId };
+  if (!isValidCacheEntry(entry, activityId)) return result;
+  sessionImageCache.set(activityId, entry);
+  return entry;
+}
+
+function buildResult(activityId, { url, discordUrl, source, fallbacks }) {
+  return { url, discordUrl, source, fallbacks, activityId };
 }
 
 /**
  * Resolve image for UI preview and Discord RPC.
- * @returns {Promise<{ url: string, discordUrl: string, source: string, fallbacks: string[] }>}
+ * @returns {Promise<{ url: string, discordUrl: string, source: string, fallbacks: string[], activityId: string }>}
  */
 export async function resolveDiscordImageUrl(
   activity,
-  { animationsEnabled = true, customDataUrl = null } = {}
+  { animationsEnabled = true, customDataUrl = null, bustCache = false } = {}
 ) {
   const verified = getVerifiedFallback(activity);
+  const tenor = getTenorFallback(activity);
   const fallbacks = getActivityFallbackUrls(activity);
 
+  if (!activity?.id) {
+    return buildResult(null, {
+      url: verified,
+      discordUrl: verified,
+      source: 'nekos.best · fallback',
+      fallbacks,
+    });
+  }
+
+  if (bustCache) clearActivityImageCacheEntry(activity.id);
+
   if (customDataUrl) {
-    return {
+    return buildResult(activity.id, {
       url: customDataUrl,
       discordUrl: verified,
       source: 'Custom (Discord uses activity GIF)',
       fallbacks,
-    };
+    });
   }
 
   if (animationsEnabled === false) {
-    return { url: verified, discordUrl: verified, source: 'nekos.best · cached', fallbacks };
+    const still = tenor || verified;
+    return buildResult(activity.id, {
+      url: still,
+      discordUrl: still,
+      source: 'Static fallback',
+      fallbacks,
+    });
   }
 
   const cached = readCache(activity.id);
   if (cached) return { ...cached, fallbacks };
 
-  const nekosEndpoint = getNekosEndpoint(activity);
   const waifuTag = getWaifuTag(activity);
-  const preferWaifu = activity.preferWaifu === true;
+  const nekosEndpoints = getNekosEndpoints(activity);
 
-  if (preferWaifu && waifuTag) {
-    const waifuUrl = await fetchWaifuImage(waifuTag);
-    if (waifuUrl) {
-      return cacheResult(activity.id, {
-        url: waifuUrl,
-        discordUrl: waifuUrl,
-        source: `waifu.pics · ${waifuTag}`,
+  const nekosResult = await fetchNekosWithRetry(nekosEndpoints);
+  if (nekosResult) {
+    return cacheResult(
+      activity.id,
+      buildResult(activity.id, {
+        url: nekosResult.url,
+        discordUrl: nekosResult.url,
+        source: `nekos.best · ${nekosResult.endpoint}`,
         fallbacks,
-      });
-    }
-  }
-
-  const nekosUrl = await fetchNekosBest(nekosEndpoint);
-  if (nekosUrl) {
-    return cacheResult(activity.id, {
-      url: nekosUrl,
-      discordUrl: nekosUrl,
-      source: `nekos.best · ${nekosEndpoint}`,
-      fallbacks,
-    });
-  }
-
-  const categoryNekos = getCategorySources(activity.category).nekos;
-  if (categoryNekos && categoryNekos !== nekosEndpoint) {
-    const categoryUrl = await fetchNekosBest(categoryNekos);
-    if (categoryUrl) {
-      return cacheResult(activity.id, {
-        url: categoryUrl,
-        discordUrl: categoryUrl,
-        source: `nekos.best · ${categoryNekos}`,
-        fallbacks,
-      });
-    }
+      })
+    );
   }
 
   if (waifuTag) {
     const waifuUrl = await fetchWaifuImage(waifuTag);
     if (waifuUrl) {
-      return cacheResult(activity.id, {
-        url: waifuUrl,
-        discordUrl: waifuUrl,
-        source: `waifu.pics · ${waifuTag}`,
-        fallbacks,
-      });
+      return cacheResult(
+        activity.id,
+        buildResult(activity.id, {
+          url: waifuUrl,
+          discordUrl: waifuUrl,
+          source: `waifu.pics · ${waifuTag}`,
+          fallbacks,
+        })
+      );
     }
   }
 
-  const tenorUrl = activity.tenorFallback;
-  if (isValidDiscordImageUrl(tenorUrl)) {
-    return cacheResult(activity.id, {
-      url: tenorUrl,
-      discordUrl: verified,
-      source: 'Tenor · fallback',
-      fallbacks,
-    });
+  if (isValidDiscordImageUrl(tenor)) {
+    return cacheResult(
+      activity.id,
+      buildResult(activity.id, {
+        url: tenor,
+        discordUrl: tenor,
+        source: 'Tenor · fallback',
+        fallbacks,
+      })
+    );
   }
 
-  return cacheResult(activity.id, {
-    url: verified,
-    discordUrl: verified,
-    source: 'nekos.best · fallback',
-    fallbacks,
-  });
+  return cacheResult(
+    activity.id,
+    buildResult(activity.id, {
+      url: verified,
+      discordUrl: verified,
+      source: 'nekos.best · fallback',
+      fallbacks,
+    })
+  );
 }
 
 /** Alias kept for existing imports */

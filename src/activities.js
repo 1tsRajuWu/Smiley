@@ -1,6 +1,6 @@
 // Anime image APIs — see discord-images.js for resolution pipeline.
 // API-sourced SFW anime only; no copyrighted character assets bundled.
-// Optional per-activity `buttons` (max 2, { label, url }) override default download link in main.js.
+// Optional per-activity `buttons` (max 2, { label, url }) override default GitHub links in main.js.
 export const WAIFU_TAGS = {
   food: 'neko',
   gaming: 'shinobu',
@@ -9,7 +9,12 @@ export const WAIFU_TAGS = {
   social: 'cry',
 };
 
-export { VERIFIED_FALLBACKS as FALLBACK_GIFS, fetchWaifuImage, fetchNekosBest } from './discord-images.js';
+export {
+  VERIFIED_FALLBACKS as FALLBACK_GIFS,
+  ACTIVITY_TENOR_FALLBACKS,
+  fetchWaifuImage,
+  fetchNekosBest,
+} from './discord-images.js';
 
 export const ACTIVITY_CATEGORIES = [
   {
@@ -20,16 +25,6 @@ export const ACTIVITY_CATEGORIES = [
     waifuTag: 'neko',
     fallbackGif: 'https://nekos.best/api/v2/nom/0d6e98ff-6a91-4d5d-b3cd-ede275f78f71.gif',
     activities: [
-      {
-        id: 'eating-pizza',
-        details: 'Eating',
-        state: 'Pizza night 🍕',
-        emoji: '🍕',
-        nekosEndpoint: 'feed',
-        tenorFallback: 'https://media.tenor.com/kCGjTZKFGmEAAAAd/anime-pizza.gif',
-        largeImageKey: 'pizza',
-        largeImageText: 'Pizza time',
-      },
       {
         id: 'eating-sushi',
         details: 'Eating',
@@ -109,7 +104,6 @@ export const ACTIVITY_CATEGORIES = [
         state: 'In the zone',
         emoji: '🎮',
         nekosEndpoint: 'yeet',
-        tenorFallback: 'https://media.tenor.com/9tbKJeCFPaUAAAAd/konata-gaming.gif',
         largeImageKey: 'gaming',
         largeImageText: 'Gaming',
       },
@@ -230,26 +224,14 @@ export const ACTIVITY_CATEGORIES = [
     emoji: '💻',
     color: '#bb9af7',
     waifuTag: 'awoo',
-    fallbackGif: 'https://nekos.best/api/v2/bored/50930205-bb33-405e-84fd-c8d58c27e8a9.gif',
+    fallbackGif: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif',
     activities: [
-      {
-        id: 'coding',
-        details: 'Coding',
-        state: 'Building something cool',
-        emoji: '💻',
-        preferWaifu: true,
-        waifuTag: 'awoo',
-        nekosEndpoint: 'bored',
-        tenorFallback: 'https://media.tenor.com/0AVbKGY_MxMAAAAd/coding-anime.gif',
-        largeImageKey: 'coding',
-        largeImageText: 'Coding',
-      },
       {
         id: 'studying',
         details: 'Studying',
         state: 'Brain gains 📖',
         emoji: '📖',
-        nekosEndpoint: 'bored',
+        nekosEndpoint: 'pat',
         largeImageKey: 'studying',
         largeImageText: 'Studying',
       },
@@ -305,7 +287,6 @@ export const ACTIVITY_CATEGORIES = [
         state: 'Live now 📺',
         emoji: '📺',
         nekosEndpoint: 'wave',
-        tenorFallback: 'https://media.tenor.com/HZLV0wdcQ4IAAAAd/love-live-female-singer.gif',
         largeImageKey: 'streaming',
         largeImageText: 'Streaming',
       },

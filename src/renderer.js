@@ -509,40 +509,16 @@ async function selectActivity(id) {
   selectedActivityId = id;
   renderActivityGrid();
 
-  // Immediate UI — don't block on GIF fetch
+  // Clear stale GIF immediately — don't block on fetch
+  clearGifDisplay();
   setCharacterLabel(activity);
   setPreviewDisplay(activity, null);
-  characterGif.classList.remove('character-gif-loaded');
   characterLoading.style.display = 'flex';
 
-  const fallbackUrls = getActivityFallbackUrls(activity);
-  const fallbackFields = discordImageFields(activity, fallbackUrls[0] || null);
-  const rpcPayload = {
-    id: activity.id,
-    details: activity.details,
-    state: activity.state,
-    category: activity.category,
-    ...fallbackFields,
-  };
-
+  const rpcPayload = buildRpcPayload(activity);
   const result = await window.smiley.setActivity(rpcPayload, !isReselect);
 
-  resolveGifUrl(activity)
-    .then(({ url, discordUrl, source, fallbacks }) => {
-      if (selectedActivityId !== id) return;
-      currentGifUrl = url;
-      currentDiscordImageUrl = discordUrl;
-      setPreviewDisplay(activity, url, fallbacks);
-      setCharacterDisplay(url, source, fallbacks);
-
-      if (discordUrl && discordUrl !== fallbackFields.discordImageUrl) {
-        const imageFields = discordImageFields(activity, discordUrl);
-        window.smiley.setActivity({ ...rpcPayload, ...imageFields }, false).catch(() => {});
-      }
-    })
-    .catch(() => {
-      if (selectedActivityId === id) characterLoading.style.display = 'none';
-    });
+  loadActivityGif(activity, { updateRpc: true, rpcPayload });
 
   if (result?.error) {
     showToast(result.error, 'error');
