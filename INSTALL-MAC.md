@@ -50,6 +50,11 @@ Then **right-click → Open** once as in Method A.
 
 ---
 
+
+## Duplicate apps in Applications?
+
+Each release DMG contains a single **Smiley.app** (ARM64 and Intel are separate files). Drag **once** into **Applications**. If you see **Smiley 2.app** or multiple copies, remove the extras and keep one **Smiley.app**.
+
 ## FAQ
 
 **Why not just sign it?**  

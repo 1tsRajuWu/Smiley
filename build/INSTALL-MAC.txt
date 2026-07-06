@@ -23,3 +23,4 @@ Still blocked?
 Or: System Settings → Privacy & Security → Open Anyway
 
 Full guide: https://github.com/1tsRajuWu/Smiley/blob/main/INSTALL-MAC.md
+Only one Smiley.app per DMG — drag once to Applications. Delete Smiley 2.app or other duplicates if Finder created them.
