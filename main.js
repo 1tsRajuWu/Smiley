@@ -203,7 +203,7 @@ function isAllowedExternalUrl(url) {
 }
 
 const CONFIG_PATCH_KEYS = new Set([
-  'theme', 'showTimer', 'animationsEnabled', 'customAnimation', 'customWallpaper',
+  'theme', 'uiVersion', 'showTimer', 'animationsEnabled', 'customAnimation', 'customWallpaper',
   'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
   'autoCheckUpdates', 'autoInstallUpdates', 'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'migrationNoticeShown', 'installWarningShown',
@@ -214,6 +214,7 @@ const MAX_IMPORT_BYTES = 512 * 1024;
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
   theme: 'dark',
+  uiVersion: 'v2',
   showTimer: true,
   animationsEnabled: true,
   customAnimation: null,

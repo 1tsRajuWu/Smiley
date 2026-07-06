@@ -1,0 +1,367 @@
+/**
+ * Smiley UI v2 — modern layout overrides on top of v1 tokens/components.
+ * Classic UI remains available via Settings → Appearance → Classic UI (v1).
+ */
+@import './styles-v1.css';
+
+/* ─── v2 design tokens ───────────────────────────────────────────── */
+:root,
+[data-ui-version='v2'] {
+  --v2-sidebar-width: 360px;
+  --v2-radius-lg: 18px;
+  --v2-surface: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  --v2-surface-elevated: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+  --v2-border-subtle: color-mix(in srgb, var(--border) 70%, transparent);
+  --v2-shadow-soft: 0 1px 0 color-mix(in srgb, #fff 4%, transparent) inset,
+    0 12px 40px rgba(0, 0, 0, 0.28);
+  --v2-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --v2-text-tracking: 0.01em;
+}
+
+[data-ui-version='v2'] body {
+  letter-spacing: var(--v2-text-tracking);
+}
+
+/* ─── App shell ────────────────────────────────────────────────────── */
+[data-ui-version='v2'] .app {
+  background:
+    radial-gradient(ellipse 90% 55% at 8% -8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 95% 105%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 50%),
+    var(--bg);
+}
+
+[data-ui-version='v2'] .content {
+  grid-template-columns: var(--v2-sidebar-width) 1fr;
+  gap: 22px;
+  padding: 10px 22px 18px;
+}
+
+/* ─── Header ───────────────────────────────────────────────────────── */
+[data-ui-version='v2'] .header,
+[data-ui-version='v2'] .app-header {
+  padding: 12px 22px 10px;
+  border-bottom: 1px solid var(--v2-border-subtle);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-ui-version='v2'][data-platform='darwin'] .header,
+[data-ui-version='v2'][data-platform='darwin'] .app-header {
+  padding-left: 84px;
+  padding-top: 18px;
+}
+
+[data-ui-version='v2'] .brand h1 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+[data-ui-version='v2'] .tagline {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-ui-version='v2'] .connection-pill {
+  padding: 7px 16px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: var(--v2-surface);
+  border-color: var(--v2-border-subtle);
+  box-shadow: var(--v2-shadow-card);
+}
+
+[data-ui-version='v2'] .window-control-btn {
+  width: 38px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+/* ─── Sidebar preview ───────────────────────────────────────────────── */
+[data-ui-version='v2'] .preview-sidebar {
+  gap: 14px;
+  padding-right: 2px;
+}
+
+[data-ui-version='v2'] .character-stage {
+  background: var(--v2-surface-elevated);
+  border-radius: var(--v2-radius-lg);
+  border-color: var(--v2-border-subtle);
+  box-shadow: var(--v2-shadow-soft);
+  padding: 22px 18px 16px;
+}
+
+[data-ui-version='v2'] .character-container {
+  width: 196px;
+  height: 196px;
+  border-radius: calc(var(--v2-radius-lg) - 4px);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-ui-version='v2'] .character-gif {
+  border-radius: calc(var(--v2-radius-lg) - 4px);
+}
+
+[data-ui-version='v2'] .character-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+[data-ui-version='v2'] .character-source {
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ─── Discord preview card ────────────────────────────────────────────── */
+[data-ui-version='v2'] .discord-card {
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface);
+  border-color: var(--v2-border-subtle);
+  box-shadow: var(--v2-shadow-soft);
+}
+
+[data-ui-version='v2'] .discord-card-inner {
+  padding: 16px;
+  gap: 16px;
+}
+
+[data-ui-version='v2'] .discord-art {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  border: 1px solid var(--v2-border-subtle);
+}
+
+[data-ui-version='v2'] .discord-details {
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+[data-ui-version='v2'] .discord-state {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin-top: 3px;
+  color: color-mix(in srgb, var(--text-muted) 92%, var(--text));
+}
+
+[data-ui-version='v2'] .preview-actions {
+  gap: 10px;
+  margin-top: 2px;
+}
+
+[data-ui-version='v2'] .preview-actions .btn {
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+/* ─── Donate banner ─────────────────────────────────────────────────── */
+[data-ui-version='v2'] .donate-banner {
+  border-radius: var(--v2-radius-lg);
+  padding: 16px 18px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-card) 90%, transparent),
+    color-mix(in srgb, var(--accent-soft) 55%, var(--bg-card))
+  );
+  box-shadow: var(--v2-shadow-soft);
+}
+
+[data-ui-version='v2'] .donate-banner-text strong {
+  font-size: 0.9rem;
+}
+
+[data-ui-version='v2'] .donate-banner-cta {
+  font-size: 0.68rem;
+  padding: 7px 14px;
+}
+
+/* ─── Activity picker ───────────────────────────────────────────────── */
+[data-ui-version='v2'] .picker-main {
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface-elevated);
+  border-color: var(--v2-border-subtle);
+  box-shadow: var(--v2-shadow-soft);
+}
+
+[data-ui-version='v2'] .picker-header {
+  padding: 16px 18px 12px;
+  background: color-mix(in srgb, var(--bg-elevated) 50%, transparent);
+}
+
+[data-ui-version='v2'] .category-tab {
+  font-size: 0.76rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+}
+
+[data-ui-version='v2'] .category-tab:hover {
+  background: color-mix(in srgb, var(--bg-card) 95%, #fff 2%);
+}
+
+[data-ui-version='v2'] .category-tab.active {
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--tab-color, var(--accent)) 35%, transparent);
+}
+
+[data-ui-version='v2'] .search-wrap input {
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 0.86rem;
+  background: color-mix(in srgb, var(--bg-card) 85%, transparent);
+}
+
+[data-ui-version='v2'] .activity-grid {
+  padding: 16px 18px 18px;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 14px;
+}
+
+[data-ui-version='v2'] .activity-card {
+  border-radius: 14px;
+  padding: 18px 12px 16px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  border-color: var(--v2-border-subtle);
+  box-shadow: var(--v2-shadow-card);
+}
+
+[data-ui-version='v2'] .activity-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  border-color: color-mix(in srgb, var(--card-accent, var(--accent)) 25%, var(--border-hover));
+}
+
+[data-ui-version='v2'] .activity-card.selected {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--card-accent, var(--accent)) 35%, transparent),
+    0 8px 22px color-mix(in srgb, var(--card-accent, var(--accent)) 18%, transparent);
+}
+
+[data-ui-version='v2'] .activity-name {
+  font-size: 0.86rem;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+}
+
+[data-ui-version='v2'] .activity-state {
+  font-size: 0.71rem;
+  line-height: 1.3;
+  margin-top: 5px;
+  color: var(--text-dim);
+}
+
+[data-ui-version='v2'] .quick-chip {
+  border-radius: 10px;
+  padding: 5px 12px;
+  font-size: 0.74rem;
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+}
+
+/* ─── Footer & update banner ────────────────────────────────────────── */
+[data-ui-version='v2'] .footer {
+  padding: 10px 22px 14px;
+  border-top: 1px solid var(--v2-border-subtle);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-ui-version='v2'] .update-banner.visible {
+  margin: 0 22px 10px;
+  border-radius: 12px;
+  background: var(--v2-surface);
+  box-shadow: var(--v2-shadow-card);
+}
+
+/* ─── Modals ────────────────────────────────────────────────────────── */
+[data-ui-version='v2'] .modal-content {
+  border-radius: var(--v2-radius-lg);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+[data-ui-version='v2'] .settings-tab {
+  font-size: 0.8rem;
+  padding: 13px 20px;
+}
+
+[data-ui-version='v2'] .theme-option {
+  border-radius: 12px;
+}
+
+[data-ui-version='v2'] .ui-version-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+[data-ui-version='v2'] .ui-version-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+[data-ui-version='v2'] .ui-version-option:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+}
+
+[data-ui-version='v2'] .ui-version-option.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+[data-ui-version='v2'] .ui-version-option strong {
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+[data-ui-version='v2'] .ui-version-option span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ─── Wallpaper glass on v2 ─────────────────────────────────────────── */
+[data-ui-version='v2'].has-wallpaper .character-stage,
+[data-ui-version='v2'].has-wallpaper .discord-card,
+[data-ui-version='v2'].has-wallpaper .donate-banner,
+[data-ui-version='v2'].has-wallpaper .activity-card,
+[data-ui-version='v2'].has-wallpaper .picker-main,
+[data-ui-version='v2'].has-wallpaper .header,
+[data-ui-version='v2'].has-wallpaper .footer {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  [data-ui-version='v2'] .content {
+    grid-template-columns: 300px 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  [data-ui-version='v2'] .content {
+    grid-template-columns: 1fr;
+    padding: 8px 14px 14px;
+  }
+}

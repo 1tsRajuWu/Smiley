@@ -15,7 +15,7 @@ Keywords: Discord Rich Presence, Discord RPC, animated status, anime GIF, Electr
 
 **Smiley** is a **Discord Rich Presence** app for **Windows, macOS, and Linux** that sets your profile status with **animated anime GIFs** — gaming, coding, eating, chilling, and more. No Developer Portal. No config files. Download, open Discord, click an activity. Done.
 
-[![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v4.0.7&color=5865F2)](https://1tsrajuwu.github.io/Smiley/)
+[![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v4.1.0&color=5865F2)](https://1tsrajuwu.github.io/Smiley/)
 [![downloads](https://img.shields.io/github/downloads/1tsRajuWu/Smiley/total?style=for-the-badge&color=57F287)](https://github.com/1tsRajuWu/Smiley/releases)
 [![platform](https://img.shields.io/badge/desktop-Windows%20%7C%20macOS%20%7C%20Linux-5865F2?style=for-the-badge)](https://1tsrajuwu.github.io/Smiley/)
 [![Discord Rich Presence](https://img.shields.io/badge/Discord-Rich%20Presence-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/)
@@ -115,7 +115,7 @@ Real GIF on your profile. Real preview in the app. Same image both places.
 **[Download Smiley](https://1tsrajuwu.github.io/Smiley/)** — pick your platform (Windows, macOS, Linux). [All releases →](https://github.com/1tsRajuWu/Smiley/releases)
 
 <!-- DOWNLOADS_START -->
-**Latest: v4.0.10** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.0.10)
+**Latest: v4.1.0** — [full release notes](https://github.com/1tsRajuWu/Smiley/releases/tag/v4.1.0)
 
 **Total downloads (latest release):** 0 · [live stats on Releases](https://github.com/1tsRajuWu/Smiley/releases/latest)
 

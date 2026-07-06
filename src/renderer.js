@@ -27,7 +27,6 @@ const $ = (sel) => document.querySelector(sel);
 const connectionPill = $('#connectionPill');
 const connectionText = $('#connectionText');
 const previewCard = $('#previewCard');
-const discordRpcHint = $('#discordRpcHint');
 const previewEmoji = $('#previewEmoji');
 const previewGif = $('#previewGif');
 const previewDetails = $('#previewDetails');
@@ -106,6 +105,8 @@ const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
+const uiVersionOptions = document.querySelectorAll('.ui-version-option');
+const uiStylesheet = $('#uiStylesheet');
 const launchAtLoginToggle = $('#launchAtLoginToggle');
 const hotkeyToggle = $('#hotkeyToggle');
 const hotkeyHint = $('#hotkeyHint');
@@ -223,6 +224,21 @@ function formatShortcutHint(mac = isMacPlatform) {
 
 function updateFooterShortcuts(mac = isMacPlatform) {
   if (footerShortcuts) footerShortcuts.textContent = formatShortcutHint(mac);
+}
+
+function applyUIVersion(version = 'v2') {
+  const uiVersion = version === 'v1' ? 'v1' : 'v2';
+  document.body.dataset.uiVersion = uiVersion;
+  if (uiStylesheet) {
+    uiStylesheet.href = uiVersion === 'v1' ? 'styles-v1.css' : 'styles-v2.css';
+  }
+  currentSettings.uiVersion = uiVersion;
+  uiVersionOptions.forEach((opt) => {
+    const active = opt.dataset.uiVersion === uiVersion;
+    opt.classList.toggle('active', active);
+    const input = opt.querySelector('input[type="radio"]');
+    if (input) input.checked = active;
+  });
 }
 
 function applyPlatformUI(cfg = {}) {
@@ -681,7 +697,6 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
-    if (discordRpcHint) discordRpcHint.hidden = true;
     return;
   }
 
@@ -694,7 +709,6 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   previewState.textContent = activity.state || '';
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
-  if (discordRpcHint) discordRpcHint.hidden = false;
 
   if (gifUrl && currentSettings.animationsEnabled !== false) {
     previewEmoji.style.display = 'none';
@@ -1110,6 +1124,7 @@ function openSettings(tab = 'general') {
     themeOptions.forEach((opt) => {
       opt.classList.toggle('active', opt.dataset.theme === (cfg.theme || 'dark'));
     });
+    applyUIVersion(cfg.uiVersion || 'v2');
 
     switchSettingsTab(tab);
 
@@ -1138,6 +1153,7 @@ async function handleSaveSettings(e) {
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
     theme: currentSettings.theme || 'dark',
+    uiVersion: currentSettings.uiVersion === 'v1' ? 'v1' : 'v2',
     customAnimation: activeCustomAnimation ? 'custom' : null,
     launchAtLogin: launchAtLoginToggle?.checked === true,
     hotkeyEnabled: hotkeyToggle?.checked !== false,
@@ -1150,6 +1166,7 @@ async function handleSaveSettings(e) {
   settingsModal.close();
 
   applyTheme(newSettings.theme);
+  applyUIVersion(newSettings.uiVersion);
   await applyWallpaper(wallpaperSettings);
 
   const timerEl = $('#previewTimer');
@@ -1889,6 +1906,12 @@ async function init() {
     });
   });
 
+  uiVersionOptions.forEach((opt) => {
+    opt.addEventListener('click', () => {
+      applyUIVersion(opt.dataset.uiVersion || 'v2');
+    });
+  });
+
   if (uploadWallpaperBtn) uploadWallpaperBtn.addEventListener('click', handleUploadWallpaper);
   if (resetWallpaperBtn) resetWallpaperBtn.addEventListener('click', handleResetWallpaper);
   if (wallpaperBlurSlider) {
@@ -2068,6 +2091,7 @@ async function init() {
     if (data.settings) {
       currentSettings = { ...currentSettings, ...data.settings };
       applyTheme(data.settings.theme);
+      if (data.settings.uiVersion) applyUIVersion(data.settings.uiVersion);
       const timerEl = $('#previewTimer');
       if (timerEl) timerEl.style.display = data.settings.showTimer !== false ? '' : 'none';
     }
@@ -2106,6 +2130,7 @@ async function init() {
   await loadCustomActivitiesConfig();
   await loadCustomAnimations();
   applyPlatformUI(cfg);
+  applyUIVersion(cfg.uiVersion || 'v2');
   if (cfg.releasesUrl) releasesUrl = cfg.releasesUrl;
   if (typeof cfg.macAdHocUpdates === 'boolean') macAdHocUpdates = cfg.macAdHocUpdates;
   wallpaperSettings = {

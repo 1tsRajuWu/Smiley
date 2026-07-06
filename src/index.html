@@ -10,9 +10,9 @@
     <title>Smiley</title>
     <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png" />
     <link rel="apple-touch-icon" href="assets/icon-192.png" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles-v2.css" id="uiStylesheet" />
   </head>
-  <body>
+  <body data-ui-version="v2">
     <div class="app" id="app">
       <!-- Header -->
       <header class="app-header header">
@@ -87,10 +87,6 @@
             </div>
           </div>
 
-          <p class="field-hint discord-rpc-hint" id="discordRpcHint" hidden>
-            Discord still showing the Smiley icon? Quit and reopen Discord, then set your status again. v4.0.3+ sends Tenor GIFs only — Neko picks preview in-app but Discord uses curated Tenor links.
-          </p>
-
           <div class="preview-actions">
             <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
             <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
@@ -142,7 +138,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v4.0.0</span>
+        <span class="footer-version" id="footerVersion">Smiley v4.1.0</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -212,6 +208,22 @@
             </div>
           </div>
           <div class="settings-panel" data-panel="appearance">
+            <div class="field">
+              <span class="field-label">Interface</span>
+              <p class="field-hint" style="margin:0 0 10px;">New UI (v2) is the default. Switch to Classic UI (v1) anytime.</p>
+              <div class="ui-version-options" id="uiVersionOptions" role="radiogroup" aria-label="Interface version">
+                <label class="ui-version-option active" data-ui-version="v2">
+                  <input type="radio" name="uiVersion" value="v2" checked hidden />
+                  <strong>New UI (v2)</strong>
+                  <span>Cleaner layout, refined cards, better spacing</span>
+                </label>
+                <label class="ui-version-option" data-ui-version="v1">
+                  <input type="radio" name="uiVersion" value="v1" hidden />
+                  <strong>Classic UI (v1)</strong>
+                  <span>Original Smiley look from earlier releases</span>
+                </label>
+              </div>
+            </div>
             <div class="field toggle-field">
               <span class="field-label">Show session timer</span>
               <label class="toggle"><input type="checkbox" id="showTimerToggle" checked /><span class="toggle-slider"></span></label>
