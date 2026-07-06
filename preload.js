@@ -12,10 +12,13 @@ contextBridge.exposeInMainWorld('smiley', {
   getCustomAnimations: () => ipcRenderer.invoke('get-custom-animations'),
   deleteCustomAnimation: (name) => ipcRenderer.invoke('delete-custom-animation', name),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  exportSettings: () => ipcRenderer.invoke('export-settings'),
+  importSettings: () => ipcRenderer.invoke('import-settings'),
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
   onStatus: (callback) => ipcRenderer.on('rpc-status', (_, data) => callback(data)),
   onInitialConnect: (callback) => ipcRenderer.on('initial-connect', (_, data) => callback(data)),
   onOpenSettings: (callback) => ipcRenderer.on('open-settings', () => callback()),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
+  onSelectActivity: (callback) => ipcRenderer.on('select-activity', (_, id) => callback(id)),
 });

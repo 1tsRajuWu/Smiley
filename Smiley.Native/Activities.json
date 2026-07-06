@@ -1,0 +1,84 @@
+[
+  {
+    "id": "food",
+    "label": "Food",
+    "emoji": "🍽️",
+    "color": "#f7768e",
+    "waifuTag": "neko",
+    "fallbackGif": "https://media.tenor.com/RVvnVPK-GU8AAAAC/anime-eating.gif",
+    "activities": [
+      { "id": "eating-pizza", "details": "Eating", "state": "Pizza night 🍕", "emoji": "🍕" },
+      { "id": "eating-sushi", "details": "Eating", "state": "Sushi run 🍣", "emoji": "🍣" },
+      { "id": "eating-ramen", "details": "Eating", "state": "Ramen bowl 🍜", "emoji": "🍜" },
+      { "id": "eating-burger", "details": "Eating", "state": "Burger time 🍔", "emoji": "🍔" },
+      { "id": "eating-tacos", "details": "Eating", "state": "Taco Tuesday 🌮", "emoji": "🌮" },
+      { "id": "eating-snacks", "details": "Snacking", "state": "Midnight munchies 🍿", "emoji": "🍿" },
+      { "id": "cooking", "details": "Cooking", "state": "Chef mode 👨‍🍳", "emoji": "👨‍🍳" },
+      { "id": "eating-dessert", "details": "Eating", "state": "Sweet tooth 🍰", "emoji": "🍰" }
+    ]
+  },
+  {
+    "id": "gaming",
+    "label": "Gaming",
+    "emoji": "🎮",
+    "color": "#7aa2f7",
+    "waifuTag": "shinobu",
+    "fallbackGif": "https://media.tenor.com/Xy1U8f2w3xAAAAAC/anime-gaming.gif",
+    "activities": [
+      { "id": "gaming", "details": "Gaming", "state": "In the zone", "emoji": "🎮" },
+      { "id": "ranked", "details": "Gaming", "state": "Ranked grind 🔥", "emoji": "🔥" },
+      { "id": "coop", "details": "Gaming", "state": "Co-op with friends", "emoji": "👥" },
+      { "id": "retro", "details": "Gaming", "state": "Retro classics 🕹️", "emoji": "🕹️" },
+      { "id": "speedrun", "details": "Gaming", "state": "Speedrunning ⏱️", "emoji": "⏱️" },
+      { "id": "vr-gaming", "details": "Gaming", "state": "In VR 🥽", "emoji": "🥽" }
+    ]
+  },
+  {
+    "id": "chill",
+    "label": "Chill",
+    "emoji": "😌",
+    "color": "#9ece6a",
+    "waifuTag": "megumin",
+    "fallbackGif": "https://media.tenor.com/5QKQHH4m2xkAAAAC/anime-sleep.gif",
+    "activities": [
+      { "id": "sleeping", "details": "Sleeping", "state": "Do not disturb 💤", "emoji": "💤" },
+      { "id": "napping", "details": "Napping", "state": "Power nap mode", "emoji": "😴" },
+      { "id": "reading", "details": "Reading", "state": "Lost in a book 📚", "emoji": "📚" },
+      { "id": "listening", "details": "Listening to music", "state": "Vibing 🎧", "emoji": "🎧" },
+      { "id": "meditating", "details": "Meditating", "state": "Finding peace 🧘", "emoji": "🧘" },
+      { "id": "bath", "details": "Relaxing", "state": "Bubble bath 🛁", "emoji": "🛁" }
+    ]
+  },
+  {
+    "id": "work",
+    "label": "Work",
+    "emoji": "💻",
+    "color": "#bb9af7",
+    "waifuTag": "awoo",
+    "fallbackGif": "https://media.tenor.com/7r-BGEoIoh4AAAAC/anime-typing.gif",
+    "activities": [
+      { "id": "coding", "details": "Coding", "state": "Building something cool", "emoji": "💻" },
+      { "id": "studying", "details": "Studying", "state": "Brain gains 📖", "emoji": "📖" },
+      { "id": "meeting", "details": "In a meeting", "state": "Busy until further notice", "emoji": "📅" },
+      { "id": "focus", "details": "Deep focus", "state": "Heads down 🔒", "emoji": "🔒" },
+      { "id": "designing", "details": "Designing", "state": "Creating art 🎨", "emoji": "🎨" },
+      { "id": "writing", "details": "Writing", "state": "Words flowing ✍️", "emoji": "✍️" }
+    ]
+  },
+  {
+    "id": "social",
+    "label": "Social",
+    "emoji": "✨",
+    "color": "#ff9e64",
+    "waifuTag": "cry",
+    "fallbackGif": "https://media.tenor.com/1iSARpjQW0AAAAAC/anime-wave.gif",
+    "activities": [
+      { "id": "streaming", "details": "Streaming", "state": "Live now 📺", "emoji": "📺" },
+      { "id": "watching", "details": "Watching", "state": "Movie night 🎬", "emoji": "🎬" },
+      { "id": "traveling", "details": "Traveling", "state": "On an adventure ✈️", "emoji": "✈️" },
+      { "id": "gym", "details": "At the gym", "state": "Gains incoming 💪", "emoji": "💪" },
+      { "id": "partying", "details": "Partying", "state": "Living my best life 🎉", "emoji": "🎉" },
+      { "id": "shopping", "details": "Shopping", "state": "Retail therapy 🛍️", "emoji": "🛍️" }
+    ]
+  }
+]

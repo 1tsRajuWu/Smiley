@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, safeStorage, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -7,7 +7,8 @@ const { autoUpdater } = require('electron-updater');
 
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.1.0';
+const GLOBAL_HOTKEY = 'CommandOrControl+Shift+S';
 const EXAMPLE_CONFIG = path.join(__dirname, 'config.example.json');
 const DISCORD_APP_CONFIG = path.join(__dirname, 'discord.app.json');
 
@@ -93,6 +94,9 @@ const DEFAULT_CONFIG = {
   windowState: { width: 1100, height: 780 },
   autoConnect: true,
   minimizeToTray: true,
+  launchAtLogin: false,
+  hotkeyEnabled: true,
+  recentActivities: [],
 };
 let config = { ...DEFAULT_CONFIG };
 
@@ -130,6 +134,55 @@ function loadConfig() {
 
 function getClientId() {
   return BUNDLED_CLIENT_ID;
+}
+
+function formatSessionDuration(ms) {
+  if (!ms || ms < 0) return '0m';
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  return `${h}h ${totalMin % 60}m`;
+}
+
+function trackRecentActivity(activity) {
+  if (!activity?.id) return;
+  const entry = {
+    id: activity.id,
+    details: activity.details,
+    state: activity.state,
+    category: activity.category,
+  };
+  const recent = [entry, ...(config.recentActivities || []).filter((r) => r.id !== entry.id)].slice(0, 5);
+  saveConfig({ recentActivities: recent });
+}
+
+function applyLaunchAtLogin() {
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: config.launchAtLogin === true,
+      openAsHidden: true,
+    });
+  } catch (err) {
+    console.error('[launchAtLogin]', err.message);
+  }
+}
+
+function registerGlobalHotkey() {
+  globalShortcut.unregisterAll();
+  if (config.hotkeyEnabled === false) return;
+  try {
+    globalShortcut.register(GLOBAL_HOTKEY, () => {
+      if (!mainWindow) return;
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
+  } catch (err) {
+    console.error('[hotkey]', err.message);
+  }
 }
 
 function saveConfig(data) {
@@ -266,12 +319,31 @@ function createTray() {
 
 function updateTrayMenu() {
   if (!tray) return;
+  const sessionLabel = sessionStart
+    ? `Session: ${formatSessionDuration(Date.now() - sessionStart)}`
+    : 'No active session';
+
+  const recentItems = (config.recentActivities || []).map((item) => ({
+    label: `${item.details}${item.state ? ` — ${item.state}` : ''}`,
+    click: () => {
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('select-activity', item.id);
+      }
+    },
+  }));
+
   const template = [
     { label: 'Show Smiley', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
     { type: 'separator' },
     { label: currentActivity ? `Status: ${currentActivity.details}` : 'No status set', enabled: false },
+    { label: sessionLabel, enabled: false },
     { label: 'Clear Presence', click: () => clearPresence(), enabled: !!currentActivity },
     { type: 'separator' },
+    ...(recentItems.length
+      ? [{ label: 'Recent Activities', submenu: recentItems }, { type: 'separator' }]
+      : []),
     { label: 'Check for Updates', click: () => autoUpdater.checkForUpdatesAndNotify() },
     { label: 'Settings', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('open-settings'); } } },
     { type: 'separator' },
@@ -350,6 +422,7 @@ async function applyPresence(activity) {
     const payload = buildActivityPayload(activity);
     await rpcClient.setActivity(payload);
     currentActivity = activity;
+    trackRecentActivity(activity);
     updateTrayIcon(activity.category);
     updateTrayMenu();
     broadcastStatus();
@@ -538,11 +611,17 @@ function setupIPC() {
     customAnimation: config.customAnimation || null,
     minimizeToTray: config.minimizeToTray !== false,
     autoConnect: config.autoConnect !== false,
+    launchAtLogin: config.launchAtLogin === true,
+    hotkeyEnabled: config.hotkeyEnabled !== false,
+    hotkey: GLOBAL_HOTKEY,
     version: APP_VERSION,
   }));
 
   ipcMain.handle('save-config', async (_, data) => {
     saveConfig(data);
+    applyLaunchAtLogin();
+    registerGlobalHotkey();
+    updateTrayMenu();
     if (config.autoConnect !== false && !rpcClient) return connectRPC();
     return { connected: !!rpcClient };
   });
@@ -613,16 +692,54 @@ function setupIPC() {
       else { app.isQuitting = true; app.quit(); }
     }
   });
+
+  ipcMain.handle('export-settings', async () => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Smiley Settings',
+      defaultPath: 'smiley-settings.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (result.canceled || !result.filePath) return { canceled: true };
+    const exportData = { ...config };
+    delete exportData.clientId;
+    fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2));
+    return { success: true, path: result.filePath };
+  });
+
+  ipcMain.handle('import-settings', async () => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import Smiley Settings',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths[0]) return { canceled: true };
+    try {
+      const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
+      delete imported.clientId;
+      saveConfig(imported);
+      applyLaunchAtLogin();
+      registerGlobalHotkey();
+      broadcastStatus();
+      updateTrayMenu();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message || 'Invalid settings file' };
+    }
+  });
 }
 
 // ─── App Lifecycle ───────────────────────────────────────────────────
 app.whenReady().then(async () => {
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
+  applyLaunchAtLogin();
   createWindow();
   createTray();
   setupIPC();
   setupAutoUpdater();
+  registerGlobalHotkey();
 
   // Check for updates after 5s (skip in dev)
   if (!isDev) {
@@ -649,6 +766,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 app.on('activate', () => { if (mainWindow) mainWindow.show(); else createWindow(); });
 app.on('before-quit', async () => {
   app.isQuitting = true;
+  globalShortcut.unregisterAll();
   saveWindowState();
   if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
 });

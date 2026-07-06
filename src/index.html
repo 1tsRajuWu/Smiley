@@ -33,6 +33,14 @@
         </div>
       </header>
 
+      <div class="update-banner" id="updateBanner">
+        <span id="updateBannerText">Update available</span>
+        <div class="update-banner-actions">
+          <button type="button" class="btn btn-primary" id="updateRestartBtn">Restart</button>
+          <button type="button" class="btn btn-ghost" id="updateDismissBtn">Later</button>
+        </div>
+      </div>
+
       <!-- Main Content -->
       <div class="content">
         <!-- Left Sidebar -->
@@ -97,7 +105,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v2.0.1</span>
+        <span class="footer-version" id="footerVersion">Smiley v2.1.0</span>
         <span class="footer-hint">Updates rate-limited to ~15s by Discord</span>
       </footer>
     </div>
@@ -113,6 +121,7 @@
           <button type="button" class="settings-tab active" data-tab="general">General</button>
           <button type="button" class="settings-tab" data-tab="appearance">Appearance</button>
           <button type="button" class="settings-tab" data-tab="animations">Animations</button>
+          <button type="button" class="settings-tab" data-tab="advanced">Advanced</button>
           <button type="button" class="settings-tab" data-tab="about">About</button>
         </div>
         <div class="modal-body">
@@ -146,6 +155,7 @@
                 <label class="theme-option" data-theme="midnight"><div class="theme-preview theme-midnight"></div><span>Midnight</span></label>
                 <label class="theme-option" data-theme="ocean"><div class="theme-preview theme-ocean"></div><span>Ocean</span></label>
                 <label class="theme-option" data-theme="sakura"><div class="theme-preview theme-sakura"></div><span>Sakura</span></label>
+                <label class="theme-option" data-theme="lowlight"><div class="theme-preview theme-lowlight"></div><span>Low Light</span></label>
               </div>
             </div>
           </div>
@@ -167,6 +177,21 @@
               </div>
             </div>
           </div>
+          <div class="settings-panel" data-panel="advanced">
+            <div class="field toggle-field">
+              <span class="field-label">Start on system login</span>
+              <label class="toggle"><input type="checkbox" id="launchAtLoginToggle" /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field toggle-field">
+              <span class="field-label">Global hotkey (show/hide)</span>
+              <label class="toggle"><input type="checkbox" id="hotkeyToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <p class="field-hint" id="hotkeyHint">Shortcut: Cmd/Ctrl + Shift + S</p>
+            <div class="field" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+              <button type="button" class="btn btn-secondary" id="exportSettingsBtn">Export settings</button>
+              <button type="button" class="btn btn-secondary" id="importSettingsBtn">Import settings</button>
+            </div>
+          </div>
           <div class="settings-panel" data-panel="about">
             <div class="about-section">
               <div class="about-logo">
@@ -182,7 +207,7 @@
                   <ellipse cx="35" cy="28" rx="3" ry="2" fill="#f7768e" opacity="0.5" />
                 </svg>
               </div>
-              <h3>Smiley v2.0.1</h3>
+              <h3>Smiley v2.1.0</h3>
               <p class="about-desc">Discord Rich Presence with animated anime characters and beautiful UI.</p>
               <div class="about-links">
                 <a class="about-link" href="https://paypal.me/1tsRaj" target="_blank" rel="noopener"><span>💝</span> Support on PayPal</a>

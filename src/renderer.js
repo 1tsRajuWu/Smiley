@@ -46,6 +46,15 @@ const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
 const customAnimationDrop = $('#customAnimationDrop');
 const customAnimationList = $('#customAnimationList');
+const launchAtLoginToggle = $('#launchAtLoginToggle');
+const hotkeyToggle = $('#hotkeyToggle');
+const hotkeyHint = $('#hotkeyHint');
+const exportSettingsBtn = $('#exportSettingsBtn');
+const importSettingsBtn = $('#importSettingsBtn');
+const updateBanner = $('#updateBanner');
+const updateBannerText = $('#updateBannerText');
+const updateRestartBtn = $('#updateRestartBtn');
+const updateDismissBtn = $('#updateDismissBtn');
 
 // ─── State ───────────────────────────────────────────────────────────
 let activeCategory = ACTIVITY_CATEGORIES[0].id;
@@ -286,6 +295,7 @@ async function selectActivity(id) {
   // Pass HTTPS GIF URLs to Discord; local/data URLs fall back to uploaded asset keys
   const imageFields = discordImageForActivity(activity, currentGifUrl);
   const rpcPayload = {
+    id: activity.id,
     details: activity.details,
     state: activity.state,
     category: activity.category,
@@ -322,6 +332,9 @@ function openSettings(tab = 'general') {
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     showTimerToggle.checked = cfg.showTimer !== false;
     animationsToggle.checked = cfg.animationsEnabled !== false;
+    if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
+    if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
+    if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
 
     themeOptions.forEach((opt) => {
       opt.classList.toggle('active', opt.dataset.theme === (cfg.theme || 'dark'));
@@ -353,6 +366,8 @@ async function handleSaveSettings(e) {
     animationsEnabled: animationsToggle.checked,
     theme: currentSettings.theme || 'dark',
     customAnimation: activeCustomAnimation ? 'custom' : null,
+    launchAtLogin: launchAtLoginToggle?.checked === true,
+    hotkeyEnabled: hotkeyToggle?.checked !== false,
   };
 
   const result = await window.smiley.saveConfig(newSettings);
@@ -506,9 +521,21 @@ async function showLegal(type) {
 function handleUpdateStatus(data) {
   switch (data.status) {
     case 'checking': showToast('Checking for updates...'); break;
-    case 'available': showToast(`Update v${data.version} available! Downloading...`); break;
+    case 'available':
+      showToast(`Update v${data.version} available! Downloading...`);
+      if (updateBannerText) updateBannerText.textContent = `Downloading v${data.version}…`;
+      updateBanner?.classList.add('visible');
+      break;
+    case 'downloading':
+      if (updateBannerText) updateBannerText.textContent = `Downloading update… ${data.percent || 0}%`;
+      updateBanner?.classList.add('visible');
+      break;
     case 'up-to-date': showToast('You are on the latest version!'); break;
-    case 'downloaded': showToast(`Update v${data.version} ready! Restart to apply.`); break;
+    case 'downloaded':
+      if (updateBannerText) updateBannerText.textContent = `Update v${data.version} ready — restart to apply`;
+      updateBanner?.classList.add('visible');
+      showToast(`Update v${data.version} ready! Restart to apply.`);
+      break;
     case 'error': showToast(`Update error: ${data.error}`, 'error'); break;
   }
 }
@@ -569,6 +596,36 @@ async function init() {
       showToast('Checking for updates...');
     });
   }
+
+  if (exportSettingsBtn) {
+    exportSettingsBtn.addEventListener('click', async () => {
+      const result = await window.smiley.exportSettings();
+      if (result.canceled) return;
+      if (result.success) showToast('Settings exported');
+      else showToast(result.error || 'Export failed', 'error');
+    });
+  }
+
+  if (importSettingsBtn) {
+    importSettingsBtn.addEventListener('click', async () => {
+      const result = await window.smiley.importSettings();
+      if (result.canceled) return;
+      if (result.success) {
+        showToast('Settings imported — reopen Settings to review');
+        openSettings('advanced');
+      } else showToast(result.error || 'Import failed', 'error');
+    });
+  }
+
+  if (updateDismissBtn) updateDismissBtn.addEventListener('click', () => updateBanner?.classList.remove('visible'));
+  if (updateRestartBtn) {
+    updateRestartBtn.addEventListener('click', () => {
+      window.smiley.checkForUpdates();
+      showToast('Restart the app to apply updates');
+    });
+  }
+
+  window.smiley.onSelectActivity((id) => selectActivity(id));
 
   // IPC events
   window.smiley.onStatus((data) => {
