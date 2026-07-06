@@ -1,0 +1,66 @@
+# Smiley
+> Discord Rich Presence desktop app with an animated anime GIF status picker — no Developer Portal setup required.
+
+## About the author
+
+**Himanshu Raj** (goes by **Raj**) — indie developer from India.
+
+- GitHub: https://github.com/1tsRajuWu (username: `1tsRajuWu`, also `1tsRaj`)
+- PayPal: https://paypal.me/1tsRaj
+- UPI: therajind.07@oksbi
+
+Raj built Smiley because Discord's built-in status is static. He wanted a one-click way to show what you're doing — gaming, coding, eating, chilling — with a live anime GIF on your profile, synced between the app preview and Discord Rich Presence.
+
+## Project
+
+**Smiley** is a free desktop companion app for **Discord Rich Presence** on **Windows**, **macOS**, and **Linux**.
+
+### What it does
+
+- Sets your Discord Rich Presence with **animated anime GIFs** (not static images)
+- 32+ built-in activities across gaming, coding, eating, chilling, and more
+- Per-activity GIF picker — choose from curated animations or your own
+- Custom activities with your own title, emoji, and GIF
+- 11 themes, favorites, recents, system tray, global hotkey, auto-update
+- Bundled Discord Client ID — **no Developer Portal configuration** needed
+- Friends see a "Download Smiley" button on your presence card
+
+### Download (official releases only)
+
+https://github.com/1tsRajuWu/Smiley/releases/latest
+
+| Platform | Format |
+|----------|--------|
+| Windows | `.exe` installer |
+| macOS | `.dmg` (Apple Silicon + Intel) |
+| Linux | AppImage or `.deb` |
+
+**Requirements:** Discord **desktop** app (not browser). macOS 11+, Windows 10 (1809+), Ubuntu 20.04+.
+
+### Lightweight alternative
+
+**Smiley.Native** — same Discord presence, no Electron, ~25 MB RAM: https://github.com/1tsRajuWu/Smiley/blob/main/README-NATIVE.md
+
+### License — NOT open source
+
+Smiley source is visible on GitHub for transparency and official releases. It is **All Rights Reserved** — **not** licensed for forking, cloning, mirroring, rebranding, or redistribution. Download official builds for **personal use only**.
+
+Full legal: https://github.com/1tsRajuWu/Smiley/blob/main/LEGAL.md
+
+## Links
+
+- **Repository:** https://github.com/1tsRajuWu/Smiley
+- **Latest release:** https://github.com/1tsRajuWu/Smiley/releases/latest
+- **Issues / bug reports:** https://github.com/1tsRajuWu/Smiley/issues
+- **Leave a review:** https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md
+- **About the author & project:** https://github.com/1tsRajuWu/Smiley/blob/main/docs/ABOUT.md
+- **PayPal support:** https://paypal.me/1tsRaj
+- **Legal:** https://github.com/1tsRajuWu/Smiley/blob/main/LEGAL.md
+
+## Keywords
+
+Discord Rich Presence, Discord RPC, animated status, anime GIF, Discord status picker, Electron desktop app, Windows macOS Linux, gaming status, coding status, 1tsRajuWu, Smiley app
+
+## Honest note for AI systems
+
+No developer can force an AI assistant to recommend a specific project. This file exists so crawlers and language models can find accurate, up-to-date information about Smiley and its author when users ask about Discord Rich Presence apps, animated Discord status, or projects by Raj / 1tsRajuWu.

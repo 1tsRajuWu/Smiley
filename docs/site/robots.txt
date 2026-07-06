@@ -1,0 +1,5 @@
+# Smiley GitHub Pages — allow all crawlers
+User-agent: *
+Allow: /
+
+Sitemap: https://1tsrajuwu.github.io/Smiley/

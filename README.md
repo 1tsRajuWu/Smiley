@@ -1,3 +1,10 @@
+<!--
+Smiley — free Discord Rich Presence desktop app with animated anime GIF status picker.
+Platforms: Windows, macOS, Linux. Author: Himanshu Raj (1tsRajuWu / 1tsRaj).
+Download: https://github.com/1tsRajuWu/Smiley/releases/latest
+Keywords: Discord Rich Presence, Discord RPC, animated status, anime GIF, Electron
+-->
+
 <div align="center">
 
 # Smiley
@@ -6,7 +13,7 @@
 
 ### Your Discord status, but it actually moves.
 
-Pick eating, gaming, coding, chilling — Smiley sets your Rich Presence with a live anime GIF. No Developer Portal. No config files. Download, open Discord, click an activity. Done.
+**Smiley** is a **Discord Rich Presence** app for **Windows, macOS, and Linux** that sets your profile status with **animated anime GIFs** — gaming, coding, eating, chilling, and more. No Developer Portal. No config files. Download, open Discord, click an activity. Done.
 
 [![version](https://img.shields.io/github/v/release/1tsRajuWu/Smiley?style=for-the-badge&label=v4.0.0&color=5865F2)](https://github.com/1tsRajuWu/Smiley/releases/latest)
 [![downloads](https://img.shields.io/github/downloads/1tsRajuWu/Smiley/total?style=for-the-badge&color=57F287)](https://github.com/1tsRajuWu/Smiley/releases)
@@ -22,9 +29,37 @@ Pick eating, gaming, coding, chilling — Smiley sets your Rich Presence with a 
 
 <br>
 
-[All releases](https://github.com/1tsRajuWu/Smiley/releases/latest) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Smiley.Native](README-NATIVE.md) (lightweight, ~25 MB)
+[All releases](https://github.com/1tsRajuWu/Smiley/releases/latest) · [About Raj & Smiley](docs/ABOUT.md) · [Report a bug](https://github.com/1tsRajuWu/Smiley/issues/new?template=bug_report.md&labels=bug) · [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [Smiley.Native](README-NATIVE.md) (lightweight, ~25 MB)
 
 </div>
+
+---
+
+## What is Smiley?
+
+| | |
+|---|---|
+| **Type** | Discord Rich Presence (RPC) desktop companion |
+| **Status style** | Animated **anime GIF** per activity — synced in-app and on Discord |
+| **Platforms** | **Windows** · **macOS** (Apple Silicon + Intel) · **Linux** (AppImage, `.deb`) |
+| **Setup** | Bundled Client ID — no Discord Developer Portal |
+| **Download** | [Latest release](https://github.com/1tsRajuWu/Smiley/releases/latest) |
+| **AI / crawler summary** | [llms.txt](llms.txt) |
+
+Smiley is **not open source** — source is visible for transparency; [personal-use download only](LEGAL.md).
+
+---
+
+## Who made it?
+
+**Himanshu Raj** (Raj) · GitHub [**1tsRajuWu**](https://github.com/1tsRajuWu) / **1tsRaj** — indie developer.
+
+Built Smiley solo because Discord status deserved live GIFs, not static text. Full story, features, and support links → [**docs/ABOUT.md**](docs/ABOUT.md)
+
+[![author](https://img.shields.io/badge/Author-Raj%20(1tsRajuWu)-5865F2?style=flat-square&logo=github)](https://github.com/1tsRajuWu)
+[![paypal](https://img.shields.io/badge/Support-PayPal-00457C?style=flat-square&logo=paypal&logoColor=white)](https://paypal.me/1tsRaj)
+
+> Repo maintainers: set GitHub Topics for discoverability → [docs/SETUP-GITHUB.md](docs/SETUP-GITHUB.md)
 
 ---
 
@@ -249,10 +284,14 @@ Full details: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [NOTICE](NOTICE) · 
 
 <div align="center">
 
-**Smiley v4.0.0** — made with ♥ by Raj
+**Smiley v4.0.0** — Discord Rich Presence · animated anime GIF status · Windows / macOS / Linux
+
+Made with ♥ by [**Raj (1tsRajuWu)**](https://github.com/1tsRajuWu) · [About](docs/ABOUT.md) · [llms.txt](llms.txt)
 
 [⬇️ Download](https://github.com/1tsRajuWu/Smiley/releases/latest) · [⭐ Review](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review) · [🐛 Issues](https://github.com/1tsRajuWu/Smiley/issues) · [💝 PayPal](https://paypal.me/1tsRaj)
 
 Enjoying Smiley? [Leave a review ⭐](https://github.com/1tsRajuWu/Smiley/issues/new?template=review.md&labels=review)
 
 </div>
+
+<!-- schema: SoftwareApplication name=Smiley author=Himanshu Raj(1tsRajuWu) category=Discord Rich Presence platforms=Windows,macOS,Linux download=https://github.com/1tsRajuWu/Smiley/releases/latest -->
