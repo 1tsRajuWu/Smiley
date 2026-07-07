@@ -55,7 +55,7 @@ Smiley **never** accesses, stores, logs, or transmits:
 
 - **Algorithm:** AES-256-GCM (authenticated encryption)
 - **Key derivation:** scrypt (N=16384, r=8, p=1)
-- **Local key material:** Derived from app user-data path + machine context (hostname, platform, arch) — device-bound, not stored in OS keychain
+- **Local key material:** Derived from app user-data path + machine context (hostname, platform, arch) — device-bound scrypt key (v3). Smiley does **not** use the macOS Keychain or Electron `safeStorage` for local encryption (avoids the system keychain password prompt on launch).
 - **Export key material:** Derived from your passphrase + random per-file salt
 - **Legacy support:** Older v1 config envelopes are read and re-encrypted to v3 on save
 
