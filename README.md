@@ -65,7 +65,7 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 <details>
 <summary><strong>About v7.0.0 — final release</strong></summary>
 
-**v7.0.0** is the single canonical final version — Aurora UI, Mac fixes, instant music sync, and low-end performance polish. Intermediate tags (v6.x, v7.0.1–v7.0.0) are historical only.
+**v7.0.0** is the single canonical final version — Aurora UI, Mac fixes, instant music sync, and low-end performance polish. Intermediate tags (v6.x, v7.0.1–v7.0.6) are historical only.
 
 | | |
 |---|---|
