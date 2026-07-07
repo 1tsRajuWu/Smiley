@@ -1683,7 +1683,8 @@ async function connectRPC() {
     });
     rpcClient.login({ clientId }).catch((err) => {
       clearTimeout(timeout);
-      rpcClient = null;
+      if (rpcClient === client) rpcClient = null;
+      try { client.destroy(); } catch (_) {}
       resolve({ connected: false, error: err.message || 'Could not connect to Discord' });
     });
   });
