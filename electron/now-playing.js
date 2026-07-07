@@ -31,11 +31,13 @@ function resolveMacJxaScriptPath() {
 
 const MAC_JXA_SCRIPT = resolveMacJxaScriptPath();
 
-/** macOS: sequential stdin JXA polls — 3s reduces CPU on low-end Macs. */
-const DEFAULT_POLL_MS = process.platform === 'darwin' ? 3000 : 3500;
-const MIN_POLL_MS = process.platform === 'darwin' ? 2500 : 2000;
-const MAC_OSASCRIPT_TIMEOUT_MS = 3500;
-const MAC_POLL_BACKOFF_MAX_MS = 60000;
+/** macOS: sequential stdin JXA polls — 1.2s while listening keeps track changes under ~2s. */
+const DEFAULT_POLL_MS = process.platform === 'darwin' ? 1200 : 2000;
+const MIN_POLL_MS = process.platform === 'darwin' ? 800 : 1200;
+const FAST_REPOLL_MS = process.platform === 'darwin' ? 350 : 500;
+const MAC_OSASCRIPT_TIMEOUT_MS = 2500;
+const MAC_POLL_BACKOFF_MAX_MS = 8000;
+const MAC_POLL_BACKOFF_STEP_MS = 1000;
 
 const NATIVE_PACKAGES = {
   win32: [
@@ -205,7 +207,7 @@ function noteMacPollResult(track) {
   if (process.platform !== 'darwin') return;
   if (track === undefined) {
     macPollFailures = Math.min(macPollFailures + 1, 12);
-    macPollBackoffMs = Math.min(MAC_POLL_BACKOFF_MAX_MS, macPollFailures * 5000);
+    macPollBackoffMs = Math.min(MAC_POLL_BACKOFF_MAX_MS, macPollFailures * MAC_POLL_BACKOFF_STEP_MS);
     return;
   }
   macPollFailures = 0;
@@ -483,6 +485,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
   let pollTimer = null;
   let lastMetaSignature = '';
   let running = false;
+  let fastRepollPending = false;
   const pollEveryMs = Math.max(MIN_POLL_MS, pollIntervalMs || DEFAULT_POLL_MS);
 
   const emit = (raw) => {
@@ -490,12 +493,18 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
     const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
     const metaSig = trackMetaSignature(track);
     const metaChanged = metaSig !== lastMetaSignature;
-    if (metaChanged) lastMetaSignature = metaSig;
+    if (metaChanged) {
+      lastMetaSignature = metaSig;
+      if (track) fastRepollPending = true;
+    }
     onUpdate?.(track);
   };
 
-  const scheduleNextPoll = () => {
+  const scheduleNextPoll = (delayOverrideMs) => {
     if (!running) return;
+    const useFast = fastRepollPending && !delayOverrideMs;
+    if (useFast) fastRepollPending = false;
+    const baseDelay = delayOverrideMs ?? (useFast ? FAST_REPOLL_MS : pollEveryMs);
     pollTimer = setTimeout(async () => {
       pollTimer = null;
       if (!running) return;
@@ -508,7 +517,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
         if (process.env.SMILEY_DEV) console.warn('[now-playing] poll failed:', err.message);
       }
       scheduleNextPoll();
-    }, macPollDelayMs(pollEveryMs));
+    }, macPollDelayMs(baseDelay));
   };
 
   const startPolling = async () => {
@@ -553,6 +562,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
       killMacPollChild();
       macPollFailures = 0;
       macPollBackoffMs = 0;
+      fastRepollPending = false;
       if (nativePlayer) {
         try {
           await nativePlayer.unsubscribe();

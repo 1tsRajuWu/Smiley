@@ -10,9 +10,9 @@ const {
 
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
-const RENDERER_UPDATE_MIN_MS = 1500;
-/** macOS: poll every ~3s while listening (sequential JXA, no overlap). */
-const LISTENING_POLL_MS = process.platform === 'darwin' ? 3000 : DEFAULT_POLL_MS;
+const RENDERER_UPDATE_MIN_MS = 400;
+/** macOS: poll every ~1.2s while listening (sequential JXA, no overlap). */
+const LISTENING_POLL_MS = process.platform === 'darwin' ? 1200 : DEFAULT_POLL_MS;
 const artworkCache = new Map();
 
 function truncate(text, max = DISCORD_TEXT_LIMIT) {
@@ -119,6 +119,7 @@ function createMusicSync({
 
     const activity = {
       ...base,
+      id: LISTENING_ACTIVITY_ID,
       details: truncate(track.title),
       state,
       largeImageText: truncate(album || artist || track.title),
@@ -199,7 +200,7 @@ function createMusicSync({
     resolveArtwork(track, config).then((url) => {
       if (requestId !== artworkRequestId || !url) return;
       if (lastArtworkKey !== cacheKey) return;
-      pushPresence(track, url, { force: true });
+      pushPresence(track, url);
     }).catch(() => {});
   }
 

@@ -1694,8 +1694,9 @@ async function buildActivityPayload(activity) {
     instance: false,
   };
 
-  // Discord shows a green elapsed timer when timestamps are present — omit for music/listening.
-  if (activity.id !== 'listening') {
+  // Discord shows a green elapsed timer when timestamps are present — never for music/listening.
+  const isListening = activity.id === 'listening' || activity.musicTrack;
+  if (!isListening) {
     payload.startTimestamp = sessionStart || Date.now();
   }
 
