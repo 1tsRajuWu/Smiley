@@ -60,7 +60,8 @@ function mapGeo(geo, columns) {
 }
 
 function fetchGeo(ip) {
-  const path = ip && !ip.startsWith('127.') ? `https://ipwho.is/${encodeURIComponent(ip)}` : 'https://ipwho.is/';
+  const looksLikeIp = ip && /^\d{1,3}(\.\d{1,3}){3}$/.test(String(ip).trim());
+  const path = looksLikeIp ? `https://ipwho.is/${encodeURIComponent(ip)}` : 'https://ipwho.is/';
   return request(path);
 }
 
@@ -90,7 +91,10 @@ async function main() {
       const geo = await fetchGeo(row.ip_address);
       const patch = mapGeo(geo, columns);
       if (!patch) continue;
-      if (row.country_code && patch.country_code === row.country_code
+      const needsGeo = ['country_name', 'region_name', 'city', 'isp', 'geo_timezone'].some(
+        (col) => columns.has(col) && !row[col] && patch[col],
+      );
+      if (!needsGeo && row.country_code && patch.country_code === row.country_code
           && row.region && row.region.length > 2 && patch.region === row.region) {
         console.log(`Skip ${row.install_id.slice(0, 8)}…`);
         continue;

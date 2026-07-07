@@ -2,6 +2,8 @@
 -- Default-on install/usage tracking (see PRIVACY.md).
 -- Run in Supabase SQL Editor: https://supabase.com/dashboard
 
+create extension if not exists pgcrypto;
+
 create table if not exists public.installs (
   install_id uuid primary key,
   platform text not null check (platform in ('darwin', 'win32', 'linux')),
@@ -101,7 +103,7 @@ begin
     nullif(trim(headers->>'cf-connecting-ip'), '')
   );
 
-  if forwarded is not null then
+  if forwarded is not null and coalesce(auth.role(), '') is distinct from 'service_role' then
     new.ip_address := encode(
       digest(trim(split_part(forwarded, ',', 1)) || ':smiley-ip-hash-v1', 'sha256'),
       'hex'

@@ -1,6 +1,8 @@
 -- One-time migration: store SHA-256 hash of IP instead of raw IP (see SECURITY.md).
 -- Run in Supabase SQL Editor after deploying app v5.0.7+.
 
+create extension if not exists pgcrypto;
+
 create or replace function public.set_install_request_metadata()
 returns trigger
 language plpgsql
@@ -27,7 +29,7 @@ begin
     nullif(trim(headers->>'cf-connecting-ip'), '')
   );
 
-  if forwarded is not null then
+  if forwarded is not null and coalesce(auth.role(), '') is distinct from 'service_role' then
     new.ip_address := encode(
       digest(trim(split_part(forwarded, ',', 1)) || ':smiley-ip-hash-v1', 'sha256'),
       'hex'
