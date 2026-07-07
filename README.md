@@ -47,6 +47,18 @@ Download: https://1tsrajuwu.github.io/Smiley/
 
 </details>
 
+## Final release — goodbye
+
+**v6.x is the final major version line.** Smiley was a fun personal project — built for the joy of it, polished until it felt near perfect. Thank you for using it.
+
+| | |
+|---|---|
+| **Open source** | Fork, change, and contribute code — PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). |
+| **Patches only** | Bug fixes may ship; **no planned major features**. |
+| **Forks: use your own** | Discord Application ID, Supabase, PayPal — **not** the author's. See [docs/FINAL.md](docs/FINAL.md). |
+
+A longer farewell from Raj: **[docs/FINAL.md](docs/FINAL.md)** 👋
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Smiley          ● Connected                         ─  ⚙  │
@@ -163,16 +175,17 @@ Requirements: Discord desktop, macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [
 <details>
 <summary><strong>Legal</strong></summary>
 
-Smiley is **not open source**. Source is visible for transparency — not licensed for forking, mirroring, or redistribution.
+Smiley is **open source** (MIT). Fork and contribute — see [CONTRIBUTING.md](CONTRIBUTING.md). Copyright © 2025–2026 **1tsRajuWu (Raj)**.
 
-| OK | Not OK |
-|----|--------|
-| Download official releases for personal use | Fork, clone, mirror, rebrand |
-| Report bugs via Issues | Commercial use without permission |
+| OK | Off-limits (author's infrastructure) |
+|----|--------------------------------------|
+| Fork, modify, and PR code | Author's Supabase install database |
+| Download official releases | Author's Discord app ID / CI secrets |
+| Report bugs via Issues | Author's PayPal & aggregated telemetry |
 
-Full terms: [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [Privacy](PRIVACY.md) · [Terms](ToS.md) · [Security & E2EE](SECURITY.md)
+Full terms: [docs/FINAL.md](docs/FINAL.md) · [LEGAL.md](LEGAL.md) · [LICENSE](LICENSE) · [Privacy](PRIVACY.md) · [Terms](ToS.md) · [Security](SECURITY.md)
 
-Using Smiley means you accept our Terms and default install/usage reporting (opt out in Settings). Settings are encrypted locally; exports use passphrase E2EE. See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
+Official builds send install/usage telemetry (no opt-out). Settings are encrypted locally; exports use passphrase E2EE. See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 </details>
 
@@ -182,10 +195,13 @@ Using Smiley means you accept our Terms and default install/usage reporting (opt
 ```bash
 git clone https://github.com/1tsRajuWu/Smiley.git
 cd Smiley
-cp discord.app.example.json discord.app.json   # your Discord Client ID
+cp discord.app.example.json discord.app.json              # your Discord Client ID
+cp downloads.registry.example.json downloads.registry.json  # optional: your Supabase
 npm install
 npm start
 ```
+
+Contributing & fork boundaries: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ```bash
 npm run build:mac    # .dmg (x64 + arm64)

@@ -1,41 +1,31 @@
-Smiley — Proprietary Software License
-Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.
+MIT License
 
-This software and associated documentation, media, and branding (the "Software")
-are the exclusive property of 1tsRajuWu (Raj). Unauthorized use, copying, or
-distribution is prohibited.
+Copyright © 2025–2026 1tsRajuWu (Raj)
 
-PERMITTED USE
-You may download and run official releases of Smiley from the authorized
-repository only, for personal, non-commercial use on your own devices:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-  https://github.com/1tsRajuWu/Smiley
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-PROHIBITED WITHOUT WRITTEN PERMISSION
-You may NOT, without prior written consent from 1tsRajuWu (Raj):
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-  • Copy, clone, mirror, redistribute, or re-upload the Software or any part
-  • Modify, fork, or create derivative works for public distribution
-  • Rebrand, rename, or pass off the Software as your own work
-  • Sell, sublicense, bundle, or use the Software commercially
-  • Remove or alter copyright, trademark, or attribution notices
-  • Distribute binaries or source under a different name or author
+---
 
-TRADEMARK
-"Smiley" (the application name, logo, and branding) is the intellectual
-property of 1tsRajuWu (Raj). Unauthorized use of the name or logo is prohibited.
+**Note:** Open source code does not include access to the author's hosted
+infrastructure (Supabase install database, official Discord Application ID,
+PayPal account). Forks must use their own services. See CONTRIBUTING.md and
+docs/FINAL.md.
 
-OFFICIAL SOURCE
-The only authorized source for Smiley is the repository above. Builds, forks,
-clones, or mirrors from other sources are not endorsed and may be unsafe or
-infringing.
-
-CONTACT
-For licensing inquiries, permission requests, or unauthorized-copy reports:
-
-  • GitHub: https://github.com/1tsRajuWu
-  • Issues: https://github.com/1tsRajuWu/Smiley/issues
-
-DISCLAIMER
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. THE AUTHOR
-SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM USE OF THE SOFTWARE.
+**Trademark:** "Smiley" and related branding remain the property of 1tsRajuWu
+(Raj). See NOTICE and LEGAL.md.

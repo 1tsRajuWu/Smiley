@@ -2,63 +2,59 @@
 
 **Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.**
 
-This document summarizes your rights and restrictions when using Smiley. The full [LICENSE](LICENSE) and [NOTICE](NOTICE) apply.
+Smiley is **open source** — you may fork, modify, and contribute code under the [LICENSE](LICENSE). This document clarifies what that includes and what stays with the author.
+
+**Final release:** v6.x is the last major version line. See [docs/FINAL.md](docs/FINAL.md).
 
 ## What you CAN do
 
-- Download and install **official releases** from [github.com/1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley/releases)
-- Use Smiley on your own computer for **personal, non-commercial** purposes
-- Report bugs or request features via [GitHub Issues](https://github.com/1tsRajuWu/Smiley/issues)
-- Optionally donate via [PayPal](https://paypal.me/1tsRaj) — donations do not grant additional rights
+- **Fork and modify** the source code under the [LICENSE](LICENSE)
+- **Submit pull requests** — see [CONTRIBUTING.md](CONTRIBUTING.md)
+- Download and use **official releases** from [github.com/1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley/releases)
+- Build from source for personal or forked distribution (with your own secrets)
+- Report bugs via [GitHub Issues](https://github.com/1tsRajuWu/Smiley/issues)
+- Keep copyright and attribution notices intact
 
-## What you CANNOT do (without written permission)
+## Author's infrastructure — NOT included
 
-- **Fork, clone, mirror, or redistribute** the source code or compiled binaries
-- **Rebrand or rename** Smiley and distribute it under a different name
-- **Remove or alter** copyright notices, attribution, or branding
-- **Claim Smiley as your own work** or imply endorsement by the author
-- **Sell, sublicense, or use commercially** — including bundling with paid products or services
-- **Create derivative works** for public distribution (modified builds, repackaged installers, etc.)
-- **Bypass or tamper with** Smiley's encryption, security controls, or install-tracking opt-out
+Open source code does **not** grant access to the author's hosted services or credentials:
 
-Unauthorized forks and clones violate copyright and trademark rights. They may also be unsafe if tampered with — unofficial builds may lack E2EE protections.
+| Off-limits | Notes |
+|------------|--------|
+| Smiley **install database** (Supabase) | Official-build telemetry only |
+| **Aggregated install / usage data** | Belongs to the operator of that database |
+| Author's **Discord Application ID** (bundled in official releases) | Forks must use their own |
+| Author's **PayPal** (`paypal.me/1tsRaj`) | Forks must use their own donation URL |
 
-## Security & privacy
-
-Smiley encrypts local settings and supports passphrase-based E2EE exports. See [SECURITY.md](SECURITY.md) and [PRIVACY.md](PRIVACY.md).
+Fork operators are responsible for their own infrastructure, privacy policy, and compliance if they enable tracking.
 
 ## Trademark
 
-The name **"Smiley"**, the Smiley logo, and related branding are the intellectual property of 1tsRajuWu (Raj). Use of these marks without permission is prohibited.
+The name **"Smiley"**, the Smiley logo, and related branding remain the intellectual property of 1tsRajuWu (Raj). Forks may acknowledge derivation but should not imply official endorsement or confuse users about who maintains the fork. Consider a distinct name for widely distributed forks.
 
-## Official source only
+## Official releases
 
-The only authorized distribution channel is:
+The author's signed, supported builds are published only at:
 
-**https://github.com/1tsRajuWu/Smiley**
+**https://github.com/1tsRajuWu/Smiley/releases**
 
-Builds from any other source are not official and are not endorsed.
+Third-party forks and builds are not official unless explicitly stated by the author.
 
-## Report unauthorized copies
+## Security & privacy
 
-If you find an unauthorized fork, clone, rebrand, or redistribution:
-
-1. Open a [GitHub Issue](https://github.com/1tsRajuWu/Smiley/issues/new) with the URL and details, or
-2. Email **1tsRajuWu@users.noreply.github.com** with the subject line `Unauthorized copy report`
-
-The author may pursue takedown under applicable copyright law (including DMCA where applicable) and platform abuse policies.
+Smiley encrypts local settings and supports passphrase-based E2EE exports. Official builds send install telemetry to the author's Supabase — see [PRIVACY.md](PRIVACY.md). Forks using their own backend must publish their own privacy terms.
 
 ## Licensing inquiries
 
-For permission to use, modify, or redistribute Smiley:
-
 - GitHub: [@1tsRajuWu](https://github.com/1tsRajuWu)
-- PayPal (support only): [paypal.me/1tsRaj](https://paypal.me/1tsRaj)
+- Issues: [github.com/1tsRajuWu/Smiley/issues](https://github.com/1tsRajuWu/Smiley/issues)
 
 ## Related documents
 
-- [LICENSE](LICENSE) — Proprietary software license
-- [NOTICE](NOTICE) — Copyright and trademark notice
-- [Terms of Service](ToS.md) — includes default install/usage data collection and security terms
-- [Privacy Policy](PRIVACY.md) — full disclosure of collected fields, E2EE, and opt-out
-- [Security & E2EE](SECURITY.md) — encryption details and threat model
+- [docs/FINAL.md](docs/FINAL.md) — goodbye letter & fork guide
+- [LICENSE](LICENSE) — software license
+- [NOTICE](NOTICE) — copyright and trademark notice
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute; off-limits resources
+- [Terms of Service](ToS.md)
+- [Privacy Policy](PRIVACY.md)
+- [Security & E2EE](SECURITY.md)

@@ -4,6 +4,21 @@
 
 Smiley is designed so your personal settings stay on your device, encrypted at rest, with optional passphrase-protected exports. This document explains what is protected, how encryption works, and what we do **not** claim.
 
+## Secrets & CI
+
+**Never commit real credentials** to the repository.
+
+| Secret | Where it belongs |
+|--------|------------------|
+| Discord Application Client ID | `discord.app.json` (gitignored) or GitHub Actions `DISCORD_CLIENT_ID` |
+| Supabase URL + anon key | `downloads.registry.json` (gitignored) or `SUPABASE_URL` / `SUPABASE_ANON_KEY` in Actions |
+| Database admin / service role keys | GitHub Actions secrets only — never in source |
+| User `config.secure` | End-user device only |
+
+Use `discord.app.example.json`, `downloads.registry.example.json`, and `config.example.json` as templates. Official release workflows inject secrets at build time.
+
+**Forks:** Configure your own GitHub Actions secrets. Do not use the author's Supabase project or Discord application — see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Discord account safety
 
 Smiley **never** accesses, stores, logs, or transmits:
@@ -39,18 +54,23 @@ Smiley **never** accesses, stores, logs, or transmits:
 
 **Not E2EE (by design):**
 
-- **Install telemetry** (mandatory on packaged builds) sends metadata to our Supabase database over TLS. The server can read install ID, platform, version, locale, timezone, hashed IP, and coarse geo. There is no opt-out.
+- **Install telemetry** on official packaged builds sends metadata to the author's Supabase database over TLS. The server can read install ID, platform, version, locale, timezone, hashed IP, and coarse geo. There is no opt-out on official builds.
 - **Discord Rich Presence** sends activity text and image URLs to Discord via local IPC.
 - **Third-party GIF APIs** receive anonymous image requests only.
 
 ## Reporting security issues
 
-Do **not** open public GitHub issues for exploitable vulnerabilities.
+Report vulnerabilities via **GitHub** — open a private security advisory or contact [@1tsRajuWu](https://github.com/1tsRajuWu) rather than filing a public issue for exploitable bugs.
 
-Contact: GitHub [@1tsRajuWu](https://github.com/1tsRajuWu) or email **1tsRajuWu@users.noreply.github.com** with subject `Security report — Smiley`.
+- GitHub Security Advisories: [github.com/1tsRajuWu/Smiley/security/advisories](https://github.com/1tsRajuWu/Smiley/security/advisories)
+- Email: **1tsRajuWu@users.noreply.github.com** with subject `Security report — Smiley`
+
+Do **not** disclose exploit details in public Issues before a fix is available.
 
 ## Related documents
 
 - [Privacy Policy](PRIVACY.md) — what data is collected
 - [Terms of Service](ToS.md) — acceptable use and liability
+- [Contributing](CONTRIBUTING.md) — secrets and off-limits infrastructure
 - [Legal Information](LEGAL.md) — copyright and distribution rules
+- [docs/FINAL.md](docs/FINAL.md) — final release & fork boundaries

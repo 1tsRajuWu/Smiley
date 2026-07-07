@@ -3,7 +3,7 @@ Smiley — macOS install
 
 LICENSE
 -------
-Open LICENSE.txt in this window to read the proprietary license agreement.
+Open LICENSE.txt in this window to read the MIT license agreement.
 You must accept it before using Smiley.
 
 Smiley is not notarized by Apple yet (no Developer certificate).

@@ -1,4 +1,5 @@
 {
-  "supabaseUrl": "https://YOUR_PROJECT.supabase.co",
+  "_comment": "Copy to downloads.registry.json for install telemetry. Use YOUR Supabase project — never the author's database.",
+  "supabaseUrl": "https://YOUR_PROJECT_REF.supabase.co",
   "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY"
 }

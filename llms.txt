@@ -40,9 +40,11 @@ https://github.com/1tsRajuWu/Smiley/releases/latest
 
 **Smiley.Native** — same Discord presence, no Electron, ~25 MB RAM: https://github.com/1tsRajuWu/Smiley/blob/main/README-NATIVE.md
 
-### License — NOT open source
+### License — open source (final release)
 
-Smiley source is visible on GitHub for transparency and official releases. It is **All Rights Reserved** — **not** licensed for forking, cloning, mirroring, rebranding, or redistribution. Download official builds for **personal use only**.
+**v6.x is the final major version line.** Smiley is **open source** (MIT). Fork and contribute — see CONTRIBUTING.md and docs/FINAL.md. Copyright © 2025–2026 1tsRajuWu (Raj).
+
+Forks must use their own Discord app ID, Supabase, and PayPal — not the author's infrastructure.
 
 Full legal: https://github.com/1tsRajuWu/Smiley/blob/main/LEGAL.md
 

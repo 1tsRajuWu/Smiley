@@ -1,3 +1,4 @@
 {
+  "_comment": "Copy to discord.app.json. Create a Discord app at https://discord.com/developers/applications — use YOUR Application Client ID, not the author's.",
   "clientId": "YOUR_DISCORD_APPLICATION_CLIENT_ID"
 }

@@ -2,9 +2,13 @@
 
 **Raj (@1tsRaj)** — last updated 9 July 2026 (v6.0.4)
 
+**Applies to official Smiley builds** from [1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley/releases). Forks using their own backend are responsible for their own privacy policy — see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Short version
 
-Smiley encrypts your settings locally (AES-256-GCM) and uses HTTPS for all network requests. By using the app you agree to this policy and our [Terms of Service](ToS.md). Smiley sends **install and usage telemetry on every launch** (including a hashed public IP, captured server-side). There is no opt-out — if you do not agree, do not use the app. See [SECURITY.md](SECURITY.md) for the full E2EE and security model.
+Smiley encrypts your settings locally (AES-256-GCM) and uses HTTPS for all network requests. By using **official** builds you agree to this policy and our [Terms of Service](ToS.md). Official packaged builds send **install and usage telemetry on every launch** (including a hashed public IP, captured server-side). There is no opt-out on official builds — if you do not agree, do not use official releases (you may run a fork without the author's tracking). See [SECURITY.md](SECURITY.md) for the full E2EE and security model.
+
+**Open source ≠ database access:** The public repository does not grant access to the author's Supabase database, install rows, or aggregated analytics. Those are operator infrastructure, not part of the source license.
 
 ## Encryption & E2EE
 
@@ -30,9 +34,11 @@ Full details: [SECURITY.md](SECURITY.md)
 | Custom GIFs you upload | Your files |
 | Random install ID (UUID) | Ties heartbeat requests to one install (encrypted) |
 
-## Install and usage telemetry (required)
+Your local config and encrypted settings **stay on your device** unless you export them or official telemetry sends the fields below.
 
-Each packaged app launch sends a heartbeat to our Supabase database **over HTTPS**. This is mandatory for using Smiley.
+## Install and usage telemetry (official builds)
+
+Each **official packaged** app launch may send a heartbeat to the **author's** Supabase database **over HTTPS**. Forks that replace `downloads.registry.json` with their own project send data elsewhere — or none, if disabled.
 
 | Field | Source | Purpose |
 |-------|--------|---------|
@@ -53,9 +59,20 @@ Each packaged app launch sends a heartbeat to our Supabase database **over HTTPS
 
 **Not sent:** Discord username, token, messages, email, name, hostname, serial number, or files from your device.
 
-**Third party:** [Supabase](https://supabase.com) hosts the database; [ipwho.is](https://ipwho.is) provides IP geolocation over HTTPS.
+**Third party (official builds):** [Supabase](https://supabase.com) hosts the author's database; [ipwho.is](https://ipwho.is) provides IP geolocation over HTTPS.
 
-**Retention:** Install rows are kept for operational analytics and security until manually deleted by the operator. Contact below to request deletion of your `install_id` row.
+**Retention:** Install rows are kept for operational analytics and security until manually deleted by the operator. Contact below to request deletion of your `install_id` row from **official** telemetry.
+
+## Fork operators
+
+If you fork Smiley and enable install tracking:
+
+- You are the **data controller** for your users
+- Publish your own privacy policy
+- Use your own Supabase (or disable tracking) — never the author's credentials
+- Do not access or export data from the author's database
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/FINAL.md](docs/FINAL.md).
 
 ## Other network activity
 
@@ -63,7 +80,7 @@ Each packaged app launch sends a heartbeat to our Supabase database **over HTTPS
 - **waifu.pics / Tenor / Giphy** — fetches images, no personal info sent
 - **GitHub** — version check on launch (HTTPS)
 - **Apple iTunes Search** — optional album art lookup sends song title + artist (HTTPS) when music sync is on
-- **PayPal** — only if you click the donate link
+- **PayPal** — only if you click the donate link (official builds: author's PayPal)
 
 ## What we never collect
 
@@ -79,7 +96,7 @@ Smiley does **not** read your Discord account. It connects to the **Discord desk
 
 ## Your rights
 
-Depending on your jurisdiction you may have rights to access, correct, delete, or object to processing of install data. Contact us with your `install_id` to request deletion. Uninstalling the app does not automatically delete rows already stored.
+Depending on your jurisdiction you may have rights to access, correct, delete, or object to processing of install data from **official** builds. Contact us with your `install_id` to request deletion. Uninstalling the app does not automatically delete rows already stored.
 
 ## Uninstall
 
@@ -95,4 +112,4 @@ Not aimed at under-13s.
 
 ## Contact
 
-[paypal.me/1tsRaj](https://paypal.me/1tsRaj) (support) · GitHub Issues on the official repo
+GitHub Issues on the official repo · [paypal.me/1tsRaj](https://paypal.me/1tsRaj) (support on official builds only)

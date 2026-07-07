@@ -83,19 +83,21 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 
 ---
 
-## License — personal use only
+## License — open source (final release)
 
-Smiley is **not open source**. The repository is public for transparency and official releases — it is **All Rights Reserved**.
+**v6.x is the final major version line.** Smiley is **open source** (MIT). Fork, contribute, and build on it — see [CONTRIBUTING.md](../CONTRIBUTING.md) and [FINAL.md](FINAL.md).
 
-| ✅ Allowed | ❌ Not allowed |
-|-----------|---------------|
-| Download official releases for personal use | Fork, clone, mirror, or redistribute |
-| Report bugs via Issues | Rebrand or rename and distribute |
-| Optional donation | Remove copyright or claim as your own |
+| ✅ Open | 🚫 Author's infrastructure (off-limits) |
+|--------|----------------------------------------|
+| Fork and modify source code | Author's Supabase install database |
+| Pull requests welcome | Author's Discord app ID & CI secrets |
+| Download official releases | Author's PayPal & aggregated telemetry |
 
-**Official source only:** [github.com/1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley)
+Copyright © 2025–2026 **1tsRajuWu (Raj)**. Keep attribution in forks.
 
-Details: [LEGAL.md](../LEGAL.md) · [LICENSE](../LICENSE) · [NOTICE](../NOTICE)
+**Official releases:** [github.com/1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley)
+
+Details: [FINAL.md](FINAL.md) · [LEGAL.md](../LEGAL.md) · [LICENSE](../LICENSE) · [NOTICE](../NOTICE)
 
 ---
 

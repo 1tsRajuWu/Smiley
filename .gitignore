@@ -6,6 +6,7 @@ config.json
 config.secure
 discord.app.json
 downloads.registry.json
+# Runtime secrets on developer machines — never commit
 docs/site/stats-auth.json
 Smiley.Native/bin/
 Smiley.Native/obj/

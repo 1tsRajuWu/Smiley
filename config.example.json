@@ -1,5 +1,6 @@
 {
-  "donationUrl": "https://paypal.me/1tsRaj",
+  "_comment": "Copy to config.json for local dev. Do not commit real URLs or secrets.",
+  "donationUrl": "https://paypal.me/YOUR_USERNAME",
   "theme": "dark",
   "showTimer": true,
   "animationsEnabled": true,
