@@ -23,9 +23,18 @@ releases_json=$(gh api "repos/${REPO}/releases?per_page=30")
 latest_url="https://github.com/${REPO}/releases/latest"
 release_base="https://github.com/${REPO}/releases/download"
 
-# Pick newest release (by publish order in API) that contains an asset matching regex
+# Prefer assets from the GitHub "latest" release; fall back to older tags only if missing.
 find_asset() {
   local pattern=$1
+  local from_latest
+  from_latest=$(echo "$latest_json" | jq -r --arg re "$pattern" --arg tag "$latest_tag" '
+    .assets[] | select(.name | test($re)) |
+    [$tag, .name, .browser_download_url] | @tsv
+  ' | head -1)
+  if [[ -n "$from_latest" ]]; then
+    echo "$from_latest"
+    return
+  fi
   echo "$releases_json" | jq -r --arg re "$pattern" '
     .[] | .tag_name as $tag | .assets[] | select(.name | test($re)) |
     [$tag, .name, .browser_download_url] | @tsv
