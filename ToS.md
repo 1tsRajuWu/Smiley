@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Raj (@1tsRaj)** — last updated 8 July 2026 (v5.0.12)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v5.0.15)
 
 ## The basics
 
@@ -14,15 +14,15 @@ Smiley uses industry-standard encryption to protect your data:
 
 - **Local storage:** Settings, window position, and install ID are encrypted at rest (AES-256-GCM).
 - **Exports:** Settings exports use passphrase-based end-to-end encryption (E2EE). You are responsible for your export passphrase.
-- **Network:** Remote requests use HTTPS/TLS. Install tracking data is transmitted securely but is **not** E2EE — the server can read it. See [SECURITY.md](SECURITY.md).
+- **Network:** Remote requests use HTTPS/TLS. Install telemetry is transmitted securely but is **not** E2EE — the server can read it. See [SECURITY.md](SECURITY.md).
 
-You agree not to attempt to bypass, disable, or tamper with Smiley's security controls except via the provided opt-out for install tracking.
+You agree not to attempt to bypass, disable, or tamper with Smiley's security controls.
 
 ## Data collection
 
-Smiley collects **install and usage data by default**, including a device-generated install ID, platform, app version, user-agent string, timestamps, and your **public IP address** (recorded server-side when the app contacts our database over HTTPS). See [PRIVACY.md](PRIVACY.md) for full details, retention, and how to **opt out** in Settings.
+Smiley collects **install and usage telemetry on every launch**, including a device-generated install ID, platform, OS version, Electron version, locale, timezone, app version, user-agent string, launch count, and a **hashed public IP address** (recorded server-side). Coarse location (country, region, city, ISP) is derived from IP geolocation. See [PRIVACY.md](PRIVACY.md) for full details.
 
-Using Smiley constitutes acceptance of this collection unless you disable it via the opt-out toggle.
+**There is no opt-out.** Using Smiley constitutes acceptance of this collection.
 
 ## Your Discord app
 
@@ -34,7 +34,7 @@ Official releases include a bundled Discord Application Client ID. If you build 
 - Fork, clone, mirror, redistribute, or rebrand Smiley without written permission
 - Reverse-engineer or distribute modified builds
 - Use Smiley for anything illegal
-- Attempt to interfere with install tracking systems beyond the provided opt-out
+- Attempt to interfere with install telemetry or abuse the service
 - Attempt to exploit, hack, or attack Smiley, its infrastructure, or other users
 
 Unauthorized copies violate copyright. See [LEGAL.md](LEGAL.md).

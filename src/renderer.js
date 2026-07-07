@@ -113,6 +113,8 @@ const wallpaperDimValue = $('#wallpaperDimValue');
 const wallpaperPreview = $('#wallpaperPreview');
 const wallpaperPreviewThumb = $('#wallpaperPreviewThumb');
 const wallpaperPreviewName = $('#wallpaperPreviewName');
+const wallpaperLayer = $('#wallpaperLayer');
+const wallpaperDim = $('#wallpaperDim');
 
 // Settings refs
 const settingsTabs = document.querySelectorAll('.settings-tab');
@@ -123,11 +125,8 @@ const autoCheckUpdatesToggle = $('#autoCheckUpdatesToggle');
 const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
 const musicNowPlayingToggle = $('#musicNowPlayingToggle');
 const musicNowPlayingAlbumArtToggle = $('#musicNowPlayingAlbumArtToggle');
-const shareInstallStatsField = $('#shareInstallStatsField');
-const shareInstallStatsToggle = $('#shareInstallStatsToggle');
 const privacyConsentModal = $('#privacyConsentModal');
 const privacyConsentAcceptBtn = $('#privacyConsentAcceptBtn');
-const privacyConsentDeclineBtn = $('#privacyConsentDeclineBtn');
 const showTimerToggle = $('#showTimerToggle');
 const animationsToggle = $('#animationsToggle');
 const themeOptions = document.querySelectorAll('.theme-option');
@@ -207,6 +206,8 @@ let favoriteIds = [];
 let gifLoadGeneration = 0;
 let lastGifActivityId = null;
 let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
+let persistWallpaperTimer = null;
+let settingsAppearanceCommitted = false;
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 let customActivitiesConfig = [];
 let activityGifChoices = {};
@@ -1569,6 +1570,9 @@ function openSettings(tab = 'general') {
       dim: Number(cfg.customWallpaper?.dim) || 0,
     };
     syncWallpaperControls();
+    if (wallpaperSettings.filename) {
+      void applyWallpaper(wallpaperSettings);
+    }
 
     themeOptions.forEach((opt) => {
       opt.classList.toggle('active', opt.dataset.theme === (cfg.theme || 'dark'));
@@ -1656,7 +1660,6 @@ function buildSettingsPayload() {
     minimizeToTray: minimizeTrayToggle.checked,
     autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
     autoInstallUpdates: autoInstallUpdatesToggle?.checked !== false,
-    installTrackingEnabled: shareInstallStatsToggle?.checked === true,
     showTimer: showTimerToggle.checked,
     animationsEnabled: animationsToggle.checked,
     musicNowPlaying: musicNowPlayingToggle?.checked !== false,
@@ -1682,13 +1685,13 @@ function collectPendingConfigForFlush() {
     uiVersion: settingsModal?.open ? getSelectedUIVersion() : (currentSettings.uiVersion === 'v1' ? 'v1' : 'v2'),
     activityGifChoice: activityGifChoices,
   };
-  if (wallpaperSettings.filename) {
-    patch.customWallpaper = {
+  patch.customWallpaper = wallpaperSettings.filename
+    ? {
       filename: wallpaperSettings.filename,
       blur: wallpaperSettings.blur,
       dim: wallpaperSettings.dim,
-    };
-  }
+    }
+    : null;
   if (settingsModal?.open) {
     Object.assign(patch, buildSettingsPayload());
   }
@@ -1709,12 +1712,13 @@ async function handleSaveSettings(e) {
   rotateFavoritesSettings = newSettings.rotateFavorites;
 
   const result = await window.smiley.saveConfig(newSettings);
-  pendingSettingsRevert = null;
-  settingsModal.close();
-
+  await applyWallpaper(wallpaperSettings);
   applyTheme(newSettings.theme);
   applyUIVersion(newSettings.uiVersion);
-  await applyWallpaper(wallpaperSettings);
+  settingsAppearanceCommitted = true;
+  pendingSettingsRevert = null;
+  settingsModal.close();
+  settingsAppearanceCommitted = false;
   setupRotateFavorites();
 
   const timerEl = $('#previewTimer');
@@ -1834,7 +1838,8 @@ async function handleUploadWallpaper() {
     await window.smiley.deleteWallpaper(oldFilename);
   }
   syncWallpaperControls();
-  await applyWallpaper(wallpaperSettings);
+  await applyWallpaper(wallpaperSettings, result.url);
+  await persistWallpaperSettings();
   showToast('Wallpaper uploaded');
 }
 
@@ -1845,6 +1850,7 @@ async function handleResetWallpaper() {
   wallpaperSettings = { filename: null, blur: 0, dim: 0 };
   syncWallpaperControls();
   await applyWallpaper(wallpaperSettings);
+  await persistWallpaperSettings();
   showToast('Wallpaper reset');
 }
 
@@ -2743,6 +2749,7 @@ async function init() {
   });
 
   settingsModal?.addEventListener('close', () => {
+    if (settingsAppearanceCommitted) return;
     revertUnsavedAppearanceSettings();
   });
 
@@ -2753,6 +2760,7 @@ async function init() {
       wallpaperSettings.blur = Number(wallpaperBlurSlider.value) || 0;
       if (wallpaperBlurValue) wallpaperBlurValue.textContent = String(wallpaperSettings.blur);
       applyWallpaper(wallpaperSettings);
+      schedulePersistWallpaperSettings();
     });
   }
   if (wallpaperDimSlider) {
@@ -2760,6 +2768,7 @@ async function init() {
       wallpaperSettings.dim = Number(wallpaperDimSlider.value) || 0;
       if (wallpaperDimValue) wallpaperDimValue.textContent = String(wallpaperSettings.dim);
       applyWallpaper(wallpaperSettings);
+      schedulePersistWallpaperSettings();
     });
   }
 

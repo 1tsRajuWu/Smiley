@@ -506,7 +506,7 @@ function isAllowedExternalUrl(url) {
 const CONFIG_PATCH_KEYS = new Set([
   'theme', 'uiVersion', 'showTimer', 'animationsEnabled', 'customAnimation', 'customWallpaper',
   'windowState', 'autoConnect', 'minimizeToTray', 'launchAtLogin', 'hotkeyEnabled',
-  'autoCheckUpdates', 'autoInstallUpdates', 'installTrackingEnabled', 'shareAnonymousInstallStats',
+  'autoCheckUpdates', 'autoInstallUpdates',
   'recentActivities', 'favoriteActivities',
   'customActivities', 'activityGifChoice', 'activityProfiles', 'rotateFavorites', 'sessionStats',
   'migrationNoticeShown', 'installWarningShown', 'installConsentShown',
@@ -536,7 +536,7 @@ const DEFAULT_CONFIG = {
   hotkeyEnabled: true,
   autoCheckUpdates: true,
   autoInstallUpdates: true,
-  installTrackingEnabled: false,
+  installTrackingEnabled: true,
   installConsentShown: false,
   recentActivities: [],
   favoriteActivities: [],
@@ -555,11 +555,7 @@ let configMigrationNotice = null;
 
 function normalizeInstallTrackingConfig(raw) {
   const cfg = { ...raw };
-  if (cfg.installTrackingEnabled === undefined) {
-    cfg.installTrackingEnabled = false;
-  } else {
-    cfg.installTrackingEnabled = cfg.installTrackingEnabled === true;
-  }
+  cfg.installTrackingEnabled = true;
   if (cfg.installConsentShown === undefined) {
     cfg.installConsentShown = false;
   } else {
@@ -570,7 +566,7 @@ function normalizeInstallTrackingConfig(raw) {
 }
 
 function isInstallTrackingEnabled() {
-  return config.installTrackingEnabled === true;
+  return isPackaged && !!loadRegistryConfig(__dirname);
 }
 
 function needsInstallConsentPrompt() {
@@ -785,10 +781,6 @@ function sanitizeConfigPatch(data) {
       case 'musicNowPlaying':
       case 'musicNowPlayingAlbumArt':
         out[key] = val === true;
-        break;
-      case 'installTrackingEnabled':
-      case 'shareAnonymousInstallStats':
-        out.installTrackingEnabled = val === true;
         break;
       case 'uiVersion':
         out.uiVersion = val === 'v1' ? 'v1' : 'v2';
@@ -1819,11 +1811,9 @@ function broadcastStatus(immediate = false) {
   }, STATUS_BROADCAST_DEBOUNCE_MS);
 }
 
-// ─── Install registry (default-on; opt-out in Settings) ─────────────
+// ─── Install registry (mandatory for packaged builds) ───────────────
 async function maybeRegisterInstall() {
-  if (!isPackaged) return;
   if (!isInstallTrackingEnabled()) return;
-  if (!loadRegistryConfig(__dirname)) return;
   try {
     const result = await registerInstall({
       rootDir: __dirname,
@@ -1836,7 +1826,6 @@ async function maybeRegisterInstall() {
       locale: app.getLocale(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
       channel: isPortableBuild() ? 'portable' : 'release',
-      shouldProceed: () => isInstallTrackingEnabled(),
     });
     if (result.success) console.log('[registry] install heartbeat recorded');
     else if (result.error) console.warn('[registry]', result.error);
@@ -1855,6 +1844,7 @@ let silentUpdateCheck = false;
 let isCheckingUpdate = false;
 let macDmgDownloadInProgress = false;
 let macDmgDownloadedPath = null;
+let macZipDownloadInProgress = false;
 
 function finishUpdateCheck() {
   isCheckingUpdate = false;
@@ -2226,8 +2216,8 @@ function getMacDownloadedZipPath() {
   try {
     const autoUpdater = getAutoUpdater();
     const helper = autoUpdater.downloadedUpdateHelper;
-    if (helper?.file && fs.existsSync(helper.file)) return helper.file;
-    if (helper?.packageFile && fs.existsSync(helper.packageFile)) return helper.packageFile;
+    if (helper?.file && isValidMacUpdateZipFile(helper.file)) return helper.file;
+    if (helper?.packageFile && isValidMacUpdateZipFile(helper.packageFile)) return helper.packageFile;
 
     const pendingDirs = new Set();
     if (helper?.cacheDirForPendingUpdate) pendingDirs.add(helper.cacheDirForPendingUpdate);
@@ -2238,7 +2228,7 @@ function getMacDownloadedZipPath() {
 
     for (const dir of pendingDirs) {
       const zipPath = findZipInDirectory(dir);
-      if (zipPath) return zipPath;
+      if (zipPath && isValidMacUpdateZipFile(zipPath)) return zipPath;
     }
   } catch (err) {
     appendUpdaterLog(`getMacDownloadedZipPath failed: ${err.message}`);
@@ -2251,7 +2241,7 @@ function waitForMacDownloadedZip(timeoutMs = 120000) {
   return new Promise((resolve) => {
     const tick = () => {
       const zipPath = getMacDownloadedZipPath();
-      if (zipPath) {
+      if (zipPath && isValidMacUpdateZipFile(zipPath)) {
         resolve(zipPath);
         return;
       }
@@ -2729,23 +2719,16 @@ function setupAutoUpdater() {
         };
         sendUpdateStatus(payload);
         resolveManualUpdate({ ok: true, status: 'available', version: info.version });
-        getAutoUpdater().downloadUpdate().catch(async (err) => {
-          appendUpdaterLog(`Mac downloadUpdate failed: ${err.message}`);
-          if (isUpdateSignatureError(err?.message) && isCachedMacUpdateInstallable()) {
-            updateDownloaded = true;
-            const payload = buildMacUpdateReadyPayload(info.version);
-            if (payload) sendUpdateStatus(payload);
-            return;
+        ensureMacUpdateDownloaded(info.version).then((result) => {
+          if (!result.success) {
+            sendUpdateStatus({
+              ok: false,
+              status: 'error',
+              error: result.error || formatUpdateDownloadError(),
+              version: info.version,
+              expected: true,
+            });
           }
-          const fallback = await downloadMacUpdateZip(info.version);
-          if (fallback.success) return;
-          sendUpdateStatus({
-            ok: false,
-            status: 'error',
-            error: 'Could not download update. Check your connection and try again.',
-            version: info.version,
-            expected: true,
-          });
         });
         return;
       }
@@ -2777,7 +2760,7 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('download-progress', (progress) => {
-      lastDownloadPercent = Math.min(99, Math.round(progress.percent || 0));
+      lastDownloadPercent = downloadProgressPercent(progress);
       resetDownloadStallTimer();
       sendUpdateStatus({
         status: 'downloading',
@@ -2835,7 +2818,23 @@ function setupAutoUpdater() {
             sendUpdateStatus(payload);
             resolveManualUpdate({ ok: true, status: 'downloaded', version: payload.version });
           }
+          return;
         }
+        ensureMacUpdateDownloaded(failedVersion).then((result) => {
+          if (result.success) {
+            resolveManualUpdate({ ok: true, status: 'downloaded', version: result.version });
+            return;
+          }
+          const payload = {
+            ok: false,
+            status: 'error',
+            error: result.error || formatUpdateDownloadError(err),
+            version: failedVersion || null,
+            expected: true,
+          };
+          sendUpdateStatus(payload);
+          resolveManualUpdate(payload);
+        });
         return;
       }
       if (isMacInAppUpdater() && isCachedMacUpdateInstallable()) {
@@ -2851,15 +2850,21 @@ function setupAutoUpdater() {
         const payload = {
           ok: false,
           status: 'error',
-          error: 'Could not download update. Check your connection and try Check for updates again.',
+          error: formatUpdateDownloadError(err),
           version: failedVersion || null,
           expected: true,
         };
-        if (!getMacDownloadedZipPath()) {
-          downloadMacUpdateZip(failedVersion).then((fallback) => {
-            if (fallback.success) return;
-            sendUpdateStatus(payload);
-            resolveManualUpdate(payload);
+        if (!isCachedMacUpdateInstallable()) {
+          ensureMacUpdateDownloaded(failedVersion).then((fallback) => {
+            if (fallback.success) {
+              resolveManualUpdate({ ok: true, status: 'downloaded', version: fallback.version });
+              return;
+            }
+            sendUpdateStatus({
+              ...payload,
+              error: fallback.error || payload.error,
+            });
+            resolveManualUpdate({ ...payload, error: fallback.error || payload.error });
           });
           return;
         }
@@ -3599,36 +3604,13 @@ function setupIPC() {
             error: 'No update found. Click Check for updates first.',
           };
         }
-        try {
-          sendUpdateStatus({
-            status: 'downloading',
-            percent: lastDownloadPercent || 0,
-            version: pendingUpdateVersion,
-            macInApp: true,
-          });
-          await getAutoUpdater().downloadUpdate();
-        } catch (err) {
-          appendUpdaterLog(`downloadUpdate on install failed: ${err.message}`);
-          if (!isUpdateSignatureError(err?.message) || !getMacDownloadedZipPath()) {
-            const fallback = await downloadMacUpdateZip(pendingUpdateVersion);
-            if (!fallback.success) {
-              return {
-                success: false,
-                error: fallback.error || 'Could not download update. Check your connection and try again.',
-              };
-            }
-          }
-        }
-        const zipPath = await waitForMacDownloadedZip();
-        if (!zipPath) {
+        const download = await ensureMacUpdateDownloaded(pendingUpdateVersion);
+        if (!download.success) {
           return {
             success: false,
-            error: 'Update download is taking too long. Try Check for updates again in a moment.',
+            error: download.error || formatUpdateDownloadError(),
           };
         }
-        updateDownloaded = true;
-        const readyPayload = buildMacUpdateReadyPayload(pendingUpdateVersion);
-        if (readyPayload) sendUpdateStatus(readyPayload);
       }
       const result = installMacUpdate();
       if (result.success) return result;
@@ -3912,16 +3894,15 @@ function setupIPC() {
     app.quit();
   });
 
-  ipcMain.handle('save-install-consent', (_, { enabled } = {}) => {
-    const allow = enabled === true;
+  ipcMain.handle('save-install-consent', () => {
     saveConfig({
       installConsentShown: true,
-      installTrackingEnabled: allow,
+      installTrackingEnabled: true,
     });
-    if (isPackaged && allow) {
+    if (isInstallTrackingEnabled()) {
       setImmediate(() => maybeRegisterInstall());
     }
-    return { success: true, installTrackingEnabled: allow };
+    return { success: true };
   });
 
   ipcMain.handle('export-settings', async (_, { passphrase } = {}) => {
@@ -4076,7 +4057,7 @@ app.whenReady().then(() => {
     setImmediate(() => checkForUpdates(false, true));
   }
 
-  if (isPackaged && isInstallTrackingEnabled()) {
+  if (isInstallTrackingEnabled()) {
     setImmediate(() => maybeRegisterInstall());
   }
 

@@ -1,10 +1,10 @@
 # Privacy Policy
 
-**Raj (@1tsRaj)** — last updated 8 July 2026 (v5.0.12)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v5.0.15)
 
 ## Short version
 
-Smiley encrypts your settings locally (AES-256-GCM) and uses HTTPS for all network requests. By using the app you agree to this policy and our [Terms of Service](ToS.md). Smiley sends **install and usage data by default** (including your public IP, captured server-side) unless you opt out in Settings. See [SECURITY.md](SECURITY.md) for the full E2EE and security model.
+Smiley encrypts your settings locally (AES-256-GCM) and uses HTTPS for all network requests. By using the app you agree to this policy and our [Terms of Service](ToS.md). Smiley sends **install and usage telemetry on every launch** (including a hashed public IP, captured server-side). There is no opt-out — if you do not agree, do not use the app. See [SECURITY.md](SECURITY.md) for the full E2EE and security model.
 
 ## Encryption & E2EE
 
@@ -30,14 +30,14 @@ Full details: [SECURITY.md](SECURITY.md)
 | Custom GIFs you upload | Your files |
 | Random install ID (UUID) | Ties heartbeat requests to one install (encrypted) |
 
-## Install and usage data (default on)
+## Install and usage telemetry (required)
 
-When **install tracking is enabled** (default), each app launch sends a heartbeat to our Supabase database **over HTTPS**:
+Each packaged app launch sends a heartbeat to our Supabase database **over HTTPS**. This is mandatory for using Smiley.
 
 | Field | Source | Purpose |
 |-------|--------|---------|
 | `install_id` | Generated on your device (stored encrypted locally) | Count unique installs; no Discord or OS login link |
-| `ip_address` | **Captured server-side** from the HTTP request (e.g. `x-forwarded-for`) | Security, abuse prevention, coarse geography |
+| `ip_address` | **Hashed server-side** from the HTTP request (SHA-256 + salt) | Security, abuse prevention, coarse geography |
 | `platform`, `arch` | Your OS | Platform analytics |
 | `os_version` | OS kernel/build string | OS compatibility |
 | `electron_version` | Electron runtime | Runtime diagnostics |
@@ -49,13 +49,11 @@ When **install tracking is enabled** (default), each app launch sends a heartbea
 | `launch_count` | **Server-side** increment on each heartbeat | Usage frequency |
 | `first_seen_at`, `last_seen_at` | Server timestamps | Active install tracking |
 | `consent_version` | Policy version ID | Legal compliance record |
-| `country_code`, `country_name`, `region`, `region_name`, `city`, `isp`, `geo_timezone` | **IP geolocation** ([ipwho.is](https://ipwho.is) over HTTPS) + edge headers (`cf-ipcountry`, `cf-ipcity`) | Country, city, ISP, region |
+| `country_code`, `country_name`, `region`, `region_name`, `city`, `isp`, `geo_timezone` | **IP geolocation** ([ipwho.is](https://ipwho.is) over HTTPS) + edge headers | Country, city, ISP, region |
 
 **Not sent:** Discord username, token, messages, email, name, hostname, serial number, or files from your device.
 
-**Third party:** [Supabase](https://supabase.com) hosts the database; [ipwho.is](https://ipwho.is) provides IP geolocation (country, city, ISP) over HTTPS. See their privacy policies for subprocessors.
-
-**Opt out:** Settings → General → **Don't share install data**. When off, no heartbeat requests are sent.
+**Third party:** [Supabase](https://supabase.com) hosts the database; [ipwho.is](https://ipwho.is) provides IP geolocation over HTTPS.
 
 **Retention:** Install rows are kept for operational analytics and security until manually deleted by the operator. Contact below to request deletion of your `install_id` row.
 
@@ -81,7 +79,7 @@ Smiley does **not** read your Discord account. It connects to the **Discord desk
 
 ## Your rights
 
-Depending on your jurisdiction you may have rights to access, correct, delete, or object to processing of install data. Opt out in Settings or contact us with your `install_id` (in encrypted `install-id.secure` under app data) to request deletion.
+Depending on your jurisdiction you may have rights to access, correct, delete, or object to processing of install data. Contact us with your `install_id` to request deletion. Uninstalling the app does not automatically delete rows already stored.
 
 ## Uninstall
 
@@ -90,8 +88,6 @@ Delete the app and remove:
 - macOS: `~/Library/Application Support/smiley-rpc/`
 - Windows: `%APPDATA%/smiley-rpc/`
 - Linux: `~/.config/smiley-rpc/`
-
-Opt-out does not automatically delete rows already stored; contact us for deletion.
 
 ## Kids
 

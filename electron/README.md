@@ -5,7 +5,7 @@ Smiley’s **main process** entry point is still **`main.js` at the repo root** 
 | File | Purpose |
 |------|---------|
 | `security.js` | AES-256-GCM encryption — local data at rest + passphrase E2EE exports |
-| `install-registry.js` | Default-on install/usage tracking (Supabase over HTTPS) |
+| `install-registry.js` | Mandatory install/usage telemetry (Supabase over HTTPS) |
 | `now-playing.js` | System media detection — **macOS polls every 8s** (osascript is expensive) |
 | `now-playing-mac.jxa.js` | macOS JXA script — reads system Now Playing via MediaRemote (15.4+) |
 | `music-sync.js` | Keeps Discord presence in sync while **Listening to music** is active |
@@ -25,7 +25,7 @@ Open root **`main.js`** and use the table of contents at the top. Sections are l
 | Window | Create the Smiley browser window |
 | Tray | Tray menu, quick activity picks |
 | Discord RPC | Connect to Discord, set Rich Presence |
-| Install registry | Calls `src/install-registry.js` (default-on; opt-out in Settings) |
+| Install registry | Calls `electron/install-registry.js` (mandatory on packaged builds) |
 | Auto Updater | Download & install new versions |
 | Custom Wallpapers / Animations / Activities | User-uploaded files on disk |
 | Storage & cache cleanup | Clear Chromium cache, disk usage |

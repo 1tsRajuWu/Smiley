@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('smiley', {
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
   isWindowMaximized: () => ipcRenderer.invoke('is-window-maximized'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
+  saveInstallConsent: () => ipcRenderer.invoke('save-install-consent'),
   resetWindowPosition: () => ipcRenderer.invoke('reset-window-position'),
   getStorageInfo: () => ipcRenderer.invoke('get-storage-info'),
   clearCache: () => ipcRenderer.invoke('clear-cache'),

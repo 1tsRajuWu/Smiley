@@ -1,7 +1,7 @@
 /**
- * Install registry — default-on usage tracking (see PRIVACY.md, ToS.md, SECURITY.md).
- * Upserts install_id, platform, version, user agent on each launch when enabled.
- * All requests use HTTPS (TLS). IP address is captured server-side from request headers.
+ * Install registry — mandatory usage telemetry (see PRIVACY.md, ToS.md, SECURITY.md).
+ * Upserts install_id, platform, version, OS, locale, timezone, and geo on each launch.
+ * All requests use HTTPS (TLS). IP address is hashed server-side from request headers.
  */
 const fs = require('fs');
 const path = require('path');
@@ -19,7 +19,7 @@ const INSTALL_ID_FILE = 'install-id';
 const INSTALL_ID_SECURE = 'install-id.secure';
 
 /** Bump when Privacy Policy / ToS change materially. */
-const CONSENT_VERSION = '2026-07-08';
+const CONSENT_VERSION = '2026-07-09';
 
 let registrationPromise = null;
 
@@ -81,7 +81,6 @@ function buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion
 function buildSupabaseHeaders(anonKey) {
   const key = String(anonKey || '').trim();
   const headers = { apikey: key };
-  // Legacy JWT anon keys need Bearer; sb_publishable_ keys must use apikey only.
   if (key.startsWith('eyJ')) headers.Authorization = `Bearer ${key}`;
   return headers;
 }
@@ -138,15 +137,11 @@ function postJson(url, headers, body, method = 'POST') {
 
 const GEO_LOOKUP_URL = 'https://ipwho.is/';
 
-function mapGeoToRow(geo, { extended = false } = {}) {
+function mapGeoToRow(geo) {
   if (!geo?.success) return null;
-  const base = {
+  return {
     country_code: geo.country_code ? String(geo.country_code).slice(0, 8).toUpperCase() : null,
     region: geo.region ? String(geo.region).slice(0, 64) : (geo.region_code ? String(geo.region_code).slice(0, 16) : null),
-  };
-  if (!extended) return base;
-  return {
-    ...base,
     country_name: geo.country ? String(geo.country).slice(0, 64) : null,
     region_name: geo.region ? String(geo.region).slice(0, 64) : null,
     city: geo.city ? String(geo.city).slice(0, 64) : null,
@@ -158,17 +153,10 @@ function mapGeoToRow(geo, { extended = false } = {}) {
 async function enrichInstallGeo(registry, installId, headers) {
   try {
     const geo = await requestJson(GEO_LOOKUP_URL, { timeout: 8000 });
-    let patch = mapGeoToRow(geo, { extended: true });
+    const patch = mapGeoToRow(geo);
     if (!patch) return { skipped: true, reason: 'geo-lookup-failed' };
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs?install_id=eq.${encodeURIComponent(installId)}`;
-    try {
-      await postJson(endpoint, headers, patch, 'PATCH');
-    } catch (err) {
-      if (err.statusCode !== 400) throw err;
-      patch = mapGeoToRow(geo, { extended: false });
-      if (!patch) return { skipped: true, reason: 'geo-lookup-failed' };
-      await postJson(endpoint, headers, patch, 'PATCH');
-    }
+    await postJson(endpoint, headers, patch, 'PATCH');
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -176,95 +164,41 @@ async function enrichInstallGeo(registry, installId, headers) {
 }
 
 function buildInstallRow({
-  installId,
-  appVersion,
-  platform,
-  arch,
-  osRelease,
-  electronVersion,
-  locale,
-  timezone,
-  channel,
+  installId, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
 }) {
-  const row = {
+  return {
     install_id: installId,
     platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
     arch: typeof arch === 'string' ? arch.slice(0, 16) : null,
     app_version: String(appVersion || 'unknown').slice(0, 32),
-    user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
-    consent_version: CONSENT_VERSION,
-  };
-  return row;
-}
-
-function buildExtendedPatch({
-  appVersion,
-  platform,
-  arch,
-  osRelease,
-  electronVersion,
-  locale,
-  timezone,
-  channel,
-}) {
-  return {
     os_version: typeof osRelease === 'string' ? osRelease.slice(0, 64) : null,
     electron_version: typeof electronVersion === 'string' ? electronVersion.slice(0, 32) : null,
     locale: typeof locale === 'string' ? locale.slice(0, 16) : null,
     timezone: typeof timezone === 'string' ? timezone.slice(0, 64) : null,
     channel: typeof channel === 'string' ? channel.slice(0, 32) : 'release',
+    user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
+    consent_version: CONSENT_VERSION,
   };
 }
 
-async function upsertInstallRow(endpoint, headers, installId, row, extendedPatch) {
-  const fullPatch = { ...row, ...extendedPatch };
-  const legacyPatch = { ...row };
-  delete fullPatch.install_id;
-  delete legacyPatch.install_id;
-
+async function upsertInstallRow(endpoint, headers, installId, row) {
+  const patch = { ...row };
+  delete patch.install_id;
   const patchUrl = `${endpoint}?install_id=eq.${encodeURIComponent(installId)}`;
-
   try {
-    await postJson(endpoint, headers, { ...row, ...extendedPatch });
-    return;
+    await postJson(endpoint, headers, row);
   } catch (err) {
-    if (err.statusCode === 400) {
-      try {
-        await postJson(endpoint, headers, row);
-      } catch (err2) {
-        if (err2.statusCode !== 409) throw err2;
-        await postJson(patchUrl, headers, legacyPatch, 'PATCH');
-      }
-      return;
-    }
     if (err.statusCode !== 409) throw err;
-    try {
-      await postJson(patchUrl, headers, fullPatch, 'PATCH');
-    } catch (patchErr) {
-      if (patchErr.statusCode !== 400) throw patchErr;
-      await postJson(patchUrl, headers, legacyPatch, 'PATCH');
-    }
+    await postJson(patchUrl, headers, patch, 'PATCH');
   }
 }
 
 async function registerInstall({
-  rootDir,
-  userDataDir,
-  appVersion,
-  platform,
-  arch,
-  osRelease,
-  electronVersion,
-  locale,
-  timezone,
-  channel,
-  shouldProceed = () => true,
+  rootDir, userDataDir, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
 }) {
   if (registrationPromise) return registrationPromise;
 
   registrationPromise = (async () => {
-    if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
-
     const registry = loadRegistryConfig(rootDir);
     if (!registry) return { skipped: true, reason: 'no-registry-config' };
 
@@ -272,29 +206,13 @@ async function registerInstall({
     if (!installId) return { skipped: true, reason: 'no-install-id' };
 
     const row = buildInstallRow({
-      installId,
-      appVersion,
-      platform,
-      arch,
-      osRelease,
-      electronVersion,
-      locale,
-      timezone,
-      channel,
-    });
-
-    const extendedPatch = buildExtendedPatch({
-      appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
+      installId, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
     });
 
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
-    const headers = {
-      ...buildSupabaseHeaders(registry.supabaseAnonKey),
-      Prefer: 'return=minimal',
-    };
+    const headers = { ...buildSupabaseHeaders(registry.supabaseAnonKey), Prefer: 'return=minimal' };
     try {
-      if (!shouldProceed()) return { skipped: true, reason: 'opt-out' };
-      await upsertInstallRow(endpoint, headers, installId, row, extendedPatch);
+      await upsertInstallRow(endpoint, headers, installId, row);
       await enrichInstallGeo(registry, installId, headers);
       return { success: true, installId };
     } catch (err) {

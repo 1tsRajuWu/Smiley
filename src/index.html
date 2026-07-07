@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="styles-v2.css" id="uiStylesheet" />
   </head>
   <body>
+    <img id="wallpaperLayer" class="wallpaper-layer" alt="" aria-hidden="true" hidden />
+    <div id="wallpaperDim" class="wallpaper-dim" aria-hidden="true" hidden></div>
     <div class="app" id="app">
       <!-- Header -->
       <header class="app-header header">
@@ -237,13 +239,6 @@
               </div>
               <label class="toggle"><input type="checkbox" id="autoInstallUpdatesToggle" checked /><span class="toggle-slider"></span></label>
             </div>
-            <div class="field toggle-field" id="shareInstallStatsField" hidden>
-              <div>
-                <span class="field-label">Share anonymous install data</span>
-                <p class="field-hint" style="margin:4px 0 0;">Opt in to help improve Smiley. Sends install ID, hashed IP, platform, version, and timestamps over HTTPS only. Off by default. No Discord username or token. See <a href="#" class="legal-link" data-legal="privacy">Privacy</a>, <a href="#" class="legal-link" data-legal="tos">Terms</a>, and <a href="#" class="legal-link" data-legal="security">Security</a>.</p>
-              </div>
-              <label class="toggle"><input type="checkbox" id="shareInstallStatsToggle" /><span class="toggle-slider"></span></label>
-            </div>
             <div class="field">
               <p class="field-hint" style="margin:0 0 10px;">Installed builds check GitHub Releases automatically.</p>
               <button type="button" class="btn btn-secondary" id="checkUpdateBtnGeneral">Check for Updates</button>
@@ -461,20 +456,19 @@
       </div>
     </dialog>
 
-    <!-- Privacy consent (first launch, packaged builds with install registry) -->
+    <!-- Privacy notice (first launch, packaged builds with install registry) -->
     <dialog class="modal" id="privacyConsentModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Privacy &amp; security</h2>
+          <h2>Privacy notice</h2>
         </div>
         <div class="modal-body">
-          <p>Smiley encrypts your settings locally (AES-256-GCM). Your Discord login token and username are <strong>never</strong> read or stored.</p>
-          <p>Optionally share anonymous install stats (platform, version, hashed IP) to help improve the app. This is <strong>off by default</strong> and uses HTTPS only.</p>
-          <p class="field-hint">You can change this anytime in Settings → General. See our <a href="#" class="legal-link" data-legal="privacy">Privacy Policy</a> and <a href="#" class="legal-link" data-legal="security">Security</a> docs.</p>
+          <p>Smiley encrypts your settings locally (AES-256-GCM). Your Discord login token, username, and messages are <strong>never</strong> read or stored.</p>
+          <p>By using Smiley you agree to our <a href="#" class="legal-link" data-legal="privacy">Privacy Policy</a> and <a href="#" class="legal-link" data-legal="tos">Terms of Service</a>. We collect install telemetry (platform, app version, locale, timezone, hashed IP, and coarse location) over HTTPS to improve the app. This cannot be disabled.</p>
+          <p class="field-hint">See <a href="#" class="legal-link" data-legal="security">Security</a> for what is and is not collected.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="privacyConsentDeclineBtn">No thanks</button>
-          <button type="button" class="btn btn-primary" id="privacyConsentAcceptBtn">Share anonymous stats</button>
+          <button type="button" class="btn btn-primary" id="privacyConsentAcceptBtn">Continue</button>
         </div>
       </div>
     </dialog>
