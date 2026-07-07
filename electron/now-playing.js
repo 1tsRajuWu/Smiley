@@ -341,10 +341,15 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
   const pollEveryMs = Math.max(MIN_POLL_MS, pollIntervalMs || DEFAULT_POLL_MS);
 
   const emit = (raw) => {
+    if (raw === undefined) return;
     const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
     const metaSig = trackMetaSignature(track);
-    if (metaSig === lastMetaSignature) return;
-    lastMetaSignature = metaSig;
+    const metaChanged = metaSig !== lastMetaSignature;
+    if (!metaChanged && track) {
+      onUpdate?.(track);
+      return;
+    }
+    if (metaChanged) lastMetaSignature = metaSig;
     onUpdate?.(track);
   };
 

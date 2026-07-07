@@ -47,6 +47,8 @@ const previewNowPlaying = $('#previewNowPlaying');
 const previewTrackProgress = $('#previewTrackProgress');
 const previewTrackBar = $('#previewTrackBar');
 const previewTrackFill = $('#previewTrackFill');
+const previewTrackElapsed = $('#previewTrackElapsed');
+const previewTrackDuration = $('#previewTrackDuration');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -980,6 +982,20 @@ function getLiveTrackProgress(track) {
   return { progressMs, durationMs };
 }
 
+function formatTrackClock(ms) {
+  const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
+
+function startNowPlayingProgressTimer() {
+  clearNowPlayingProgressTimer();
+  if (!nowPlayingTrack?.title || selectedActivityId !== 'listening') return;
+  updateNowPlayingProgressUi();
+  nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 1000);
+}
+
 function clearNowPlayingProgressTimer() {
   if (nowPlayingProgressTimer) {
     clearInterval(nowPlayingProgressTimer);
@@ -997,6 +1013,8 @@ function updateNowPlayingProgressUi() {
   const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
   if (previewTrackFill) previewTrackFill.style.width = `${pct}%`;
   if (previewTrackBar) previewTrackBar.setAttribute('aria-valuenow', String(Math.round(pct)));
+  if (previewTrackElapsed) previewTrackElapsed.textContent = formatTrackClock(progressMs);
+  if (previewTrackDuration) previewTrackDuration.textContent = formatTrackClock(durationMs);
   previewTrackProgress.hidden = false;
 }
 
@@ -1472,6 +1490,7 @@ async function selectActivity(id) {
   } else if (result?.success !== false) {
     presencePaused = false;
     if (activity.id === 'listening' && currentSettings.musicNowPlaying !== false) {
+      startNowPlayingProgressTimer();
       showToast('Now playing sync on — play music in any app', 'success');
     } else {
       showToast(`Status set: ${activity.details}`);
@@ -3017,12 +3036,15 @@ async function init() {
     const activity = findActivity('listening');
     if (!activity) return;
 
-    if (!metaChanged && track?.title && nowPlayingProgressTimer) return;
-
-    applyNowPlayingPreview(activity);
-    clearNowPlayingProgressTimer();
     if (track?.title) {
-      nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 1000);
+      applyNowPlayingPreview(activity);
+      startNowPlayingProgressTimer();
+      return;
+    }
+
+    if (metaChanged) {
+      applyNowPlayingPreview(activity);
+      clearNowPlayingProgressTimer();
     }
   });
 

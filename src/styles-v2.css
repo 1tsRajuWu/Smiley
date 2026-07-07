@@ -205,6 +205,15 @@
   transition: width 1s linear;
 }
 
+[data-ui-version='v2'] .discord-track-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 0.72rem;
+  color: var(--v2-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 [data-ui-version='v2'] .discord-timer {
   font-size: 0.8rem;
   margin-top: 7px;
@@ -601,13 +610,17 @@
 }
 
 /* ─── Wallpaper glass on v2 ─────────────────────────────────────────── */
-[data-ui-version='v2'].has-wallpaper .character-stage,
-[data-ui-version='v2'].has-wallpaper .discord-card,
-[data-ui-version='v2'].has-wallpaper .donate-banner,
-[data-ui-version='v2'].has-wallpaper .activity-card,
-[data-ui-version='v2'].has-wallpaper .picker-main,
-[data-ui-version='v2'].has-wallpaper .header,
-[data-ui-version='v2'].has-wallpaper .footer {
+html[data-ui-version='v2'] body.has-wallpaper .app {
+  background: transparent;
+}
+
+html[data-ui-version='v2'] body.has-wallpaper .character-stage,
+html[data-ui-version='v2'] body.has-wallpaper .discord-card,
+html[data-ui-version='v2'] body.has-wallpaper .donate-banner,
+html[data-ui-version='v2'] body.has-wallpaper .activity-card,
+html[data-ui-version='v2'] body.has-wallpaper .picker-main,
+html[data-ui-version='v2'] body.has-wallpaper .header,
+html[data-ui-version='v2'] body.has-wallpaper .footer {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }

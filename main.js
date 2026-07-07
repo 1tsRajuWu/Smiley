@@ -1405,6 +1405,10 @@ function createWindow() {
   mainWindow.setTitle(APP_DISPLAY_NAME);
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 
+  mainWindow.webContents.once('did-finish-load', () => {
+    pushNowPlayingToRenderer();
+  });
+
   mainWindow.once('ready-to-show', () => {
     if (state.maximized) mainWindow.maximize();
     if (shouldForceShowOnStartup() || !shouldStartInTrayOnly()) {
@@ -1734,17 +1738,23 @@ async function schedulePresenceUpdate(activity, isNewSession) {
 
 function handleMusicSyncForActivity(safeActivity) {
   if (safeActivity.id === 'listening' && config.musicNowPlaying !== false) {
-    const sync = getMusicSync();
-    if (!sync.getTemplate()) {
-      sync.start({
-        ...safeActivity,
-        id: 'listening',
-        details: 'Listening to music',
-      });
-    }
+    getMusicSync().start({
+      ...safeActivity,
+      id: 'listening',
+      details: 'Listening to music',
+    });
   } else if (safeActivity.id !== 'listening') {
     getMusicSync().stop();
   }
+}
+
+function pushNowPlayingToRenderer() {
+  if (!mainWindow?.webContents || mainWindow.isDestroyed()) return;
+  const track = getMusicSync().getCurrentTrack?.();
+  if (!track?.title) return;
+  const safe = sanitizeNowPlayingTrack(track);
+  if (!safe) return;
+  mainWindow.webContents.send('now-playing-update', safe);
 }
 
 async function clearPresence() {
