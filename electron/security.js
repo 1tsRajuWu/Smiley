@@ -1,5 +1,7 @@
 /**
- * Smiley security layer — AES-256-GCM, OS keychain, E2EE exports, encrypted user files.
+ * Smiley security layer — AES-256-GCM, device-bound keys, E2EE exports, encrypted user files.
+ * OS keychain (Electron safeStorage) is intentionally not used — it triggers a macOS login
+ * keychain prompt on launch. Local encryption uses scrypt-derived device-bound keys (v3).
  * See SECURITY.md for the full threat model.
  */
 const crypto = require('crypto');
@@ -21,7 +23,6 @@ const ENCRYPTED_FILE_EXT = '.senc';
 const SCRYPT_EXPORT_V1 = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 const SCRYPT_EXPORT_V2 = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 
-let safeStorageApi = null;
 let masterKey = null;
 let keychainActive = false;
 let userDataPathRef = null;
@@ -37,10 +38,11 @@ function clearKeyCache() {
 
 function buildKeyCache(userDataPath) {
   if (cachedKeys && cachedKeysForPath === userDataPath) return cachedKeys;
-  const keys = [];
-  if (isKeychainActive()) keys.push({ v: 4, key: masterKey });
-  keys.push({ v: 3, key: deriveDeviceKeyV3(userDataPath) });
-  keys.push({ v: 1, key: deriveDeviceKeyV1(userDataPath) });
+  const keys = [
+    { v: 3, key: deriveDeviceKeyV3(userDataPath) },
+    { v: 1, key: deriveDeviceKeyV1(userDataPath) },
+  ];
+  if (isKeychainActive()) keys.unshift({ v: 4, key: masterKey });
   cachedKeys = keys;
   cachedKeysForPath = userDataPath;
   return keys;
@@ -59,42 +61,48 @@ function getKeyForVersion(userDataPath, version) {
   const keys = buildKeyCache(userDataPath);
   return keys.find((k) => k.v === version) || keys[0];
 }
-function initSecurity(userDataPath, safeStorage) {
+/**
+ * Initialize local encryption. Uses device-bound scrypt keys (v3) only — never touches
+ * OS keychain / safeStorage (avoids macOS "Smiley Safe Storage" password prompt on launch).
+ */
+function initSecurity(userDataPath) {
   userDataPathRef = userDataPath;
-  safeStorageApi = safeStorage || null;
   masterKey = null;
   keychainActive = false;
   clearKeyCache();
 
   if (!userDataPath) return { keychain: false };
 
+  buildKeyCache(userDataPath);
+  return { keychain: false };
+}
+
+/**
+ * Legacy OS keychain format — intentionally not migrated (avoids keychain prompt).
+ * Reads an existing master-key.enc via safeStorage only when the file is already present;
+ * never creates new keychain entries. Not called on startup.
+ */
+function tryLoadLegacyKeychainMasterKey(userDataPath, safeStorage) {
+  if (!userDataPath || !safeStorage?.isEncryptionAvailable?.()) return false;
+  const keyPath = path.join(userDataPath, MASTER_KEY_FILE);
+  if (!fs.existsSync(keyPath)) return false;
   try {
-    if (safeStorageApi?.isEncryptionAvailable?.()) {
-      const keyPath = path.join(userDataPath, MASTER_KEY_FILE);
-      if (fs.existsSync(keyPath)) {
-        const blob = fs.readFileSync(keyPath);
-        const decoded = safeStorageApi.decryptString(blob);
-        masterKey = Buffer.from(decoded, 'base64');
-      } else {
-        masterKey = crypto.randomBytes(KEY_BYTES);
-        const blob = safeStorageApi.encryptString(masterKey.toString('base64'));
-        fs.writeFileSync(keyPath, blob);
-      }
-      if (masterKey.length === KEY_BYTES) {
-        keychainActive = true;
-      }
-    }
+    const blob = fs.readFileSync(keyPath);
+    const decoded = safeStorage.decryptString(blob);
+    const key = Buffer.from(decoded, 'base64');
+    if (key.length !== KEY_BYTES) return false;
+    masterKey = key;
+    keychainActive = true;
+    clearKeyCache();
+    buildKeyCache(userDataPath);
+    return true;
   } catch (e) {
-    console.warn('[security] OS keychain unavailable, using device-bound key:', e.message);
+    console.warn('[security] Legacy keychain master key unavailable:', e.message);
     masterKey = null;
     keychainActive = false;
+    clearKeyCache();
+    return false;
   }
-
-  if (userDataPath) {
-    buildKeyCache(userDataPath);
-  }
-
-  return { keychain: keychainActive };
 }
 
 function isKeychainActive() {
@@ -499,6 +507,42 @@ function sanitizeNowPlayingTrack(track) {
   };
 }
 
+function sanitizeGameSession(session) {
+  if (!session || typeof session !== 'object') return null;
+  const tags = Array.isArray(session.tags)
+    ? session.tags
+      .filter((tag) => typeof tag === 'string')
+      .map((tag) => tag.slice(0, 48))
+      .slice(0, 5)
+    : [];
+  return {
+    title: typeof session.title === 'string' ? session.title.slice(0, 256) : '',
+    processName: typeof session.processName === 'string' ? session.processName.slice(0, 128) : '',
+    windowTitle: typeof session.windowTitle === 'string' ? session.windowTitle.slice(0, 256) : '',
+    launcher: typeof session.launcher === 'string' ? session.launcher.slice(0, 64) : null,
+    scoreHint: typeof session.scoreHint === 'string' ? session.scoreHint.slice(0, 32) : null,
+    metascore: typeof session.metascore === 'string' ? session.metascore.slice(0, 8) : null,
+    tags,
+    steamAppId: Number.isFinite(Number(session.steamAppId)) ? Number(session.steamAppId) : null,
+    provider: typeof session.provider === 'string' ? session.provider.slice(0, 32) : null,
+    map: typeof session.map === 'string' ? session.map.slice(0, 64) : null,
+    mode: typeof session.mode === 'string' ? session.mode.slice(0, 64) : null,
+    champ: typeof session.champ === 'string' ? session.champ.slice(0, 48) : null,
+    agent: typeof session.agent === 'string' ? session.agent.slice(0, 48) : null,
+    kda: typeof session.kda === 'string' ? session.kda.slice(0, 24) : null,
+    rank: typeof session.rank === 'string' ? session.rank.slice(0, 48) : null,
+    trackerKd: typeof session.trackerKd === 'string' ? session.trackerKd.slice(0, 16) : null,
+    gameTime: typeof session.gameTime === 'string' ? session.gameTime.slice(0, 16) : null,
+    server: typeof session.server === 'string' ? session.server.slice(0, 128) : null,
+    liveLine: typeof session.liveLine === 'string' ? session.liveLine.slice(0, 256) : null,
+    inMatch: session.inMatch === true,
+    updatedAt: Number.isFinite(Number(session.updatedAt)) ? Number(session.updatedAt) : Date.now(),
+    artworkUrl: typeof session.artworkUrl === 'string' && /^https:\/\//i.test(session.artworkUrl)
+      ? session.artworkUrl.slice(0, 2048)
+      : null,
+  };
+}
+
 function sanitizeActivitySnapshot(activity) {
   if (!activity || typeof activity !== 'object') return null;
   const safe = {
@@ -511,6 +555,9 @@ function sanitizeActivitySnapshot(activity) {
   };
   if (activity.musicTrack) {
     safe.musicTrack = sanitizeNowPlayingTrack(activity.musicTrack);
+  }
+  if (activity.gameSession) {
+    safe.gameSession = sanitizeGameSession(activity.gameSession);
   }
   if (Array.isArray(activity.buttons)) {
     safe.buttons = activity.buttons.slice(0, 2).map((btn) => {
@@ -560,6 +607,7 @@ module.exports = {
   ENCRYPTED_FILE_EXT,
   MASTER_KEY_FILE,
   initSecurity,
+  tryLoadLegacyKeychainMasterKey,
   isKeychainActive,
   deriveDeviceKeyV1,
   deriveDeviceKeyV3,
@@ -577,6 +625,7 @@ module.exports = {
   isSensitiveKey,
   stripSensitiveFields,
   sanitizeNowPlayingTrack,
+  sanitizeGameSession,
   sanitizeActivitySnapshot,
   redactForLog,
   writeEncryptedBinaryFile,

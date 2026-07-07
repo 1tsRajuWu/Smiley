@@ -13,7 +13,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 const os = require('os');
 const { spawn } = require('child_process');
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -4033,7 +4033,7 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.smiley.rpc');
   }
   Menu.setApplicationMenu(null);
-  initSecurity(app.getPath('userData'), safeStorage);
+  initSecurity(app.getPath('userData'));
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
   ensureDir(getUserDataPath('custom-activities'));
