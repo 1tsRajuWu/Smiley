@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.0.4)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.0.5)
 
 **Applies to official Smiley builds** from the author's releases. Third-party forks are governed by their maintainers' terms.
 

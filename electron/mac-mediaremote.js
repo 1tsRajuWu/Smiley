@@ -33,6 +33,7 @@ function resolveAdapterPaths() {
     path.join(__dirname, ADAPTER_DIRNAME),
   ];
   if (process.resourcesPath) {
+    candidates.unshift(path.join(process.resourcesPath, 'mediaremote-adapter'));
     candidates.unshift(path.join(
       process.resourcesPath,
       'app.asar.unpacked',

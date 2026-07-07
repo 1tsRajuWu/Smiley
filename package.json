@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "7.0.4",
+  "version": "7.0.5",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -62,8 +62,7 @@
     "asar": true,
     "asarUnpack": [
       "**/*.node",
-      "electron/now-playing-mac.jxa.js",
-      "electron/mediaremote-adapter/**"
+      "electron/now-playing-mac.jxa.js"
     ],
     "directories": {
       "output": "dist",
@@ -74,7 +73,7 @@
       "preload.js",
       "electron/**/*",
       "electron/native/**/*.node",
-      "electron/mediaremote-adapter/**",
+      "!electron/mediaremote-adapter/**",
       "src/**/*",
       "!src/**/*.map",
       "!src/styles.css",
@@ -136,7 +135,14 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extraResources": [
+        {
+          "from": "electron/mediaremote-adapter",
+          "to": "mediaremote-adapter",
+          "filter": ["**/*"]
+        }
+      ]
     },
     "win": {
       "icon": "build/icon.ico",
