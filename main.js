@@ -1787,6 +1787,17 @@ async function schedulePresenceUpdate(activity, isNewSession) {
 
   handleMusicSyncForActivity(safeActivity);
 
+  const isListeningLive = safeActivity.id === 'listening' && config.musicNowPlaying !== false;
+  if (isListeningLive) {
+    if (isNewSession) sessionStart = null;
+    pendingUpdate = null;
+    if (updateTimer) {
+      clearTimeout(updateTimer);
+      updateTimer = null;
+    }
+    return { success: true };
+  }
+
   if (isNewSession) sessionStart = safeActivity.id === 'listening' ? null : Date.now();
   pendingUpdate = safeActivity;
   if (updateTimer) {

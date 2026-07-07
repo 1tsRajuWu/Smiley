@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.0.5)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.0.6)
 
 **Applies to official Smiley builds** from [1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley/releases). Forks using their own backend are responsible for their own privacy policy — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
