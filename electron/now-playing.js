@@ -9,7 +9,27 @@ const { promisify } = require('util');
 
 const execFileAsync = promisify(execFile);
 
-const MAC_JXA_SCRIPT = path.join(__dirname, 'now-playing-mac.jxa.js');
+const MAC_JXA_FILENAME = 'now-playing-mac.jxa.js';
+
+function resolveMacJxaScriptPath() {
+  const candidates = [
+    path.join(__dirname, MAC_JXA_FILENAME),
+  ];
+  if (process.resourcesPath) {
+    candidates.unshift(path.join(
+      process.resourcesPath,
+      'app.asar.unpacked',
+      'electron',
+      MAC_JXA_FILENAME,
+    ));
+  }
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return candidates[0];
+}
+
+const MAC_JXA_SCRIPT = resolveMacJxaScriptPath();
 
 /** macOS: each osascript spawn loads MediaRemote — low frequency avoids system freezes. */
 const DEFAULT_POLL_MS = process.platform === 'darwin' ? 15000 : 3000;
@@ -158,6 +178,23 @@ let macPollInFlight = false;
 let macPollChild = null;
 let macPollFailures = 0;
 let macPollBackoffMs = 0;
+let macJxaScriptSource = null;
+
+function readMacJxaScriptSource() {
+  if (macJxaScriptSource) return macJxaScriptSource;
+  for (const candidate of [
+    MAC_JXA_SCRIPT,
+    path.join(__dirname, MAC_JXA_FILENAME),
+  ]) {
+    try {
+      if (fs.existsSync(candidate)) {
+        macJxaScriptSource = fs.readFileSync(candidate, 'utf8');
+        return macJxaScriptSource;
+      }
+    } catch (_) {}
+  }
+  return null;
+}
 
 function macPollDelayMs(baseMs) {
   if (process.platform !== 'darwin') return baseMs;
@@ -184,8 +221,55 @@ function killMacPollChild() {
   macPollInFlight = false;
 }
 
+function runMacOsascript({ args, stdin, timeoutMs = MAC_OSASCRIPT_TIMEOUT_MS }) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+
+    const child = spawn('osascript', args, {
+      stdio: [stdin ? 'pipe' : 'ignore', 'pipe', 'ignore'],
+      windowsHide: true,
+    });
+
+    let stdout = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+      if (stdout.length > 65536) {
+        try { child.kill('SIGKILL'); } catch (_) {}
+        finish(null);
+      }
+    });
+
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (_) {}
+      finish(null);
+    }, timeoutMs);
+
+    child.on('error', () => {
+      clearTimeout(timer);
+      finish(null);
+    });
+
+    child.on('close', () => {
+      clearTimeout(timer);
+      finish(String(stdout || '').trim() || null);
+    });
+
+    if (stdin) {
+      child.stdin.on('error', () => {});
+      child.stdin.write(stdin);
+      child.stdin.end();
+    }
+  });
+}
+
 function pollMacJXA() {
-  if (!fs.existsSync(MAC_JXA_SCRIPT)) return Promise.resolve(null);
+  const script = readMacJxaScriptSource();
+  if (!script) return Promise.resolve(null);
   if (macPollInFlight) return Promise.resolve(undefined);
 
   macPollInFlight = true;
@@ -199,8 +283,8 @@ function pollMacJXA() {
       resolve(value);
     };
 
-    const child = spawn('osascript', ['-l', 'JavaScript', MAC_JXA_SCRIPT], {
-      stdio: ['ignore', 'pipe', 'ignore'],
+    const child = spawn('osascript', ['-l', 'JavaScript', '-'], {
+      stdio: ['pipe', 'pipe', 'ignore'],
       windowsHide: true,
     });
     macPollChild = child;
@@ -237,12 +321,73 @@ function pollMacJXA() {
         finish(null);
       }
     });
+
+    child.stdin.on('error', () => {});
+    child.stdin.write(script);
+    child.stdin.end();
+  });
+}
+
+const MAC_APPLESCRIPT_POLL = `
+on run
+  set delim to "|"
+  try
+    if application "Music" is running then
+      tell application "Music"
+        set ps to player state as string
+        if ps is in {"playing", "paused"} then
+          set t to current track
+          set elapsed to player position
+          set dur to duration of t
+          return (name of t) & delim & (artist of t) & delim & (album of t) & delim & "Music" & delim & ps & delim & elapsed & delim & dur
+        end if
+      end tell
+    end if
+  end try
+  try
+    if application "Spotify" is running then
+      tell application "Spotify"
+        set ps to player state as string
+        if ps is in {"playing", "paused"} then
+          set t to current track
+          return (name of t) & delim & (artist of t) & delim & (album of t) & delim & "Spotify" & delim & ps & delim & "0" & delim & "0"
+        end if
+      end tell
+    end if
+  end try
+  return ""
+end run
+`;
+
+async function pollMacAppleScript() {
+  const line = await runMacOsascript({
+    args: ['-e', MAC_APPLESCRIPT_POLL],
+    timeoutMs: MAC_OSASCRIPT_TIMEOUT_MS,
+  });
+  if (!line) return null;
+  const parts = String(line).split('|');
+  const [title, artist, album, device, status, elapsed, duration] = parts;
+  if (!title) return null;
+  const elapsedSec = Number(elapsed) || 0;
+  const durationSec = Number(duration) || 0;
+  return normalizeTrack({
+    title,
+    artist,
+    album,
+    device,
+    isPlaying: status === 'playing',
+    elapsedSeconds: elapsedSec,
+    durationSeconds: durationSec,
+    playbackRate: status === 'playing' ? 1 : 0,
   });
 }
 
 async function pollMacNowPlaying() {
-  const track = await pollMacJXA();
-  return track === undefined ? undefined : track;
+  const jxaTrack = await pollMacJXA();
+  if (jxaTrack === undefined) return undefined;
+  if (jxaTrack?.title) return jxaTrack;
+  const fallback = await pollMacAppleScript();
+  return fallback;
 }
 
 let linuxPollInFlight = false;
