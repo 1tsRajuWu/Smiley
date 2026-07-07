@@ -94,6 +94,10 @@ public sealed class DiscordRpcService : IDisposable
                 {
                     LargeImageKey = imageUrl,
                     LargeImageText = activity.Details
+                },
+                Buttons = new[]
+                {
+                    new Button { Label = "Download", Url = "https://1tsrajuwu.github.io/Smiley/#download" }
                 }
             });
 

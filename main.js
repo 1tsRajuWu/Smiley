@@ -491,6 +491,7 @@ function isAllowedGifUrl(url) {
 
 const ALLOWED_EXTERNAL_HOSTS = [
   'github.com',
+  'github.io',
   'paypal.me',
   'discord.com',
   'discord.gg',
