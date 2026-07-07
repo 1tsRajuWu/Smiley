@@ -44,11 +44,6 @@ const previewGif = $('#previewGif');
 const previewDetails = $('#previewDetails');
 const previewState = $('#previewState');
 const previewNowPlaying = $('#previewNowPlaying');
-const previewTrackProgress = $('#previewTrackProgress');
-const previewTrackBar = $('#previewTrackBar');
-const previewTrackFill = $('#previewTrackFill');
-const previewTrackElapsed = $('#previewTrackElapsed');
-const previewTrackDuration = $('#previewTrackDuration');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -229,7 +224,6 @@ let lastUpdateActionToastKey = '';
 let lastUpdateActionToastAt = 0;
 let nowPlayingTrack = null;
 let nowPlayingArtworkUrl = null;
-let nowPlayingProgressTimer = null;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -502,14 +496,9 @@ function setRenderPaused(paused) {
   document.body.classList.toggle('render-paused', paused);
   if (paused) {
     pauseGifElements();
-    clearNowPlayingProgressTimer();
     return;
   }
   resumeGifElements();
-  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
-  if (activity && nowPlayingTrack?.title && selectedActivityId === 'listening') {
-    startNowPlayingProgressTimer();
-  }
 }
 
 async function syncRenderPauseState() {
@@ -1034,61 +1023,6 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
   });
 }
 
-function getLiveTrackProgress(track) {
-  if (!track) return { progressMs: 0, durationMs: 0 };
-  const durationMs = Math.max(0, Number(track.durationMs) || 0);
-  const base = Math.max(0, Number(track.progressMs) || 0);
-  if (!track.isPlaying) return { progressMs: base, durationMs };
-  const age = Math.max(0, Date.now() - (Number(track.updatedAt) || Date.now()));
-  const rate = Number(track.playbackRate) || 1;
-  const progressMs = durationMs > 0
-    ? Math.min(durationMs, base + Math.round(age * rate))
-    : base + Math.round(age * rate);
-  return { progressMs, durationMs };
-}
-
-function formatTrackClock(ms) {
-  const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${String(sec).padStart(2, '0')}`;
-}
-
-function startNowPlayingProgressTimer() {
-  clearNowPlayingProgressTimer();
-  if (!nowPlayingTrack?.title || selectedActivityId !== 'listening') return;
-  updateNowPlayingProgressUi();
-  nowPlayingProgressTimer = setInterval(updateNowPlayingProgressUi, 1000);
-}
-
-function clearNowPlayingProgressTimer() {
-  if (nowPlayingProgressTimer) {
-    clearInterval(nowPlayingProgressTimer);
-    nowPlayingProgressTimer = null;
-  }
-}
-
-function updateNowPlayingProgressUi() {
-  if (renderPaused) return;
-  if (!previewTrackProgress || !nowPlayingTrack?.title || selectedActivityId !== 'listening') {
-    if (previewTrackProgress) previewTrackProgress.hidden = true;
-    return;
-  }
-
-  const { progressMs, durationMs } = getLiveTrackProgress(nowPlayingTrack);
-  const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
-  const prevPct = Number(previewTrackFill?.dataset?.pct || '');
-  if (previewTrackFill && Math.abs(prevPct - pct) < 0.25) return;
-  if (previewTrackFill) {
-    previewTrackFill.dataset.pct = String(pct);
-    previewTrackFill.style.width = `${pct}%`;
-  }
-  if (previewTrackBar) previewTrackBar.setAttribute('aria-valuenow', String(Math.round(pct)));
-  if (previewTrackElapsed) previewTrackElapsed.textContent = formatTrackClock(progressMs);
-  if (previewTrackDuration) previewTrackDuration.textContent = formatTrackClock(durationMs);
-  previewTrackProgress.hidden = false;
-}
-
 function applyNowPlayingArtwork(url) {
   if (!url || selectedActivityId !== 'listening') return;
   nowPlayingArtworkUrl = url;
@@ -1135,14 +1069,11 @@ function applyNowPlayingPreview(activity) {
       previewNowPlaying.hidden = true;
     }
 
-    updateNowPlayingProgressUi();
     if (track.artworkUrl || nowPlayingArtworkUrl) {
       applyNowPlayingArtwork(track.artworkUrl || nowPlayingArtworkUrl);
     }
     return;
   }
-
-  if (previewTrackProgress) previewTrackProgress.hidden = true;
 
   if (activity) {
     previewDetails.textContent = activity.details;
@@ -1150,7 +1081,6 @@ function applyNowPlayingPreview(activity) {
   }
   previewNowPlaying.textContent = '';
   previewNowPlaying.hidden = true;
-  if (previewTrackProgress) previewTrackProgress.hidden = true;
 }
 
 function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } = {}) {
@@ -1167,8 +1097,6 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
       previewNowPlaying.textContent = '';
       previewNowPlaying.hidden = true;
     }
-    if (previewTrackProgress) previewTrackProgress.hidden = true;
-    clearNowPlayingProgressTimer();
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
@@ -1557,7 +1485,6 @@ async function selectActivity(id) {
   } else if (result?.success !== false) {
     presencePaused = false;
     if (activity.id === 'listening' && currentSettings.musicNowPlaying !== false) {
-      startNowPlayingProgressTimer();
       showToast('Now playing sync on — play music in any app', 'success');
     } else {
       showToast(`Status set: ${activity.details}`);
@@ -1589,7 +1516,6 @@ async function handleClear() {
   presencePaused = false;
   nowPlayingTrack = null;
   nowPlayingArtworkUrl = null;
-  clearNowPlayingProgressTimer();
   clearRotateTimer();
   markGridSelection(null);
   lastRenderedGridKey = '';
@@ -3166,13 +3092,11 @@ async function init() {
 
     if (track?.title) {
       applyNowPlayingPreview(activity);
-      startNowPlayingProgressTimer();
       return;
     }
 
     if (metaChanged) {
       applyNowPlayingPreview(activity);
-      clearNowPlayingProgressTimer();
     }
   });
 

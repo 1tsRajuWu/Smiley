@@ -917,13 +917,6 @@ function sanitizeIncomingActivity(activity) {
   if (activity.musicTrack) {
     safe.musicTrack = sanitizeNowPlayingTrack(activity.musicTrack);
   }
-  if (activity.musicTimestamps && typeof activity.musicTimestamps === 'object') {
-    const start = Number(activity.musicTimestamps.startTimestamp);
-    const end = Number(activity.musicTimestamps.endTimestamp);
-    if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
-      safe.musicTimestamps = { startTimestamp: start, endTimestamp: end };
-    }
-  }
   return stripSensitiveFields(safe);
 }
 
@@ -1699,10 +1692,8 @@ async function buildActivityPayload(activity) {
     instance: false,
   };
 
-  if (activity.musicTimestamps?.startTimestamp && activity.musicTimestamps?.endTimestamp) {
-    payload.startTimestamp = activity.musicTimestamps.startTimestamp;
-    payload.endTimestamp = activity.musicTimestamps.endTimestamp;
-  } else {
+  const isListeningNowPlaying = activity.id === 'listening' && activity.musicTrack?.title;
+  if (!isListeningNowPlaying) {
     payload.startTimestamp = sessionStart || Date.now();
   }
 

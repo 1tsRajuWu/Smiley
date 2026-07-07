@@ -31,9 +31,9 @@ function resolveMacJxaScriptPath() {
 
 const MAC_JXA_SCRIPT = resolveMacJxaScriptPath();
 
-/** macOS: each osascript spawn loads MediaRemote — low frequency avoids system freezes. */
-const DEFAULT_POLL_MS = process.platform === 'darwin' ? 15000 : 3000;
-const MIN_POLL_MS = process.platform === 'darwin' ? 12000 : 1500;
+/** macOS: sequential stdin JXA polls — 2.5s balances track-change speed vs MediaRemote load. */
+const DEFAULT_POLL_MS = process.platform === 'darwin' ? 2500 : 3000;
+const MIN_POLL_MS = process.platform === 'darwin' ? 2000 : 1500;
 const MAC_OSASCRIPT_TIMEOUT_MS = 3500;
 const MAC_POLL_BACKOFF_MAX_MS = 60000;
 

@@ -4,15 +4,15 @@
 const {
   createNowPlayingService,
   trackMetaSignature,
-  getLiveProgress,
   pollCurrentTrack,
+  DEFAULT_POLL_MS,
 } = require('./now-playing');
 
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
-/** Minimum gap between Discord RPC music updates — prevents main-thread / IPC floods. */
-const MUSIC_PRESENCE_MIN_MS = 5000;
 const RENDERER_UPDATE_MIN_MS = 1000;
+/** macOS: poll every ~2.5s while listening (sequential JXA, no overlap). */
+const LISTENING_POLL_MS = process.platform === 'darwin' ? 2500 : DEFAULT_POLL_MS;
 const artworkCache = new Map();
 
 function truncate(text, max = DISCORD_TEXT_LIMIT) {
@@ -21,28 +21,8 @@ function truncate(text, max = DISCORD_TEXT_LIMIT) {
   return `${value.slice(0, max - 1)}…`;
 }
 
-function formatClock(ms) {
-  const totalSec = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${String(sec).padStart(2, '0')}`;
-}
-
 function isMusicSyncEnabled(config) {
   return config?.musicNowPlaying !== false;
-}
-
-function buildMusicTimestamps(track) {
-  if (!track?.isPlaying || !track.durationMs) return null;
-  const { progressMs, durationMs } = getLiveProgress(track);
-  if (durationMs <= 0) return null;
-  const nowSec = Math.floor(Date.now() / 1000);
-  const progressSec = Math.floor(progressMs / 1000);
-  const durationSec = Math.floor(durationMs / 1000);
-  return {
-    startTimestamp: nowSec - progressSec,
-    endTimestamp: nowSec - progressSec + durationSec,
-  };
 }
 
 function createMusicSync({
@@ -56,10 +36,8 @@ function createMusicSync({
   let lastMetaSignature = '';
   let artworkRequestId = 0;
   let lastArtworkKey = '';
-  let lastPresencePushAt = 0;
   let presencePushInFlight = false;
   let pendingPresenceArgs = null;
-  let presencePushTimer = null;
   let lastRendererPushAt = 0;
   let lastTrack = null;
 
@@ -122,13 +100,11 @@ function createMusicSync({
         details: 'Listening to music',
         state: base.state || 'Shows your song 🎵',
         musicTrack: null,
-        musicTimestamps: null,
       };
     }
 
     const artist = track.artist ? truncate(track.artist) : '';
     const album = track.album ? truncate(track.album) : '';
-    const { progressMs, durationMs } = getLiveProgress(track);
 
     let state;
     if (!track.isPlaying) {
@@ -152,12 +128,11 @@ function createMusicSync({
         album: track.album,
         device: track.device,
         isPlaying: track.isPlaying,
-        progressMs,
-        durationMs,
+        progressMs: track.progressMs,
+        durationMs: track.durationMs,
         updatedAt: track.updatedAt,
         artworkUrl: artworkUrl || track.artworkUrl || null,
       },
-      musicTimestamps: buildMusicTimestamps(track),
     };
 
     if (artworkUrl) {
@@ -174,48 +149,28 @@ function createMusicSync({
     presencePushInFlight = true;
     try {
       await applyMusicPresence(activity);
-      lastPresencePushAt = Date.now();
     } finally {
       presencePushInFlight = false;
       if (pendingPresenceArgs) {
         const next = pendingPresenceArgs;
         pendingPresenceArgs = null;
-        queuePresencePush(next.track, next.artworkUrl, { force: true });
+        queuePresencePush(next.track, next.artworkUrl);
       }
     }
   }
 
-  function queuePresencePush(track, artworkUrl, { force = false } = {}) {
-    const now = Date.now();
-    const waitMs = force ? 0 : Math.max(0, MUSIC_PRESENCE_MIN_MS - (now - lastPresencePushAt));
-
+  function queuePresencePush(track, artworkUrl) {
     if (presencePushInFlight) {
       pendingPresenceArgs = { track, artworkUrl };
       return;
     }
 
-    if (presencePushTimer) {
-      clearTimeout(presencePushTimer);
-      presencePushTimer = null;
-    }
-
-    if (waitMs === 0) {
-      pushPresenceNow(track, artworkUrl).catch(() => {});
-      return;
-    }
-
-    pendingPresenceArgs = { track, artworkUrl };
-    presencePushTimer = setTimeout(() => {
-      presencePushTimer = null;
-      const pending = pendingPresenceArgs;
-      pendingPresenceArgs = null;
-      if (!pending || !activityTemplate) return;
-      pushPresenceNow(pending.track, pending.artworkUrl).catch(() => {});
-    }, waitMs);
+    pendingPresenceArgs = null;
+    pushPresenceNow(track, artworkUrl).catch(() => {});
   }
 
-  function pushPresence(track, artworkUrl, options) {
-    queuePresencePush(track, artworkUrl, options);
+  function pushPresence(track, artworkUrl) {
+    queuePresencePush(track, artworkUrl);
   }
 
   async function handleTrackUpdate(track) {
@@ -233,6 +188,7 @@ function createMusicSync({
 
     if (!metaChanged) return;
 
+    // Text/details update immediately; artwork may follow async.
     pushPresence(track, artworkUrl);
 
     if (config?.musicNowPlayingAlbumArt === false || !track?.title || !track.isPlaying) return;
@@ -257,6 +213,7 @@ function createMusicSync({
     if (service) return;
     const next = createNowPlayingService({
       onUpdate: handleTrackUpdate,
+      pollIntervalMs: LISTENING_POLL_MS,
     });
     service = next;
     try {
@@ -298,10 +255,6 @@ function createMusicSync({
   function stop(resetTemplate = true) {
     const active = service;
     service = null;
-    if (presencePushTimer) {
-      clearTimeout(presencePushTimer);
-      presencePushTimer = null;
-    }
     pendingPresenceArgs = null;
     if (active) {
       stoppingPromise = active.stop().catch(() => {}).finally(() => {
@@ -346,4 +299,4 @@ function createMusicSync({
   };
 }
 
-module.exports = { createMusicSync, LISTENING_ACTIVITY_ID, formatClock, getLiveProgress };
+module.exports = { createMusicSync, LISTENING_ACTIVITY_ID };
