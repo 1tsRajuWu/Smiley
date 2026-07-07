@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build MediaRemote adapter (mac)
+        run: npm run build:mediaremote-adapter
+
       - name: Security audit
         run: npm audit --audit-level=critical --omit=dev
 

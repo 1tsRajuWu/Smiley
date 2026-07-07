@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "7.0.3",
+  "version": "7.0.4",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -35,7 +35,8 @@
     "release:tag": "node -e \"const v=require('./package.json').version; console.log('Tag with: git tag v'+v+' && git push origin main --tags')\"",
     "update-readme-downloads": "bash scripts/update-readme-downloads.sh",
     "security-check": "node scripts/security-check.js",
-    "postinstall": "electron-builder install-app-deps && node scripts/install-now-playing-native.js"
+    "build:mediaremote-adapter": "node scripts/build-mediaremote-adapter.js",
+    "postinstall": "electron-builder install-app-deps && node scripts/install-now-playing-native.js && node scripts/build-mediaremote-adapter.js"
   },
   "dependencies": {
     "discord-rpc": "^4.0.1",
@@ -61,7 +62,8 @@
     "asar": true,
     "asarUnpack": [
       "**/*.node",
-      "electron/now-playing-mac.jxa.js"
+      "electron/now-playing-mac.jxa.js",
+      "electron/mediaremote-adapter/**"
     ],
     "directories": {
       "output": "dist",
@@ -72,6 +74,7 @@
       "preload.js",
       "electron/**/*",
       "electron/native/**/*.node",
+      "electron/mediaremote-adapter/**",
       "src/**/*",
       "!src/**/*.map",
       "!src/styles.css",

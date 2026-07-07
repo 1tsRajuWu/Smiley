@@ -10,9 +10,8 @@ const {
 
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
-const RENDERER_UPDATE_MIN_MS = 400;
-/** macOS: poll every ~1.2s while listening (sequential JXA, no overlap). */
-const LISTENING_POLL_MS = process.platform === 'darwin' ? 1200 : DEFAULT_POLL_MS;
+/** UI progress refresh — meta changes are always immediate. */
+const RENDERER_PROGRESS_MIN_MS = 1000;
 const artworkCache = new Map();
 
 function truncate(text, max = DISCORD_TEXT_LIMIT) {
@@ -41,7 +40,7 @@ function createMusicSync({
   let lastRendererPushAt = 0;
   let lastTrack = null;
 
-  function sendRendererUpdate(track, artworkUrl, { force = false } = {}) {
+  function sendRendererUpdate(track, artworkUrl, { force = false, progressOnly = false } = {}) {
     const now = Date.now();
     if (!track) {
       lastTrack = null;
@@ -49,7 +48,10 @@ function createMusicSync({
       sendToRenderer?.(null, null);
       return;
     }
-    if (!force && now - lastRendererPushAt < RENDERER_UPDATE_MIN_MS) return;
+    if (!force) {
+      if (progressOnly && now - lastRendererPushAt < RENDERER_PROGRESS_MIN_MS) return;
+      if (!progressOnly && now - lastRendererPushAt < 50) return;
+    }
     lastRendererPushAt = now;
     lastTrack = track;
     sendToRenderer?.(track, artworkUrl || getCachedArtwork(track));
@@ -185,7 +187,7 @@ function createMusicSync({
     const cacheKey = getArtworkCacheKey(track);
     const artworkUrl = track?.artworkUrl || getCachedArtwork(track);
 
-    sendRendererUpdate(track, artworkUrl, { force: metaChanged });
+    sendRendererUpdate(track, artworkUrl, { force: metaChanged, progressOnly: !metaChanged });
 
     if (!metaChanged) return;
 
@@ -214,7 +216,7 @@ function createMusicSync({
     if (service) return;
     const next = createNowPlayingService({
       onUpdate: handleTrackUpdate,
-      pollIntervalMs: LISTENING_POLL_MS,
+      pollIntervalMs: DEFAULT_POLL_MS,
     });
     service = next;
     try {

@@ -109,6 +109,24 @@
             </div>
           </div>
 
+          <div class="music-preview-bar" id="musicPreviewBar" hidden>
+            <div class="music-preview-art-wrap">
+              <img class="music-preview-art" id="musicPreviewArt" alt="" decoding="async" />
+              <span class="music-preview-art-fallback" id="musicPreviewArtFallback" aria-hidden="true">🎵</span>
+            </div>
+            <div class="music-preview-meta">
+              <div class="music-preview-title" id="musicPreviewTitle"></div>
+              <div class="music-preview-artist" id="musicPreviewArtist"></div>
+              <div class="music-preview-progress" aria-hidden="true">
+                <div class="music-preview-progress-fill" id="musicPreviewProgressFill"></div>
+              </div>
+              <div class="music-preview-times">
+                <span id="musicPreviewElapsed">0:00</span>
+                <span id="musicPreviewDuration">0:00</span>
+              </div>
+            </div>
+          </div>
+
           <div class="preview-actions">
             <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
             <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
@@ -160,7 +178,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.0.3</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.0.4</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>

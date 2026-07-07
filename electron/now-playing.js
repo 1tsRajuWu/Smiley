@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════
 // Now playing — system media detection (Spotify, Apple Music, YT Music, …)
-// macOS: lightweight JXA poll (MediaRemote). Avoids rapid osascript / AppleScript.
+// macOS: mediaremote-adapter stream (instant) → native events → JXA poll fallback.
 // ═══════════════════════════════════════════════════════════════════════
 const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const { createMacMediaRemoteStream } = require('./mac-mediaremote');
 
 const execFileAsync = promisify(execFile);
 
@@ -31,15 +32,16 @@ function resolveMacJxaScriptPath() {
 
 const MAC_JXA_SCRIPT = resolveMacJxaScriptPath();
 
-/** macOS: sequential stdin JXA polls — 1.2s while listening keeps track changes under ~2s. */
-const DEFAULT_POLL_MS = process.platform === 'darwin' ? 1200 : 2000;
-const MIN_POLL_MS = process.platform === 'darwin' ? 800 : 1200;
-const FAST_REPOLL_MS = process.platform === 'darwin' ? 350 : 500;
+/** Fallback poll when event-driven paths unavailable (macOS JXA only). */
+const DEFAULT_POLL_MS = process.platform === 'darwin' ? 5000 : 2000;
+const MIN_POLL_MS = process.platform === 'darwin' ? 3000 : 1200;
+const FAST_REPOLL_MS = process.platform === 'darwin' ? 800 : 500;
 const MAC_OSASCRIPT_TIMEOUT_MS = 2500;
 const MAC_POLL_BACKOFF_MAX_MS = 8000;
 const MAC_POLL_BACKOFF_STEP_MS = 1000;
 
 const NATIVE_PACKAGES = {
+  darwin: ['node-nowplaying-darwin-universal'],
   win32: [
     'node-nowplaying-win32-x64-msvc',
     'node-nowplaying-win32-arm64-msvc',
@@ -62,8 +64,6 @@ function tryLoadBinding(candidatePath) {
 }
 
 function loadNativeNowPlaying() {
-  if (process.platform === 'darwin') return null;
-
   const candidates = [];
   const bundledDir = path.join(__dirname, 'native');
   if (fs.existsSync(bundledDir)) {
@@ -101,9 +101,10 @@ function normalizeTrack(raw) {
   const title = String(raw.title || raw.trackName || raw.name || '').trim();
   const artist = normalizeArtist(raw.artist || raw.artists);
   const album = String(raw.album || '').trim();
-  const isPlaying = raw.isPlaying !== false
-    && raw.status !== 'Paused'
-    && raw.playerState !== 'Paused';
+  const isPlaying = raw.playing === true
+    || (raw.isPlaying !== false
+      && raw.status !== 'Paused'
+      && raw.playerState !== 'Paused');
   const device = String(raw.device || raw.source || raw.app || '').trim() || null;
   let artworkUrl = null;
 
@@ -117,11 +118,24 @@ function normalizeTrack(raw) {
 
   if (!title && !artist) return null;
 
-  const elapsedSec = Number(raw.elapsedSeconds ?? raw.elapsed ?? 0);
+  const elapsedSec = Number(raw.elapsedSeconds ?? raw.elapsedTime ?? raw.elapsed ?? 0);
   const durationSec = Number(raw.durationSeconds ?? raw.duration ?? 0);
   let progressMs = Number(raw.progressMs || raw.trackProgress) || 0;
   let durationMs = Number(raw.durationMs || raw.trackDuration) || 0;
-  if (!progressMs && elapsedSec > 0) progressMs = Math.round(elapsedSec * 1000);
+  if (!progressMs && elapsedSec > 0) {
+    const ts = raw.timestamp ? String(raw.timestamp) : '';
+    const rate = Number(raw.playbackRate) || (isPlaying ? 1 : 0);
+    if (isPlaying && ts) {
+      const parsed = Date.parse(ts);
+      if (Number.isFinite(parsed)) {
+        progressMs = Math.round(elapsedSec * 1000) + Math.round(Math.max(0, Date.now() - parsed) * rate);
+      } else {
+        progressMs = Math.round(elapsedSec * 1000);
+      }
+    } else {
+      progressMs = Math.round(elapsedSec * 1000);
+    }
+  }
   if (!durationMs && durationSec > 0) durationMs = Math.round(durationSec * 1000);
 
   return {
@@ -475,6 +489,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
   if (process.env.SMILEY_DISABLE_NOW_PLAYING === '1') {
     return {
       isNative: false,
+      isEventDriven: false,
       async start() {},
       async stop() {},
     };
@@ -482,10 +497,12 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
 
   const NativeNowPlaying = loadNativeNowPlaying();
   let nativePlayer = null;
+  let macStream = null;
   let pollTimer = null;
   let lastMetaSignature = '';
   let running = false;
   let fastRepollPending = false;
+  let eventDriven = false;
   const pollEveryMs = Math.max(MIN_POLL_MS, pollIntervalMs || DEFAULT_POLL_MS);
 
   const emit = (raw) => {
@@ -532,18 +549,50 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
     scheduleNextPoll();
   };
 
+  const stopEventSources = async () => {
+    if (macStream) {
+      try { await macStream.stop(); } catch (_) {}
+      macStream = null;
+    }
+    if (nativePlayer) {
+      try { await nativePlayer.unsubscribe(); } catch (_) {}
+      nativePlayer = null;
+    }
+    eventDriven = false;
+  };
+
   return {
     isNative: !!NativeNowPlaying,
+    get isEventDriven() { return eventDriven; },
     async start() {
       if (running) return;
       running = true;
       lastMetaSignature = '';
 
+      if (process.platform === 'darwin') {
+        macStream = createMacMediaRemoteStream({
+          onUpdate: (track) => emit(track),
+          onFatal: (err) => {
+            if (process.env.SMILEY_DEV) console.warn('[now-playing] stream fatal:', err.message);
+          },
+        });
+        try {
+          const streamOk = await macStream.start();
+          if (streamOk) {
+            eventDriven = true;
+            return;
+          }
+        } catch (err) {
+          if (process.env.SMILEY_DEV) console.warn('[now-playing] stream start failed:', err.message);
+        }
+        macStream = null;
+      }
+
       if (NativeNowPlaying) {
         try {
           nativePlayer = new NativeNowPlaying((event) => emit(event));
           await nativePlayer.subscribe();
-          // Native events push track changes — avoid stacking a poll loop on top.
+          eventDriven = true;
           return;
         } catch (err) {
           nativePlayer = null;
@@ -563,12 +612,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
       macPollFailures = 0;
       macPollBackoffMs = 0;
       fastRepollPending = false;
-      if (nativePlayer) {
-        try {
-          await nativePlayer.unsubscribe();
-        } catch (_) {}
-        nativePlayer = null;
-      }
+      await stopEventSources();
       lastMetaSignature = '';
     },
   };

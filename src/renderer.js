@@ -44,6 +44,14 @@ const previewGif = $('#previewGif');
 const previewDetails = $('#previewDetails');
 const previewState = $('#previewState');
 const previewNowPlaying = $('#previewNowPlaying');
+const musicPreviewBar = $('#musicPreviewBar');
+const musicPreviewArt = $('#musicPreviewArt');
+const musicPreviewArtFallback = $('#musicPreviewArtFallback');
+const musicPreviewTitle = $('#musicPreviewTitle');
+const musicPreviewArtist = $('#musicPreviewArtist');
+const musicPreviewProgressFill = $('#musicPreviewProgressFill');
+const musicPreviewElapsed = $('#musicPreviewElapsed');
+const musicPreviewDuration = $('#musicPreviewDuration');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -224,6 +232,7 @@ let lastUpdateActionToastKey = '';
 let lastUpdateActionToastAt = 0;
 let nowPlayingTrack = null;
 let nowPlayingArtworkUrl = null;
+let musicProgressTimer = null;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -1086,6 +1095,78 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
   });
 }
 
+function getLiveTrackProgress(track) {
+  if (!track) return { progressMs: 0, durationMs: 0 };
+  const durationMs = Math.max(0, Number(track.durationMs) || 0);
+  const base = Math.max(0, Number(track.progressMs) || 0);
+  if (!track.isPlaying) return { progressMs: base, durationMs };
+  const age = Math.max(0, Date.now() - (Number(track.updatedAt) || Date.now()));
+  const rate = Number(track.playbackRate) || 1;
+  const progressMs = durationMs > 0
+    ? Math.min(durationMs, base + Math.round(age * rate))
+    : base + Math.round(age * rate);
+  return { progressMs, durationMs };
+}
+
+function stopMusicProgressTimer() {
+  if (musicProgressTimer) {
+    clearInterval(musicProgressTimer);
+    musicProgressTimer = null;
+  }
+}
+
+function paintMusicProgressBar(track) {
+  if (!musicPreviewProgressFill || !musicPreviewElapsed || !musicPreviewDuration) return;
+  const { progressMs, durationMs } = getLiveTrackProgress(track);
+  const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
+  musicPreviewProgressFill.style.width = `${pct}%`;
+  musicPreviewElapsed.textContent = formatElapsed(progressMs);
+  musicPreviewDuration.textContent = durationMs > 0 ? formatElapsed(durationMs) : '—';
+}
+
+function updateMusicPreviewBar(track) {
+  if (!musicPreviewBar) return;
+  const enabled = currentSettings.musicNowPlaying !== false;
+  const show = enabled && selectedActivityId === 'listening' && track?.title;
+
+  if (!show) {
+    musicPreviewBar.hidden = true;
+    stopMusicProgressTimer();
+    if (musicPreviewArt) {
+      musicPreviewArt.classList.remove('loaded');
+      musicPreviewArt.removeAttribute('src');
+    }
+    return;
+  }
+
+  musicPreviewBar.hidden = false;
+  if (musicPreviewTitle) musicPreviewTitle.textContent = track.title;
+  if (musicPreviewArtist) {
+    musicPreviewArtist.textContent = track.artist
+      ? (track.album ? `${track.artist} · ${track.album}` : track.artist)
+      : (track.device || 'Now playing');
+  }
+
+  const artUrl = track.artworkUrl || nowPlayingArtworkUrl;
+  if (musicPreviewArt && artUrl) {
+    musicPreviewArt.onload = () => musicPreviewArt.classList.add('loaded');
+    musicPreviewArt.onerror = () => {
+      musicPreviewArt.classList.remove('loaded');
+      musicPreviewArt.removeAttribute('src');
+    };
+    if (musicPreviewArt.getAttribute('src') !== artUrl) musicPreviewArt.src = artUrl;
+  } else if (musicPreviewArt) {
+    musicPreviewArt.classList.remove('loaded');
+    musicPreviewArt.removeAttribute('src');
+  }
+
+  paintMusicProgressBar(track);
+  stopMusicProgressTimer();
+  if (track.isPlaying) {
+    musicProgressTimer = setInterval(() => paintMusicProgressBar(nowPlayingTrack), 1000);
+  }
+}
+
 function applyNowPlayingArtwork(url) {
   if (!url || selectedActivityId !== 'listening') return;
   nowPlayingArtworkUrl = url;
@@ -1135,6 +1216,7 @@ function applyNowPlayingPreview(activity) {
     if (track.artworkUrl || nowPlayingArtworkUrl) {
       applyNowPlayingArtwork(track.artworkUrl || nowPlayingArtworkUrl);
     }
+    updateMusicPreviewBar(track);
     return;
   }
 
@@ -1144,6 +1226,7 @@ function applyNowPlayingPreview(activity) {
   }
   previewNowPlaying.textContent = '';
   previewNowPlaying.hidden = true;
+  updateMusicPreviewBar(null);
 }
 
 function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } = {}) {
@@ -1160,6 +1243,7 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
       previewNowPlaying.textContent = '';
       previewNowPlaying.hidden = true;
     }
+    updateMusicPreviewBar(null);
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
@@ -3168,12 +3252,14 @@ async function init() {
     if (!activity) return;
 
     if (track?.title) {
-      applyNowPlayingPreview(activity);
+      if (metaChanged) applyNowPlayingPreview(activity);
+      updateMusicPreviewBar(track);
       return;
     }
 
     if (metaChanged) {
       applyNowPlayingPreview(activity);
+      updateMusicPreviewBar(track);
     }
   });
 

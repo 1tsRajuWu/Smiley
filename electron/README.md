@@ -6,7 +6,9 @@ Smiley’s **main process** entry point is still **`main.js` at the repo root** 
 |------|---------|
 | `security.js` | AES-256-GCM encryption — local data at rest + passphrase E2EE exports |
 | `install-registry.js` | Mandatory install/usage telemetry (Supabase over HTTPS) |
-| `now-playing.js` | System media detection — **macOS polls every 8s** (osascript is expensive) |
+| `now-playing.js` | System media detection — **macOS: mediaremote-adapter stream (instant)**; fallback JXA poll |
+| `mac-mediaremote.js` | macOS event stream via `mediaremote-adapter` (Music Presence approach) |
+| `mediaremote-adapter/` | Bundled Perl adapter + framework (BSD-3, [ungive/mediaremote-adapter](https://github.com/ungive/mediaremote-adapter)) |
 | `now-playing-mac.jxa.js` | macOS JXA script — reads system Now Playing via MediaRemote (15.4+) |
 | `music-sync.js` | Keeps Discord presence in sync while **Listening to music** is active |
 

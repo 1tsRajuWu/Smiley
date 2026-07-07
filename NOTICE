@@ -31,6 +31,10 @@ THIRD-PARTY CONTENT
 Anime GIFs are sourced from public APIs (waifu.pics, nekos.best, Tenor) and
 remain subject to their respective terms.
 
+macOS now-playing detection bundles mediaremote-adapter (BSD-3-Clause,
+https://github.com/ungive/mediaremote-adapter). See
+electron/mediaremote-adapter/mediaremote-adapter.LICENSE.
+
 SECURITY & E2EE
 ---------------
 Smiley encrypts local settings (AES-256-GCM) and supports passphrase-based
