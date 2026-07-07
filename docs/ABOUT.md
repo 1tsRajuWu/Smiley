@@ -59,14 +59,16 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 
 ## Download
 
+<!-- DOWNLOADS_START -->
 | Platform | File | Link |
 |----------|------|------|
-| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.8/Smiley-Setup-4.1.8.exe) |
-| macOS (Apple Silicon) | `.dmg` | [Download](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.9-arm64.dmg) |
-| macOS (Intel) | `.dmg` | [Download](https://github.com/1tsRajuWu/Smiley/releases/latest/download/Smiley-4.1.9-x64.dmg) |
-| Linux | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.8/Smiley-4.1.8.AppImage) |
-| Linux | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v4.1.8/Smiley-4.1.8.deb) |
+| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-Setup-5.0.13.exe) |
+| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-arm64.dmg) |
+| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-x64.dmg) |
+| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-5.0.13.AppImage) |
+| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-5.0.13.deb) |
 | All platforms | — | [Latest releases](https://github.com/1tsRajuWu/Smiley/releases/latest) |
+<!-- DOWNLOADS_END -->
 
 **Needs:** Discord desktop app, macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](MINIMUM-REQUIREMENTS.md)
 

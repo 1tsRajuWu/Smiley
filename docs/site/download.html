@@ -141,11 +141,19 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
     }
 
     .download-card:hover {
       border-color: var(--border-hover);
       background: var(--bg-card-hover);
+    }
+
+    .download-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .platform-icon {
@@ -188,15 +196,15 @@
       padding: 0.6rem 1.1rem;
       background: var(--accent);
       color: #fff;
-      text-decoration: none;
       font-weight: 600;
       font-size: 0.875rem;
       border-radius: var(--radius-sm);
       transition: background 0.2s, transform 0.15s;
       white-space: nowrap;
+      pointer-events: none;
     }
 
-    .btn-download:hover {
+    .download-card:hover .btn-download {
       background: var(--accent-hover);
       transform: translateY(-1px);
     }
@@ -250,7 +258,7 @@
       margin-top: 0.15rem;
     }
 
-    .btn-download.is-disabled {
+    .download-card.is-disabled {
       pointer-events: none;
       opacity: 0.45;
       cursor: not-allowed;
@@ -279,70 +287,70 @@
     </header>
 
     <section class="downloads" aria-label="Download options" id="downloads">
-      <article class="download-card" data-platform="windows">
+      <a class="download-card" data-platform="windows" href="#" aria-disabled="true">
         <div class="platform-icon" aria-hidden="true">🪟</div>
         <div class="platform-info">
           <div class="platform-name">Windows</div>
           <div class="platform-file" data-file>Loading…</div>
           <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" data-href href="#" aria-disabled="true">
+        <span class="btn-download">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
-        </a>
-      </article>
+        </span>
+      </a>
 
-      <article class="download-card" data-platform="mac-arm64">
+      <a class="download-card" data-platform="mac-arm64" href="#" aria-disabled="true">
         <div class="platform-icon" aria-hidden="true">🍎</div>
         <div class="platform-info">
           <div class="platform-name">macOS · Apple Silicon</div>
           <div class="platform-file" data-file>Loading…</div>
           <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" data-href href="#" aria-disabled="true">
+        <span class="btn-download">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
-        </a>
-      </article>
+        </span>
+      </a>
 
-      <article class="download-card" data-platform="mac-x64">
+      <a class="download-card" data-platform="mac-x64" href="#" aria-disabled="true">
         <div class="platform-icon" aria-hidden="true">🍎</div>
         <div class="platform-info">
           <div class="platform-name">macOS · Intel</div>
           <div class="platform-file" data-file>Loading…</div>
           <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" data-href href="#" aria-disabled="true">
+        <span class="btn-download">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
-        </a>
-      </article>
+        </span>
+      </a>
 
-      <article class="download-card" data-platform="linux-appimage">
+      <a class="download-card" data-platform="linux-appimage" href="#" aria-disabled="true">
         <div class="platform-icon" aria-hidden="true">🐧</div>
         <div class="platform-info">
           <div class="platform-name">Linux · AppImage</div>
           <div class="platform-file" data-file>Loading…</div>
           <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" data-href href="#" aria-disabled="true">
+        <span class="btn-download">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
-        </a>
-      </article>
+        </span>
+      </a>
 
-      <article class="download-card" data-platform="linux-deb">
+      <a class="download-card" data-platform="linux-deb" href="#" aria-disabled="true">
         <div class="platform-icon" aria-hidden="true">🐧</div>
         <div class="platform-info">
           <div class="platform-name">Linux · Debian / Ubuntu</div>
           <div class="platform-file" data-file>Loading…</div>
           <div class="platform-note" data-note hidden></div>
         </div>
-        <a class="btn-download" data-href href="#" aria-disabled="true">
+        <span class="btn-download">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a.75.75 0 0 1 .75.75v6.59l1.95-1.95a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.24 7.45a.75.75 0 1 1 1.06-1.06l1.95 1.95V1.75A.75.75 0 0 1 8 1Z"/><path d="M2.75 12a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75Z"/></svg>
           Download
-        </a>
-      </article>
+        </span>
+      </a>
     </section>
 
     <footer class="footer-links">
@@ -380,10 +388,6 @@
       }
     };
 
-    function latestDownloadUrl(assetName) {
-      return 'https://github.com/' + REPO + '/releases/latest/download/' + assetName;
-    }
-
     function findAsset(releases, testFn) {
       for (var i = 0; i < releases.length; i++) {
         var rel = releases[i];
@@ -391,11 +395,12 @@
         for (var j = 0; j < assets.length; j++) {
           var asset = assets[j];
           if (testFn(asset.name)) {
-            var onLatest = i === 0;
             return {
               name: asset.name,
               tag: rel.tag_name,
-              url: onLatest ? latestDownloadUrl(asset.name) : asset.browser_download_url
+              // Always use versioned URLs — /latest/download/ 404s when the newest tag
+              // is still publishing or missing artifacts for some platforms.
+              url: asset.browser_download_url
             };
           }
         }
@@ -408,22 +413,21 @@
       if (!card) return;
       var fileEl = card.querySelector('[data-file]');
       var noteEl = card.querySelector('[data-note]');
-      var btn = card.querySelector('[data-href]');
 
       if (!hit) {
         fileEl.textContent = 'Coming soon';
         noteEl.hidden = false;
         noteEl.textContent = 'No build available yet for this platform.';
-        btn.classList.add('is-disabled');
-        btn.setAttribute('aria-disabled', 'true');
-        btn.removeAttribute('href');
+        card.classList.add('is-disabled');
+        card.setAttribute('aria-disabled', 'true');
+        card.removeAttribute('href');
         return;
       }
 
       fileEl.textContent = hit.name;
-      btn.href = hit.url;
-      btn.classList.remove('is-disabled');
-      btn.removeAttribute('aria-disabled');
+      card.href = hit.url;
+      card.classList.remove('is-disabled');
+      card.removeAttribute('aria-disabled');
 
       if (hit.tag !== latestTag) {
         noteEl.hidden = false;
@@ -434,32 +438,45 @@
       }
     }
 
-    fetch(API + '/releases?per_page=30')
-      .then(function (r) { return r.json(); })
-      .then(function (releases) {
-        if (!Array.isArray(releases) || !releases.length) return;
-        var latestTag = releases[0].tag_name;
-        var version = latestTag.replace(/^v/, '');
-        var badge = document.getElementById('version-badge');
-        if (badge) badge.textContent = 'Latest · ' + latestTag;
+    function applyReleases(releases) {
+      if (!Array.isArray(releases) || !releases.length) return;
+      var latestTag = releases[0].tag_name;
+      var version = latestTag.replace(/^v/, '');
+      var badge = document.getElementById('version-badge');
+      if (badge) badge.textContent = 'Latest · ' + latestTag;
 
-        var schema = document.querySelector('script[type="application/ld+json"]');
-        if (schema) {
-          try {
-            var data = JSON.parse(schema.textContent);
-            data.softwareVersion = version;
-            schema.textContent = JSON.stringify(data, null, 2);
-          } catch (e) { /* ignore */ }
-        }
+      var schema = document.querySelector('script[type="application/ld+json"]');
+      if (schema) {
+        try {
+          var data = JSON.parse(schema.textContent);
+          data.softwareVersion = version;
+          schema.textContent = JSON.stringify(data, null, 2);
+        } catch (e) { /* ignore */ }
+      }
 
-        Object.keys(platforms).forEach(function (id) {
-          var testFn = platforms[id].test;
-          setCard(id, findAsset(releases, testFn), latestTag);
-        });
+      Object.keys(platforms).forEach(function (id) {
+        var testFn = platforms[id].test;
+        setCard(id, findAsset(releases, testFn), latestTag);
+      });
+    }
+
+    fetch(API + '/releases?per_page=30', { headers: { Accept: 'application/vnd.github+json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error('GitHub API ' + r.status);
+        return r.json();
       })
+      .then(applyReleases)
       .catch(function () {
         var badge = document.getElementById('version-badge');
         if (badge) badge.textContent = 'Latest · see GitHub releases';
+        var fallback = 'https://github.com/' + REPO + '/releases/latest';
+        document.querySelectorAll('.download-card[data-platform]').forEach(function (card) {
+          card.href = fallback;
+          card.classList.remove('is-disabled');
+          card.removeAttribute('aria-disabled');
+          var fileEl = card.querySelector('[data-file]');
+          if (fileEl) fileEl.textContent = 'Open latest release';
+        });
       });
   })();
   </script>

@@ -140,29 +140,45 @@ fi
 table_body="| Platform | File |
 |----------|------|
 "
+about_table_body="| Platform | File | Link |
+|----------|------|------|
+"
+about_file_label() {
+  case "$1" in
+    Windows) echo "Installer (\`.exe\`)" ;;
+    "macOS Apple Silicon") echo "\`.dmg\` (Apple Silicon)" ;;
+    "macOS Intel") echo "\`.dmg\` (Intel)" ;;
+    "Linux (AppImage)") echo "AppImage" ;;
+    "Linux (.deb)") echo "\`.deb\`" ;;
+    *) echo "" ;;
+  esac
+}
+
 while IFS='|' read -r _order platform name url; do
   [[ -z "$platform" ]] && continue
   table_body+="| ${platform} | [${name}](${url}) |"$'\n'
+  about_label=$(about_file_label "$platform")
+  about_table_body+="| ${platform} | ${about_label} | [Download](${url}) |"$'\n'
 done < <(echo -n "$table_rows" | sort -t'|' -k1,1n)
+about_table_body+="| All platforms | — | [Latest releases](${latest_url}) |"$'\n'
 
 if [[ ! -f "$README_PATH" ]]; then
   echo "README not found: $README_PATH" >&2
   exit 1
 fi
 
-python3 - "$README_PATH" "$hero_block" "$table_body" <<'PY'
+ABOUT_PATH="$ROOT/docs/ABOUT.md"
+
+python3 - "$README_PATH" "$ABOUT_PATH" "$hero_block" "$table_body" "$about_table_body" <<'PY'
 import sys
 
-readme_path, hero_block, table_body = sys.argv[1:4]
-
-with open(readme_path, encoding="utf-8") as f:
-    content = f.read()
+readme_path, about_path, hero_block, table_body, about_table_body = sys.argv[1:6]
 
 def replace_block(text, start_marker, end_marker, new_inner):
     start = text.find(start_marker)
     end = text.find(end_marker)
     if start == -1 or end == -1 or end < start:
-        print(f"README missing {start_marker}/{end_marker}", file=sys.stderr)
+        print(f"Missing {start_marker}/{end_marker}", file=sys.stderr)
         sys.exit(1)
     return (
         text[: start + len(start_marker)]
@@ -172,11 +188,24 @@ def replace_block(text, start_marker, end_marker, new_inner):
         + text[end:]
     )
 
-content = replace_block(content, "<!-- HERO_DOWNLOADS_START -->", "<!-- HERO_DOWNLOADS_END -->", hero_block)
-content = replace_block(content, "<!-- DOWNLOADS_START -->", "<!-- DOWNLOADS_END -->", table_body.rstrip())
+with open(readme_path, encoding="utf-8") as f:
+    readme = f.read()
+
+readme = replace_block(readme, "<!-- HERO_DOWNLOADS_START -->", "<!-- HERO_DOWNLOADS_END -->", hero_block)
+readme = replace_block(readme, "<!-- DOWNLOADS_START -->", "<!-- DOWNLOADS_END -->", table_body.rstrip())
 
 with open(readme_path, "w", encoding="utf-8") as f:
-    f.write(content)
+    f.write(readme)
+
+if about_path:
+    try:
+        with open(about_path, encoding="utf-8") as f:
+            about = f.read()
+        about = replace_block(about, "<!-- DOWNLOADS_START -->", "<!-- DOWNLOADS_END -->", about_table_body.rstrip())
+        with open(about_path, "w", encoding="utf-8") as f:
+            f.write(about)
+    except SystemExit:
+        print("docs/ABOUT.md missing download markers — skipped", file=sys.stderr)
 PY
 
-echo "Updated ${README} download links (latest tag: ${latest_tag})"
+echo "Updated ${README} and docs/ABOUT.md download links (latest tag: ${latest_tag})"
