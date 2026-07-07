@@ -13,16 +13,13 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://1tsrajuwu.github.io/Smiley/icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --bg: #050608;
       --bg-elevated: #0c0e14;
-      --bg-card: rgba(18, 20, 30, 0.72);
+      --bg-card: #12141e;
       --border: rgba(255, 255, 255, 0.07);
       --border-bright: rgba(255, 255, 255, 0.12);
       --text: #f4f5f9;
@@ -37,8 +34,8 @@
       --violet: #9b59f5;
       --radius: 20px;
       --radius-sm: 12px;
-      --font-display: 'Outfit', system-ui, sans-serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-display: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -53,80 +50,23 @@
       overflow-x: hidden;
     }
 
-    /* ── Ambient canvas ── */
+    /* ── Ambient (static — no animated blur) ── */
     .ambient {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 0;
-      overflow: hidden;
-    }
-
-    .ambient__mesh {
-      position: absolute;
-      inset: -50%;
       background:
-        radial-gradient(ellipse 55% 45% at 15% 8%, rgba(88, 101, 242, 0.22), transparent 55%),
-        radial-gradient(ellipse 45% 35% at 88% 12%, rgba(155, 89, 245, 0.16), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 55% 95%, rgba(235, 69, 158, 0.1), transparent 55%),
-        radial-gradient(ellipse 30% 25% at 70% 55%, rgba(59, 165, 93, 0.06), transparent 50%);
-      animation: meshDrift 28s ease-in-out infinite alternate;
+        radial-gradient(ellipse 70% 50% at 18% 0%, rgba(88, 101, 242, 0.16), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 88% 12%, rgba(155, 89, 245, 0.1), transparent 50%),
+        radial-gradient(ellipse 45% 35% at 50% 100%, rgba(235, 69, 158, 0.07), transparent 55%);
     }
 
-    @keyframes meshDrift {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(2%, -1.5%) scale(1.04); }
-    }
-
-    .ambient__orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.55;
-      animation: orbFloat 18s ease-in-out infinite;
-    }
-
-    .ambient__orb--1 {
-      width: 420px; height: 420px;
-      background: rgba(88, 101, 242, 0.25);
-      top: -8%; left: -5%;
-    }
-
-    .ambient__orb--2 {
-      width: 320px; height: 320px;
-      background: rgba(235, 69, 158, 0.18);
-      top: 35%; right: -8%;
-      animation-delay: -6s;
-    }
-
-    .ambient__orb--3 {
-      width: 280px; height: 280px;
-      background: rgba(155, 89, 245, 0.15);
-      bottom: 5%; left: 30%;
-      animation-delay: -12s;
-    }
-
-    @keyframes orbFloat {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(20px, -30px); }
-    }
-
-    .ambient__noise {
-      position: absolute;
-      inset: 0;
-      opacity: 0.035;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      background-size: 180px;
-    }
-
-    .ambient__grid {
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-      background-size: 64px 64px;
-      mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 75%);
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
     }
 
     /* ── Layout ── */
@@ -151,9 +91,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.65rem 1.25rem;
-      background: rgba(8, 9, 14, 0.65);
-      backdrop-filter: blur(20px) saturate(1.4);
-      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      background: rgba(8, 9, 14, 0.94);
       border: 1px solid var(--border);
       border-radius: 999px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
@@ -233,7 +171,6 @@
       background: rgba(255, 255, 255, 0.04);
       color: var(--text);
       border: 1px solid var(--border);
-      backdrop-filter: blur(8px);
     }
 
     .btn-ghost:hover {
@@ -289,16 +226,9 @@
 
     .hero h1 .gradient {
       background: linear-gradient(135deg, #fff 0%, #c4c8ff 35%, var(--accent) 65%, var(--pink) 100%);
-      background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      animation: gradientShift 6s ease infinite;
-    }
-
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% center; }
-      50% { background-position: 100% center; }
     }
 
     .hero-tagline {
@@ -324,7 +254,6 @@
       border: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.03);
       color: var(--text-muted);
-      backdrop-filter: blur(8px);
     }
 
     .badge--live {
@@ -340,13 +269,7 @@
       border-radius: 50%;
       background: #6ee7a0;
       margin-right: 0.35rem;
-      box-shadow: 0 0 8px var(--success-glow);
-      animation: pulse 2s ease infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
+      box-shadow: 0 0 6px var(--success-glow);
     }
 
     .hero-cta {
@@ -380,15 +303,6 @@
     /* ── App mockup ── */
     .mockup-scene {
       position: relative;
-      perspective: 1400px;
-    }
-
-    .mockup-glow {
-      position: absolute;
-      inset: -15% -10%;
-      background: radial-gradient(ellipse at center, rgba(88, 101, 242, 0.2), transparent 65%);
-      pointer-events: none;
-      z-index: 0;
     }
 
     .mockup-window {
@@ -400,14 +314,7 @@
       overflow: hidden;
       box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-        0 40px 100px -20px rgba(0, 0, 0, 0.7),
-        0 0 80px -20px var(--accent-glow);
-      transform: rotateY(-6deg) rotateX(3deg);
-      transition: transform 0.6s var(--ease-out);
-    }
-
-    .mockup-scene:hover .mockup-window {
-      transform: rotateY(-1deg) rotateX(0.5deg);
+        0 24px 64px -16px rgba(0, 0, 0, 0.65);
     }
 
     .mockup-titlebar {
@@ -476,27 +383,7 @@
       background: radial-gradient(circle at 30% 20%, rgba(88, 101, 242, 0.15), transparent 60%);
     }
 
-    .mockup-stage::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.06) 50%, transparent 58%);
-      animation: shimmer 4s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { transform: translateX(-120%); }
-      50% { transform: translateX(120%); }
-    }
-
-    .mockup-stage span { position: relative; z-index: 1; transition: transform 0.3s var(--ease-out); }
-    .mockup-stage.pop span { animation: pop 0.35s var(--ease-out); }
-
-    @keyframes pop {
-      0% { transform: scale(0.8); opacity: 0.5; }
-      60% { transform: scale(1.1); }
-      100% { transform: scale(1); opacity: 1; }
-    }
+    .mockup-stage span { position: relative; z-index: 1; }
 
     .mockup-label {
       font-size: 0.72rem;
@@ -596,8 +483,7 @@
       bottom: -16px;
       right: -24px;
       z-index: 2;
-      background: rgba(14, 16, 24, 0.85);
-      backdrop-filter: blur(16px);
+      background: rgba(14, 16, 24, 0.96);
       border: 1px solid var(--border-bright);
       border-radius: 14px;
       padding: 0.75rem 1.1rem;
@@ -613,8 +499,7 @@
       width: 7px; height: 7px;
       border-radius: 50%;
       background: #6ee7a0;
-      box-shadow: 0 0 10px var(--success-glow);
-      animation: pulse 2s ease infinite;
+      box-shadow: 0 0 8px var(--success-glow);
     }
 
     .mockup-chip {
@@ -622,8 +507,7 @@
       top: 24px;
       left: -28px;
       z-index: 2;
-      background: rgba(14, 16, 24, 0.85);
-      backdrop-filter: blur(16px);
+      background: rgba(14, 16, 24, 0.96);
       border: 1px solid var(--border-bright);
       border-radius: 12px;
       padding: 0.55rem 0.85rem;
@@ -637,46 +521,38 @@
 
     /* ── Marquee ── */
     .marquee-wrap {
-      overflow: hidden;
-      padding: 1.5rem 0;
+      padding: 1.25rem 0;
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.015);
-      mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
     }
 
     .marquee {
       display: flex;
-      gap: 3rem;
-      animation: marquee 35s linear infinite;
-      width: max-content;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.35rem 1rem;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem;
     }
 
     .marquee span {
       font-family: var(--font-display);
-      font-size: 0.8rem;
+      font-size: 0.72rem;
       font-weight: 600;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text-dim);
       white-space: nowrap;
     }
 
-    .marquee span::after {
-      content: '◆';
-      margin-left: 3rem;
-      font-size: 0.5rem;
-      opacity: 0.4;
-      vertical-align: middle;
-    }
-
-    @keyframes marquee {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-
     /* ── Sections ── */
-    .section { padding: 6rem 0; }
+    .section {
+      padding: 6rem 0;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 480px;
+    }
 
     .section-label {
       display: inline-block;
@@ -717,8 +593,7 @@
 
     .bento-card {
       padding: 1.75rem;
-      background: var(--bg-card);
-      backdrop-filter: blur(12px);
+      background: #12141e;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       transition: border-color 0.3s, transform 0.35s var(--ease-out), box-shadow 0.35s;
@@ -757,8 +632,7 @@
       top: 1.5rem;
       right: 1.5rem;
       font-size: 5rem;
-      opacity: 0.15;
-      filter: blur(1px);
+      opacity: 0.12;
     }
 
     .bento-card--tall { grid-column: span 5; }
@@ -864,8 +738,7 @@
       align-items: center;
       gap: 1rem;
       padding: 1.15rem 1.35rem;
-      background: var(--bg-card);
-      backdrop-filter: blur(12px);
+      background: #12141e;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       text-decoration: none;
@@ -998,16 +871,10 @@
 
     .footer-copy a:hover { text-decoration: underline; }
 
-    /* ── Reveal animations ── */
+    /* ── Reveal (static — no scroll JS) ── */
     .reveal {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
-    }
-
-    .reveal.visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: none;
     }
 
     /* ── Responsive ── */
@@ -1048,14 +915,7 @@
   </style>
 </head>
 <body>
-  <div class="ambient" aria-hidden="true">
-    <div class="ambient__mesh"></div>
-    <div class="ambient__orb ambient__orb--1"></div>
-    <div class="ambient__orb ambient__orb--2"></div>
-    <div class="ambient__orb ambient__orb--3"></div>
-    <div class="ambient__grid"></div>
-    <div class="ambient__noise"></div>
-  </div>
+  <div class="ambient" aria-hidden="true"></div>
 
   <div class="wrap">
     <div class="nav-shell">
@@ -1115,7 +975,6 @@
       </div>
 
       <div class="mockup-scene reveal">
-        <div class="mockup-glow"></div>
         <div class="mockup-chip"><strong>Aurora UI</strong>v3 interface</div>
         <div class="mockup-window">
           <div class="mockup-titlebar">
@@ -1160,7 +1019,6 @@
 
   <div class="marquee-wrap" aria-hidden="true">
     <div class="marquee">
-      <span>Anime GIFs</span><span>Rich Presence</span><span>Zero Config</span><span>Native Desktop</span><span>Aurora UI</span><span>Now Playing</span><span>Open Source</span><span>Windows</span><span>macOS</span><span>Linux</span>
       <span>Anime GIFs</span><span>Rich Presence</span><span>Zero Config</span><span>Native Desktop</span><span>Aurora UI</span><span>Now Playing</span><span>Open Source</span><span>Windows</span><span>macOS</span><span>Linux</span>
     </div>
   </div>
@@ -1320,7 +1178,6 @@
   <script>
     (function () {
       var grid = document.getElementById('activityGrid');
-      var stage = document.getElementById('heroStage');
       var gif = document.getElementById('heroGif');
       var label = document.getElementById('heroLabel');
       var status = document.getElementById('discordStatus');
@@ -1333,23 +1190,7 @@
         gif.textContent = card.dataset.emoji;
         label.textContent = card.dataset.label;
         status.textContent = card.dataset.label;
-        stage.classList.remove('pop');
-        void stage.offsetWidth;
-        stage.classList.add('pop');
       });
-
-      var reveals = document.querySelectorAll('.reveal');
-      var observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
-      reveals.forEach(function (el) { observer.observe(el); });
-      document.querySelectorAll('.hero .reveal').forEach(function (el) { el.classList.add('visible'); });
     })();
   </script>
 </body>
