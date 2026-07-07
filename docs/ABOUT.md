@@ -62,11 +62,11 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 <!-- DOWNLOADS_START -->
 | Platform | File | Link |
 |----------|------|------|
-| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.0/Smiley-Setup-7.0.0.exe) |
-| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.0/Smiley-7.0.0-arm64.dmg) |
-| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.0/Smiley-7.0.0-x64.dmg) |
-| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.0/Smiley-7.0.0.AppImage) |
-| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.0/Smiley-7.0.0.deb) |
+| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.6/Smiley-Setup-7.0.6.exe) |
+| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.6/Smiley-7.0.6-arm64.dmg) |
+| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.6/Smiley-7.0.6-x64.dmg) |
+| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.6/Smiley-7.0.6.AppImage) |
+| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.6/Smiley-7.0.6.deb) |
 | All platforms | — | [Latest releases](https://github.com/1tsRajuWu/Smiley/releases/latest) |
 <!-- DOWNLOADS_END -->
 
