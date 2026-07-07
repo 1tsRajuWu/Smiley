@@ -33,6 +33,7 @@ Track **installed and active Smiley users**. Disclosed in [PRIVACY.md](../PRIVAC
 
 1. Create a Supabase project and run [scripts/install-database-schema.sql](../scripts/install-database-schema.sql) in SQL Editor.
 2. Set GitHub secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, optionally `SUPABASE_DB_URL`.
+   - For **schema migrations** (GitHub Actions → *Apply Supabase schema*): add **`SUPABASE_DB_URL`** *or* **`SUPABASE_ACCESS_TOKEN`** (Supabase dashboard → Account → Access Tokens). Without one of these, the workflow fails instead of skipping.
 3. Trigger [`.github/workflows/supabase-schema.yml`](../.github/workflows/supabase-schema.yml) to apply schema and backfill geo.
 
 **Backfill existing rows:**

@@ -75,8 +75,9 @@ async function main() {
   console.log('Columns:', [...columns].join(', '));
 
   const selectCols = ['install_id', 'ip_address', 'country_code', 'region'];
-  if (columns.has('country_name')) selectCols.push('country_name');
-  if (columns.has('city')) selectCols.push('city');
+  for (const col of ['country_name', 'region_name', 'city', 'isp', 'geo_timezone']) {
+    if (columns.has(col)) selectCols.push(col);
+  }
 
   const rows = await request(
     `${SUPABASE_URL}/rest/v1/installs?select=${selectCols.join(',')}&order=last_seen_at.desc`,
