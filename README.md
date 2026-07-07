@@ -23,11 +23,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 ## Download
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-Setup-6.0.1.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-Setup-6.0.2.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 [All releases](https://github.com/1tsRajuWu/Smiley/releases) · [Download page](https://1tsrajuwu.github.io/Smiley/)
@@ -38,11 +38,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-6.0.1.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-Setup-6.0.1.exe) |
-| macOS Apple Silicon | [Smiley-6.0.1-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1-arm64.dmg) |
-| macOS Intel | [Smiley-6.0.1-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1-x64.dmg) |
-| Linux (AppImage) | [Smiley-6.0.1.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1.AppImage) |
-| Linux (.deb) | [Smiley-6.0.1.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.1/Smiley-6.0.1.deb) |
+| Windows | [Smiley-Setup-6.0.2.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-Setup-6.0.2.exe) |
+| macOS Apple Silicon | [Smiley-6.0.2-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2-arm64.dmg) |
+| macOS Intel | [Smiley-6.0.2-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2-x64.dmg) |
+| Linux (AppImage) | [Smiley-6.0.2.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2.AppImage) |
+| Linux (.deb) | [Smiley-6.0.2.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v6.0.2/Smiley-6.0.2.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
