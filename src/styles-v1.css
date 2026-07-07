@@ -303,6 +303,39 @@ body.has-wallpaper::before {
   pointer-events: none;
 }
 
+body.has-wallpaper-img::before,
+body.has-wallpaper-img::after {
+  display: none;
+}
+
+.wallpaper-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  transform: scale(1.06);
+}
+
+.wallpaper-layer[hidden] {
+  display: none !important;
+}
+
+.wallpaper-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #000;
+  pointer-events: none;
+}
+
+.wallpaper-dim[hidden] {
+  display: none !important;
+}
+
 body.has-wallpaper::after {
   content: '';
   position: fixed;
@@ -1024,4 +1057,22 @@ body.hide-upi-donate #upiQrModal {
   }
   .brand-icon, .connection-pill.connected .connection-dot, .loading-spinner,
   .discord-art-emoji, .activity-card { animation: none !important; }
+}
+
+body.render-paused *,
+body.animations-off * {
+  animation-play-state: paused !important;
+}
+
+body.render-paused .donate-banner-shine,
+body.animations-off .donate-banner-shine,
+body.render-paused .donate-icon-heart,
+body.animations-off .donate-icon-heart,
+body.render-paused .brand-icon,
+body.animations-off .brand-icon,
+body.render-paused .connection-pill.connected .connection-dot,
+body.animations-off .connection-pill.connected .connection-dot,
+body.render-paused .discord-art-emoji,
+body.animations-off .discord-art-emoji {
+  animation: none !important;
 }

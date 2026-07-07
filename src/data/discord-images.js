@@ -490,16 +490,14 @@ function buildResult(activityId, { url, discordUrl, source, fallbacks, needsAsyn
 
 const preloadedUrls = new Set();
 
-/** Warm browser cache for curated GIF URLs (non-blocking). */
+/** Warm browser cache for curated GIF URLs (non-blocking). Uses fetch — no animated decode. */
 export function preloadImageUrls(urls) {
   for (const raw of urls) {
     const url = normalizeDiscordImageUrl(raw);
     if (!url || preloadedUrls.has(url)) continue;
     if (preloadedUrls.size >= PRELOADED_URL_MAX) preloadedUrls.clear();
     preloadedUrls.add(url);
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = url;
+    fetch(url, { mode: 'cors', credentials: 'omit', cache: 'force-cache' }).catch(() => {});
   }
 }
 

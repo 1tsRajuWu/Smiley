@@ -72,7 +72,10 @@ if (!gotSingleInstanceLock) {
   app.quit();
 }
 
+/** Custom quit flag — Electron has no built-in app.isQuitting(). */
 app.isQuitting = false;
+function isAppQuitting() { return app.isQuitting === true; }
+function markAppQuitting() { app.isQuitting = true; }
 
 // ─── Constants ───────────────────────────────────────────────────────
 const isDev = process.argv.includes('--dev');
@@ -520,6 +523,8 @@ const MAX_IMPORT_BYTES = 512 * 1024;
 const PRESENCE_UPDATE_COOLDOWN_MS = 5000;
 const STATUS_BROADCAST_DEBOUNCE_MS = 500;
 const TRAY_MENU_DEBOUNCE_MS = 2000;
+const WINDOW_STATE_DEBOUNCE_MS = 500;
+const SESSION_STATS_DEBOUNCE_MS = 2000;
 
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
@@ -631,7 +636,7 @@ function getClientId() {
 }
 
 function formatSessionDuration(ms) {
-  if (!ms || ms < 0) return '0m';
+  if (ms == null || typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) return '0m';
   const totalMin = Math.floor(ms / 60000);
   if (totalMin < 60) return `${totalMin}m`;
   const h = Math.floor(totalMin / 60);
@@ -648,14 +653,12 @@ function trackRecentActivity(activity) {
   };
   const recent = [entry, ...(config.recentActivities || []).filter((r) => r.id !== entry.id)].slice(0, 5);
   saveConfig({ recentActivities: recent });
-  if (mainWindow?.webContents) {
-  mainWindow.webContents.send('config-changed', {
+  sendToWindow('config-changed', {
     recentActivities: recent,
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
     activityProfiles: config.activityProfiles || [],
   });
-  }
 }
 
 function toggleFavoriteActivity(id) {
@@ -667,13 +670,11 @@ function toggleFavoriteActivity(id) {
     favorites = [id, ...favorites].slice(0, 10);
   }
   saveConfig({ favoriteActivities: favorites });
-  if (mainWindow?.webContents) {
-    mainWindow.webContents.send('config-changed', {
-      recentActivities: config.recentActivities || [],
-      favoriteActivities: favorites,
-      customActivities: config.customActivities || [],
-    });
-  }
+  sendToWindow('config-changed', {
+    recentActivities: config.recentActivities || [],
+    favoriteActivities: favorites,
+    customActivities: config.customActivities || [],
+  });
   return favorites;
 }
 
@@ -726,8 +727,10 @@ function flushConfigToDisk() {
     const tmpPath = `${securePath}.tmp`;
     fs.writeFileSync(tmpPath, JSON.stringify(encryptConfig(config), null, 2));
     fs.renameSync(tmpPath, securePath);
+    return true;
   } catch (e) {
-    console.error('[flushConfig]', e.message);
+    console.error('[saveConfig] disk write failed:', e.message);
+    return false;
   }
 }
 
@@ -735,7 +738,9 @@ function saveConfig(data) {
   const { clientId: _c, donationUrl: _d, ...safeData } = stripSensitiveFields(data || {});
   const patch = sanitizeConfigPatch(safeData);
   config = { ...config, ...patch, donationUrl: DONATION_URL };
-  flushConfigToDisk();
+  if (!flushConfigToDisk()) {
+    console.error('[saveConfig] config updated in memory but not persisted to disk');
+  }
 }
 
 function shouldCloseToTray() {
@@ -934,6 +939,10 @@ let currentTrayIcon = 'default';
 let pausedPresenceSnapshot = null;
 let musicSync = null;
 let trayMenuRefreshTimer = null;
+let windowStateSaveTimer = null;
+let pendingWindowState = null;
+let sessionStatsSaveTimer = null;
+let sessionStatsDirty = false;
 
 function scheduleTrayMenuRefresh() {
   if (trayMenuRefreshTimer) return;
@@ -949,16 +958,35 @@ function getMusicSync() {
       getConfig: () => config,
       applyMusicPresence,
       sendToRenderer: (track, artworkUrl) => {
-        if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
-          const safe = sanitizeNowPlayingTrack(track);
-          if (safe && artworkUrl) safe.artworkUrl = artworkUrl;
-          mainWindow.webContents.send('now-playing-update', safe);
-        }
+        const safe = sanitizeNowPlayingTrack(track);
+        if (safe && artworkUrl) safe.artworkUrl = artworkUrl;
+        sendToWindow('now-playing-update', safe);
       },
       isPaused: isPresencePaused,
     });
   }
   return musicSync;
+}
+
+function scheduleSessionStatsSave() {
+  sessionStatsDirty = true;
+  if (sessionStatsSaveTimer) return;
+  sessionStatsSaveTimer = setTimeout(() => {
+    sessionStatsSaveTimer = null;
+    if (!sessionStatsDirty) return;
+    sessionStatsDirty = false;
+    flushConfigToDisk();
+  }, SESSION_STATS_DEBOUNCE_MS);
+}
+
+function flushSessionStatsSave() {
+  if (sessionStatsSaveTimer) {
+    clearTimeout(sessionStatsSaveTimer);
+    sessionStatsSaveTimer = null;
+  }
+  if (!sessionStatsDirty) return;
+  sessionStatsDirty = false;
+  flushConfigToDisk();
 }
 
 function recordSessionStatsForActivity(activityId, startedAt) {
@@ -967,7 +995,8 @@ function recordSessionStatsForActivity(activityId, startedAt) {
   if (duration < 1000) return;
   const stats = { ...(config.sessionStats || {}) };
   stats[activityId] = (stats[activityId] || 0) + duration;
-  saveConfig({ sessionStats: stats });
+  config = { ...config, sessionStats: stats };
+  scheduleSessionStatsSave();
 }
 
 async function pausePresence() {
@@ -1105,6 +1134,7 @@ function showMainWindow() {
   if (mainWindow.isMinimized()) mainWindow.restore();
   if (!mainWindow.isVisible()) mainWindow.show();
   mainWindow.focus();
+  sendWindowVisibility(true);
 }
 
 function hideMainWindowToTray() {
@@ -1113,6 +1143,17 @@ function hideMainWindowToTray() {
   if (process.platform === 'darwin' && app.dock) {
     try { app.dock.hide(); } catch (_) {}
   }
+  sendWindowVisibility(false);
+}
+
+function sendToWindow(channel, ...args) {
+  if (!mainWindow?.webContents || mainWindow.isDestroyed()) return false;
+  mainWindow.webContents.send(channel, ...args);
+  return true;
+}
+
+function sendWindowVisibility(visible) {
+  sendToWindow('window-visibility', !!visible);
 }
 
 function resetWindowPosition() {
@@ -1146,20 +1187,55 @@ function notifyTrayOnlyStartup() {
   } catch (_) {}
 }
 
-function saveWindowState() {
-  if (!mainWindow) return;
+function captureWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
   try {
     const bounds = mainWindow.getNormalBounds();
-    const state = {
+    return {
       width: bounds.width,
       height: bounds.height,
       x: bounds.x,
       y: bounds.y,
       maximized: mainWindow.isMaximized(),
     };
+  } catch (_) {
+    return null;
+  }
+}
+
+function flushWindowStateSave() {
+  if (windowStateSaveTimer) {
+    clearTimeout(windowStateSaveTimer);
+    windowStateSaveTimer = null;
+  }
+  const state = pendingWindowState || captureWindowState();
+  if (!state) return;
+  pendingWindowState = state;
+  config = { ...config, windowState: state };
+  try {
     writeWindowStateFile(state);
-    saveConfig({ windowState: state });
   } catch (_) {}
+}
+
+function scheduleWindowStateSave() {
+  const state = captureWindowState();
+  if (!state) return;
+  pendingWindowState = state;
+  config = { ...config, windowState: state };
+  if (windowStateSaveTimer) return;
+  windowStateSaveTimer = setTimeout(() => {
+    windowStateSaveTimer = null;
+    flushWindowStateSave();
+  }, WINDOW_STATE_DEBOUNCE_MS);
+}
+
+function saveWindowState() {
+  scheduleWindowStateSave();
+}
+
+function flushPendingDiskWrites() {
+  flushWindowStateSave();
+  flushSessionStatsSave();
 }
 
 // ─── Tray Icons ──────────────────────────────────────────────────────
@@ -1386,6 +1462,7 @@ function createWindow() {
       allowRunningInsecureContent: false,
       webSecurity: true,
       experimentalFeatures: false,
+      backgroundThrottling: true,
       devTools: isDev || !isPackaged,
     },
     title: APP_DISPLAY_NAME,
@@ -1426,14 +1503,14 @@ function createWindow() {
 
   let closingToTray = false;
   mainWindow.on('close', (e) => {
-    if (shouldCloseToTray() && !app.isQuitting) {
+    if (shouldCloseToTray() && !isAppQuitting()) {
       e.preventDefault();
       if (closingToTray) return;
       closingToTray = true;
       (async () => {
         try {
           await flushRendererPendingConfig();
-          saveWindowState();
+          flushPendingDiskWrites();
           flushConfigToDisk();
           if (mainWindow && !mainWindow.isDestroyed()) hideMainWindowToTray();
         } finally {
@@ -1442,12 +1519,16 @@ function createWindow() {
       })();
       return;
     }
-    saveWindowState();
+    flushPendingDiskWrites();
     flushConfigToDisk();
   });
 
-  mainWindow.on('resize', () => saveWindowState());
-  mainWindow.on('move', () => saveWindowState());
+  mainWindow.on('resize', () => scheduleWindowStateSave());
+  mainWindow.on('move', () => scheduleWindowStateSave());
+  mainWindow.on('minimize', () => sendWindowVisibility(false));
+  mainWindow.on('restore', () => sendWindowVisibility(true));
+  mainWindow.on('hide', () => sendWindowVisibility(false));
+  mainWindow.on('show', () => sendWindowVisibility(true));
   if (isWin) {
     const sendMaximized = () => {
       if (mainWindow?.webContents && !mainWindow.isDestroyed()) {
@@ -1554,7 +1635,7 @@ function updateTrayMenu() {
     { label: 'Donate', click: () => shell.openExternal(DONATION_URL) },
     { type: 'separator' },
     { label: `Version ${APP_VERSION}`, enabled: false },
-    { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } },
+    { label: 'Quit', click: () => { markAppQuitting(); app.quit(); } },
   ];
   tray.setContextMenu(Menu.buildFromTemplate(template));
 }
@@ -1587,9 +1668,12 @@ async function connectRPC() {
   }
   const RPC = getRPC();
   RPC.register(clientId);
-  rpcClient = new RPC.Client({ transport: 'ipc' });
+  const client = new RPC.Client({ transport: 'ipc' });
+  rpcClient = client;
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
+      if (rpcClient === client) rpcClient = null;
+      try { client.destroy(); } catch (_) {}
       resolve({ connected: false, error: 'Discord not responding — is it open?' });
     }, 8000);
     rpcClient.once('ready', () => {
@@ -1599,6 +1683,7 @@ async function connectRPC() {
     });
     rpcClient.login({ clientId }).catch((err) => {
       clearTimeout(timeout);
+      rpcClient = null;
       resolve({ connected: false, error: err.message || 'Could not connect to Discord' });
     });
   });
@@ -1741,12 +1826,11 @@ function handleMusicSyncForActivity(safeActivity) {
 }
 
 function pushNowPlayingToRenderer() {
-  if (!mainWindow?.webContents || mainWindow.isDestroyed()) return;
   const track = getMusicSync().getCurrentTrack?.();
   if (!track?.title) return;
   const safe = sanitizeNowPlayingTrack(track);
   if (!safe) return;
-  mainWindow.webContents.send('now-playing-update', safe);
+  sendToWindow('now-playing-update', safe);
 }
 
 async function clearPresence() {
@@ -1771,10 +1855,10 @@ async function clearPresence() {
 let broadcastTimer = null;
 
 function broadcastStatus(immediate = false) {
-  if (!mainWindow?.webContents) return;
+  if (!mainWindow?.webContents || mainWindow.isDestroyed()) return;
 
   const send = () => {
-    mainWindow.webContents.send('rpc-status', {
+    sendToWindow('rpc-status', {
       connected: !!rpcClient,
       activity: sanitizeActivitySnapshot(currentActivity),
       sessionStart,
@@ -2419,7 +2503,7 @@ function installMacUpdate() {
     appendUpdaterLog(`Spawning installer: ${scriptPath} -> ${installPath}`);
     const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
     child.unref();
-    app.isQuitting = true;
+    markAppQuitting();
     setTimeout(() => app.quit(), 400);
     return { success: true, version: pendingUpdateVersion || null };
   } catch (err) {
@@ -2530,7 +2614,7 @@ function formatUpdateError(err, version = pendingUpdateVersion) {
 }
 
 function sendUpdateStatus(payload) {
-  if (mainWindow?.webContents) mainWindow.webContents.send('update-status', payload);
+  sendToWindow('update-status', payload);
 }
 
 let manualUpdateResolve = null;
@@ -2668,11 +2752,12 @@ function installPendingUpdate() {
     return false;
   }
   try {
-    app.isQuitting = true;
+    markAppQuitting();
     const forceRunAfter = process.platform !== 'darwin';
     getAutoUpdater().quitAndInstall(false, forceRunAfter);
     return true;
   } catch (err) {
+    app.isQuitting = false;
     console.error('[updater] quitAndInstall failed:', err.message);
     updateDownloaded = false;
     const formatted = formatUpdateError(err);
@@ -2911,13 +2996,18 @@ function saveWallpaper(sourcePath) {
   }
 }
 
+function isPathInsideResolvedDir(filePath, resolvedDir) {
+  const rel = path.relative(resolvedDir, filePath);
+  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
 function resolveUserMediaFile(dir, filename) {
   if (!filename || typeof filename !== 'string') return null;
   const safeName = sanitizeFilename(path.basename(filename));
   const resolvedDir = path.resolve(dir);
   const tryPath = (name) => {
     const filePath = path.resolve(path.join(dir, name));
-    if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) return null;
+    if (!isPathInsideResolvedDir(filePath, resolvedDir)) return null;
     if (!fs.existsSync(filePath)) return null;
     return filePath;
   };
@@ -3196,8 +3286,7 @@ async function saveCustomActivityGif(sourcePath) {
 }
 
 function broadcastConfigChanged(extra = {}) {
-  if (!mainWindow?.webContents) return;
-  mainWindow.webContents.send('config-changed', {
+  sendToWindow('config-changed', {
     recentActivities: config.recentActivities || [],
     favoriteActivities: config.favoriteActivities || [],
     customActivities: config.customActivities || [],
@@ -3688,9 +3777,9 @@ function setupIPC() {
     if (typeof name !== 'string' || !name.trim()) return { success: false, error: 'Invalid name' };
     const dir = getCustomAnimationsDir();
     const safeName = sanitizeFilename(name.trim());
-    const filePath = path.resolve(path.join(dir, safeName));
     const resolvedDir = path.resolve(dir);
-    if (!filePath.startsWith(resolvedDir + path.sep) && filePath !== resolvedDir) {
+    const filePath = path.resolve(path.join(dir, safeName));
+    if (!isPathInsideResolvedDir(filePath, resolvedDir)) {
       return { success: false, error: 'Invalid path' };
     }
     try {
@@ -3881,16 +3970,19 @@ function setupIPC() {
   ipcMain.handle('is-window-maximized', () => ({
     isMaximized: !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized()),
   }));
+  ipcMain.handle('is-window-visible', () => ({
+    visible: !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()),
+  }));
   ipcMain.handle('close-window', async () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
-    if (shouldCloseToTray() && !app.isQuitting) {
+    if (shouldCloseToTray() && !isAppQuitting()) {
       await flushRendererPendingConfig();
-      saveWindowState();
+      flushPendingDiskWrites();
       flushConfigToDisk();
       hideMainWindowToTray();
       return;
     }
-    app.isQuitting = true;
+    markAppQuitting();
     app.quit();
   });
 
@@ -3949,6 +4041,9 @@ function setupIPC() {
         return { success: false, error: 'Settings file too large' };
       }
       const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+        return { success: false, error: 'Invalid settings file' };
+      }
       let imported;
       if (raw?.type === 'smiley-export') {
         const pass = typeof passphrase === 'string' ? passphrase.trim() : '';
@@ -4077,7 +4172,7 @@ app.on('activate', () => {
   else createWindow();
 });
 app.on('before-quit', async () => {
-  app.isQuitting = true;
+  markAppQuitting();
   globalShortcut.unregisterAll();
   if (trayMenuRefreshTimer) {
     clearTimeout(trayMenuRefreshTimer);
@@ -4085,7 +4180,7 @@ app.on('before-quit', async () => {
   }
   if (musicSync) await musicSync.stop();
   await flushRendererPendingConfig();
-  saveWindowState();
+  flushPendingDiskWrites();
   flushConfigToDisk();
   if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
 });

@@ -490,10 +490,6 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
     const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
     const metaSig = trackMetaSignature(track);
     const metaChanged = metaSig !== lastMetaSignature;
-    if (!metaChanged && track) {
-      onUpdate?.(track);
-      return;
-    }
     if (metaChanged) lastMetaSignature = metaSig;
     onUpdate?.(track);
   };

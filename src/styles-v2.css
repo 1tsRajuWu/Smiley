@@ -202,7 +202,6 @@
   width: 0;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--accent), #bb9af7);
-  transition: width 1s linear;
 }
 
 [data-ui-version='v2'] .discord-track-times {

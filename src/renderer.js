@@ -206,7 +206,10 @@ let favoriteIds = [];
 let gifLoadGeneration = 0;
 let lastGifActivityId = null;
 let wallpaperSettings = { filename: null, blur: 0, dim: 0 };
+let wallpaperDataUrl = null;
+let wallpaperCachedFilename = null;
 let persistWallpaperTimer = null;
+let renderPaused = false;
 let settingsAppearanceCommitted = false;
 let isMacPlatform = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 let customActivitiesConfig = [];
@@ -454,7 +457,79 @@ function updateFooterShortcuts(mac = isMacPlatform) {
 }
 
 function scheduleDeferredWork(fn) {
-  setTimeout(fn, 0);
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(() => fn(), { timeout: 2000 });
+  } else {
+    setTimeout(fn, 0);
+  }
+}
+
+function syncAnimationsClass() {
+  document.body.classList.toggle('animations-off', currentSettings.animationsEnabled === false);
+}
+
+function pauseGifElements() {
+  const imgs = [characterGif, previewGif, ...document.querySelectorAll('.gif-option-thumb img')];
+  imgs.forEach((img) => {
+    if (!img?.src) return;
+    img.dataset.pausedSrc = img.src;
+    img.removeAttribute('src');
+    img.classList.remove('character-gif-loaded', 'loaded');
+  });
+}
+
+function resumeGifElements() {
+  [characterGif, previewGif].forEach((img) => {
+    const src = img?.dataset?.pausedSrc;
+    if (!src) return;
+    img.src = src;
+    delete img.dataset.pausedSrc;
+    img.onload = () => {
+      if (img === characterGif) img.classList.add('character-gif-loaded');
+      if (img === previewGif) img.classList.add('loaded');
+    };
+    if (img.complete && img.naturalWidth > 0) img.onload();
+  });
+  document.querySelectorAll('.gif-option-thumb img[data-paused-src]').forEach((img) => {
+    img.src = img.dataset.pausedSrc;
+    delete img.dataset.pausedSrc;
+  });
+}
+
+function setRenderPaused(paused) {
+  if (renderPaused === paused) return;
+  renderPaused = paused;
+  document.body.classList.toggle('render-paused', paused);
+  if (paused) {
+    pauseGifElements();
+    clearNowPlayingProgressTimer();
+    return;
+  }
+  resumeGifElements();
+  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
+  if (activity && nowPlayingTrack?.title && selectedActivityId === 'listening') {
+    startNowPlayingProgressTimer();
+  }
+}
+
+async function syncRenderPauseState() {
+  let winVisible = true;
+  if (window.smiley?.isWindowVisible) {
+    try { winVisible = (await window.smiley.isWindowVisible())?.visible !== false; } catch (_) {}
+  }
+  setRenderPaused(document.hidden || !winVisible);
+}
+
+function setupRenderPauseListeners() {
+  document.addEventListener('visibilitychange', () => {
+    void syncRenderPauseState();
+  });
+  if (window.smiley?.onWindowVisibility) {
+    window.smiley.onWindowVisibility(() => {
+      void syncRenderPauseState();
+    });
+  }
+  void syncRenderPauseState();
 }
 
 function getSelectedUIVersion() {
@@ -510,12 +585,6 @@ function applyPlatformUI(cfg = {}) {
   }
   const autoInstallField = autoInstallUpdatesToggle?.closest('.toggle-field');
   if (autoInstallField) autoInstallField.hidden = isMacPlatform && macInAppUpdates;
-  if (shareInstallStatsField) {
-    shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
-  }
-  if (shareInstallStatsToggle) {
-    shareInstallStatsToggle.checked = cfg.installTrackingEnabled === true;
-  }
   applyUpiVisibility();
 }
 
@@ -821,11 +890,6 @@ function markGridSelection(id) {
   if (!id) return;
   const card = activityGrid.querySelector(`.activity-card[data-id="${CSS.escape(id)}"]`);
   if (card) card.classList.add('selected');
-  const parts = lastRenderedGridKey.split('|');
-  if (parts.length >= 3) {
-    parts[2] = id;
-    lastRenderedGridKey = parts.join('|');
-  }
 }
 
 async function onGifOptionSelect(activityId, choiceId) {
@@ -1005,6 +1069,7 @@ function clearNowPlayingProgressTimer() {
 }
 
 function updateNowPlayingProgressUi() {
+  if (renderPaused) return;
   if (!previewTrackProgress || !nowPlayingTrack?.title || selectedActivityId !== 'listening') {
     if (previewTrackProgress) previewTrackProgress.hidden = true;
     return;
@@ -1012,7 +1077,12 @@ function updateNowPlayingProgressUi() {
 
   const { progressMs, durationMs } = getLiveTrackProgress(nowPlayingTrack);
   const pct = durationMs > 0 ? Math.min(100, (progressMs / durationMs) * 100) : 0;
-  if (previewTrackFill) previewTrackFill.style.width = `${pct}%`;
+  const prevPct = Number(previewTrackFill?.dataset?.pct || '');
+  if (previewTrackFill && Math.abs(prevPct - pct) < 0.25) return;
+  if (previewTrackFill) {
+    previewTrackFill.dataset.pct = String(pct);
+    previewTrackFill.style.width = `${pct}%`;
+  }
   if (previewTrackBar) previewTrackBar.setAttribute('aria-valuenow', String(Math.round(pct)));
   if (previewTrackElapsed) previewTrackElapsed.textContent = formatTrackClock(progressMs);
   if (previewTrackDuration) previewTrackDuration.textContent = formatTrackClock(durationMs);
@@ -1122,21 +1192,11 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   if (nowPlayingArt) {
     applyNowPlayingArtwork(nowPlayingTrack.artworkUrl || nowPlayingArtworkUrl);
   } else if (gifUrl && currentSettings.animationsEnabled !== false) {
-    previewEmoji.style.display = 'none';
+    // Character stage already animates the GIF — avoid a second GPU decoder in the preview art.
     previewGif.classList.remove('loaded');
-    loadImageWithFallback(previewGif, [gifUrl, ...fallbackUrls], {
-      generation,
-      onSuccess: () => {
-        previewGif.classList.add('loaded');
-        previewEmoji.style.display = 'none';
-      },
-      onFail: () => {
-        previewGif.classList.remove('loaded');
-        previewGif.removeAttribute('src');
-        previewEmoji.textContent = activity.emoji;
-        previewEmoji.style.display = '';
-      },
-    });
+    previewGif.removeAttribute('src');
+    previewEmoji.textContent = activity.emoji;
+    previewEmoji.style.display = '';
   } else {
     previewGif.classList.remove('loaded');
     previewGif.removeAttribute('src');
@@ -1334,8 +1394,59 @@ function getFilteredActivities() {
   return sortWithFavorites(list);
 }
 
+let activityGridBound = false;
+
+function setupActivityGridDelegation() {
+  if (!activityGrid || activityGridBound) return;
+  activityGridBound = true;
+
+  activityGrid.addEventListener('click', (e) => {
+    const favBtn = e.target.closest('.activity-fav');
+    if (favBtn?.dataset.fav) {
+      e.stopPropagation();
+      void (async () => {
+        favoriteIds = await window.smiley.toggleFavorite(favBtn.dataset.fav);
+        renderActivityGrid();
+        setupRotateFavorites();
+      })();
+      return;
+    }
+
+    const editBtn = e.target.closest('[data-edit]');
+    if (editBtn?.dataset.edit) {
+      e.stopPropagation();
+      openCreateActivityModal(editBtn.dataset.edit);
+      return;
+    }
+
+    const deleteBtn = e.target.closest('[data-delete]');
+    if (deleteBtn?.dataset.delete) {
+      e.stopPropagation();
+      void handleDeleteCustomActivity(deleteBtn.dataset.delete);
+      return;
+    }
+
+    if (e.target.closest('[data-create="true"]')) {
+      openCreateActivityModal();
+      return;
+    }
+
+    const card = e.target.closest('.activity-card:not(.is-create-card)');
+    if (card?.dataset.id) selectActivity(card.dataset.id);
+  });
+
+  activityGrid.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const card = e.target.closest('.activity-card');
+    if (!card) return;
+    e.preventDefault();
+    if (card.dataset.create === 'true') openCreateActivityModal();
+    else if (card.dataset.id) selectActivity(card.dataset.id);
+  });
+}
+
 function renderActivityGrid() {
-  const gridKey = `${activeCategory}|${searchQuery.trim().toLowerCase()}|${selectedActivityId}|${favoriteIds.join(',')}|${customActivitiesConfig.length}`;
+  const gridKey = `${activeCategory}|${searchQuery.trim().toLowerCase()}|${favoriteIds.join(',')}|${customActivitiesConfig.length}`;
   if (gridKey === lastRenderedGridKey && activityGrid.children.length > 0) return;
   lastRenderedGridKey = gridKey;
 
@@ -1381,51 +1492,6 @@ function renderActivityGrid() {
     : '';
 
   activityGrid.innerHTML = cardsHtml + createCardHtml;
-
-  activityGrid.querySelectorAll('.activity-fav').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      favoriteIds = await window.smiley.toggleFavorite(btn.dataset.fav);
-      renderActivityGrid();
-      setupRotateFavorites();
-    });
-  });
-
-  activityGrid.querySelectorAll('[data-edit]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openCreateActivityModal(btn.dataset.edit);
-    });
-  });
-
-  activityGrid.querySelectorAll('[data-delete]').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await handleDeleteCustomActivity(btn.dataset.delete);
-    });
-  });
-
-  const createCard = activityGrid.querySelector('[data-create="true"]');
-  if (createCard) {
-    const openCreate = () => openCreateActivityModal();
-    createCard.addEventListener('click', openCreate);
-    createCard.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openCreate();
-      }
-    });
-  }
-
-  activityGrid.querySelectorAll('.activity-card:not(.is-create-card)').forEach((card) => {
-    card.addEventListener('click', () => selectActivity(card.dataset.id));
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        selectActivity(card.dataset.id);
-      }
-    });
-  });
 }
 
 async function selectActivity(id) {
@@ -1540,10 +1606,6 @@ function openSettings(tab = 'general') {
     minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
     if (autoInstallUpdatesToggle) autoInstallUpdatesToggle.checked = cfg.autoInstallUpdates !== false;
-    if (shareInstallStatsToggle) {
-      shareInstallStatsToggle.checked = cfg.installTrackingEnabled === true;
-    }
-    if (shareInstallStatsField) shareInstallStatsField.hidden = cfg.installRegistryConfigured !== true;
     showTimerToggle.checked = cfg.showTimer !== false;
     animationsToggle.checked = cfg.animationsEnabled !== false;
     if (musicNowPlayingToggle) musicNowPlayingToggle.checked = cfg.musicNowPlaying !== false;
@@ -1715,6 +1777,7 @@ async function handleSaveSettings(e) {
   await applyWallpaper(wallpaperSettings);
   applyTheme(newSettings.theme);
   applyUIVersion(newSettings.uiVersion);
+  syncAnimationsClass();
   settingsAppearanceCommitted = true;
   pendingSettingsRevert = null;
   settingsModal.close();
@@ -1763,7 +1826,44 @@ function applyTheme(theme) {
   updateBrandIcon();
 }
 
-async function applyWallpaper(wallpaper = wallpaperSettings) {
+function clearWallpaperDisplay() {
+  wallpaperDataUrl = null;
+  wallpaperCachedFilename = null;
+  document.body.classList.remove('has-wallpaper', 'has-wallpaper-img');
+  document.body.style.removeProperty('--wallpaper-url');
+  document.body.style.removeProperty('--wallpaper-blur');
+  document.body.style.removeProperty('--wallpaper-dim');
+  if (wallpaperLayer) {
+    wallpaperLayer.hidden = true;
+    wallpaperLayer.removeAttribute('src');
+    wallpaperLayer.style.removeProperty('filter');
+  }
+  if (wallpaperDim) {
+    wallpaperDim.hidden = true;
+    wallpaperDim.style.removeProperty('opacity');
+  }
+}
+
+function applyWallpaperStyles() {
+  if (!wallpaperDataUrl || !wallpaperSettings.filename) {
+    clearWallpaperDisplay();
+    return;
+  }
+
+  document.body.classList.add('has-wallpaper', 'has-wallpaper-img');
+  if (wallpaperLayer) {
+    if (wallpaperLayer.src !== wallpaperDataUrl) wallpaperLayer.src = wallpaperDataUrl;
+    wallpaperLayer.hidden = false;
+    wallpaperLayer.style.filter = wallpaperSettings.blur > 0 ? `blur(${wallpaperSettings.blur}px)` : '';
+  }
+  if (wallpaperDim) {
+    const dim = wallpaperSettings.dim / 100;
+    wallpaperDim.hidden = dim <= 0;
+    wallpaperDim.style.opacity = String(dim);
+  }
+}
+
+async function applyWallpaper(wallpaper = wallpaperSettings, cachedUrl = null) {
   wallpaperSettings = {
     filename: wallpaper?.filename || null,
     blur: Number(wallpaper?.blur) || 0,
@@ -1771,26 +1871,44 @@ async function applyWallpaper(wallpaper = wallpaperSettings) {
   };
 
   if (!wallpaperSettings.filename) {
-    document.body.classList.remove('has-wallpaper');
-    document.body.style.removeProperty('--wallpaper-url');
-    document.body.style.removeProperty('--wallpaper-blur');
-    document.body.style.removeProperty('--wallpaper-dim');
+    clearWallpaperDisplay();
     return;
   }
 
   try {
-    const result = await window.smiley.getWallpaperPath(wallpaperSettings.filename);
-    if (!result?.url) {
-      document.body.classList.remove('has-wallpaper');
+    if (cachedUrl) {
+      wallpaperDataUrl = cachedUrl;
+      wallpaperCachedFilename = wallpaperSettings.filename;
+    } else if (!wallpaperDataUrl || wallpaperCachedFilename !== wallpaperSettings.filename) {
+      const result = await window.smiley.getWallpaperPath(wallpaperSettings.filename);
+      wallpaperDataUrl = result?.url || null;
+      wallpaperCachedFilename = wallpaperSettings.filename;
+    }
+    if (!wallpaperDataUrl) {
+      clearWallpaperDisplay();
       return;
     }
-    document.body.classList.add('has-wallpaper');
-    document.body.style.setProperty('--wallpaper-url', `url("${result.url}")`);
-    document.body.style.setProperty('--wallpaper-blur', `${wallpaperSettings.blur}px`);
-    document.body.style.setProperty('--wallpaper-dim', String(wallpaperSettings.dim / 100));
+    applyWallpaperStyles();
   } catch (err) {
     console.error('Failed to apply wallpaper:', err);
   }
+}
+
+async function persistWallpaperSettings() {
+  if (!window.smiley?.saveConfig) return;
+  await window.smiley.saveConfig({
+    customWallpaper: wallpaperSettings.filename
+      ? { filename: wallpaperSettings.filename, blur: wallpaperSettings.blur, dim: wallpaperSettings.dim }
+      : null,
+  });
+}
+
+function schedulePersistWallpaperSettings() {
+  if (persistWallpaperTimer) clearTimeout(persistWallpaperTimer);
+  persistWallpaperTimer = setTimeout(() => {
+    persistWallpaperTimer = null;
+    void persistWallpaperSettings();
+  }, 500);
 }
 
 function syncWallpaperControls() {
@@ -1836,9 +1954,11 @@ async function handleUploadWallpaper() {
   };
   if (oldFilename && oldFilename !== result.filename) {
     await window.smiley.deleteWallpaper(oldFilename);
+    wallpaperDataUrl = null;
+    wallpaperCachedFilename = null;
   }
   syncWallpaperControls();
-  await applyWallpaper(wallpaperSettings, result.url);
+  await applyWallpaper(wallpaperSettings, result.url || null);
   await persistWallpaperSettings();
   showToast('Wallpaper uploaded');
 }
@@ -1848,6 +1968,8 @@ async function handleResetWallpaper() {
     await window.smiley.deleteWallpaper(wallpaperSettings.filename);
   }
   wallpaperSettings = { filename: null, blur: 0, dim: 0 };
+  wallpaperDataUrl = null;
+  wallpaperCachedFilename = null;
   syncWallpaperControls();
   await applyWallpaper(wallpaperSettings);
   await persistWallpaperSettings();
@@ -2600,6 +2722,7 @@ function setupModalClose(dialog, closeBtn) {
 async function init() {
   applyUpiVisibility();
   renderCategoryTabs();
+  setupActivityGridDelegation();
 
   const configPromise = window.smiley.getConfig();
   const statusPromise = window.smiley.getStatus();
@@ -2642,16 +2765,12 @@ async function init() {
       await window.smiley.saveInstallConsent({ enabled: enabled === true });
       currentSettings.installConsentShown = true;
       currentSettings.installTrackingEnabled = enabled === true;
-      if (shareInstallStatsToggle) shareInstallStatsToggle.checked = enabled === true;
     } catch (_) {}
     privacyConsentModal?.close();
   }
 
   if (privacyConsentAcceptBtn) {
     privacyConsentAcceptBtn.addEventListener('click', () => submitInstallConsent(true));
-  }
-  if (privacyConsentDeclineBtn) {
-    privacyConsentDeclineBtn.addEventListener('click', () => submitInstallConsent(false));
   }
   privacyConsentModal?.addEventListener('cancel', (e) => {
     e.preventDefault();
@@ -2720,7 +2839,7 @@ async function init() {
     searchDebounceTimer = setTimeout(() => {
       searchQuery = e.target.value;
       renderActivityGrid();
-    }, 0);
+    }, 120);
   });
 
   settingsTabs.forEach((tab) => {
@@ -2759,7 +2878,7 @@ async function init() {
     wallpaperBlurSlider.addEventListener('input', () => {
       wallpaperSettings.blur = Number(wallpaperBlurSlider.value) || 0;
       if (wallpaperBlurValue) wallpaperBlurValue.textContent = String(wallpaperSettings.blur);
-      applyWallpaper(wallpaperSettings);
+      applyWallpaperStyles();
       schedulePersistWallpaperSettings();
     });
   }
@@ -2767,7 +2886,7 @@ async function init() {
     wallpaperDimSlider.addEventListener('input', () => {
       wallpaperSettings.dim = Number(wallpaperDimSlider.value) || 0;
       if (wallpaperDimValue) wallpaperDimValue.textContent = String(wallpaperSettings.dim);
-      applyWallpaper(wallpaperSettings);
+      applyWallpaperStyles();
       schedulePersistWallpaperSettings();
     });
   }
@@ -2952,8 +3071,6 @@ async function init() {
     showToast('Presence paused — hidden on Discord', 'subtle');
   });
 
-  window.smiley.onSelectActivity((id) => selectActivity(id));
-
   if (updateDismissBtn) {
     updateDismissBtn.addEventListener('click', () => {
       updateState.dismissed = true;
@@ -3115,6 +3232,8 @@ async function init() {
     dim: Number(cfg.customWallpaper?.dim) || 0,
   };
   applyTheme(cfg.theme || 'dark');
+  syncAnimationsClass();
+  setupRenderPauseListeners();
   renderActivityGrid();
   renderRecentChips();
   scheduleDeferredWork(preloadActiveCategoryGifs);

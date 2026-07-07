@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('smiley', {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
   isWindowMaximized: () => ipcRenderer.invoke('is-window-maximized'),
+  isWindowVisible: () => ipcRenderer.invoke('is-window-visible'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
   saveInstallConsent: () => ipcRenderer.invoke('save-install-consent'),
   resetWindowPosition: () => ipcRenderer.invoke('reset-window-position'),
@@ -81,6 +82,10 @@ contextBridge.exposeInMainWorld('smiley', {
   onWindowMaximized: (callback) => {
     ipcRenderer.removeAllListeners('window-maximized');
     ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized));
+  },
+  onWindowVisibility: (callback) => {
+    ipcRenderer.removeAllListeners('window-visibility');
+    ipcRenderer.on('window-visibility', (_, visible) => callback(visible));
   },
   onNowPlayingUpdate: (callback) => {
     ipcRenderer.removeAllListeners('now-playing-update');
