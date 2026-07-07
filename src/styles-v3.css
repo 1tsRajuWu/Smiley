@@ -1,0 +1,480 @@
+/**
+ * Smiley UI v3 — Aurora layout: picker-first, preview dock, list activities.
+ * Final major visual refresh (v7). v1/v2 remain in Settings.
+ */
+@import './styles-v1.css';
+
+/* ─── v3 design tokens ───────────────────────────────────────────── */
+:root,
+[data-ui-version='v3'] {
+  --v3-nav-width: 72px;
+  --v3-preview-width: 300px;
+  --v3-radius: 20px;
+  --v3-radius-sm: 12px;
+  --v3-surface: color-mix(in srgb, var(--bg-card) 90%, var(--accent) 4%);
+  --v3-surface-2: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
+  --v3-border: color-mix(in srgb, var(--border) 55%, var(--accent) 12%);
+  --v3-glow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 16px 48px rgba(0, 0, 0, 0.35);
+  --v3-font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --v3-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --v3-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-ui-version='v3'] body {
+  font-family: var(--v3-font-display);
+  letter-spacing: -0.01em;
+}
+
+/* ─── App shell — picker left, preview dock right ───────────────── */
+[data-ui-version='v3'] .app {
+  background:
+    radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 0% 100%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 45%),
+    var(--bg);
+}
+
+[data-ui-version='v3'] .content {
+  display: grid;
+  grid-template-columns: 1fr var(--v3-preview-width);
+  grid-template-areas: 'picker preview';
+  gap: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+[data-ui-version='v3'] .picker-main {
+  grid-area: picker;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 20px 16px 12px;
+  border-right: 1px solid var(--v3-border);
+}
+
+[data-ui-version='v3'] .preview-sidebar {
+  grid-area: preview;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 16px;
+  background: var(--v3-surface-2);
+  border-left: 1px solid var(--v3-border);
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* ─── Header — compact floating bar ─────────────────────────────── */
+[data-ui-version='v3'] .header,
+[data-ui-version='v3'] .app-header {
+  padding: 10px 18px 8px;
+  border-bottom: 1px solid var(--v3-border);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+}
+
+[data-ui-version='v3'][data-platform='darwin'] .header,
+[data-ui-version='v3'][data-platform='darwin'] .app-header {
+  padding-left: 80px;
+  padding-top: 16px;
+}
+
+[data-ui-version='v3'] .brand h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+[data-ui-version='v3'] .tagline {
+  font-family: var(--v3-font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 70%, var(--text-muted));
+}
+
+[data-ui-version='v3'] .connection-pill {
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+}
+
+[data-ui-version='v3'] .window-control-btn {
+  width: 36px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+/* ─── Category tabs — underline rail ────────────────────────────── */
+[data-ui-version='v3'] .picker-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--v3-border);
+  margin-bottom: 8px;
+}
+
+[data-ui-version='v3'] .category-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+[data-ui-version='v3'] .category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+[data-ui-version='v3'] .category-tab {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: var(--v3-radius-sm);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  position: relative;
+  transition: color 0.2s var(--v3-ease), background 0.2s var(--v3-ease);
+}
+
+[data-ui-version='v3'] .category-tab:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+[data-ui-version='v3'] .category-tab.active {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+[data-ui-version='v3'] .search-wrap input {
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+}
+
+/* ─── Activity list (not grid) ──────────────────────────────────── */
+[data-ui-version='v3'] .activity-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 12px;
+  overflow-y: auto;
+  max-height: none;
+  flex: 1;
+  min-height: 0;
+}
+
+[data-ui-version='v3'] .activity-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 12px;
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+  box-shadow: none;
+  min-height: 52px;
+  animation: v3-slide-in 0.35s var(--v3-ease) both;
+  transition: border-color 0.2s var(--v3-ease), transform 0.15s var(--v3-ease);
+}
+
+@keyframes v3-slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+[data-ui-version='v3'] .activity-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--v3-border));
+  transform: translateX(2px);
+}
+
+[data-ui-version='v3'] .activity-card.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--v3-surface));
+  box-shadow: var(--v3-glow);
+}
+
+[data-ui-version='v3'] .activity-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--card-accent, var(--accent));
+  opacity: 0.85;
+}
+
+[data-ui-version='v3'] .activity-emoji {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+[data-ui-version='v3'] .activity-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-ui-version='v3'] .activity-state {
+  font-family: var(--v3-font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  max-width: 140px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-ui-version='v3'] .activity-fav {
+  position: static;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  opacity: 0.5;
+}
+
+[data-ui-version='v3'] .activity-card:hover .activity-fav,
+[data-ui-version='v3'] .activity-fav.active {
+  opacity: 1;
+}
+
+[data-ui-version='v3'] .activity-card.is-create-card {
+  justify-content: center;
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+[data-ui-version='v3'] .activity-card.is-create-card .activity-state {
+  display: none;
+}
+
+/* ─── Preview dock ──────────────────────────────────────────────── */
+[data-ui-version='v3'] .character-stage {
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  padding: 16px 12px 12px;
+  box-shadow: var(--v3-glow);
+}
+
+[data-ui-version='v3'] .character-container {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+[data-ui-version='v3'] .character-gif {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+[data-ui-version='v3'] .character-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 10px;
+  text-align: center;
+}
+
+[data-ui-version='v3'] .character-source {
+  font-family: var(--v3-font-mono);
+  font-size: 0.6rem;
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-ui-version='v3'] .discord-card {
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+}
+
+[data-ui-version='v3'] .discord-card-inner {
+  padding: 12px 14px;
+  flex-direction: row;
+  gap: 12px;
+}
+
+[data-ui-version='v3'] .discord-art {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+
+[data-ui-version='v3'] .discord-details {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+[data-ui-version='v3'] .discord-state {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+[data-ui-version='v3'] .discord-timer {
+  font-family: var(--v3-font-mono);
+  font-size: 0.68rem;
+}
+
+[data-ui-version='v3'] .preview-actions {
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-ui-version='v3'] .preview-actions .btn {
+  width: 100%;
+  justify-content: center;
+  border-radius: var(--v3-radius-sm);
+}
+
+[data-ui-version='v3'] .donate-banner {
+  border-radius: var(--v3-radius-sm);
+  padding: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--v3-surface));
+  border: 1px solid var(--v3-border);
+}
+
+[data-ui-version='v3'] .donate-banner-text strong {
+  font-size: 0.78rem;
+}
+
+/* ─── GIF picker drawer ─────────────────────────────────────────── */
+[data-ui-version='v3'] .gif-picker-section {
+  margin-top: auto;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--v3-border);
+}
+
+[data-ui-version='v3'] .gif-picker-label {
+  font-size: 0.72rem;
+  font-family: var(--v3-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+[data-ui-version='v3'] .gif-option {
+  border-radius: 10px;
+  border: 1px solid var(--v3-border);
+  background: var(--v3-surface);
+}
+
+[data-ui-version='v3'] .gif-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* ─── Footer ────────────────────────────────────────────────────── */
+[data-ui-version='v3'] .footer {
+  padding: 8px 18px;
+  font-size: 0.68rem;
+  border-top: 1px solid var(--v3-border);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+}
+
+/* ─── Settings & modals ─────────────────────────────────────────── */
+[data-ui-version='v3'] .modal-content {
+  border-radius: var(--v3-radius);
+  border: 1px solid var(--v3-border);
+}
+
+[data-ui-version='v3'] .ui-version-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  [data-ui-version='v3'] .ui-version-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-ui-version='v3'] .ui-version-option {
+  border-radius: var(--v3-radius-sm);
+  border: 1px solid var(--v3-border);
+  padding: 10px 12px;
+  transition: border-color 0.2s var(--v3-ease);
+}
+
+[data-ui-version='v3'] .ui-version-option.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--v3-surface));
+}
+
+[data-ui-version='v3'] .settings-tab.active {
+  border-bottom-color: var(--accent);
+}
+
+[data-ui-version='v3'] .update-banner {
+  border-radius: 0;
+  border-bottom: 1px solid var(--v3-border);
+}
+
+/* ─── Quick access chips ────────────────────────────────────────── */
+[data-ui-version='v3'] .quick-chip {
+  border-radius: 999px;
+  font-size: 0.72rem;
+  padding: 5px 12px;
+  border: 1px solid var(--v3-border);
+  background: var(--v3-surface);
+}
+
+/* ─── Performance: skip heavy blur on low-end ───────────────────── */
+[data-ui-version='v3'] .header,
+[data-ui-version='v3'] .app-header,
+[data-ui-version='v3'] .discord-card,
+[data-ui-version='v3'] .character-stage {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-ui-version='v3'].animations-off .activity-card {
+  animation: none;
+}
+
+@media (max-width: 900px) {
+  [data-ui-version='v3'] .content {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'preview' 'picker';
+  }
+
+  [data-ui-version='v3'] .preview-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: none;
+    border-left: none;
+    border-bottom: 1px solid var(--v3-border);
+  }
+
+  [data-ui-version='v3'] .picker-main {
+    border-right: none;
+  }
+}

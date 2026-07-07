@@ -521,7 +521,7 @@ const MAX_COPY_TEXT_LEN = 2000;
 const MAX_IMPORT_BYTES = 512 * 1024;
 /** Discord RPC client-side spacing (ms). Music metadata uses applyMusicPresence directly. */
 const PRESENCE_UPDATE_COOLDOWN_MS = 5000;
-const STATUS_BROADCAST_DEBOUNCE_MS = 500;
+const STATUS_BROADCAST_DEBOUNCE_MS = 800;
 const TRAY_MENU_DEBOUNCE_MS = 2000;
 const WINDOW_STATE_DEBOUNCE_MS = 500;
 const SESSION_STATS_DEBOUNCE_MS = 2000;
@@ -529,7 +529,7 @@ const SESSION_STATS_DEBOUNCE_MS = 2000;
 const DEFAULT_CONFIG = {
   donationUrl: DONATION_URL,
   theme: 'dark',
-  uiVersion: 'v2',
+  uiVersion: 'v3',
   showTimer: true,
   animationsEnabled: true,
   customAnimation: null,
@@ -788,7 +788,7 @@ function sanitizeConfigPatch(data) {
         out[key] = val === true;
         break;
       case 'uiVersion':
-        out.uiVersion = val === 'v1' ? 'v1' : 'v2';
+        out.uiVersion = val === 'v1' ? 'v1' : val === 'v2' ? 'v2' : 'v3';
         break;
       case 'customAnimation':
         out.customAnimation = typeof val === 'string' ? sanitizeFilename(val).slice(0, 100) : null;
@@ -1857,7 +1857,7 @@ function broadcastStatus(immediate = false) {
       donationUrl: DONATION_URL,
       settings: {
         theme: config.theme || 'dark',
-        uiVersion: config.uiVersion === 'v1' ? 'v1' : 'v2',
+        uiVersion: config.uiVersion === 'v1' ? 'v1' : config.uiVersion === 'v2' ? 'v2' : 'v3',
         showTimer: config.showTimer !== false,
         animationsEnabled: config.animationsEnabled !== false,
         customAnimation: config.customAnimation || null,
@@ -1965,14 +1965,56 @@ function clearDownloadStallTimer() {
 function resetDownloadStallTimer() {
   clearDownloadStallTimer();
   downloadStallTimer = setTimeout(() => {
-    if (!updateDownloaded && lastDownloadPercent > 0 && lastDownloadPercent < 100) {
+    if (!updateDownloaded && lastDownloadPercent < 100) {
       sendUpdateStatus({
         status: 'download-stalled',
         percent: lastDownloadPercent,
-        error: 'Update download stalled. Try again later.',
+        error: lastDownloadPercent === 0
+          ? 'Update download did not start. Check your connection and try again.'
+          : 'Update download stalled. Try again later.',
       });
     }
   }, 60000);
+}
+
+function downloadProgressPercent(progress) {
+  const transferred = progress?.transferred ?? progress?.transferredBytes ?? 0;
+  const total = progress?.total ?? progress?.totalBytes ?? 0;
+  if (total > 0) return Math.min(99, Math.round((transferred / total) * 100));
+  return Math.min(95, Math.round(transferred / (1024 * 1024)));
+}
+
+function isValidMacUpdateZipFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return false;
+  try {
+    return fs.statSync(filePath).size > 1024 * 1024;
+  } catch {
+    return false;
+  }
+}
+
+function formatUpdateDownloadError(err) {
+  return String(err?.message || err || 'Could not download update. Check your connection and try again.');
+}
+
+async function ensureMacUpdateDownloaded(version) {
+  if (macZipDownloadInProgress) {
+    return { success: false, status: 'busy', error: 'Download already in progress' };
+  }
+  if (isCachedMacUpdateInstallable()) {
+    updateDownloaded = true;
+    lastDownloadPercent = 100;
+    const payload = buildMacUpdateReadyPayload(version);
+    if (payload) sendUpdateStatus(payload);
+    return { success: true, ...(payload || {}) };
+  }
+  macZipDownloadInProgress = true;
+  resetDownloadStallTimer();
+  try {
+    return await downloadMacUpdateZip(version);
+  } finally {
+    macZipDownloadInProgress = false;
+  }
 }
 
 function isMacInAppUpdater() {
@@ -2135,10 +2177,12 @@ async function downloadMacUpdateZip(version) {
     percent: 0,
     macInApp: true,
   });
+  resetDownloadStallTimer();
 
   try {
     await httpDownloadFile(url, destPath, (percent) => {
       lastDownloadPercent = percent;
+      resetDownloadStallTimer();
       sendUpdateStatus({
         status: 'downloading',
         version: ver,
@@ -2810,6 +2854,15 @@ function setupAutoUpdater() {
               expected: true,
             });
           }
+        }).catch((err) => {
+          appendUpdaterLog(`ensureMacUpdateDownloaded failed: ${err.message}`);
+          sendUpdateStatus({
+            ok: false,
+            status: 'error',
+            error: formatUpdateDownloadError(err),
+            version: info.version,
+            expected: true,
+          });
         });
         return;
       }
@@ -2841,14 +2894,18 @@ function setupAutoUpdater() {
     });
 
     getAutoUpdater().on('download-progress', (progress) => {
-      lastDownloadPercent = downloadProgressPercent(progress);
-      resetDownloadStallTimer();
-      sendUpdateStatus({
-        status: 'downloading',
-        percent: lastDownloadPercent,
-        version: pendingUpdateVersion,
-        macInApp: isMacInAppUpdater() || undefined,
-      });
+      try {
+        lastDownloadPercent = downloadProgressPercent(progress);
+        resetDownloadStallTimer();
+        sendUpdateStatus({
+          status: 'downloading',
+          percent: lastDownloadPercent,
+          version: pendingUpdateVersion,
+          macInApp: isMacInAppUpdater() || undefined,
+        });
+      } catch (err) {
+        appendUpdaterLog(`download-progress handler failed: ${err.message}`);
+      }
     });
 
     getAutoUpdater().on('update-downloaded', (info) => {
@@ -3570,7 +3627,7 @@ function setupIPC() {
     hasValidClientId: !!getClientId(),
     donationUrl: DONATION_URL,
     theme: config.theme || 'dark',
-    uiVersion: config.uiVersion === 'v1' ? 'v1' : 'v2',
+    uiVersion: config.uiVersion === 'v1' ? 'v1' : config.uiVersion === 'v2' ? 'v2' : 'v3',
     showTimer: config.showTimer !== false,
     animationsEnabled: config.animationsEnabled !== false,
     customAnimation: config.customAnimation || null,

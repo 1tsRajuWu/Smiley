@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-ui-version="v2">
+<html lang="en" data-ui-version="v3">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,7 +25,7 @@
       body.app-ready { opacity: 1; }
     </style>
     <link rel="stylesheet" href="styles-v1.css" id="uiStylesheetBase" />
-    <link rel="stylesheet" href="styles-v2.css" id="uiStylesheet" />
+    <link rel="stylesheet" href="styles-v3.css" id="uiStylesheet" />
   </head>
   <body>
     <img id="wallpaperLayer" class="wallpaper-layer" alt="" aria-hidden="true" hidden />
@@ -160,7 +160,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v6.0.4</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.0.0</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -245,10 +245,15 @@
           <div class="settings-panel" data-panel="appearance">
             <div class="field">
               <span class="field-label">Interface</span>
-              <p class="field-hint" style="margin:0 0 10px;">New UI (v2) is the default. Switch to Classic UI (v1) anytime.</p>
+              <p class="field-hint" style="margin:0 0 10px;">Aurora (v3) is the default. Classic (v1) and New UI (v2) remain available.</p>
               <div class="ui-version-options" id="uiVersionOptions" role="radiogroup" aria-label="Interface version">
-                <label class="ui-version-option active" data-ui-version="v2">
-                  <input type="radio" name="uiVersion" value="v2" checked hidden />
+                <label class="ui-version-option active" data-ui-version="v3">
+                  <input type="radio" name="uiVersion" value="v3" checked hidden />
+                  <strong>Aurora (v3)</strong>
+                  <span>Picker-first layout, preview dock, list activities</span>
+                </label>
+                <label class="ui-version-option" data-ui-version="v2">
+                  <input type="radio" name="uiVersion" value="v2" hidden />
                   <strong>New UI (v2)</strong>
                   <span>Cleaner layout, refined cards, better spacing</span>
                 </label>

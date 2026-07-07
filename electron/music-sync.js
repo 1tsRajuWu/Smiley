@@ -10,9 +10,9 @@ const {
 
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
-const RENDERER_UPDATE_MIN_MS = 1000;
-/** macOS: poll every ~2.5s while listening (sequential JXA, no overlap). */
-const LISTENING_POLL_MS = process.platform === 'darwin' ? 2500 : DEFAULT_POLL_MS;
+const RENDERER_UPDATE_MIN_MS = 1500;
+/** macOS: poll every ~3s while listening (sequential JXA, no overlap). */
+const LISTENING_POLL_MS = process.platform === 'darwin' ? 3000 : DEFAULT_POLL_MS;
 const artworkCache = new Map();
 
 function truncate(text, max = DISCORD_TEXT_LIMIT) {

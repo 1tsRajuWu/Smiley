@@ -1,12 +1,12 @@
 # Goodbye from Raj
 
-**Raj (@1tsRaj / 1tsRajuWu)** — July 2026 · Smiley v6.x (final major line)
+**Raj (@1tsRaj / 1tsRajuWu)** — July 2026 · Smiley v7.0.0 (final major release)
 
 ---
 
 Smiley started as a fun personal project — something I built because I wanted Discord Rich Presence with anime GIFs, and I kept polishing it until it felt *near perfect*. That journey was a blast.
 
-**This is the final major version line.** v6.x is where Smiley lands. I might ship patches or bug fixes if something breaks, but there are **no planned major features** and no big roadmap ahead. Consider this a warm goodbye — thank you for using it, starring the repo, reporting bugs, and sharing feedback over the years.
+**v7.0.0 is the final major release.** It ships the Aurora UI (v3) — a last visual refresh with picker-first layout, Mac update fixes, and performance tuning for low-end machines. After v7, I might ship patches or bug fixes if something breaks, but there are **no planned major features** and no big roadmap ahead. Consider this a warm goodbye — thank you for using it, starring the repo, reporting bugs, and sharing feedback over the years.
 
 ## Open source — with clear boundaries
 

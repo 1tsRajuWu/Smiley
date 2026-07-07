@@ -521,16 +521,27 @@ function setupRenderPauseListeners() {
   void syncRenderPauseState();
 }
 
-function getSelectedUIVersion() {
-  const checked = document.querySelector('input[name="uiVersion"]:checked');
-  return checked?.value === 'v1' ? 'v1' : 'v2';
+function normalizeUIVersion(version) {
+  if (version === 'v1' || version === 'v2' || version === 'v3') return version;
+  return 'v3';
 }
 
-function applyUIVersion(version = 'v2') {
-  const uiVersion = version === 'v1' ? 'v1' : 'v2';
+function getSelectedUIVersion() {
+  const checked = document.querySelector('input[name="uiVersion"]:checked');
+  return normalizeUIVersion(checked?.value);
+}
+
+function uiStylesheetForVersion(uiVersion) {
+  if (uiVersion === 'v1') return 'styles-v1.css';
+  if (uiVersion === 'v2') return 'styles-v2.css';
+  return 'styles-v3.css';
+}
+
+function applyUIVersion(version = 'v3') {
+  const uiVersion = normalizeUIVersion(version);
   document.documentElement.dataset.uiVersion = uiVersion;
   if (uiStylesheet) {
-    uiStylesheet.href = uiVersion === 'v1' ? 'styles-v1.css' : 'styles-v2.css';
+    uiStylesheet.href = uiStylesheetForVersion(uiVersion);
   }
   currentSettings.uiVersion = uiVersion;
   uiVersionOptions.forEach((opt) => {
@@ -768,7 +779,7 @@ function renderGifOptionButton(option, selectedId) {
     : '';
   const thumbSrc = getPickerThumbSrc(option);
   const thumbInner = thumbSrc
-    ? `<img src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" decoding="async" />`
+    ? `<img data-src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" decoding="async" />`
     : '<span class="gif-option-placeholder" aria-hidden="true">🎬</span>';
   return `
     <button type="button" class="gif-option${selected ? ' selected' : ''}${previewOnly}"
@@ -851,6 +862,47 @@ function renderGifPicker(activity) {
 
   bindGifPickerStrip(gifPickerStrip, activity, onGifOptionSelect);
   bindGifPickerThumbFallbacks(gifPickerStrip, activity);
+  lazyLoadGifPickerThumbs(gifPickerStrip);
+}
+
+let gifPickerThumbObserver = null;
+
+function lazyLoadGifPickerThumbs(strip) {
+  if (!strip) return;
+  const imgs = strip.querySelectorAll('.gif-option-thumb img[data-src]');
+  if (!imgs.length) return;
+  if (!gifPickerThumbObserver && typeof IntersectionObserver === 'function') {
+    gifPickerThumbObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        const src = img.dataset.src;
+        if (src && !img.src) {
+          img.src = src;
+          delete img.dataset.src;
+        }
+        gifPickerThumbObserver.unobserve(img);
+      });
+    }, { rootMargin: '80px' });
+  }
+  imgs.forEach((img) => {
+    if (selectedActivityId && img.closest('.gif-option')?.classList.contains('selected')) {
+      const src = img.dataset.src;
+      if (src) {
+        img.src = src;
+        delete img.dataset.src;
+      }
+      return;
+    }
+    if (gifPickerThumbObserver) gifPickerThumbObserver.observe(img);
+    else {
+      const src = img.dataset.src;
+      if (src) {
+        img.src = src;
+        delete img.dataset.src;
+      }
+    }
+  });
 }
 
 function scheduleSaveGifChoices() {
@@ -1373,7 +1425,18 @@ function setupActivityGridDelegation() {
   });
 }
 
+let renderActivityGridScheduled = false;
+
 function renderActivityGrid() {
+  if (renderActivityGridScheduled) return;
+  renderActivityGridScheduled = true;
+  requestAnimationFrame(() => {
+    renderActivityGridScheduled = false;
+    renderActivityGridNow();
+  });
+}
+
+function renderActivityGridNow() {
   const gridKey = `${activeCategory}|${searchQuery.trim().toLowerCase()}|${favoriteIds.join(',')}|${customActivitiesConfig.length}`;
   if (gridKey === lastRenderedGridKey && activityGrid.children.length > 0) return;
   lastRenderedGridKey = gridKey;
@@ -1565,11 +1628,11 @@ function openSettings(tab = 'general') {
     themeOptions.forEach((opt) => {
       opt.classList.toggle('active', opt.dataset.theme === (cfg.theme || 'dark'));
     });
-    applyUIVersion(cfg.uiVersion || 'v2');
+    applyUIVersion(cfg.uiVersion || 'v3');
 
     pendingSettingsRevert = {
       theme: cfg.theme || 'dark',
-      uiVersion: cfg.uiVersion === 'v1' ? 'v1' : 'v2',
+      uiVersion: normalizeUIVersion(cfg.uiVersion),
       wallpaper: {
         filename: cfg.customWallpaper?.filename || null,
         blur: Number(cfg.customWallpaper?.blur) || 0,
@@ -1653,7 +1716,7 @@ function buildSettingsPayload() {
     musicNowPlaying: musicNowPlayingToggle?.checked !== false,
     musicNowPlayingAlbumArt: musicNowPlayingAlbumArtToggle?.checked !== false,
     theme: currentSettings.theme || 'dark',
-    uiVersion: settingsModal?.open ? getSelectedUIVersion() : (currentSettings.uiVersion === 'v1' ? 'v1' : 'v2'),
+    uiVersion: settingsModal?.open ? getSelectedUIVersion() : normalizeUIVersion(currentSettings.uiVersion),
     customAnimation: activeCustomAnimation ? 'custom' : null,
     launchAtLogin: launchAtLoginToggle?.checked === true,
     hotkeyEnabled: hotkeyToggle?.checked !== false,
@@ -1670,7 +1733,7 @@ function buildSettingsPayload() {
 function collectPendingConfigForFlush() {
   const patch = {
     theme: currentSettings.theme || 'dark',
-    uiVersion: settingsModal?.open ? getSelectedUIVersion() : (currentSettings.uiVersion === 'v1' ? 'v1' : 'v2'),
+    uiVersion: settingsModal?.open ? getSelectedUIVersion() : normalizeUIVersion(currentSettings.uiVersion),
     activityGifChoice: activityGifChoices,
   };
   patch.customWallpaper = wallpaperSettings.filename
@@ -2785,7 +2848,7 @@ async function init() {
 
   uiVersionOptions.forEach((opt) => {
     opt.addEventListener('click', () => {
-      applyUIVersion(opt.dataset.uiVersion || 'v2');
+      applyUIVersion(opt.dataset.uiVersion || 'v3');
     });
     const input = opt.querySelector('input[type="radio"]');
     if (input) {

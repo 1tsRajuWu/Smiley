@@ -49,12 +49,12 @@ Download: https://1tsrajuwu.github.io/Smiley/
 
 ## Final release — goodbye
 
-**v6.x is the final major version line.** Smiley was a fun personal project — built for the joy of it, polished until it felt near perfect. Thank you for using it.
+**v7.0.0 is the final major release** — Aurora UI (v3), Mac update fix, and performance polish. Smiley was a fun personal project — built for the joy of it, polished until it felt near perfect. Thank you for using it.
 
 | | |
 |---|---|
 | **Open source** | Fork, change, and contribute code — PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). |
-| **Patches only** | Bug fixes may ship; **no planned major features**. |
+| **Patches only** | Bug fixes may ship after v7; **no planned major features**. |
 | **Forks: use your own** | Discord Application ID, Supabase, PayPal — **not** the author's. See [docs/FINAL.md](docs/FINAL.md). |
 
 A longer farewell from Raj: **[docs/FINAL.md](docs/FINAL.md)** 👋

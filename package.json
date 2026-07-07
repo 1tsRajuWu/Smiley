@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "6.0.4",
+  "version": "7.0.0",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -74,6 +74,7 @@
       "electron/native/**/*.node",
       "src/**/*",
       "!src/**/*.map",
+      "!src/styles.css",
       "build/icon.png",
       "build/icon-transparent.png",
       "build/icon-light.png",
@@ -89,7 +90,12 @@
       "PRIVACY.md",
       "SECURITY.md",
       "LEGAL.md",
-      "NOTICE"
+      "NOTICE",
+      "!mobile/**",
+      "!Smiley.Native/**",
+      "!docs/**",
+      "!scripts/**",
+      "!**/.DS_Store"
     ],
     "publish": {
       "provider": "github",
