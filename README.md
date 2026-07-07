@@ -23,11 +23,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 ## Download
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-Setup-5.0.13.exe)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-Setup-5.0.14.exe)
 [![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-arm64.dmg)
 [![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-x64.dmg)
 [![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-5.0.13.deb)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 [All releases](https://github.com/1tsRajuWu/Smiley/releases) · [Download page](https://1tsrajuwu.github.io/Smiley/)
@@ -38,11 +38,11 @@ Download: https://1tsrajuwu.github.io/Smiley/
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-5.0.13.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-Setup-5.0.13.exe) |
+| Windows | [Smiley-Setup-5.0.14.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-Setup-5.0.14.exe) |
 | macOS Apple Silicon | [Smiley-5.0.14-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-arm64.dmg) |
 | macOS Intel | [Smiley-5.0.14-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-x64.dmg) |
 | Linux (AppImage) | [Smiley-5.0.14.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14.AppImage) |
-| Linux (.deb) | [Smiley-5.0.13.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.13/Smiley-5.0.13.deb) |
+| Linux (.deb) | [Smiley-5.0.14.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
