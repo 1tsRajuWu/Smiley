@@ -62,11 +62,11 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 <!-- DOWNLOADS_START -->
 | Platform | File | Link |
 |----------|------|------|
-| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-Setup-5.0.14.exe) |
-| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-arm64.dmg) |
-| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14-x64.dmg) |
-| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14.AppImage) |
-| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.14/Smiley-5.0.14.deb) |
+| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.15/Smiley-Setup-5.0.15.exe) |
+| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.15/Smiley-5.0.15-arm64.dmg) |
+| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.15/Smiley-5.0.15-x64.dmg) |
+| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.15/Smiley-5.0.15.AppImage) |
+| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v5.0.15/Smiley-5.0.15.deb) |
 | All platforms | — | [Latest releases](https://github.com/1tsRajuWu/Smiley/releases/latest) |
 <!-- DOWNLOADS_END -->
 
