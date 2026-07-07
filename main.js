@@ -1023,7 +1023,7 @@ async function resumePresence() {
   }
   const { activity, sessionStart: prevStart } = pausedPresenceSnapshot;
   pausedPresenceSnapshot = null;
-  sessionStart = prevStart || Date.now();
+  sessionStart = activity.id === 'listening' ? null : (prevStart || Date.now());
   const result = await applyPresence(activity);
   if (result?.success && activity?.id === 'listening' && config.musicNowPlaying !== false) {
     getMusicSync().start({
@@ -1692,8 +1692,8 @@ async function buildActivityPayload(activity) {
     instance: false,
   };
 
-  const isListeningNowPlaying = activity.id === 'listening' && activity.musicTrack?.title;
-  if (!isListeningNowPlaying) {
+  // Discord shows a green elapsed timer when timestamps are present — omit for music/listening.
+  if (activity.id !== 'listening') {
     payload.startTimestamp = sessionStart || Date.now();
   }
 
@@ -1746,6 +1746,7 @@ async function applyPresence(activity) {
     const payload = await buildActivityPayload(activity);
     await rpcClient.setActivity(payload);
     currentActivity = activity;
+    if (activity.id === 'listening') sessionStart = null;
     trackRecentActivity(activity);
     updateTrayIcon(activity.category);
     updateTrayMenu();
@@ -1768,6 +1769,7 @@ async function applyMusicPresence(activity) {
     const payload = await buildActivityPayload(activity);
     await rpcClient.setActivity(payload);
     currentActivity = activity;
+    if (activity.id === 'listening') sessionStart = null;
     scheduleTrayMenuRefresh();
     return { success: true };
   } catch (err) {
@@ -1782,7 +1784,7 @@ async function schedulePresenceUpdate(activity, isNewSession) {
 
   handleMusicSyncForActivity(safeActivity);
 
-  if (isNewSession) sessionStart = Date.now();
+  if (isNewSession) sessionStart = safeActivity.id === 'listening' ? null : Date.now();
   pendingUpdate = safeActivity;
   if (updateTimer) {
     return { success: true, queued: true };
@@ -1853,7 +1855,7 @@ function broadcastStatus(immediate = false) {
     sendToWindow('rpc-status', {
       connected: !!rpcClient,
       activity: sanitizeActivitySnapshot(currentActivity),
-      sessionStart,
+      sessionStart: currentActivity?.id === 'listening' ? null : sessionStart,
       donationUrl: DONATION_URL,
       settings: {
         theme: config.theme || 'dark',
@@ -3714,7 +3716,7 @@ function setupIPC() {
   ipcMain.handle('get-status', () => ({
     connected: !!rpcClient,
     activity: sanitizeActivitySnapshot(currentActivity),
-    sessionStart,
+    sessionStart: currentActivity?.id === 'listening' ? null : sessionStart,
   }));
 
   ipcMain.handle('check-for-updates', async () => {

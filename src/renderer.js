@@ -426,7 +426,8 @@ async function togglePausePresence() {
     presencePaused = false;
     setupRotateFavorites();
     const status = await window.smiley.getStatus();
-    if (status?.sessionStart) startTimer(status.sessionStart);
+    if (status?.sessionStart && status.activity?.id !== 'listening') startTimer(status.sessionStart);
+    else if (status?.activity?.id === 'listening') startTimer(null);
     syncConnectionPill();
     showToast('Presence resumed on Discord', 'success');
     return;
@@ -693,6 +694,16 @@ function formatElapsed(ms) {
   const s = totalSec % 60;
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function shouldShowPreviewTimer(activityId = selectedActivityId) {
+  if (activityId === 'listening') return false;
+  return currentSettings.showTimer !== false;
+}
+
+function updatePreviewTimerVisibility(activityId = selectedActivityId) {
+  const timerEl = $('#previewTimer');
+  if (timerEl) timerEl.style.display = shouldShowPreviewTimer(activityId) ? '' : 'none';
 }
 
 function startTimer(start) {
@@ -1161,6 +1172,7 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   previewCard.style.setProperty('--card-glow', `${category?.color || '#7aa2f7'}33`);
 
   applyNowPlayingPreview(activity);
+  updatePreviewTimerVisibility(activity?.id);
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
 
@@ -1552,7 +1564,9 @@ async function selectActivity(id) {
     } else {
       showToast(`Status set: ${activity.details}`);
     }
-    if (!isReselect) startTimer(Date.now());
+    if (activity.id === 'listening') startTimer(null);
+    else if (!isReselect) startTimer(Date.now());
+    updatePreviewTimerVisibility(activity.id);
     setupRotateFavorites();
   }
 }
@@ -1774,7 +1788,7 @@ async function handleSaveSettings(e) {
   setupRotateFavorites();
 
   const timerEl = $('#previewTimer');
-  if (timerEl) timerEl.style.display = newSettings.showTimer !== false ? '' : 'none';
+  if (timerEl) updatePreviewTimerVisibility();
 
   if (result?.connected) {
     setConnectionStatus(true);
@@ -3169,7 +3183,7 @@ async function init() {
       applyTheme(data.settings.theme);
       if (data.settings.uiVersion) applyUIVersion(data.settings.uiVersion);
       const timerEl = $('#previewTimer');
-      if (timerEl) timerEl.style.display = data.settings.showTimer !== false ? '' : 'none';
+      if (timerEl) updatePreviewTimerVisibility(data.activity?.id);
     }
     if (data.version) {
       footerVersion.textContent = `Smiley v${data.version}`;
@@ -3185,7 +3199,8 @@ async function init() {
         renderGifPicker(match);
         updatePreview({ ...match, category: match.category });
       }
-      if (data.sessionStart) startTimer(data.sessionStart);
+      if (data.sessionStart && data.activity?.id !== 'listening') startTimer(data.sessionStart);
+      else if (data.activity?.id === 'listening') startTimer(null);
     }
   });
 
@@ -3254,11 +3269,11 @@ async function init() {
       renderActivityGrid();
       await updatePreview({ ...match, category: match.category });
     }
-    if (status.sessionStart) startTimer(status.sessionStart);
+    if (status.sessionStart && status.activity?.id !== 'listening') startTimer(status.sessionStart);
+    else if (status.activity?.id === 'listening') startTimer(null);
   }
 
-  const timerEl = $('#previewTimer');
-  if (timerEl) timerEl.style.display = cfg.showTimer !== false ? '' : 'none';
+  updatePreviewTimerVisibility(status.activity?.id);
 
   updateBrandIcon();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBrandIcon);
