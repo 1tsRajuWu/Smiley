@@ -32,11 +32,11 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 <summary><strong>Direct downloads</strong></summary>
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-Setup-7.0.3.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-Setup-7.0.5.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 | Platform | File |
@@ -44,11 +44,11 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-7.0.3.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-Setup-7.0.3.exe) |
-| macOS Apple Silicon | [Smiley-7.0.3-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3-arm64.dmg) |
-| macOS Intel | [Smiley-7.0.3-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3-x64.dmg) |
-| Linux (AppImage) | [Smiley-7.0.3.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3.AppImage) |
-| Linux (.deb) | [Smiley-7.0.3.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.3/Smiley-7.0.3.deb) |
+| Windows | [Smiley-Setup-7.0.5.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-Setup-7.0.5.exe) |
+| macOS Apple Silicon | [Smiley-7.0.5-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5-arm64.dmg) |
+| macOS Intel | [Smiley-7.0.5-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5-x64.dmg) |
+| Linux (AppImage) | [Smiley-7.0.5.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5.AppImage) |
+| Linux (.deb) | [Smiley-7.0.5.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.5/Smiley-7.0.5.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
