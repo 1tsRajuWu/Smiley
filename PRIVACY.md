@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v5.0.16)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v5.0.17)
 
 ## Short version
 
