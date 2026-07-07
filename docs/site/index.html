@@ -3,13 +3,1354 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Smiley — Discord Rich Presence with Animated Anime GIFs</title>
-  <meta name="description" content="Download Smiley — free Discord Rich Presence desktop app with animated anime GIF status for Windows, macOS, and Linux.">
-  <link rel="canonical" href="https://1tsrajuwu.github.io/Smiley/download.html">
-  <meta http-equiv="refresh" content="0;url=download.html">
-  <script>location.replace('download.html');</script>
+  <title>Smiley — Discord Rich Presence with Anime GIFs</title>
+  <meta name="description" content="Show animated anime GIFs on your Discord profile. Free desktop app for Windows, macOS, and Linux.">
+  <meta name="author" content="Himanshu Raj (1tsRajuWu)">
+  <link rel="canonical" href="https://1tsrajuwu.github.io/Smiley/">
+  <meta property="og:title" content="Smiley — Discord Rich Presence">
+  <meta property="og:description" content="Animated anime GIF status for Discord. Free for Windows, macOS, and Linux.">
+  <meta property="og:url" content="https://1tsrajuwu.github.io/Smiley/">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://1tsrajuwu.github.io/Smiley/icon.png">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050608;
+      --bg-elevated: #0c0e14;
+      --bg-card: rgba(18, 20, 30, 0.72);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-bright: rgba(255, 255, 255, 0.12);
+      --text: #f4f5f9;
+      --text-muted: #9499ad;
+      --text-dim: #5c6278;
+      --accent: #5865f2;
+      --accent-2: #7289da;
+      --accent-glow: rgba(88, 101, 242, 0.5);
+      --success: #3ba55d;
+      --success-glow: rgba(59, 165, 93, 0.35);
+      --pink: #eb459e;
+      --violet: #9b59f5;
+      --radius: 20px;
+      --radius-sm: 12px;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient canvas ── */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient__mesh {
+      position: absolute;
+      inset: -50%;
+      background:
+        radial-gradient(ellipse 55% 45% at 15% 8%, rgba(88, 101, 242, 0.22), transparent 55%),
+        radial-gradient(ellipse 45% 35% at 88% 12%, rgba(155, 89, 245, 0.16), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 55% 95%, rgba(235, 69, 158, 0.1), transparent 55%),
+        radial-gradient(ellipse 30% 25% at 70% 55%, rgba(59, 165, 93, 0.06), transparent 50%);
+      animation: meshDrift 28s ease-in-out infinite alternate;
+    }
+
+    @keyframes meshDrift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(2%, -1.5%) scale(1.04); }
+    }
+
+    .ambient__orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.55;
+      animation: orbFloat 18s ease-in-out infinite;
+    }
+
+    .ambient__orb--1 {
+      width: 420px; height: 420px;
+      background: rgba(88, 101, 242, 0.25);
+      top: -8%; left: -5%;
+    }
+
+    .ambient__orb--2 {
+      width: 320px; height: 320px;
+      background: rgba(235, 69, 158, 0.18);
+      top: 35%; right: -8%;
+      animation-delay: -6s;
+    }
+
+    .ambient__orb--3 {
+      width: 280px; height: 280px;
+      background: rgba(155, 89, 245, 0.15);
+      bottom: 5%; left: 30%;
+      animation-delay: -12s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(20px, -30px); }
+    }
+
+    .ambient__noise {
+      position: absolute;
+      inset: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px;
+    }
+
+    .ambient__grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 75%);
+    }
+
+    /* ── Layout ── */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 1.75rem;
+    }
+
+    /* ── Nav ── */
+    .nav-shell {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 0 0;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 1.25rem;
+      background: rgba(8, 9, 14, 0.65);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .nav-brand__icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .nav-brand__name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .nav-links a:not(.btn) {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .nav-links a:not(.btn):hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.25s var(--ease-out), box-shadow 0.3s, background 0.25s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #4752c4 100%);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-bright);
+      transform: translateY(-1px);
+    }
+
+    .btn-lg {
+      padding: 0.9rem 1.75rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 4rem;
+      align-items: center;
+      padding: 4.5rem 0 6rem;
+      min-height: calc(100vh - 100px);
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 24px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.75rem, 5.5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero h1 .line { display: block; }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, #fff 0%, #c4c8ff 35%, var(--accent) 65%, var(--pink) 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+
+    .hero-tagline {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      max-width: 26rem;
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2.25rem;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      backdrop-filter: blur(8px);
+    }
+
+    .badge--live {
+      color: #6ee7a0;
+      border-color: rgba(110, 231, 160, 0.25);
+      background: rgba(59, 165, 93, 0.1);
+    }
+
+    .badge--live .pulse {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6ee7a0;
+      margin-right: 0.35rem;
+      box-shadow: 0 0 8px var(--success-glow);
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .hero-stat__value {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .hero-stat__label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 0.15rem;
+    }
+
+    /* ── App mockup ── */
+    .mockup-scene {
+      position: relative;
+      perspective: 1400px;
+    }
+
+    .mockup-glow {
+      position: absolute;
+      inset: -15% -10%;
+      background: radial-gradient(ellipse at center, rgba(88, 101, 242, 0.2), transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .mockup-window {
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(160deg, rgba(22, 24, 36, 0.95) 0%, rgba(12, 13, 20, 0.98) 100%);
+      border: 1px solid var(--border-bright);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 40px 100px -20px rgba(0, 0, 0, 0.7),
+        0 0 80px -20px var(--accent-glow);
+      transform: rotateY(-6deg) rotateX(3deg);
+      transition: transform 0.6s var(--ease-out);
+    }
+
+    .mockup-scene:hover .mockup-window {
+      transform: rotateY(-1deg) rotateX(0.5deg);
+    }
+
+    .mockup-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.1rem;
+      background: rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .traffic-lights { display: flex; gap: 7px; }
+
+    .traffic-lights span {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      box-shadow: inset 0 -1px 2px rgba(0,0,0,0.2);
+    }
+
+    .traffic-lights span:nth-child(1) { background: #ff5f57; }
+    .traffic-lights span:nth-child(2) { background: #febc2e; }
+    .traffic-lights span:nth-child(3) { background: #28c840; }
+
+    .mockup-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-right: 50px;
+      letter-spacing: 0.02em;
+    }
+
+    .mockup-body {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      min-height: 340px;
+    }
+
+    .mockup-sidebar {
+      padding: 1.1rem;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .mockup-stage {
+      aspect-ratio: 1;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #1e2132 0%, #14161f 100%);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mockup-stage::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 20%, rgba(88, 101, 242, 0.15), transparent 60%);
+    }
+
+    .mockup-stage::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.06) 50%, transparent 58%);
+      animation: shimmer 4s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { transform: translateX(-120%); }
+      50% { transform: translateX(120%); }
+    }
+
+    .mockup-stage span { position: relative; z-index: 1; transition: transform 0.3s var(--ease-out); }
+    .mockup-stage.pop span { animation: pop 0.35s var(--ease-out); }
+
+    @keyframes pop {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .mockup-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+    }
+
+    .mockup-discord {
+      margin-top: auto;
+      padding: 0.7rem;
+      background: linear-gradient(135deg, #2b2d31, #232428);
+      border-radius: 10px;
+      font-size: 0.62rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .mockup-discord .status {
+      color: #6ee7a0;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .mockup-discord .via { color: var(--text-dim); }
+
+    .mockup-main {
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .mockup-search {
+      padding: 0.55rem 0.9rem;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 10px;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .mockup-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+
+    .mockup-tab {
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-dim);
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .mockup-tab.active {
+      background: linear-gradient(135deg, var(--accent), #4752c4);
+      color: #fff;
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .mockup-card {
+      aspect-ratio: 1;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-out);
+    }
+
+    .mockup-card:hover {
+      border-color: rgba(88, 101, 242, 0.5);
+      background: rgba(88, 101, 242, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .mockup-card.selected {
+      border-color: var(--accent);
+      background: rgba(88, 101, 242, 0.12);
+      box-shadow: 0 0 0 1px var(--accent), 0 8px 24px -8px var(--accent-glow);
+    }
+
+    .mockup-float {
+      position: absolute;
+      bottom: -16px;
+      right: -24px;
+      z-index: 2;
+      background: rgba(14, 16, 24, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-bright);
+      border-radius: 14px;
+      padding: 0.75rem 1.1rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .mockup-float .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #6ee7a0;
+      box-shadow: 0 0 10px var(--success-glow);
+      animation: pulse 2s ease infinite;
+    }
+
+    .mockup-chip {
+      position: absolute;
+      top: 24px;
+      left: -28px;
+      z-index: 2;
+      background: rgba(14, 16, 24, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-bright);
+      border-radius: 12px;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .mockup-chip strong { color: #fff; display: block; font-size: 0.8rem; }
+
+    /* ── Marquee ── */
+    .marquee-wrap {
+      overflow: hidden;
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.015);
+      mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+    }
+
+    .marquee {
+      display: flex;
+      gap: 3rem;
+      animation: marquee 35s linear infinite;
+      width: max-content;
+    }
+
+    .marquee span {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .marquee span::after {
+      content: '◆';
+      margin-left: 3rem;
+      font-size: 0.5rem;
+      opacity: 0.4;
+      vertical-align: middle;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ── Sections ── */
+    .section { padding: 6rem 0; }
+
+    .section-label {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .section-header h2 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.85rem;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      max-width: 30rem;
+      margin: 0 auto;
+      font-size: 1.05rem;
+    }
+
+    /* ── Bento features ── */
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1rem;
+    }
+
+    .bento-card {
+      padding: 1.75rem;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.3s, transform 0.35s var(--ease-out), box-shadow 0.35s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.5);
+    }
+
+    .bento-card--hero {
+      grid-column: span 7;
+      grid-row: span 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 320px;
+      background:
+        linear-gradient(160deg, rgba(88, 101, 242, 0.12) 0%, transparent 50%),
+        var(--bg-card);
+    }
+
+    .bento-card--hero .bento-visual {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      font-size: 5rem;
+      opacity: 0.15;
+      filter: blur(1px);
+    }
+
+    .bento-card--tall { grid-column: span 5; }
+    .bento-card--wide { grid-column: span 6; }
+    .bento-card--half { grid-column: span 6; }
+    .bento-card--third { grid-column: span 4; }
+
+    .bento-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+      background: rgba(88, 101, 242, 0.12);
+      border: 1px solid rgba(88, 101, 242, 0.2);
+    }
+
+    .bento-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .bento-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .bento-card--hero h3 { font-size: 1.5rem; }
+    .bento-card--hero p { max-width: 22rem; }
+
+    /* ── How it works ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      counter-reset: step;
+    }
+
+    .step {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      position: relative;
+    }
+
+    .step__num {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(180deg, rgba(88,101,242,0.4), transparent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .step h3 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .step p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Downloads ── */
+    .downloads-section {
+      position: relative;
+      background: linear-gradient(180deg, transparent, rgba(88, 101, 242, 0.04) 50%, transparent);
+    }
+
+    .downloads-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 80px;
+      background: linear-gradient(180deg, transparent, var(--accent), transparent);
+      opacity: 0.4;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .download-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.15rem 1.35rem;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s var(--ease-out);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .download-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(88,101,242,0.08), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .download-card:hover {
+      border-color: rgba(88, 101, 242, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px -12px rgba(88, 101, 242, 0.25);
+    }
+
+    .download-card:hover::after { opacity: 1; }
+
+    .download-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .download-icon svg { width: 22px; height: 22px; fill: var(--text-muted); }
+    .download-card:hover .download-icon svg { fill: var(--accent-2); }
+
+    .download-info { flex: 1; min-width: 0; position: relative; z-index: 1; }
+
+    .download-name {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: -0.01em;
+    }
+
+    .download-file {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      margin-top: 0.1rem;
+    }
+
+    .download-arrow {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(88, 101, 242, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-2);
+      font-size: 1rem;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .download-card:hover .download-arrow {
+      background: var(--accent);
+      color: #fff;
+      transform: translateY(2px);
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 4rem 0 2rem;
+      text-align: center;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-brand img { width: 32px; height: 32px; border-radius: 8px; }
+    .footer-brand span {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text); }
+
+    .footer-copy {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    .footer-copy a {
+      color: var(--accent-2);
+      text-decoration: none;
+    }
+
+    .footer-copy a:hover { text-decoration: underline; }
+
+    /* ── Reveal animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding-top: 2rem;
+        gap: 3rem;
+      }
+
+      .hero-eyebrow { justify-content: center; }
+      .hero-tagline { margin-left: auto; margin-right: auto; }
+      .hero-badges, .hero-cta { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .mockup-scene { order: -1; max-width: 440px; margin: 0 auto; }
+      .mockup-window { transform: none !important; }
+      .mockup-chip { display: none; }
+
+      .bento-card--hero,
+      .bento-card--tall,
+      .bento-card--wide,
+      .bento-card--half,
+      .bento-card--third { grid-column: span 12; }
+
+      .bento-card--hero { min-height: 240px; }
+
+      .steps { grid-template-columns: 1fr; gap: 0.5rem; }
+      .nav-links a:not(.btn) { display: none; }
+    }
+
+    @media (max-width: 540px) {
+      .download-grid { grid-template-columns: 1fr; }
+      .mockup-body { grid-template-columns: 1fr; min-height: auto; }
+      .mockup-sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+      .hero-stats { flex-direction: column; gap: 1.25rem; align-items: center; }
+    }
+  </style>
 </head>
 <body>
-  <p>Redirecting to <a href="download.html">Smiley download page</a>…</p>
+  <div class="ambient" aria-hidden="true">
+    <div class="ambient__mesh"></div>
+    <div class="ambient__orb ambient__orb--1"></div>
+    <div class="ambient__orb ambient__orb--2"></div>
+    <div class="ambient__orb ambient__orb--3"></div>
+    <div class="ambient__grid"></div>
+    <div class="ambient__noise"></div>
+  </div>
+
+  <div class="wrap">
+    <div class="nav-shell">
+      <nav>
+        <a class="nav-brand" href="#">
+          <img class="nav-brand__icon" src="icon.png" alt="" width="36" height="36">
+          <span class="nav-brand__name">Smiley</span>
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#download">Download</a>
+          <a class="btn btn-primary" href="#download">Get Smiley</a>
+        </div>
+      </nav>
+    </div>
+
+    <section class="hero">
+      <div class="hero-content reveal">
+        <div class="hero-eyebrow">Discord Rich Presence</div>
+        <h1>
+          <span class="line">Your status,</span>
+          <span class="line"><span class="gradient">beautifully animated.</span></span>
+        </h1>
+        <p class="hero-tagline">
+          One click to set an anime GIF on your Discord profile. No developer portal, no config files — just pure vibes.
+        </p>
+        <div class="hero-badges">
+          <span class="badge badge--live"><span class="pulse"></span>v7.0 Final</span>
+          <span class="badge">Windows · macOS · Linux</span>
+          <span class="badge">Free & open source</span>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#download">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Download free
+          </a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat__value">3</div>
+            <div class="hero-stat__label">Platforms</div>
+          </div>
+          <div>
+            <div class="hero-stat__value">0</div>
+            <div class="hero-stat__label">Config needed</div>
+          </div>
+          <div>
+            <div class="hero-stat__value">MIT</div>
+            <div class="hero-stat__label">Open source</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-scene reveal">
+        <div class="mockup-glow"></div>
+        <div class="mockup-chip"><strong>Aurora UI</strong>v3 interface</div>
+        <div class="mockup-window">
+          <div class="mockup-titlebar">
+            <div class="traffic-lights"><span></span><span></span><span></span></div>
+            <div class="mockup-title">Smiley.app</div>
+          </div>
+          <div class="mockup-body">
+            <aside class="mockup-sidebar">
+              <div class="mockup-stage" id="heroStage"><span id="heroGif">🎮</span></div>
+              <div class="mockup-label" id="heroLabel">Playing Valorant</div>
+              <div class="mockup-discord">
+                <div class="status" id="discordStatus">Playing Valorant</div>
+                <div class="via">via Smiley</div>
+              </div>
+            </aside>
+            <main class="mockup-main">
+              <div class="mockup-search">Search activities…</div>
+              <div class="mockup-tabs">
+                <span class="mockup-tab active">Gaming</span>
+                <span class="mockup-tab">Coding</span>
+                <span class="mockup-tab">Chilling</span>
+                <span class="mockup-tab">Anime</span>
+              </div>
+              <div class="mockup-grid" id="activityGrid">
+                <div class="mockup-card selected" data-emoji="🎮" data-label="Playing Valorant">🎮</div>
+                <div class="mockup-card" data-emoji="💻" data-label="Coding in VS Code">💻</div>
+                <div class="mockup-card" data-emoji="🎧" data-label="Listening to Lo-Fi">🎧</div>
+                <div class="mockup-card" data-emoji="📺" data-label="Watching Anime">📺</div>
+                <div class="mockup-card" data-emoji="☕" data-label="Chilling">☕</div>
+                <div class="mockup-card" data-emoji="📚" data-label="Studying">📚</div>
+              </div>
+            </main>
+          </div>
+        </div>
+        <div class="mockup-float">
+          <span class="dot"></span>
+          Connected to Discord
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="marquee-wrap" aria-hidden="true">
+    <div class="marquee">
+      <span>Anime GIFs</span><span>Rich Presence</span><span>Zero Config</span><span>Native Desktop</span><span>Aurora UI</span><span>Now Playing</span><span>Open Source</span><span>Windows</span><span>macOS</span><span>Linux</span>
+      <span>Anime GIFs</span><span>Rich Presence</span><span>Zero Config</span><span>Native Desktop</span><span>Aurora UI</span><span>Now Playing</span><span>Open Source</span><span>Windows</span><span>macOS</span><span>Linux</span>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-header reveal">
+        <span class="section-label">Features</span>
+        <h2>Built different</h2>
+        <p>Every detail crafted for a premium Discord experience — without the premium price tag.</p>
+      </div>
+      <div class="bento reveal">
+        <article class="bento-card bento-card--hero">
+          <div class="bento-visual">🎬</div>
+          <h3>Anime GIF picker</h3>
+          <p>Animated status art that matches your mood — gaming, coding, chilling, studying, and more. Updates your Discord profile instantly.</p>
+        </article>
+        <article class="bento-card bento-card--tall">
+          <div class="bento-icon">⚡</div>
+          <h3>Zero configuration</h3>
+          <p>No Discord Developer Portal. No JSON files. Download, open Discord, pick an activity. Done in seconds.</p>
+        </article>
+        <article class="bento-card bento-card--half">
+          <div class="bento-icon">🖥️</div>
+          <h3>Native desktop</h3>
+          <p>Real .app on macOS, .exe on Windows, AppImage & .deb on Linux.</p>
+        </article>
+        <article class="bento-card bento-card--half">
+          <div class="bento-icon">🎨</div>
+          <h3>Aurora UI v3</h3>
+          <p>Themes, wallpapers, and a live Discord preview card built in.</p>
+        </article>
+        <article class="bento-card bento-card--third">
+          <div class="bento-icon">🎵</div>
+          <h3>Now playing</h3>
+          <p>Music.app & Spotify sync on macOS.</p>
+        </article>
+        <article class="bento-card bento-card--third">
+          <div class="bento-icon">🔓</div>
+          <h3>Open source</h3>
+          <p>MIT licensed. Fork, customize, contribute.</p>
+        </article>
+        <article class="bento-card bento-card--third">
+          <div class="bento-icon">✨</div>
+          <h3>Polished</h3>
+          <p>7 major versions of refinement. Final release.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="section-header reveal">
+        <span class="section-label">How it works</span>
+        <h2>Three steps. That's it.</h2>
+        <p>No tutorials. No API keys. No rabbit holes.</p>
+      </div>
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step__num">01</div>
+          <h3>Download</h3>
+          <p>Grab Smiley for your platform. Install like any other app.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">02</div>
+          <h3>Open Discord</h3>
+          <p>Desktop app required. Smiley connects automatically.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">03</div>
+          <h3>Pick an activity</h3>
+          <p>Choose a category, tap an animation. Your profile updates live.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section downloads-section" id="download">
+    <div class="wrap">
+      <div class="section-header reveal">
+        <span class="section-label">Download</span>
+        <h2>Get Smiley</h2>
+        <p>Free forever. Pick your platform and start vibing.</p>
+      </div>
+      <div class="download-grid reveal">
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.1/Smiley-Setup-7.0.0.exe" target="_blank" rel="noopener">
+          <div class="download-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13zM5.5 5a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-13a.5.5 0 0 0-.5-.5h-13z"/></svg>
+          </div>
+          <div class="download-info">
+            <div class="download-name">Windows</div>
+            <div class="download-file">Smiley-Setup-7.0.0.exe</div>
+          </div>
+          <span class="download-arrow">↓</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.1/Smiley-7.0.0-arm64.dmg" target="_blank" rel="noopener">
+          <div class="download-icon">
+            <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          </div>
+          <div class="download-info">
+            <div class="download-name">macOS Apple Silicon</div>
+            <div class="download-file">Smiley-7.0.0-arm64.dmg</div>
+          </div>
+          <span class="download-arrow">↓</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.1/Smiley-7.0.0-x64.dmg" target="_blank" rel="noopener">
+          <div class="download-icon">
+            <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          </div>
+          <div class="download-info">
+            <div class="download-name">macOS Intel</div>
+            <div class="download-file">Smiley-7.0.0-x64.dmg</div>
+          </div>
+          <span class="download-arrow">↓</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.1/Smiley-7.0.0.AppImage" target="_blank" rel="noopener">
+          <div class="download-icon">
+            <svg viewBox="0 0 24 24"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 0 0-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.38.076.553.114.598.378 1.127.659 1.606.281.48.58.96.659 1.606.05.173.076.354.076.553a1.06 1.06 0 0 1-.132.602c-.206.411-.551.544-.864.68-.312.133-.598.201-.797.4-.213.239-.403.571-.663.839a.424.424 0 0 0-.11.135c-.123.805.009 1.657.287 2.489.589 1.771 1.831 3.47 2.716 4.521.75 1.067 1.974 1.928 1.05 3.02-.065 1.491-1.056 5.965 3.17 6.298.165.013.325.021.48.021.155 0 .315-.008.48-.021 4.226-.333 3.105-4.807 3.17-6.298.076-1.092.3-1.953 1.05-3.02.885-1.051 2.127-2.75 2.716-4.521.278-.832.41-1.684.287-2.489a.424.424 0 0 0 .11-.135c.26-.268.45-.6.663-.839.199-.199.485-.267.797-.4.313-.136.658-.269.864-.68.09-.189.136-.394.132-.602 0-.199-.027-.38-.076-.553-.114-.598-.378-1.127-.659-1.606-.281-.48-.58-.96-.659-1.606-.05-.173-.076-.354-.076-.553a1.06 1.06 0 0 1 .132-.602c.206-.411.551-.544.864-.68.312-.133.598-.201.797-.4.213-.239.403-.571.663-.839a.424.424 0 0 0 .11-.135c.123-.805-.009-1.657-.287-2.489-.589-1.771-1.831-3.47-2.716-4.521-.75-1.067-1.974-1.928-1.05-3.02.065-1.491 1.056-5.965-3.17-6.298-.165-.013-.325-.021-.48-.021z"/></svg>
+          </div>
+          <div class="download-info">
+            <div class="download-name">Linux AppImage</div>
+            <div class="download-file">Smiley-7.0.0.AppImage</div>
+          </div>
+          <span class="download-arrow">↓</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.0.1/Smiley-7.0.0.deb" target="_blank" rel="noopener">
+          <div class="download-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H8l4-7v4h3l-4 7z"/></svg>
+          </div>
+          <div class="download-info">
+            <div class="download-name">Linux .deb</div>
+            <div class="download-file">Smiley-7.0.0.deb</div>
+          </div>
+          <span class="download-arrow">↓</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-brand">
+        <img src="icon.png" alt="" width="32" height="32">
+        <span>Smiley</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/1tsRajuWu/Smiley">GitHub</a>
+        <a href="https://github.com/1tsRajuWu/Smiley/releases">Releases</a>
+        <a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">Final release</a>
+        <a href="https://github.com/1tsRajuWu/Smiley/blob/main/CONTRIBUTING.md">Contribute</a>
+      </div>
+      <p class="footer-copy">Made by <a href="https://github.com/1tsRajuWu">Himanshu Raj</a> · MIT License</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var grid = document.getElementById('activityGrid');
+      var stage = document.getElementById('heroStage');
+      var gif = document.getElementById('heroGif');
+      var label = document.getElementById('heroLabel');
+      var status = document.getElementById('discordStatus');
+
+      grid.addEventListener('click', function (e) {
+        var card = e.target.closest('.mockup-card');
+        if (!card) return;
+        grid.querySelectorAll('.mockup-card').forEach(function (c) { c.classList.remove('selected'); });
+        card.classList.add('selected');
+        gif.textContent = card.dataset.emoji;
+        label.textContent = card.dataset.label;
+        status.textContent = card.dataset.label;
+        stage.classList.remove('pop');
+        void stage.offsetWidth;
+        stage.classList.add('pop');
+      });
+
+      var reveals = document.querySelectorAll('.reveal');
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+      reveals.forEach(function (el) { observer.observe(el); });
+      document.querySelectorAll('.hero .reveal').forEach(function (el) { el.classList.add('visible'); });
+    })();
+  </script>
 </body>
 </html>

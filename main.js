@@ -191,9 +191,10 @@ function loadDiscordClientId() {
 const BUNDLED_CLIENT_ID = loadDiscordClientId();
 const DONATION_URL = 'https://paypal.me/1tsRaj';
 const GITHUB_REPO_URL =
-  String(pkg.homepage || pkg.repository?.url || 'https://github.com/1tsRajuWu/Smiley')
+  String(pkg.repository?.url || 'https://github.com/1tsRajuWu/Smiley.git')
     .replace(/\.git$/, '')
     .trim();
+const SMILEY_SITE_URL = String(pkg.homepage || 'https://1tsrajuwu.github.io/Smiley/').replace(/\/?$/, '/');
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases/latest`;
 const GITHUB_DOWNLOAD_HOSTS = new Set([
   'github.com',
@@ -462,7 +463,7 @@ function isAllowedGithubDownloadUrl(url) {
 const MAC_ADHOC_DISTRIBUTION = true;
 const MAC_IN_APP_UPDATES = process.platform === 'darwin';
 const DEFAULT_RPC_BUTTONS = [
-  { label: 'Download', url: GITHUB_REPO_URL },
+  { label: 'Download', url: `${SMILEY_SITE_URL}#download` },
 ];
 // SSRF guard — only fetch GIFs from known CDNs
 const ALLOWED_GIF_HOSTS = [
