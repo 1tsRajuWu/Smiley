@@ -2723,6 +2723,8 @@ async function init() {
   applyUpiVisibility();
   renderCategoryTabs();
   setupActivityGridDelegation();
+  // FOUC guard in index.html hides body until this class is set (opacity: 0 → 1).
+  document.body.classList.add('app-ready');
 
   const configPromise = window.smiley.getConfig();
   const statusPromise = window.smiley.getStatus();
@@ -3276,4 +3278,7 @@ async function init() {
   setupRotateFavorites();
 }
 
-init();
+init().catch((err) => {
+  console.error('[Smiley] init failed:', err);
+  document.body.classList.add('app-ready');
+});

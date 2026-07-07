@@ -1,6 +1,6 @@
 # Security & End-to-End Encryption (E2EE)
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v6.0.1)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v6.0.2)
 
 Smiley is designed so your personal settings stay on your device, encrypted at rest, with optional passphrase-protected exports. This document explains what is protected, how encryption works, and what we do **not** claim.
 
