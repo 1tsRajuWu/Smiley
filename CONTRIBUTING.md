@@ -2,7 +2,7 @@
 
 Smiley is **open source**. You're welcome to fork the repo, fix bugs, improve the UI, and open pull requests. Copyright © 2025–2026 **1tsRajuWu (Raj)** — see [LICENSE](LICENSE).
 
-**Read first:** [docs/FINAL.md](docs/FINAL.md) — final release notice and fork boundaries.
+**Read first:** [docs/FINAL.md](docs/FINAL.md) — v7.0.0 final release notice and fork boundaries.
 
 ## Quick start (fork & build)
 

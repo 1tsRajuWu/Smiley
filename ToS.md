@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.7.7)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.0.0)
 
 **Applies to official Smiley builds** from the author's releases. Third-party forks are governed by their maintainers' terms.
 
@@ -12,7 +12,7 @@ Smiley talks to the Discord desktop app over the local IPC API. It does **not** 
 
 ## Final version
 
-**v6.x is the final major version line.** The author may ship patches or bug fixes but does not plan major new features. See [docs/FINAL.md](docs/FINAL.md).
+**v7.0.0 is the final release.** The author may ship patches or bug fixes but does not plan major new features. See [docs/FINAL.md](docs/FINAL.md).
 
 ## Open source & forks
 
