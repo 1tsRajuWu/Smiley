@@ -11,7 +11,11 @@ const {
 const LISTENING_ACTIVITY_ID = 'listening';
 const DISCORD_TEXT_LIMIT = 128;
 /** UI progress refresh — meta changes are always immediate. */
-const RENDERER_PROGRESS_MIN_MS = 1000;
+const RENDERER_PROGRESS_MIN_MS = 2000;
+/** Skip identical Discord RPC payloads within this window. */
+const PRESENCE_DEDUP_MS = 2500;
+/** Progress-only Discord updates (same song) — keep RPC light. */
+const PRESENCE_PROGRESS_MIN_MS = 8000;
 const artworkCache = new Map();
 
 function truncate(text, max = DISCORD_TEXT_LIMIT) {
@@ -22,6 +26,20 @@ function truncate(text, max = DISCORD_TEXT_LIMIT) {
 
 function isMusicSyncEnabled(config) {
   return config?.musicNowPlaying !== false;
+}
+
+function presenceSignature(activity) {
+  if (!activity) return '';
+  const track = activity.musicTrack;
+  if (!track?.title) return `${activity.details}\0${activity.state}`;
+  return [
+    track.title,
+    track.artist,
+    track.album,
+    track.isPlaying ? '1' : '0',
+    track.device || '',
+    activity.discordImageUrl || activity.largeImageUrl || '',
+  ].join('\0');
 }
 
 function createMusicSync({
@@ -37,21 +55,26 @@ function createMusicSync({
   let lastRendererPushAt = 0;
   let lastTrack = null;
   let presenceSeq = 0;
+  let lastPresenceSig = '';
+  let lastPresencePushAt = 0;
+  let uiActive = true;
+  let backgroundMode = false;
 
   function sendRendererUpdate(track, artworkUrl, { force = false, progressOnly = false } = {}) {
     const now = Date.now();
     if (!track) {
       lastTrack = null;
       lastRendererPushAt = now;
-      sendToRenderer?.(null, null);
+      if (uiActive) sendToRenderer?.(null, null);
       return;
     }
+    lastTrack = track;
+    if (!uiActive && !force) return;
     if (!force) {
       if (progressOnly && now - lastRendererPushAt < RENDERER_PROGRESS_MIN_MS) return;
-      if (!progressOnly && now - lastRendererPushAt < 50) return;
+      if (!progressOnly && now - lastRendererPushAt < 80) return;
     }
     lastRendererPushAt = now;
-    lastTrack = track;
     sendToRenderer?.(track, artworkUrl || getCachedArtwork(track));
   }
 
@@ -144,9 +167,15 @@ function createMusicSync({
     return activity;
   }
 
-  function pushPresence(track, artworkUrl) {
+  function pushPresence(track, artworkUrl, { progressOnly = false } = {}) {
     const activity = buildPresenceActivity(track, artworkUrl);
     if (!activity) return;
+    const now = Date.now();
+    const sig = presenceSignature(activity);
+    if (sig === lastPresenceSig && now - lastPresencePushAt < PRESENCE_DEDUP_MS) return;
+    if (progressOnly && now - lastPresencePushAt < PRESENCE_PROGRESS_MIN_MS) return;
+    lastPresenceSig = sig;
+    lastPresencePushAt = now;
     const seq = ++presenceSeq;
     applyMusicPresence(activity).catch(() => {});
     return seq;
@@ -164,7 +193,10 @@ function createMusicSync({
 
     sendRendererUpdate(track, artworkUrl, { force: metaChanged, progressOnly: !metaChanged });
 
-    if (!metaChanged) return;
+    if (!metaChanged) {
+      pushPresence(track, artworkUrl || null, { progressOnly: true });
+      return;
+    }
 
     // Text/details update immediately — never wait for artwork or in-flight RPC.
     pushPresence(track, artworkUrl || null);
@@ -272,6 +304,20 @@ function createMusicSync({
     getTemplate,
     getCurrentTrack,
     getCurrentTrackLabel,
+    setUiActive(active) {
+      const next = active !== false;
+      if (uiActive === next) return;
+      uiActive = next;
+      if (uiActive && lastTrack) {
+        sendRendererUpdate(lastTrack, getCachedArtwork(lastTrack) || lastTrack.artworkUrl || null, { force: true });
+      }
+    },
+    setBackgroundMode(background) {
+      const next = background === true;
+      if (backgroundMode === next) return;
+      backgroundMode = next;
+      service?.setBackgroundMode?.(next);
+    },
     handleConfigChange(enabled) {
       if (!activityTemplate) return;
       if (enabled) ensureRunning().catch(() => {});

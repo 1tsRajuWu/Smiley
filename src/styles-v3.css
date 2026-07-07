@@ -460,6 +460,18 @@
   animation: none;
 }
 
+body.render-paused *,
+body.animations-off * {
+  animation-play-state: paused !important;
+}
+
+body.render-paused .brand-icon,
+body.animations-off .brand-icon,
+body.render-paused .connection-pill.connected .connection-dot,
+body.animations-off .connection-pill.connected .connection-dot {
+  animation: none !important;
+}
+
 @media (max-width: 900px) {
   [data-ui-version='v3'] .content {
     grid-template-columns: 1fr;

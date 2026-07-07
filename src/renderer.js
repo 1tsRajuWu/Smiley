@@ -233,6 +233,8 @@ let lastUpdateActionToastAt = 0;
 let nowPlayingTrack = null;
 let nowPlayingArtworkUrl = null;
 let musicProgressTimer = null;
+let musicProgressRaf = null;
+const MUSIC_PROGRESS_INTERVAL_MS = 2000;
 let createActivityDraft = {
   editingId: null,
   gifSource: 'url',
@@ -505,10 +507,14 @@ function setRenderPaused(paused) {
   renderPaused = paused;
   document.body.classList.toggle('render-paused', paused);
   if (paused) {
+    stopMusicProgressTimer();
     pauseGifElements();
     return;
   }
   resumeGifElements();
+  if (nowPlayingTrack && selectedActivityId === 'listening') {
+    updateMusicPreviewBar(nowPlayingTrack);
+  }
 }
 
 async function syncRenderPauseState() {
@@ -1109,10 +1115,22 @@ function getLiveTrackProgress(track) {
 }
 
 function stopMusicProgressTimer() {
+  if (musicProgressRaf) {
+    cancelAnimationFrame(musicProgressRaf);
+    musicProgressRaf = null;
+  }
   if (musicProgressTimer) {
     clearInterval(musicProgressTimer);
     musicProgressTimer = null;
   }
+}
+
+function scheduleMusicProgressPaint() {
+  if (musicProgressRaf || renderPaused) return;
+  musicProgressRaf = requestAnimationFrame(() => {
+    musicProgressRaf = null;
+    if (nowPlayingTrack) paintMusicProgressBar(nowPlayingTrack);
+  });
 }
 
 function paintMusicProgressBar(track) {
@@ -1162,8 +1180,8 @@ function updateMusicPreviewBar(track) {
 
   paintMusicProgressBar(track);
   stopMusicProgressTimer();
-  if (track.isPlaying) {
-    musicProgressTimer = setInterval(() => paintMusicProgressBar(nowPlayingTrack), 1000);
+  if (track.isPlaying && !renderPaused) {
+    musicProgressTimer = setInterval(() => scheduleMusicProgressPaint(), MUSIC_PROGRESS_INTERVAL_MS);
   }
 }
 
@@ -3247,6 +3265,7 @@ async function init() {
 
     nowPlayingTrack = track;
     if (track?.artworkUrl) nowPlayingArtworkUrl = track.artworkUrl;
+    if (renderPaused) return;
     if (selectedActivityId !== 'listening') return;
     const activity = findActivity('listening');
     if (!activity) return;

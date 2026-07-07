@@ -132,6 +132,50 @@ function createMacMediaRemoteStream({ onUpdate, onFatal } = {}) {
   let restartTimer = null;
   let state = {};
   let buffer = '';
+  let lastMetaSignature = '';
+  let emitTimer = null;
+  let pendingTrack = undefined;
+
+  const clearEmitTimer = () => {
+    if (emitTimer) {
+      clearTimeout(emitTimer);
+      emitTimer = null;
+    }
+  };
+
+  const trackMetaSignature = (track) => {
+    if (!track) return '';
+    return [
+      track.title,
+      track.artist,
+      track.album,
+      track.isPlaying ? '1' : '0',
+      track.device || '',
+    ].join('\0');
+  };
+
+  const flushEmit = () => {
+    emitTimer = null;
+    if (pendingTrack === undefined) return;
+    const track = pendingTrack;
+    pendingTrack = undefined;
+    onUpdate?.(track);
+  };
+
+  const scheduleEmit = (track) => {
+    const metaSig = trackMetaSignature(track);
+    const metaChanged = metaSig !== lastMetaSignature;
+    if (metaChanged) {
+      lastMetaSignature = metaSig;
+      clearEmitTimer();
+      pendingTrack = track;
+      flushEmit();
+      return;
+    }
+    pendingTrack = track;
+    if (emitTimer) return;
+    emitTimer = setTimeout(flushEmit, 400);
+  };
 
   const clearRestart = () => {
     if (restartTimer) {
@@ -150,7 +194,7 @@ function createMacMediaRemoteStream({ onUpdate, onFatal } = {}) {
   };
 
   const emitState = () => {
-    onUpdate?.(adapterStateToTrack(state));
+    scheduleEmit(adapterStateToTrack(state));
   };
 
   const handleLine = (line) => {
@@ -236,6 +280,9 @@ function createMacMediaRemoteStream({ onUpdate, onFatal } = {}) {
     async stop() {
       running = false;
       clearRestart();
+      clearEmitTimer();
+      pendingTrack = undefined;
+      lastMetaSignature = '';
       killChild();
       state = {};
       paths = null;

@@ -33,12 +33,14 @@ function resolveMacJxaScriptPath() {
 const MAC_JXA_SCRIPT = resolveMacJxaScriptPath();
 
 /** Fallback poll when event-driven paths unavailable (macOS JXA only). */
-const DEFAULT_POLL_MS = process.platform === 'darwin' ? 5000 : 2000;
-const MIN_POLL_MS = process.platform === 'darwin' ? 3000 : 1200;
-const FAST_REPOLL_MS = process.platform === 'darwin' ? 800 : 500;
+const DEFAULT_POLL_MS = process.platform === 'darwin' ? 8000 : 3000;
+const MIN_POLL_MS = process.platform === 'darwin' ? 5000 : 2000;
+const BACKGROUND_POLL_MS = process.platform === 'darwin' ? 15000 : 8000;
+const FAST_REPOLL_MS = process.platform === 'darwin' ? 1200 : 800;
+const PROGRESS_EMIT_MIN_MS = 5000;
 const MAC_OSASCRIPT_TIMEOUT_MS = 2500;
-const MAC_POLL_BACKOFF_MAX_MS = 8000;
-const MAC_POLL_BACKOFF_STEP_MS = 1000;
+const MAC_POLL_BACKOFF_MAX_MS = 12000;
+const MAC_POLL_BACKOFF_STEP_MS = 1500;
 
 const NATIVE_PACKAGES = {
   darwin: ['node-nowplaying-darwin-universal'],
@@ -500,20 +502,30 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
   let macStream = null;
   let pollTimer = null;
   let lastMetaSignature = '';
+  let lastProgressEmitAt = 0;
+  let backgroundMode = false;
   let running = false;
   let fastRepollPending = false;
   let eventDriven = false;
   const pollEveryMs = Math.max(MIN_POLL_MS, pollIntervalMs || DEFAULT_POLL_MS);
+
+  const effectivePollMs = () => (backgroundMode ? BACKGROUND_POLL_MS : pollEveryMs);
 
   const emit = (raw) => {
     if (raw === undefined) return;
     const track = raw && typeof raw === 'object' ? normalizeTrack(raw) : null;
     const metaSig = trackMetaSignature(track);
     const metaChanged = metaSig !== lastMetaSignature;
+    const now = Date.now();
+    if (!metaChanged) {
+      if (backgroundMode) return;
+      if (now - lastProgressEmitAt < PROGRESS_EMIT_MIN_MS) return;
+    }
     if (metaChanged) {
       lastMetaSignature = metaSig;
       if (track) fastRepollPending = true;
     }
+    lastProgressEmitAt = now;
     onUpdate?.(track);
   };
 
@@ -521,7 +533,7 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
     if (!running) return;
     const useFast = fastRepollPending && !delayOverrideMs;
     if (useFast) fastRepollPending = false;
-    const baseDelay = delayOverrideMs ?? (useFast ? FAST_REPOLL_MS : pollEveryMs);
+    const baseDelay = delayOverrideMs ?? (useFast ? FAST_REPOLL_MS : effectivePollMs());
     pollTimer = setTimeout(async () => {
       pollTimer = null;
       if (!running) return;
@@ -612,8 +624,19 @@ function createNowPlayingService({ onUpdate, pollIntervalMs = DEFAULT_POLL_MS } 
       macPollFailures = 0;
       macPollBackoffMs = 0;
       fastRepollPending = false;
+      backgroundMode = false;
+      lastProgressEmitAt = 0;
       await stopEventSources();
       lastMetaSignature = '';
+    },
+    setBackgroundMode(background) {
+      backgroundMode = background === true;
+      if (!running || eventDriven) return;
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+      scheduleNextPoll();
     },
   };
 }

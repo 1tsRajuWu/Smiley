@@ -522,9 +522,9 @@ const MAX_PROFILE_ACTIVITIES = 10;
 const MAX_COPY_TEXT_LEN = 2000;
 const MAX_IMPORT_BYTES = 512 * 1024;
 /** Discord RPC client-side spacing (ms). Music metadata uses applyMusicPresence directly. */
-const PRESENCE_UPDATE_COOLDOWN_MS = 5000;
-const STATUS_BROADCAST_DEBOUNCE_MS = 800;
-const TRAY_MENU_DEBOUNCE_MS = 2000;
+const PRESENCE_UPDATE_COOLDOWN_MS = 6000;
+const STATUS_BROADCAST_DEBOUNCE_MS = 1200;
+const TRAY_MENU_DEBOUNCE_MS = 3000;
 const WINDOW_STATE_DEBOUNCE_MS = 500;
 const SESSION_STATS_DEBOUNCE_MS = 2000;
 
@@ -938,6 +938,20 @@ let windowStateSaveTimer = null;
 let pendingWindowState = null;
 let sessionStatsSaveTimer = null;
 let sessionStatsDirty = false;
+let mainWindowVisible = true;
+
+function isMainWindowVisible() {
+  return !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized());
+}
+
+function syncMusicSyncVisibility() {
+  const visible = isMainWindowVisible();
+  mainWindowVisible = visible;
+  const sync = musicSync;
+  if (!sync) return;
+  sync.setUiActive(visible);
+  sync.setBackgroundMode(!visible);
+}
 
 function scheduleTrayMenuRefresh() {
   if (trayMenuRefreshTimer) return;
@@ -1148,6 +1162,8 @@ function sendToWindow(channel, ...args) {
 }
 
 function sendWindowVisibility(visible) {
+  mainWindowVisible = !!visible;
+  syncMusicSyncVisibility();
   sendToWindow('window-visibility', !!visible);
 }
 
@@ -1762,12 +1778,26 @@ async function applyPresence(activity) {
 }
 
 /** Lightweight path for now-playing metadata — avoids disk writes & tray rebuild spam. */
+let lastMusicPresenceSig = '';
+let lastMusicPresenceAt = 0;
+const MUSIC_PRESENCE_DEDUP_MS = 2000;
+
 async function applyMusicPresence(activity) {
   if (!rpcClient) {
     const result = await connectRPC();
     if (!result.connected) return result;
   }
   try {
+    const track = activity?.musicTrack;
+    const sig = track?.title
+      ? [track.title, track.artist, track.album, track.isPlaying ? '1' : '0', activity.discordImageUrl || activity.largeImageUrl || ''].join('\0')
+      : `${activity.details}\0${activity.state}`;
+    const now = Date.now();
+    if (sig === lastMusicPresenceSig && now - lastMusicPresenceAt < MUSIC_PRESENCE_DEDUP_MS) {
+      return { success: true, skipped: true };
+    }
+    lastMusicPresenceSig = sig;
+    lastMusicPresenceAt = now;
     pausedPresenceSnapshot = null;
     const payload = await buildActivityPayload(activity);
     await rpcClient.setActivity(payload);
