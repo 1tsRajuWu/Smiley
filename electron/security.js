@@ -187,10 +187,20 @@ function encryptJson(plainObj, userDataPath, { version } = {}) {
   }
 }
 
-function decryptJson(envelope, userDataPath) {
+function decryptJson(envelope, userDataPath, { tryLegacyKeychain, safeStorage } = {}) {
   try {
     if (!envelope || typeof envelope !== 'object') return {};
-    if (envelope.v === 2) return { __keychainMigration: true };
+    if (envelope.v === 2) {
+      if (tryLegacyKeychain && safeStorage && tryLoadLegacyKeychainMasterKey(userDataPath, safeStorage)) {
+        for (const { key } of getLocalEncryptionKeys(userDataPath)) {
+          try {
+            const decrypted = aesDecrypt(envelope, key);
+            return JSON.parse(decrypted);
+          } catch (_) {}
+        }
+      }
+      return { __keychainMigration: true };
+    }
     if (envelope.v === 0) return JSON.parse(envelope.data || '{}');
 
     const order = envelope.v === 1

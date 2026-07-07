@@ -13,7 +13,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 const os = require('os');
 const { spawn } = require('child_process');
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell, globalShortcut, clipboard, screen, Notification, nativeTheme, session, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -135,8 +135,8 @@ function encryptConfig(plainObj) {
   return encryptJson(plainObj, getUserDataRoot());
 }
 
-function decryptConfig(encryptedObj) {
-  return decryptJson(encryptedObj, getUserDataRoot());
+function decryptConfig(encryptedObj, options = {}) {
+  return decryptJson(encryptedObj, getUserDataRoot(), options);
 }
 
 const WINDOW_STATE_SECURE = 'window-state.secure';
@@ -559,6 +559,77 @@ const DEFAULT_CONFIG = {
 };
 let config = { ...DEFAULT_CONFIG };
 let configMigrationNotice = null;
+const CONFIG_SECURE = 'config.secure';
+const CONFIG_SECURE_BACKUP = 'config.secure.bak';
+const CONFIG_LEGACY = 'config.json';
+/** Set when config could not be loaded — blocks orphan media cleanup that would delete custom GIFs. */
+let configLoadHadFailure = false;
+let configLoadRecovered = false;
+
+function readEncryptedConfigFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return decryptConfig(raw, {
+      tryLegacyKeychain: true,
+      safeStorage,
+    });
+  } catch (err) {
+    console.warn('[loadConfig] read failed:', filePath, err.message);
+    return null;
+  }
+}
+
+function readPlaintextConfigFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (err) {
+    console.warn('[loadConfig] plaintext read failed:', filePath, err.message);
+    return null;
+  }
+}
+
+function hasExistingUserMedia() {
+  const dirs = [
+    getUserDataPath('custom-activities'),
+    getUserDataPath('custom-animations'),
+    getUserDataPath('wallpapers'),
+  ];
+  for (const dir of dirs) {
+    try {
+      if (fs.existsSync(dir) && fs.readdirSync(dir).some((name) => !name.startsWith('.'))) {
+        return true;
+      }
+    } catch (_) {}
+  }
+  return false;
+}
+
+function mergeCustomActivitiesFromBackup(loaded, backup) {
+  if (!backup || typeof backup !== 'object') return loaded;
+  const current = Array.isArray(loaded?.customActivities) ? loaded.customActivities : [];
+  const saved = Array.isArray(backup.customActivities) ? backup.customActivities : [];
+  if (current.length > 0 || saved.length === 0) return loaded;
+  return { ...loaded, customActivities: saved };
+}
+
+function applyLoadedConfig(raw, { recovered = false } = {}) {
+  const normalized = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...raw }));
+  delete normalized.clientId;
+  config = normalized;
+  if (recovered) configLoadRecovered = true;
+}
+
+function backupConfigSecureFile(securePath) {
+  if (!securePath || !fs.existsSync(securePath)) return;
+  try {
+    const backupPath = `${securePath}.bak`;
+    fs.copyFileSync(securePath, backupPath);
+  } catch (err) {
+    console.warn('[saveConfig] backup failed:', err.message);
+  }
+}
 
 function normalizeInstallTrackingConfig(raw) {
   const cfg = { ...raw };
@@ -583,14 +654,35 @@ function needsInstallConsentPrompt() {
 }
 
 function loadConfig() {
-  const securePath = getUserDataPath('config.secure');
-  const legacyPath = getUserDataPath('config.json');
+  const securePath = getUserDataPath(CONFIG_SECURE);
+  const backupPath = getUserDataPath(CONFIG_SECURE_BACKUP);
+  const legacyPath = getUserDataPath(CONFIG_LEGACY);
+  configLoadHadFailure = false;
+  configLoadRecovered = false;
+
+  const tryApplyDecrypted = (decrypted, sourcePath, { recovered = false } = {}) => {
+    if (!decrypted || typeof decrypted !== 'object') return false;
+    if (decrypted.__keychainMigration) return 'migration';
+    if (Object.keys(decrypted).length === 0) return false;
+    applyLoadedConfig(decrypted, { recovered });
+    if (recovered) {
+      console.warn(`[loadConfig] recovered settings from ${path.basename(sourcePath)}`);
+    }
+    return true;
+  };
+
   try {
     if (fs.existsSync(securePath)) {
       const raw = JSON.parse(fs.readFileSync(securePath, 'utf8'));
-      const decrypted = decryptConfig(raw);
+      const decrypted = decryptConfig(raw, { tryLegacyKeychain: true, safeStorage });
       if (decrypted?.__keychainMigration) {
         const noticeAlreadyShown = config.migrationNoticeShown === true;
+        const backupDecrypted = readEncryptedConfigFile(backupPath) || readPlaintextConfigFile(legacyPath);
+        if (backupDecrypted && !backupDecrypted.__keychainMigration && Object.keys(backupDecrypted).length > 0) {
+          applyLoadedConfig(mergeCustomActivitiesFromBackup(backupDecrypted, backupDecrypted), { recovered: true });
+          flushConfigToDisk();
+          return;
+        }
         config = { ...DEFAULT_CONFIG, migrationNoticeShown: noticeAlreadyShown };
         if (!noticeAlreadyShown) {
           configMigrationNotice = {
@@ -602,33 +694,65 @@ function loadConfig() {
         fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
         return;
       }
-      if (Object.keys(decrypted).length === 0) {
-        console.error('[loadConfig] config.secure could not be decrypted — using defaults for this session');
-        config = { ...DEFAULT_CONFIG };
-        delete config.clientId;
+      const applied = tryApplyDecrypted(decrypted, securePath);
+      if (applied === true) return;
+
+      console.error('[loadConfig] config.secure could not be decrypted — attempting recovery');
+      const backupDecrypted = readEncryptedConfigFile(backupPath) || readPlaintextConfigFile(legacyPath);
+      if (tryApplyDecrypted(
+        mergeCustomActivitiesFromBackup(backupDecrypted, backupDecrypted),
+        backupPath || legacyPath,
+        { recovered: true },
+      ) === true) {
+        flushConfigToDisk();
         return;
       }
-      config = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...decrypted }));
+
+      configLoadHadFailure = true;
+      config = { ...DEFAULT_CONFIG };
       delete config.clientId;
+      console.error('[loadConfig] using in-memory defaults — existing config.secure left untouched');
       return;
     }
+
     if (fs.existsSync(legacyPath)) {
-      const old = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
-      config = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...old }));
-      delete config.clientId;
-      fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
-      try { fs.unlinkSync(legacyPath); } catch (_) {}
-      return;
+      const old = readPlaintextConfigFile(legacyPath);
+      if (old && tryApplyDecrypted(old, legacyPath) === true) {
+        flushConfigToDisk();
+        try { fs.unlinkSync(legacyPath); } catch (_) {}
+        return;
+      }
     }
-    if (fs.existsSync(EXAMPLE_CONFIG)) {
+
+    if (fs.existsSync(backupPath)) {
+      const backup = readEncryptedConfigFile(backupPath);
+      if (backup && tryApplyDecrypted(backup, backupPath, { recovered: true }) === true) {
+        flushConfigToDisk();
+        return;
+      }
+    }
+
+    if (fs.existsSync(EXAMPLE_CONFIG) && !hasExistingUserMedia()) {
       const example = JSON.parse(fs.readFileSync(EXAMPLE_CONFIG, 'utf8'));
-      config = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...example }));
-      delete config.clientId;
-      fs.writeFileSync(securePath, JSON.stringify(encryptConfig(config), null, 2));
+      applyLoadedConfig(example);
+      flushConfigToDisk();
       return;
     }
   } catch (err) {
     console.error('[loadConfig]', err.message);
+    const backupDecrypted = readEncryptedConfigFile(backupPath) || readPlaintextConfigFile(legacyPath);
+    if (backupDecrypted && tryApplyDecrypted(backupDecrypted, backupPath || legacyPath, { recovered: true }) === true) {
+      flushConfigToDisk();
+      return;
+    }
+  }
+
+  if (hasExistingUserMedia()) {
+    configLoadHadFailure = true;
+    config = { ...DEFAULT_CONFIG };
+    delete config.clientId;
+    console.error('[loadConfig] no readable config but user media exists — skipping defaults write');
+    return;
   }
   config = { ...DEFAULT_CONFIG };
 }
@@ -725,15 +849,29 @@ function showOneTimeDialog(notice, configKey) {
 
 function flushConfigToDisk() {
   try {
-    const securePath = getUserDataPath('config.secure');
+    const securePath = getUserDataPath(CONFIG_SECURE);
     const tmpPath = `${securePath}.tmp`;
+    if (fs.existsSync(securePath)) {
+      backupConfigSecureFile(securePath);
+    }
     fs.writeFileSync(tmpPath, JSON.stringify(encryptConfig(config), null, 2));
     fs.renameSync(tmpPath, securePath);
+    configLoadHadFailure = false;
     return true;
   } catch (e) {
     console.error('[saveConfig] disk write failed:', e.message);
     return false;
   }
+}
+
+async function persistAllUserData() {
+  try {
+    await flushRendererPendingConfig();
+  } catch (e) {
+    console.error('[persistAllUserData] renderer flush failed:', e.message);
+  }
+  flushPendingDiskWrites();
+  flushConfigToDisk();
 }
 
 function saveConfig(data) {
@@ -2587,10 +2725,12 @@ function installMacUpdate() {
       cacheDirs: getMacUpdaterCacheCleanupPaths(),
     });
     appendUpdaterLog(`Spawning installer: ${scriptPath} -> ${installPath}`);
-    const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
-    child.unref();
-    markAppQuitting();
-    setTimeout(() => app.quit(), 400);
+    void persistAllUserData().finally(() => {
+      const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
+      child.unref();
+      markAppQuitting();
+      setTimeout(() => app.quit(), 400);
+    });
     return { success: true, version: pendingUpdateVersion || null };
   } catch (err) {
     appendUpdaterLog(`installMacUpdate failed: ${err.message}`);
@@ -2837,19 +2977,20 @@ function installPendingUpdate() {
     });
     return false;
   }
-  try {
-    markAppQuitting();
-    const forceRunAfter = process.platform !== 'darwin';
-    getAutoUpdater().quitAndInstall(false, forceRunAfter);
-    return true;
-  } catch (err) {
-    app.isQuitting = false;
-    console.error('[updater] quitAndInstall failed:', err.message);
-    updateDownloaded = false;
-    const formatted = formatUpdateError(err);
-    sendUpdateStatus(formatted);
-    return false;
-  }
+  void persistAllUserData().then(() => {
+    try {
+      markAppQuitting();
+      const forceRunAfter = process.platform !== 'darwin';
+      getAutoUpdater().quitAndInstall(false, forceRunAfter);
+    } catch (err) {
+      app.isQuitting = false;
+      console.error('[updater] quitAndInstall failed:', err.message);
+      updateDownloaded = false;
+      const formatted = formatUpdateError(err);
+      sendUpdateStatus(formatted);
+    }
+  });
+  return true;
 }
 
 function setupAutoUpdater() {
@@ -3496,6 +3637,7 @@ function cleanStaleUpdaterCache({ force = false } = {}) {
 }
 
 function cleanOrphanedWallpapers() {
+  if (configLoadHadFailure) return 0;
   const active = config.customWallpaper?.filename;
   const dir = getWallpapersDir();
   let removed = 0;
@@ -3512,6 +3654,7 @@ function cleanOrphanedWallpapers() {
 }
 
 function cleanOrphanedCustomActivityFiles() {
+  if (configLoadHadFailure) return 0;
   const referenced = new Set(
     (config.customActivities || [])
       .map((a) => a.localFileName)
@@ -3534,8 +3677,9 @@ function cleanOrphanedCustomActivityFiles() {
 
 function getUserDataEssentialPaths() {
   return [
-    getUserDataPath('config.secure'),
-    getUserDataPath('config.json'),
+    getUserDataPath(CONFIG_SECURE),
+    getUserDataPath(CONFIG_SECURE_BACKUP),
+    getUserDataPath(CONFIG_LEGACY),
     getUserDataPath(WINDOW_STATE_SECURE),
     getUserDataPath(WINDOW_STATE_LEGACY),
     getUserDataPath('install-id.secure'),
@@ -4276,9 +4420,7 @@ app.on('before-quit', async () => {
     trayMenuRefreshTimer = null;
   }
   if (musicSync) await musicSync.stop();
-  await flushRendererPendingConfig();
-  flushPendingDiskWrites();
-  flushConfigToDisk();
+  await persistAllUserData();
   if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
 });
 
