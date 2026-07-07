@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "5.0.15",
+  "version": "5.0.16",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -60,7 +60,8 @@
     "compression": "maximum",
     "asar": true,
     "asarUnpack": [
-      "**/*.node"
+      "**/*.node",
+      "electron/now-playing-mac.jxa.js"
     ],
     "directories": {
       "output": "dist",

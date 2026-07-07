@@ -10,6 +10,21 @@
     <title>Smiley</title>
     <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png" />
     <link rel="apple-touch-icon" href="assets/icon-192.png" />
+    <style>
+      /* Critical paint: prevent FOUC before external stylesheets load */
+      html { background: #0f1117; }
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e8eaf2;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        opacity: 0;
+        transition: opacity 0.12s ease;
+      }
+      body.app-ready { opacity: 1; }
+    </style>
+    <link rel="stylesheet" href="styles-v1.css" id="uiStylesheetBase" />
     <link rel="stylesheet" href="styles-v2.css" id="uiStylesheet" />
   </head>
   <body>
@@ -162,7 +177,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v5.0.12</span>
+        <span class="footer-version" id="footerVersion">Smiley v5.0.16</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
