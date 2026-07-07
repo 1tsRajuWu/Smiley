@@ -1897,8 +1897,12 @@ function broadcastStatus(immediate = false) {
 }
 
 // ─── Install registry (mandatory for packaged builds) ───────────────
+function canRegisterInstall() {
+  return isInstallTrackingEnabled() && config.installConsentShown === true;
+}
+
 async function maybeRegisterInstall() {
-  if (!isInstallTrackingEnabled()) return;
+  if (!canRegisterInstall()) return;
   try {
     const result = await registerInstall({
       rootDir: __dirname,
@@ -3641,7 +3645,7 @@ function setupIPC() {
     registerGlobalHotkey();
     applyUpdaterSettings();
     updateTrayMenu();
-    if (isInstallTrackingEnabled()) {
+    if (canRegisterInstall()) {
       maybeRegisterInstall();
     }
     if (config.autoConnect !== false && !rpcClient) return connectRPC();
@@ -3992,9 +3996,7 @@ function setupIPC() {
       installConsentShown: true,
       installTrackingEnabled: true,
     });
-    if (isInstallTrackingEnabled()) {
-      setImmediate(() => maybeRegisterInstall());
-    }
+    setImmediate(() => maybeRegisterInstall());
     return { success: true };
   });
 
@@ -4153,7 +4155,7 @@ app.whenReady().then(() => {
     setImmediate(() => checkForUpdates(false, true));
   }
 
-  if (isInstallTrackingEnabled()) {
+  if (canRegisterInstall()) {
     setImmediate(() => maybeRegisterInstall());
   }
 

@@ -2760,23 +2760,23 @@ async function init() {
   setupModalClose(legalModal, closeLegal);
   setupModalClose(createActivityModal, closeCreateActivity);
   setupModalClose(upiQrModal, closeUpiQr);
-  setupModalClose(privacyConsentModal);
+  // Privacy consent is mandatory — no backdrop/Escape dismiss (see cancel handler below).
 
-  async function submitInstallConsent(enabled) {
+  async function submitInstallConsent() {
     try {
-      await window.smiley.saveInstallConsent({ enabled: enabled === true });
+      await window.smiley.saveInstallConsent();
       currentSettings.installConsentShown = true;
-      currentSettings.installTrackingEnabled = enabled === true;
+      currentSettings.installTrackingEnabled = true;
     } catch (_) {}
     privacyConsentModal?.close();
   }
 
   if (privacyConsentAcceptBtn) {
-    privacyConsentAcceptBtn.addEventListener('click', () => submitInstallConsent(true));
+    privacyConsentAcceptBtn.addEventListener('click', () => submitInstallConsent());
   }
   privacyConsentModal?.addEventListener('cancel', (e) => {
     e.preventDefault();
-    submitInstallConsent(false);
+    showToast('Accept the privacy notice to continue using Smiley.', 'info');
   });
 
   if (cancelCreateActivity) cancelCreateActivity.addEventListener('click', () => createActivityModal?.close());
