@@ -23,17 +23,29 @@ jobs:
         run: |
           set -euo pipefail
           applied=0
-          if [ -n "${SUPABASE_DB_URL:-}" ]; then
+
+          # Normalize secret (common mistake: quotes, newlines, or host-only paste).
+          DB_URL="${SUPABASE_DB_URL:-}"
+          DB_URL="$(printf '%s' "$DB_URL" | tr -d '\r\n' | sed -e 's/^["'\'']*//' -e 's/["'\'']*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+          if [ -n "$DB_URL" ] && ! printf '%s' "$DB_URL" | grep -qE '^postgres(ql)?://'; then
+            echo "::warning::SUPABASE_DB_URL must be a full URI starting with postgresql:// (not host/password only)."
+            echo "Copy: Supabase → Project Settings → Database → Connection string → URI → Session mode"
+            DB_URL=""
+          fi
+
+          if [ -n "$DB_URL" ]; then
             sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
-            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f scripts/install-database-schema.sql
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/install-database-schema.sql
             echo "Schema applied via psql."
             applied=1
           elif [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
             node scripts/apply-install-schema-management-api.js
             applied=1
           fi
+
           if [ "$applied" != 1 ]; then
-            echo "::error::Add SUPABASE_DB_URL (Database → Connection string URI, session mode) or SUPABASE_ACCESS_TOKEN (Account → Access Tokens) to repo secrets, then re-run this workflow."
+            echo "::error::Add a valid SUPABASE_DB_URL (full postgresql://… URI, session mode) or SUPABASE_ACCESS_TOKEN to repo secrets, then re-run."
             exit 1
           fi
 
