@@ -52,7 +52,7 @@ ok('partyDisplay 2-Stack', partyDisplay('Duo', 2) === '2-Stack');
 // AllyTeam.Players CharacterID extraction (user bug: agent missing)
 const {
   findPlayer, pregamePlayerList, coreGamePlayerList, characterIdOf, pickAgentId,
-  playersArray, mergeAgentFields, resolveAgent,
+  playersArray, mergeAgentFields,
 } = require(path.join(root, 'electron/valorant-local'));
 const { agentDisplayName } = require(path.join(root, 'electron/valorant-catalog'));
 const pregameMatchShape = {
