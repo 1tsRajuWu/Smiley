@@ -1241,6 +1241,7 @@ function getGameSync() {
     gameSync = createGameSync({
       getConfig: () => config,
       applyGamePresence,
+      resetPresenceDedup: resetGamePresenceDedup,
       sendToRenderer: (session) => {
         sendToWindow('gaming-update', sanitizeGameSession(session));
       },
@@ -2252,6 +2253,11 @@ async function applyMusicPresence(activity) {
   }
 }
 
+function resetGamePresenceDedup() {
+  lastGamePresenceSig = '';
+  lastGamePresenceAt = 0;
+}
+
 /** Lightweight path for live gaming metadata — avoids disk writes & tray rebuild spam. */
 let lastGamePresenceSig = '';
 let lastGamePresenceAt = 0;
@@ -2264,6 +2270,7 @@ async function applyGamePresence(activity) {
   }
   try {
     const session = activity?.gameSession;
+    if (!session?.title) resetGamePresenceDedup();
     const sig = session?.title
       ? [
         session.title, session.liveLine, session.map, session.mode, session.agent,
@@ -4934,9 +4941,16 @@ app.on('before-quit', async () => {
     trayMenuRefreshTimer = null;
   }
   if (musicSync) await musicSync.stop();
+  getGameSync().stop();
+  if (rpcClient) {
+    try { await rpcClient.clearActivity(); } catch (_) {}
+  }
   await persistAllUserData();
   await pushInstallTelemetry();
-  if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
+  if (rpcClient) {
+    try { await rpcClient.clearActivity(); } catch (_) {}
+    try { await rpcClient.destroy(); } catch (_) {}
+  }
 
   // Silent non-major Mac update: apply on quit without a Restart banner.
   if (

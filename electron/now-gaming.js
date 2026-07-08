@@ -8,7 +8,9 @@ const { steamCapsule } = require('./game-assets');
 
 const execFileAsync = promisify(execFile);
 const MAC_JXA = path.join(__dirname, 'now-gaming-mac.jxa.js');
-const POLL_MS = process.platform === 'darwin' ? 5000 : 3500;
+/** Steady poll — alt-tab keeps the game process alive, so no long sticky TTL. */
+const POLL_MS = process.platform === 'darwin' ? 3000 : 2500;
+const ACTIVE_POLL_MS = process.platform === 'darwin' ? 2000 : 1800;
 const BACKGROUND_POLL_MS = process.platform === 'darwin' ? 20000 : 12000;
 const MAC_TIMEOUT_MS = 3500;
 const MAC_BACKOFF_MAX_MS = 60000;
@@ -133,6 +135,31 @@ function gameSig(g) {
 function processKey(g) {
   if (!g?.processName) return '';
   return String(g.processName).toLowerCase();
+}
+
+/** True when a known game's executable is still in the process list. */
+function isProcessRunningForGame(names, game) {
+  if (!game || !names?.length) return false;
+  if (!game.processName && !game.knownGameId) return false;
+  return names.some((n) => {
+    const h = humanize(n).toLowerCase();
+    const last = processKey(game);
+    if (h === last) return true;
+    if (game.knownGameId && matchKnownGame(n)?.id === game.knownGameId) return true;
+    return false;
+  });
+}
+
+/** Riot Valorant / LoL shipping client still running (not just Riot Client). */
+function isRiotProviderProcessRunning(names, provider) {
+  if (!names?.length || !provider) return false;
+  if (provider === 'riot-valorant') {
+    return names.some((n) => matchKnownGame(n)?.id === 'valorant');
+  }
+  if (provider === 'riot-lol') {
+    return names.some((n) => matchKnownGame(n)?.id === 'lol');
+  }
+  return false;
 }
 
 let macInFlight = false;
@@ -429,19 +456,11 @@ async function resolveActiveGame(lastGame = null) {
     return { ...fg, focused: true, sticky: false };
   }
 
-  // Foreground is Discord / Chrome / Steam overlay / etc. — keep gaming presence.
+  // Foreground is Discord / Chrome / Steam overlay / etc. — keep gaming presence while process runs.
   const names = await listRunningProcessNames();
-  const hits = findKnownGamesInProcessList(names);
 
-  if (lastGame?.processName) {
-    const stillThere = names.some((n) => {
-      const h = humanize(n).toLowerCase();
-      const last = processKey(lastGame);
-      if (h === last) return true;
-      if (lastGame.knownGameId && matchKnownGame(n)?.id === lastGame.knownGameId) return true;
-      return false;
-    });
-    if (stillThere) {
+  if (lastGame?.processName || lastGame?.knownGameId) {
+    if (isProcessRunningForGame(names, lastGame)) {
       return {
         ...lastGame,
         focused: false,
@@ -449,10 +468,12 @@ async function resolveActiveGame(lastGame = null) {
         updatedAt: Date.now(),
       };
     }
+    // Force-quit / direct shutdown — process gone, clear within this poll (no multi-minute grace).
+    return null;
   }
 
-  const picked = pickStickyGame(hits, processKey(lastGame));
-  return picked;
+  const hits = findKnownGamesInProcessList(names);
+  return pickStickyGame(hits, '');
 }
 
 function createNowGamingService({ onUpdate } = {}) {
@@ -466,15 +487,18 @@ function createNowGamingService({ onUpdate } = {}) {
   let lastGame = null;
   let backgroundMode = false;
 
-  const pollDelay = () =>
-    (backgroundMode ? BACKGROUND_POLL_MS : POLL_MS) + (process.platform === 'darwin' ? macBackoff : 0);
+  const pollDelay = () => {
+    if (backgroundMode) return BACKGROUND_POLL_MS + (process.platform === 'darwin' ? macBackoff : 0);
+    if (lastGame) return ACTIVE_POLL_MS + (process.platform === 'darwin' ? macBackoff : 0);
+    return POLL_MS + (process.platform === 'darwin' ? macBackoff : 0);
+  };
 
   const emit = (game) => {
     const sig = gameSig(game);
     if (sig === lastSig) return;
     lastSig = sig;
     lastGame = game;
-    onUpdate?.(game);
+    onUpdate?.(game || null);
   };
 
   const tick = async () => {
@@ -523,6 +547,8 @@ module.exports = {
   listRunningProcessNames,
   findKnownGamesInProcessList,
   pickStickyGame,
+  isProcessRunningForGame,
+  isRiotProviderProcessRunning,
   KNOWN_GAMES,
   IGNORED,
 };

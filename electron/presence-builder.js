@@ -328,8 +328,12 @@ function buildPresenceFromSession(session, template, {
   const opts = gamingPresenceOptions || DEFAULT_GAMING_PRESENCE_OPTIONS;
 
   if (!session?.title) {
+    const {
+      discordImageUrl, smallImageUrl, largeImageUrl, smallImageText, largeImageText,
+      matchStartAt, gameSession, ...rest
+    } = template;
     return {
-      ...template,
+      ...rest,
       details: 'Gaming',
       state: template.state || 'In the zone',
       gameSession: null,

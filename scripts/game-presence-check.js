@@ -423,6 +423,7 @@ ok('Spinner URL detector', assets.isSpinnerFallbackUrl('https://media.tenor.com/
 
 const {
   matchKnownGame, isIgnoredProcess, findKnownGamesInProcessList, pickStickyGame, normalizeGame, gameSig,
+  isProcessRunningForGame, isRiotProviderProcessRunning,
 } = require(path.join(root, 'electron/now-gaming'));
 ok('Known game matches cs2', matchKnownGame('cs2')?.id === 'cs2');
 ok('Known game matches VALORANT-Win64-Shipping', matchKnownGame('VALORANT-Win64-Shipping')?.id === 'valorant');
@@ -442,6 +443,24 @@ ok('Normalize Discord → null', normalizeGame({ processName: 'Discord', windowT
 ok('Normalize CS2 title', normalizeGame({ processName: 'cs2', windowTitle: '' })?.title === 'Counter-Strike 2');
 ok('gameSig ignores sticky vs focused thrash', gameSig({ title: 'Counter-Strike 2', processName: 'cs2', sticky: true })
   === gameSig({ title: 'Counter-Strike 2', processName: 'cs2', sticky: false }));
+ok('Process running detects cs2', isProcessRunningForGame(['Discord', 'cs2'], { processName: 'cs2', knownGameId: 'cs2' }));
+ok('Process gone clears sticky CS2', !isProcessRunningForGame(['Discord', 'chrome'], { processName: 'cs2', knownGameId: 'cs2' }));
+ok('Valorant process required for riot-valorant', isRiotProviderProcessRunning(['VALORANT-Win64-Shipping', 'RiotClientServices'], 'riot-valorant'));
+ok('Riot Client alone is not Valorant running', !isRiotProviderProcessRunning(['RiotClientServices', 'Discord'], 'riot-valorant'));
+ok('Idle template strips live game artwork', (() => {
+  const cleared = buildPresenceFromSession(null, {
+    category: 'gaming',
+    state: 'In the zone',
+    details: 'Counter-Strike 2',
+    discordImageUrl: 'https://cdn.steam/730/capsule.jpg',
+    smallImageUrl: 'https://cdn.steam/mark.png',
+    gameSession: { title: 'Counter-Strike 2' },
+  });
+  return cleared.details === 'Gaming'
+    && cleared.gameSession === null
+    && !cleared.discordImageUrl
+    && !cleared.smallImageUrl;
+})());
 
 const { resolveSteamAppIdAlias, STEAM_APP_ALIASES } = require(path.join(root, 'electron/game-api'));
 ok('CS2 alias → AppID 730', resolveSteamAppIdAlias('cs2') === 730 && resolveSteamAppIdAlias('Counter-Strike 2') === 730);

@@ -10,6 +10,7 @@ const { enrichFortnite } = require('./fortnite');
 const { enrichOverwatch } = require('./overwatch');
 const { enrichRoblox } = require('./roblox');
 const { isLockfileAvailable } = require('../riot-client');
+const { listRunningProcessNames, isRiotProviderProcessRunning } = require('../now-gaming');
 
 const RIOT_POLL_MENU_MS = 3000;
 const RIOT_POLL_TRANSITION_MS = 2000;
@@ -116,10 +117,12 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
   if (isLockfileAvailable() && !skipRiotForForeground) {
     try {
       const riot = await getRiotLiveSession({ fetchRank });
-      if (riot?.inMatch) {
-        session = riot;
-      } else if (riot && (riot.inGame || isRiotGameProcess(foreground?.processName) || !foreground?.title)) {
-        session = riot;
+      if (riot) {
+        const names = await listRunningProcessNames();
+        const riotRunning = isRiotProviderProcessRunning(names, riot.provider);
+        if (riotRunning) {
+          session = riot;
+        }
       }
     } catch (_) {}
   }

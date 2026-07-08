@@ -15,7 +15,7 @@ function isEnabled(cfg) {
   return cfg?.gamingNowPlaying !== false;
 }
 
-function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessionObserved, isPaused }) {
+function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessionObserved, isPaused, resetPresenceDedup }) {
   let fgService = null;
   let liveTimer = null;
   let template = null;
@@ -227,14 +227,22 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
       fgService = null;
       s.stop().catch(() => {});
     }
+    const hadLiveSession = !!lastSig;
+    const tpl = template;
     lastSig = '';
     lastSteamKey = '';
     lastArtworkKey = '';
     lastForegroundSig = '';
     matchStartAt = null;
     foreground = null;
-    if (reset) template = null;
+    lastResolvedSession = null;
     sendRenderer(null);
+    if (reset) {
+      resetPresenceDedup?.();
+      template = null;
+    } else if (tpl && hadLiveSession) {
+      pushPresence(null, null, { force: true }).catch(() => {});
+    }
   }
 
   return {

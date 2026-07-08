@@ -1,8 +1,8 @@
 {
   "name": "smiley-mobile",
-  "version": "7.9.27",
+  "version": "7.9.28",
   "private": true,
-  "description": "Smiley v7.9.27 — Capacitor companion for Android & iOS",
+  "description": "Smiley v7.9.28 — Capacitor companion for Android & iOS",
   "scripts": {
     "icons:android": "npx capacitor-assets generate --android --iconBackgroundColor '#0f1117' --splashBackgroundColor '#0f1117'",
     "build:www": "node scripts/build-www.js",
