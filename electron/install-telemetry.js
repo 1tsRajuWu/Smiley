@@ -139,7 +139,9 @@ function touchSection(state, sectionKey, patch = {}) {
     last_title: patch.title || current.last_title,
     last_state: patch.stateText || current.last_state,
     first_seen_at: current.first_seen_at || (patch.seenIncrement ? seenAt : current.first_seen_at),
-    last_seen_at: patch.seenIncrement || patch.launchIncrement || patch.enabled !== undefined ? seenAt : current.last_seen_at,
+    // Only advance "last_seen_at" when the app actually observed/recorded the section.
+    // (A false "enabled" flag should not make a previously-seen section look current.)
+    last_seen_at: (patch.seenIncrement || patch.launchIncrement || patch.enabled === true) ? seenAt : current.last_seen_at,
     last_metadata: Object.keys(patch.metadata || {}).length ? normalizeMetadata(patch.metadata) : current.last_metadata,
   };
   state.sections[sectionKey] = next;
@@ -221,7 +223,9 @@ function recordLaunch(state, launchInfo = {}) {
   next = observe(next, 'app', {
     enabled: true,
     launchIncrement: 1,
-    seenIncrement: 0,
+    // "seen" drives installs.last_activity_* and active_sections.
+    // On each launch/heartbeat, treat the app section as seen once.
+    seenIncrement: 1,
     sourceKey: launchInfo.channel || 'release',
     sourceLabel: launchInfo.channel || 'release',
     sourceGroup: 'channel',
@@ -234,7 +238,7 @@ function recordLaunch(state, launchInfo = {}) {
       channel: launchInfo.channel,
     },
     sourceLaunchIncrement: 1,
-    sourceSeenIncrement: 0,
+    sourceSeenIncrement: 1,
   });
   for (const feature of [
     ['music_sync', launchInfo.musicEnabled],

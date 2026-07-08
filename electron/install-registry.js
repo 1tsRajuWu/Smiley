@@ -242,7 +242,9 @@ async function syncInstallTelemetry({
     );
     return { success: true, installId };
   } catch (err) {
-    return { success: false, error: err.message };
+    const details = err?.body ? `: ${String(err.body).slice(0, 1200)}` : '';
+    const status = err?.statusCode ? ` (HTTP ${err.statusCode})` : '';
+    return { success: false, error: `${err?.message || 'Unknown error'}${status}${details}` };
   }
 }
 
@@ -268,11 +270,15 @@ async function registerInstall({
       await upsertInstallRow(endpoint, headers, installId, row);
       await enrichInstallGeo(registry, installId, headers);
       if (telemetry) {
-        await syncInstallTelemetry({
+        const sectionResult = await syncInstallTelemetry({
           rootDir,
           userDataDir,
           telemetry,
         });
+        if (!sectionResult?.success && sectionResult?.error) {
+          // Do not fail the whole install heartbeat — installs row is still useful.
+          console.warn('[registry] syncInstallTelemetry failed:', sectionResult.error);
+        }
       }
       return { success: true, installId };
     } catch (err) {
