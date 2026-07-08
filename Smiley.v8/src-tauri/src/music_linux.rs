@@ -8,11 +8,12 @@ pub fn probe_mpris() -> Option<TrackHit> {
 
     let finder = PlayerFinder::new().ok()?;
     let player = finder.find_active().ok()?;
-    let app = player
-        .identity()
-        .ok()
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "Media".into());
+    let identity = player.identity().trim();
+    let app = if identity.is_empty() {
+        "Media".into()
+    } else {
+        identity.to_string()
+    };
     let status = player.get_playback_status().ok()?;
     let playing = status == PlaybackStatus::Playing;
     let meta = player.get_metadata().ok()?;

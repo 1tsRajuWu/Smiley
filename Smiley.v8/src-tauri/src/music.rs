@@ -53,7 +53,7 @@ pub fn probe_now_playing() -> AppResult<Option<TrackHit>> {
 }
 
 /// Event-driven music sync loop — runs on a dedicated background thread.
-pub fn run_sync_loop<F, G>(resource_dir: Option<PathBuf>, is_active: F, on_track: G)
+pub fn run_sync_loop<F, G>(resource_dir: Option<PathBuf>, is_active: F, mut on_track: G)
 where
     F: Fn() -> bool,
     G: FnMut(Option<TrackHit>),
