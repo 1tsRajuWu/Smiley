@@ -91,6 +91,17 @@ const track = s.sanitizeNowPlayingTrack({
 });
 ok('Music track strips secrets', !track.token && track.artworkUrl === null);
 
+const game = s.sanitizeGameSession({
+  title: 'Valorant',
+  puuid: 'secret-puuid',
+  password: 'lockfile-pass',
+  gameName: 'Player',
+  token: 'leak',
+});
+ok('Game session strips puuid', !('puuid' in game));
+ok('Game session strips lockfile password', !('password' in game));
+ok('Game session strips gameName', !('gameName' in game));
+
 ok('HTTPS enforced helper', s.isTlsUrl('https://example.com') && !s.isTlsUrl('http://example.com'));
 
 fs.rmSync(ud, { recursive: true, force: true });

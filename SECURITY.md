@@ -1,6 +1,6 @@
 # Security & End-to-End Encryption (E2EE)
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.8.1)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.8.2)
 
 Smiley is designed so your personal settings stay on your device, encrypted at rest, with optional passphrase-protected exports. This document explains what is protected, how encryption works, and what we do **not** claim.
 
@@ -31,6 +31,23 @@ Smiley **never** accesses, stores, logs, or transmits:
 | Discord friends list | **Never accessed** |
 
 **How Discord connection works:** Smiley uses the public **Application Client ID** (not a secret token) and talks to the **Discord desktop app** over **local IPC** only. Your Discord login stays inside Discord's own app. Smiley only sends Rich Presence text (activity title, song name, GIF URL) that you choose.
+
+## Gaming sync (Gaming Now Playing)
+
+When enabled, Smiley reads **local** game state only — never uploads it to Smiley servers.
+
+| Data | Where it stays | Sent to Discord |
+|------|----------------|-----------------|
+| Foreground window title / process | Device | Yes (presence text) |
+| Riot lockfile password / PUUID | **Main process only** | **Never** |
+| Riot local API (`127.0.0.1`) stats | Device | Yes (map, agent, K/D, score) |
+| Public CDN artwork (valorant-api, ddragon, Steam) | Fetched device-side | Yes (image URL) |
+
+**Controls:** `contextIsolation: true`, `nodeIntegration: false`, whitelist-only `preload.js` bridge, `sanitizeGameSession()` strips PUUID/tokens before renderer IPC, rate-limited IPC guard rejects untrusted senders.
+
+**External hosts (gaming):** `127.0.0.1` (Riot local API), `valorant-api.com`, `ddragon.leagueoflegends.com`, `store.steampowered.com`, `cdn.akamai.steamstatic.com`, plus curated static art CDNs. No `tracker.gg` or third-party account APIs.
+
+**Not used:** `eval()`, remote code execution, WebSocket exfiltration, or sending lockfile credentials off-device.
 
 ## Summary
 

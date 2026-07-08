@@ -517,8 +517,19 @@ function sanitizeNowPlayingTrack(track) {
   };
 }
 
+/** Never expose to renderer — main-process Riot reads only */
+const GAME_SESSION_DENIED_KEYS = new Set([
+  'puuid', 'cid', 'subject', 'password', 'lockfile', 'token', 'accessToken', 'refreshToken',
+  'gameName', 'gameTag', 'game_name', 'game_tag', 'private', 'privateData', 'authorization',
+]);
+
 function sanitizeGameSession(session) {
   if (!session || typeof session !== 'object') return null;
+  for (const key of GAME_SESSION_DENIED_KEYS) {
+    if (key in session) {
+      console.warn('[security] blocked sensitive gameSession field:', key);
+    }
+  }
   const tags = Array.isArray(session.tags)
     ? session.tags
       .filter((tag) => typeof tag === 'string')

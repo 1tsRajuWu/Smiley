@@ -83,6 +83,8 @@ const sanitized = sanitizeGameSession({
 });
 ok('Sanitize strips puuid', !('puuid' in sanitized));
 ok('Sanitize strips token', !('token' in sanitized));
+ok('Sanitize strips lockfile password', !('password' in sanitizeGameSession({ password: 'riot-secret', title: 'Valorant' })));
+ok('Sanitize strips gameName/gameTag', !('gameName' in sanitizeGameSession({ gameName: 'Player', gameTag: 'NA1', title: 'Valorant' })));
 ok('Sanitize keeps party', sanitized.party === 'Duo');
 
 console.log(`\nResult: ${pass}/${pass + fail} checks passed`);

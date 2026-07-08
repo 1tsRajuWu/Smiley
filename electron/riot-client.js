@@ -101,8 +101,6 @@ async function getSelfPresence(lockfile) {
   return {
     puuid,
     product: self.product,
-    gameName: self.game_name,
-    gameTag: self.game_tag,
     privateData: decodePrivatePresence(self.private),
   };
 }
