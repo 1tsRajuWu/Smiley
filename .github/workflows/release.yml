@@ -12,11 +12,33 @@ concurrency:
 permissions:
   contents: write
 
-# macOS must publish first: it builds zip + latest-mac.yml (~10 min). Win/Linux
-# finish in ~2 min. Parallel matrix used to create the GitHub release before
-# latest-mac.yml existed, so Mac "Check for Updates" returned 404 on /latest/.
+# Platforms publish to a *draft* GitHub Release (electron-builder releaseType: draft).
+# Drafts are invisible on /releases/latest, so auto-update / website downloaders never
+# see a half-complete release (e.g. mac-only without latest.yml + Windows .exe).
+# create-draft runs first so parallel platform jobs attach assets without racing
+# on release creation. A final job undrafts only after all assets are verified.
 jobs:
+  create-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create draft GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — leaving as-is (will stay/become draft until publish-release)"
+            # Ensure it is draft so /releases/latest is not consumed mid-upload
+            gh release edit "$TAG" --draft=true || true
+          else
+            gh release create "$TAG" --draft --title "Smiley ${VERSION}" --notes "Build in progress — assets uploading from CI."
+            echo "Created draft release $TAG"
+          fi
+
   build-mac:
+    needs: create-draft
     runs-on: macos-latest
 
     steps:
@@ -49,13 +71,14 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node -e "const fs=require('fs');const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_ANON_KEY;if(u&&k){fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured')}else{console.log('SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build')}"
 
-      - name: Build and publish (mac)
+      - name: Build and publish (mac, draft)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_DRAFT: 'true'
         run: npm run build:mac -- --publish always
 
   build-win:
-    needs: build-mac
+    needs: create-draft
     runs-on: windows-latest
 
     steps:
@@ -85,13 +108,14 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node -e "const fs=require('fs');const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_ANON_KEY;if(u&&k){fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured')}else{console.log('SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build')}"
 
-      - name: Build and publish (win)
+      - name: Build and publish (win, draft)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_DRAFT: 'true'
         run: npm run build:win -- --publish always
 
   build-linux:
-    needs: build-mac
+    needs: create-draft
     runs-on: ubuntu-latest
 
     steps:
@@ -121,13 +145,67 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node -e "const fs=require('fs');const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_ANON_KEY;if(u&&k){fs.writeFileSync('downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured')}else{console.log('SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build')}"
 
-      - name: Build and publish (linux)
+      - name: Build and publish (linux, draft)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_DRAFT: 'true'
         run: npm run build:linux -- --publish always
 
-  update-readme-downloads:
+  publish-release:
     needs: [build-mac, build-win, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify platform assets then publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          echo "Waiting briefly for GitHub asset index to settle…"
+          sleep 5
+
+          ASSETS="$(gh release view "$TAG" --json assets --jq '[.assets[].name] | join("\n")')"
+          echo "Release assets:"
+          echo "$ASSETS"
+
+          missing=0
+          require() {
+            if ! echo "$ASSETS" | grep -qxF "$1"; then
+              echo "::error::Missing required asset: $1"
+              missing=1
+            else
+              echo "OK: $1"
+            fi
+          }
+
+          require "latest.yml"
+          require "latest-mac.yml"
+          require "Smiley-Setup-${VERSION}.exe"
+          require "Smiley-${VERSION}-arm64.dmg"
+          require "Smiley-${VERSION}-x64.dmg"
+          require "Smiley-${VERSION}.AppImage"
+
+          if [[ "$missing" -ne 0 ]]; then
+            echo "::error::Refusing to publish incomplete release $TAG"
+            exit 1
+          fi
+
+          BODY_FILE="docs/releases/v${VERSION}.md"
+          if [[ -f "$BODY_FILE" ]]; then
+            gh release edit "$TAG" --draft=false --notes-file "$BODY_FILE"
+            echo "Published $TAG (non-draft) with notes from ${BODY_FILE}"
+          else
+            gh release edit "$TAG" --draft=false
+            echo "Published $TAG (non-draft) — no notes file at ${BODY_FILE}"
+          fi
+
+  update-readme-downloads:
+    needs: [publish-release]
     runs-on: ubuntu-latest
 
     steps:
@@ -151,26 +229,4 @@ jobs:
           else
             git commit -m "docs: update README download links for latest release"
             git push origin main
-          fi
-
-  write-release-notes:
-    needs: [build-mac, build-win, build-linux]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Write GitHub release description
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          VERSION="${TAG#v}"
-          BODY_FILE="docs/releases/v${VERSION}.md"
-          if [[ -f "$BODY_FILE" ]]; then
-            gh release edit "$TAG" --notes-file "$BODY_FILE"
-            echo "Release notes written from ${BODY_FILE}"
-          else
-            echo "No release notes file at ${BODY_FILE} — skipping"
           fi

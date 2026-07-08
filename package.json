@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "7.9.4",
+  "version": "7.9.5",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -105,7 +105,7 @@
       "provider": "github",
       "owner": "1tsRajuWu",
       "repo": "Smiley",
-      "releaseType": "release"
+      "releaseType": "draft"
     },
     "afterSign": "scripts/afterSign-mac.js",
     "afterPack": "scripts/configure-fuses.js",
