@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.8.0)
+**Raj (@1tsRaj)** — last updated 8 July 2026 (v7.8.0)
 
 **Applies to official Smiley builds** from the author's releases. Third-party forks are governed by their maintainers' terms.
 
@@ -8,7 +8,9 @@
 
 By downloading, installing, or using **official** Smiley you agree to these Terms and our [Privacy Policy](PRIVACY.md). If you do not agree, do not use official releases.
 
-Smiley talks to the Discord desktop app over the local IPC API. It does **not** read your login token, username, password, messages, or account credentials. Only Rich Presence text you choose is sent to Discord.
+Smiley talks to the Discord desktop app over the local IPC API. It does **not** read your login token, username, password, messages, or account credentials. Only Rich Presence text you choose (and optional live game stats when Gaming Now Playing is enabled) is sent to Discord.
+
+**Gaming Now Playing** uses local detection only by default: foreground window titles and, where supported, local game APIs on `127.0.0.1` (e.g. Riot Client for Valorant / League of Legends). Smiley does not upload match data or account identifiers to the author's servers as part of this feature.
 
 ## Final version
 

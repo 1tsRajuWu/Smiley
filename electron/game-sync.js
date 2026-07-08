@@ -1,19 +1,14 @@
 // Game sync — live Discord + UI while Gaming activity selected (performance-tuned)
 const { createNowGamingService } = require('./now-gaming');
 const {
-  resolveLiveGameSession, sessionSignature, buildStateLine, getRiotPollMs,
+  resolveLiveGameSession, sessionSignature, getRiotPollMs,
 } = require('./game-providers');
+const { buildPresenceFromSession } = require('./presence-builder');
 
 const GAMING_CATEGORY = 'gaming';
-const DISCORD_TEXT_LIMIT = 128;
 const PRESENCE_MIN_MS = 5000;
 const PRESENCE_MATCH_MS = 3000;
 const RENDERER_MIN_MS = 1500;
-
-function truncate(t, max = DISCORD_TEXT_LIMIT) {
-  const v = String(t || '').trim();
-  return v.length <= max ? v : `${v.slice(0, max - 1)}…`;
-}
 
 function isEnabled(cfg) {
   return cfg?.gamingNowPlaying !== false;
@@ -33,7 +28,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
   let presenceTimer = null;
   let resolveInFlight = false;
   let pendingResolve = false;
-  let lastCoverKey = '';
+  let lastArtworkKey = '';
 
   function sendRenderer(session) {
     const now = Date.now();
@@ -43,47 +38,29 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
   }
 
   function buildActivity(session, meta) {
-    if (!template) return null;
-    if (!session?.title) {
-      return { ...template, details: 'Gaming', state: template.state || 'In the zone', gameSession: null };
+    const useCover = getConfig()?.gamingNowPlayingCoverArt !== false;
+    const activity = buildPresenceFromSession(session, template, { alwaysUseArtwork: true });
+    if (!activity) return null;
+
+    if (activity.gameSession && meta) {
+      if (!activity.gameSession.tags?.length && meta.tags) {
+        activity.gameSession.tags = meta.tags;
+      }
+      if (!activity.gameSession.metascore && meta.metascore) {
+        activity.gameSession.metascore = meta.metascore;
+      }
+      if (!activity.gameSession.steamAppId && meta.steamAppId) {
+        activity.gameSession.steamAppId = meta.steamAppId;
+      }
     }
-    const state = truncate(buildStateLine(session, template.state));
-    const coverKey = `${session.title}\0${session.artworkUrl || ''}`;
-    const useCover = getConfig()?.gamingNowPlayingCoverArt !== false && session.artworkUrl;
-    const coverChanged = coverKey !== lastCoverKey;
 
-    const activity = {
-      ...template,
-      details: truncate(session.title),
-      state,
-      largeImageText: truncate(session.map || session.agent || session.mode || session.title),
-      gameSession: {
-        title: session.title,
-        processName: session.processName,
-        windowTitle: session.windowTitle,
-        launcher: session.launcher,
-        scoreHint: session.scoreHint,
-        map: session.map,
-        mode: session.mode,
-        agent: session.agent,
-        champ: session.champ,
-        kda: session.kda,
-        server: session.server,
-        liveLine: session.liveLine || state,
-        provider: session.provider,
-        inMatch: session.inMatch === true,
-        artworkUrl: session.artworkUrl || null,
-        tags: session.tags || meta?.tags || [],
-        metascore: session.metascore || meta?.metascore || null,
-        steamAppId: session.steamAppId || meta?.steamAppId || null,
-        updatedAt: session.updatedAt || Date.now(),
-      },
-    };
-
-    if (useCover && (coverChanged || !activity.discordImageUrl)) {
-      activity.discordImageUrl = session.artworkUrl;
-      activity.largeImageUrl = session.artworkUrl;
-      lastCoverKey = coverKey;
+    // UI preview may respect cover-art toggle; Discord presence always uses artwork
+    const artworkKey = activity.discordImageUrl || '';
+    if (!useCover && activity.gameSession) {
+      activity.gameSession.artworkUrl = null;
+    } else if (useCover && artworkKey !== lastArtworkKey && activity.gameSession) {
+      activity.gameSession.artworkUrl = artworkKey;
+      lastArtworkKey = artworkKey;
     }
 
     return activity;
@@ -193,7 +170,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
     template = { ...act, details: 'Gaming', state: act.state || 'In the zone' };
     lastSig = '';
     lastSteamKey = '';
-    lastCoverKey = '';
+    lastArtworkKey = '';
     foreground = null;
     ensureRunning().catch(() => {});
   }
@@ -210,7 +187,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
     }
     lastSig = '';
     lastSteamKey = '';
-    lastCoverKey = '';
+    lastArtworkKey = '';
     foreground = null;
     if (reset) template = null;
     sendRenderer(null);

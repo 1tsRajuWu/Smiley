@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.8.0)
+**Raj (@1tsRaj)** — last updated 8 July 2026 (v7.8.0)
 
 **Applies to official Smiley builds** from [1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley/releases). Forks using their own backend are responsible for their own privacy policy — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -77,6 +77,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/FINAL.md](docs/FINAL.md).
 ## Other network activity
 
 - **Discord** — local IPC only, no cloud relay
+- **Gaming sync (optional)** — when Gaming Now Playing is enabled, Smiley reads the **foreground game window** and, for supported titles, **local game APIs on your machine only** (e.g. Riot Client lockfile on `127.0.0.1` for Valorant / League of Legends). Match stats, agent/champion, map, score, and party size are composed locally and sent **only to Discord Rich Presence** via local IPC. **No game account data, Riot tokens, PUUIDs, or lockfile passwords are sent to Smiley servers.** The renderer receives a sanitized `gameSession` snapshot (no PUUID/tokens).
+- **Public game CDNs (HTTPS)** — cover art may be fetched from public URLs Discord can display (e.g. `valorant-api.com`, `ddragon.leagueoflegends.com`, Steam store CDN, curated static art). No account identifiers are included in these requests.
+- **Steam Store search** — optional metadata lookup sends only the detected game title (HTTPS) to find cover art when a non-Riot game is in the foreground.
 - **waifu.pics / Tenor / Giphy** — fetches images, no personal info sent
 - **GitHub** — version check on launch (HTTPS)
 - **Apple iTunes Search** — optional album art lookup sends song title + artist (HTTPS) when music sync is on
@@ -92,7 +95,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/FINAL.md](docs/FINAL.md).
 
 ### Discord specifically
 
-Smiley does **not** read your Discord account. It connects to the **Discord desktop app** via local IPC using a public Application Client ID. Your Discord login token never leaves Discord's app and is **never** stored by Smiley. Only the Rich Presence text you pick (activity name, optional song title) is sent to Discord.
+Smiley does **not** read your Discord account. It connects to the **Discord desktop app** via local IPC using a public Application Client ID. Your Discord login token never leaves Discord's app and is **never** stored by Smiley. Only the Rich Presence text you pick (activity name, optional song title, optional live game stats) is sent to Discord.
+
+### Gaming sync specifically
+
+| Read locally | Sent to Smiley cloud | Sent to Discord |
+|--------------|----------------------|-----------------|
+| Foreground window title / process | **No** | Yes (as Rich Presence details/state) |
+| Riot local API (`127.0.0.1`) when Riot Client is running | **No** | Yes (stats line only) |
+| Riot lockfile password / PUUID | **No** (main process only) | **No** |
+| Public CDN artwork URLs | **No** (fetched device-side) | Yes (image URL for Discord proxy) |
 
 ## Your rights
 

@@ -1,13 +1,31 @@
 // Riot games — Valorant + LoL via local client API
 const { readLockfile, getSelfPresence, localHttpsPort2999 } = require('../riot-client');
 const { fetchValorantLocalExtras } = require('../valorant-local');
+const { partyLabel } = require('../game-assets');
 
 const VALORANT_QUEUES = {
-  competitive: 'Competitive', unrated: 'Unrated', swiftplay: 'Swiftplay',
-  deathmatch: 'Deathmatch', spikeRush: 'Spike Rush', custom: 'Custom',
+  competitive: 'Competitive',
+  unrated: 'Unrated',
+  swiftplay: 'Swiftplay',
+  deathmatch: 'Deathmatch',
+  spikeRush: 'Spike Rush',
+  ggteam: 'Spike Rush',
+  escalation: 'Escalation',
+  replication: 'Replication',
+  snowball: 'Snowball Fight',
+  custom: 'Custom',
+  newmap: 'New Map',
+  premier: 'Premier',
+  onefa: 'Team Deathmatch',
 };
-const VALORANT_ART = 'https://media.valorant-api.com/Agents/Jett/displayicon.png';
-const LOL_ART = 'https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/29.png';
+
+const LOL_QUEUE_NAMES = {
+  420: 'Ranked Solo',
+  440: 'Ranked Flex',
+  400: 'Normal Draft',
+  430: 'Normal Blind',
+  450: 'ARAM',
+};
 
 function mapPathToName(p) {
   const last = String(p || '').split('/').filter(Boolean).pop();
@@ -19,31 +37,46 @@ function queueName(id) {
   return VALORANT_QUEUES[k] || k.replace(/([a-z])([A-Z])/g, '$1 $2') || null;
 }
 
+function lolQueueName(id) {
+  const n = Number(id);
+  return LOL_QUEUE_NAMES[n] || (Number.isFinite(n) ? `Queue ${n}` : null);
+}
+
+function parseParty(privateData) {
+  const size = Number(
+    privateData?.partySize
+    ?? privateData?.partyOwnerPartySize
+    ?? privateData?.partySizeMax,
+  );
+  return partyLabel(size);
+}
+
 function parseValorant(privateData) {
   if (!privateData) return null;
   const loop = String(privateData.sessionLoopState || privateData.partyOwnerSessionLoopState || '').toUpperCase();
   const inGame = loop === 'INGAME';
   const inPregame = loop === 'PREGAME';
+  const queueId = String(privateData.queueId || privateData.partyOwnerQueueId || '').trim();
   const map = mapPathToName(privateData.partyOwnerMatchMap || privateData.matchMap);
-  const mode = queueName(privateData.queueId || privateData.partyOwnerQueueId);
+  const mode = queueName(queueId);
+  const party = parseParty(privateData);
   const ally = Number(privateData.partyOwnerMatchScoreAllyTeam ?? privateData.partyOwnerMatchCurrentTeamRoundScore);
   const enemy = Number(privateData.partyOwnerMatchScoreEnemyTeam);
-  const scoreHint = Number.isFinite(ally) && Number.isFinite(enemy) ? `${ally} - ${enemy}` : null;
-
-  let liveLine = null;
-  if (inGame) liveLine = [map, mode, scoreHint].filter(Boolean).join(' · ') || 'In match';
-  else if (inPregame) liveLine = [map, mode, 'Agent select'].filter(Boolean).join(' · ') || 'Agent select';
-  else if (loop !== 'MENUS' && loop !== 'FRONTEND') liveLine = mode || 'In client';
+  const scoreHint = Number.isFinite(ally) && Number.isFinite(enemy) ? `${ally}-${enemy}` : null;
 
   return {
     provider: 'riot-valorant',
     title: 'Valorant',
-    map, mode, scoreHint, liveLine,
+    map,
+    mode,
+    modeKey: queueId,
+    queueId,
+    scoreHint,
+    party,
     inGame: inGame || inPregame,
     inMatch: inGame,
     inPregame,
     launcher: 'Riot Games',
-    artworkUrl: VALORANT_ART,
     updatedAt: Date.now(),
   };
 }
@@ -52,16 +85,17 @@ function parseLol(privateData) {
   if (!privateData) return null;
   const status = String(privateData.gameStatus || privateData.gamestatus || '').toLowerCase();
   const inGame = status === 'ingame';
-  const mode = privateData.gameQueueConfigId ? `Queue ${privateData.gameQueueConfigId}` : null;
-  let liveLine = null;
-  if (inGame) liveLine = mode ? `${mode} · In game` : 'In game';
-  else if (status === 'champselect') liveLine = 'Champ select';
-  else if (status === 'inqueue') liveLine = 'In queue';
+  const qid = privateData.gameQueueConfigId ?? privateData.queueId;
+  const mode = lolQueueName(qid);
 
   return {
-    provider: 'riot-lol', title: 'League of Legends', mode, liveLine,
+    provider: 'riot-lol',
+    title: 'League of Legends',
+    mode,
     inGame: inGame || status === 'champselect' || status === 'inqueue',
-    inMatch: inGame, launcher: 'Riot Games', artworkUrl: LOL_ART, updatedAt: Date.now(),
+    inMatch: inGame,
+    launcher: 'Riot Games',
+    updatedAt: Date.now(),
   };
 }
 
@@ -79,8 +113,7 @@ async function lolLiveStats() {
   const t = Number(stats?.gameTime);
   const gameTime = Number.isFinite(t) && t > 0
     ? `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}` : null;
-  const parts = [champ, kda, gameTime].filter(Boolean);
-  return { champ, kda, gameTime, liveLine: parts.join(' · ') || null, inMatch: true };
+  return { champ, kda, gameTime, inMatch: true };
 }
 
 async function getRiotLiveSession() {
@@ -92,8 +125,10 @@ async function getRiotLiveSession() {
 
   if (self.product === 'valorant') {
     let session = parseValorant(self.privateData) || {
-      provider: 'riot-valorant', title: 'Valorant', liveLine: 'In client',
-      launcher: 'Riot Games', artworkUrl: VALORANT_ART, updatedAt: Date.now(),
+      provider: 'riot-valorant',
+      title: 'Valorant',
+      launcher: 'Riot Games',
+      updatedAt: Date.now(),
     };
     if (session.inGame || session.inPregame) {
       const extras = await fetchValorantLocalExtras(lockfile, self.puuid, {
@@ -101,11 +136,11 @@ async function getRiotLiveSession() {
         inPregame: session.inPregame,
       });
       if (extras) {
-        const parts = [extras.agent, extras.kda, extras.scoreHint || session.scoreHint, extras.map || session.map, session.mode].filter(Boolean);
         session = {
-          ...session, ...extras,
+          ...session,
+          ...extras,
           scoreHint: extras.scoreHint || session.scoreHint,
-          liveLine: parts.join(' · ') || extras.liveLine || session.liveLine,
+          modeKey: session.queueId,
           inMatch: extras.inMatch ?? session.inMatch,
         };
       }
@@ -115,8 +150,10 @@ async function getRiotLiveSession() {
 
   if (self.product === 'league_of_legends') {
     let session = parseLol(self.privateData) || {
-      provider: 'riot-lol', title: 'League of Legends', liveLine: 'In client',
-      launcher: 'Riot Games', artworkUrl: LOL_ART, updatedAt: Date.now(),
+      provider: 'riot-lol',
+      title: 'League of Legends',
+      launcher: 'Riot Games',
+      updatedAt: Date.now(),
     };
     if (session.inMatch) {
       const live = await lolLiveStats();

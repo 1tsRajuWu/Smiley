@@ -19,7 +19,7 @@ const INSTALL_ID_FILE = 'install-id';
 const INSTALL_ID_SECURE = 'install-id.secure';
 
 /** Bump when Privacy Policy / ToS change materially. */
-const CONSENT_VERSION = '2026-07-09';
+const CONSENT_VERSION = '2026-07-08';
 
 let registrationPromise = null;
 
