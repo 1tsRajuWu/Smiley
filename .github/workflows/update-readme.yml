@@ -1,35 +1,36 @@
+# README download links are updated by the Release workflow after all platform
+# builds finish (see release.yml → update-readme-downloads). This workflow is
+# kept as a manual fallback only — the old release:published trigger failed
+# because checkout was detached HEAD and assets were not uploaded yet.
 name: Update README with Latest Release
+
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
     permissions:
-      contents: write 
+      contents: write
     steps:
-      - name: Checkout code
+      - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          ref: main
 
-      - name: Update README versions
+      - name: Update README download links
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/update-readme-downloads.sh
+
+      - name: Commit and push
         run: |
-          # Get the latest release tag (e.g., v5.0.14)
-          LATEST_TAG=${{ github.event.release.tag_name }}
-          # Remove the 'v' to get just the numbers (e.g., 5.0.14)
-          VERSION=${LATEST_TAG#v}
-
-          # Create the new table content
-          NEW_TABLE="| Platform | File |\n|----------|------|\n| Windows | [Smiley-Setup-$VERSION.exe](https://github.com/1tsRajuWu/Smiley/releases/download/$LATEST_TAG/Smiley-Setup-$VERSION.exe) |\n| macOS Apple Silicon | [Smiley-$VERSION-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/$LATEST_TAG/Smiley-$VERSION-arm64.dmg) |\n| macOS Intel | [Smiley-$VERSION-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/$LATEST_TAG/Smiley-$VERSION-x64.dmg) |\n| Linux (AppImage) | [Smiley-$VERSION.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/$LATEST_TAG/Smiley-$VERSION.AppImage) |\n| Linux (.deb) | [Smiley-$VERSION.deb](https://github.com/1tsRajuWu/Smiley/releases/download/$LATEST_TAG/Smiley-$VERSION.deb) |"
-
-          # Replace the block between the markers in README.md
-          sed -i -e "/<!-- DOWNLOADS_START -->/,/<!-- DOWNLOADS_END -->/c\<!-- DOWNLOADS_START -->\n$NEW_TABLE\n<!-- DOWNLOADS_END -->" README.md
-
-      - name: Commit and Push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          # Only commit if there are changes
-          git diff --quiet && git diff --staged --quiet || git commit -m "docs: update download links to ${{ github.event.release.tag_name }}"
-          git push
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/ABOUT.md
+          if git diff --staged --quiet; then
+            echo "README download links unchanged"
+          else
+            git commit -m "docs: update README download links for latest release"
+            git push origin main
+          fi

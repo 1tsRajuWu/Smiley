@@ -19,9 +19,27 @@ fi
 
 latest_json=$(gh api "repos/${REPO}/releases/latest")
 latest_tag=$(echo "$latest_json" | jq -r '.tag_name')
+latest_version="${latest_tag#v}"
 releases_json=$(gh api "repos/${REPO}/releases?per_page=30")
 latest_url="https://github.com/${REPO}/releases/latest"
 release_base="https://github.com/${REPO}/releases/download"
+
+pkg_version=""
+if [[ -f "$ROOT/package.json" ]] && command -v node >/dev/null 2>&1; then
+  pkg_version=$(node -p "require('$ROOT/package.json').version" 2>/dev/null || echo "")
+fi
+
+latest_install_assets=$(echo "$latest_json" | jq '[.assets[] | select(.name | test("^Smiley-(Setup-[0-9]|[0-9].*\\.(exe|dmg|AppImage|deb)$)"))] | length')
+
+synthesize_from_version() {
+  local ver=$1
+  local tag="v${ver}"
+  win_line="${tag}"$'\t'"Smiley-Setup-${ver}.exe"
+  mac_arm_line="${tag}"$'\t'"Smiley-${ver}-arm64.dmg"
+  mac_x64_line="${tag}"$'\t'"Smiley-${ver}-x64.dmg"
+  linux_app_line="${tag}"$'\t'"Smiley-${ver}.AppImage"
+  linux_deb_line="${tag}"$'\t'"Smiley-${ver}.deb"
+}
 
 # Prefer assets from the GitHub "latest" release; fall back to older tags only if missing.
 find_asset() {
@@ -76,6 +94,11 @@ read -r mac_arm_line <<< "$(find_asset '^Smiley-[0-9].*-arm64\.dmg$')" || true
 read -r mac_x64_line <<< "$(find_asset '^Smiley-[0-9].*-x64\.dmg$')" || true
 read -r linux_app_line <<< "$(find_asset '^Smiley-[0-9].*\.AppImage$')" || true
 read -r linux_deb_line <<< "$(find_asset '^Smiley-[0-9].*\.deb$')" || true
+
+if [[ "$latest_install_assets" -eq 0 && -n "$pkg_version" && "$pkg_version" == "$latest_version" ]]; then
+  echo "Latest tag ${latest_tag} has no install assets yet — using package.json v${pkg_version} URLs" >&2
+  synthesize_from_version "$pkg_version"
+fi
 
 parse_line() {
   local line=$1

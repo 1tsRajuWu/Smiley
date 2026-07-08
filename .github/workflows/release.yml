@@ -150,7 +150,7 @@ jobs:
             echo "README download links unchanged"
           else
             git commit -m "docs: update README download links for latest release"
-            git push
+            git push origin main
           fi
 
   write-release-notes:
