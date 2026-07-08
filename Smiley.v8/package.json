@@ -1,7 +1,7 @@
 {
   "name": "smiley-v8",
   "private": true,
-  "version": "8.0.0",
+  "version": "8.0.1",
   "productName": "Smiley v8",
   "description": "Smiley v8 — ultra-premium native Discord Rich Presence (Rust + Tauri)",
   "type": "module",
@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "start": "tauri dev",
-    "desktop": "tauri build"
+    "desktop": "tauri build",
+    "desktop:mac": "tauri build && bash ../scripts/verify-mac-v8-bundle.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
