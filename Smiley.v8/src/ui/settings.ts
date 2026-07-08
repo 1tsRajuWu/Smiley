@@ -83,6 +83,7 @@ export function settingsMarkup(): string {
           <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Process gaming probe (optional)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant match board (local Riot API)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgCoding" /><span>Live coding (editor / IDE detection)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgStaticTiles" /><span>Static tiles (GIFs on hover — saves CPU)</span></label>
         </div>
       </section>
@@ -168,6 +169,7 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   set("cfgGaming", cfg.gamingProbe);
   set("cfgLiveGaming", cfg.liveGaming !== false);
   set("cfgMusic", cfg.musicNowPlaying !== false);
+  set("cfgCoding", cfg.codingNowPlaying !== false);
   set("cfgStaticTiles", cfg.staticTiles);
   set("cfgMatchBoard", cfg.showMatchBoard !== false);
   set("cfgOtherNames", cfg.showOtherRiotIds);
@@ -256,6 +258,7 @@ export function readSettings(root: HTMLElement, base: Config): Config {
     gamingProbe: c("cfgGaming"),
     liveGaming: c("cfgLiveGaming"),
     musicNowPlaying: c("cfgMusic"),
+    codingNowPlaying: c("cfgCoding"),
     staticTiles: c("cfgStaticTiles"),
     showMatchBoard: c("cfgMatchBoard"),
     showOtherRiotIds: c("cfgOtherNames"),

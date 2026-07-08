@@ -87,6 +87,7 @@ export type Config = {
   gamingProbe: boolean;
   liveGaming: boolean;
   musicNowPlaying: boolean;
+  codingNowPlaying: boolean;
   staticTiles: boolean;
   showMatchBoard: boolean;
   showOtherRiotIds: boolean;

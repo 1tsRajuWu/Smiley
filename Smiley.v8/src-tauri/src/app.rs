@@ -1,6 +1,6 @@
 use crate::activities;
 use crate::config;
-use crate::discord::{Discord, Presence};
+use crate::discord::{Discord, Presence, RpcActivityType, resolve_rpc_image};
 use crate::error::{AppError, AppResult};
 use crate::models::{sanitize_gif_url, sanitize_gif_url_or, *};
 use parking_lot::Mutex;
@@ -25,6 +25,8 @@ pub struct App {
     pub last_set_at: Mutex<Option<Instant>>,
     /// Last pushed music track signature — skip Discord when unchanged.
     pub last_music_sig: Mutex<String>,
+    /// Last pushed coding session signature — skip Discord when unchanged.
+    pub last_coding_sig: Mutex<String>,
 }
 
 impl App {
@@ -50,6 +52,7 @@ impl App {
             rotate_index: Mutex::new(0),
             last_set_at: Mutex::new(None),
             last_music_sig: Mutex::new(String::new()),
+            last_coding_sig: Mutex::new(String::new()),
         }))
     }
 
@@ -207,8 +210,19 @@ impl App {
         gif: &str,
         start: Option<i64>,
     ) -> Presence {
+        self.build_presence_typed(details, state, emoji, gif, start, None)
+    }
+
+    fn build_presence_typed(
+        &self,
+        details: &str,
+        state: &str,
+        emoji: &str,
+        gif: &str,
+        start: Option<i64>,
+        activity_type: Option<RpcActivityType>,
+    ) -> Presence {
         let cfg = self.config.lock();
-        // Hover text = activity emoji / optional custom — never force "Smiley" brand
         let large_text = if cfg.large_text.trim().is_empty()
             || cfg.large_text.eq_ignore_ascii_case("smiley")
         {
@@ -222,15 +236,32 @@ impl App {
             (None, None)
         };
         let start = if cfg.show_elapsed { start } else { None };
+        let fallback =
+            "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
         Presence {
             details: details.into(),
             state: state.into(),
-            large_image: gif.into(),
+            large_image: resolve_rpc_image(gif, fallback),
             large_text,
             start,
             button_label,
             button_url,
+            activity_type,
         }
+    }
+
+    fn activity_gif(&self, activity_id: &str, status_gif: Option<&str>) -> String {
+        const FALLBACK: &str =
+            "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
+        if let Some(gif) = status_gif {
+            if sanitize_gif_url(gif).is_some() {
+                return resolve_rpc_image(gif, FALLBACK);
+            }
+        }
+        if let Ok((_, _, _, gif)) = self.resolve(activity_id) {
+            return resolve_rpc_image(&gif, FALLBACK);
+        }
+        FALLBACK.into()
     }
 
     pub fn set_activity(&self, id: &str) -> AppResult<Status> {
@@ -265,12 +296,18 @@ impl App {
             if Self::in_quiet_hours(&cfg_snap) && cfg_snap.idle_enabled {
                 self.apply_idle()?;
             } else {
-                self.discord.set(self.build_presence(
+                let rpc_type = if id == "listening" {
+                    Some(RpcActivityType::Listening)
+                } else {
+                    None
+                };
+                self.discord.set(self.build_presence_typed(
                     &details,
                     &state,
                     &emoji,
                     &gif,
                     Some(start),
+                    rpc_type,
                 ))?;
             }
         }
@@ -286,6 +323,8 @@ impl App {
         }
 
         *self.started_at.lock() = Some(Self::now_secs());
+        *self.last_music_sig.lock() = String::new();
+        *self.last_coding_sig.lock() = String::new();
 
         {
             let mut s = self.status.lock();
@@ -508,7 +547,16 @@ impl App {
             && status.activity_id.as_deref() == Some("listening")
     }
 
-    /// Fast music overlay — dedicated bg thread (~2s). Timed osascript only.
+    pub fn coding_live_active(&self) -> bool {
+        let cfg = self.config.lock();
+        let status = self.status.lock();
+        status.connected
+            && !status.paused
+            && cfg.coding_now_playing
+            && status.activity_id.as_deref() == Some("coding")
+    }
+
+    /// Fast music overlay — always uses animated Tenor GIF for Discord large_image.
     pub fn music_tick(&self) -> AppResult<()> {
         let cfg = self.config.lock().clone();
         let status = self.status.lock().clone();
@@ -524,6 +572,10 @@ impl App {
             return Ok(());
         }
 
+        const LISTENING_GIF: &str =
+            "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif";
+        let gif = self.activity_gif("listening", status.gif.as_deref());
+
         if let Ok(Some(track)) = crate::music::probe_now_playing() {
             let sig = crate::music::track_signature(&track);
             if sig == *self.last_music_sig.lock() {
@@ -533,23 +585,117 @@ impl App {
 
             let details = trunc(&track.title, 128);
             let state = trunc(&format!("{} · {}", track.artist, track.app), 128);
-            let gif = status.gif.clone().unwrap_or_else(|| {
-                "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif"
-                    .into()
-            });
-            self.discord.set(self.build_presence(
+            self.discord.set(self.build_presence_typed(
                 &details,
                 &state,
                 "🎧",
                 &gif,
                 None,
+                Some(RpcActivityType::Listening),
             ))?;
             {
                 let mut s = self.status.lock();
                 s.details = Some(details);
                 s.state = Some(state);
+                s.gif = Some(gif);
                 s.message = "Music live".into();
             }
+        } else {
+            let sig = format!("idle-listening\0{gif}");
+            if sig == *self.last_music_sig.lock() {
+                return Ok(());
+            }
+            *self.last_music_sig.lock() = sig;
+            let (details, state) = self
+                .resolve("listening")
+                .map(|(d, st, _, _)| (d, st))
+                .unwrap_or_else(|_| ("Listening to music".into(), "Vibes on 🎵".into()));
+            self.discord.set(self.build_presence_typed(
+                &details,
+                &state,
+                "🎧",
+                &gif,
+                self.started_at.lock().map(|s| s as i64),
+                Some(RpcActivityType::Listening),
+            ))?;
+            {
+                let mut s = self.status.lock();
+                s.details = Some(details);
+                s.state = Some(state);
+                s.gif = Some(resolve_rpc_image(&gif, LISTENING_GIF));
+                s.message = "Listening".into();
+            }
+        }
+        Ok(())
+    }
+
+    /// Live coding overlay — foreground editor detection (macOS osascript).
+    pub fn coding_tick(&self) -> AppResult<()> {
+        let cfg = self.config.lock().clone();
+        let status = self.status.lock().clone();
+        if !status.connected || status.paused {
+            *self.last_coding_sig.lock() = String::new();
+            return Ok(());
+        }
+        if Self::in_quiet_hours(&cfg) {
+            return Ok(());
+        }
+        if !cfg.coding_now_playing || status.activity_id.as_deref() != Some("coding") {
+            *self.last_coding_sig.lock() = String::new();
+            return Ok(());
+        }
+
+        const CODING_GIF: &str =
+            "https://media.tenor.com/QLh0PhunTj8AAAAM/anime-typing.gif";
+        let gif = self.activity_gif("coding", status.gif.as_deref());
+        let fallback_state = status
+            .state
+            .clone()
+            .unwrap_or_else(|| "Building something cool".into());
+
+        let (details, state, sig_key) = match crate::coding::probe_foreground_coding()? {
+            Some(session) => {
+                let sig = crate::coding::session_signature(&session);
+                let details = trunc(&session.app_name, 128);
+                let state = trunc(
+                    session
+                        .live_line
+                        .as_deref()
+                        .unwrap_or(fallback_state.as_str()),
+                    128,
+                );
+                (details, state, sig)
+            }
+            None => {
+                let details = status
+                    .details
+                    .clone()
+                    .unwrap_or_else(|| "Coding".into());
+                let state = fallback_state.clone();
+                (details, state, format!("static-coding\0{fallback_state}"))
+            }
+        };
+
+        if sig_key == *self.last_coding_sig.lock() {
+            return Ok(());
+        }
+        *self.last_coding_sig.lock() = sig_key;
+
+        let start = self.started_at.lock().map(|s| s as i64);
+        self.discord.set(self.build_presence_typed(
+            &details,
+            &state,
+            "💻",
+            &gif,
+            start,
+            None,
+        ))?;
+        {
+            let mut s = self.status.lock();
+            s.details = Some(details);
+            s.state = Some(state);
+            s.gif = Some(resolve_rpc_image(&gif, CODING_GIF));
+            s.message = "Coding live".into();
         }
         Ok(())
     }
@@ -568,6 +714,11 @@ impl App {
 
         // Music has its own fast thread — don't let gaming steal the listening slot.
         if cfg.music_now_playing && status.activity_id.as_deref() == Some("listening") {
+            return Ok(());
+        }
+
+        // Coding has its own poll thread — don't let gaming steal the coding slot.
+        if cfg.coding_now_playing && status.activity_id.as_deref() == Some("coding") {
             return Ok(());
         }
 

@@ -154,6 +154,9 @@ pub struct Config {
     /// Spotify / Apple Music overlay while "Listening to music" is active.
     #[serde(default = "default_true")]
     pub music_now_playing: bool,
+    /// Live editor / IDE overlay while "Coding" is active.
+    #[serde(default = "default_true")]
+    pub coding_now_playing: bool,
     /// Prefer static activity tiles (hover reveals GIF) — saves CPU.
     #[serde(default = "default_false")]
     pub static_tiles: bool,
@@ -237,6 +240,7 @@ impl Default for Config {
             gaming_probe: false,
             live_gaming: true,
             music_now_playing: true,
+            coding_now_playing: true,
             static_tiles: false,
             show_match_board: true,
             show_other_riot_ids: false,

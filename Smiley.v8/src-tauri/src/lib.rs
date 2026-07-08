@@ -1,5 +1,6 @@
 mod activities;
 mod app;
+mod coding;
 mod config;
 mod discord;
 mod error;
@@ -271,6 +272,22 @@ pub fn run() {
                     });
                     if active {
                         let _ = st.music_tick();
+                    }
+                });
+            }
+
+            // Live coding — foreground editor poll when coding activity is active (3s)
+            {
+                let st = state.clone();
+                std::thread::spawn(move || loop {
+                    let active = st.coding_live_active();
+                    std::thread::sleep(if active {
+                        Duration::from_secs(3)
+                    } else {
+                        Duration::from_secs(8)
+                    });
+                    if active {
+                        let _ = st.coding_tick();
                     }
                 });
             }

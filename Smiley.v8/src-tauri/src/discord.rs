@@ -1,13 +1,20 @@
 //! Discord IPC on its own thread — never blocks the UI.
 
 use crate::error::{AppError, AppResult};
+use crate::models::sanitize_gif_url;
 use discord_rich_presence::{
-    activity::{Activity, Assets, Button, Timestamps},
+    activity::{Activity, ActivityType, Assets, Button, Timestamps},
     DiscordIpc, DiscordIpcClient,
 };
 use parking_lot::Mutex;
 use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
 use std::time::{Duration, Instant};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RpcActivityType {
+    Playing,
+    Listening,
+}
 
 #[derive(Clone)]
 pub struct Presence {
@@ -18,6 +25,7 @@ pub struct Presence {
     pub start: Option<i64>,
     pub button_label: Option<String>,
     pub button_url: Option<String>,
+    pub activity_type: Option<RpcActivityType>,
 }
 
 enum Job {
@@ -29,6 +37,27 @@ enum Job {
 pub struct Discord {
     tx: Sender<Job>,
     pub connected: Mutex<bool>,
+}
+
+const RPC_IMAGE_FALLBACK: &str =
+    "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
+
+/// Tenor HTTPS URL Discord can proxy as an animated large_image.
+pub fn resolve_rpc_image(candidate: &str, fallback: &str) -> String {
+    let reject_spinner = |url: &str| {
+        !url.contains("loading-gif.gif") && !url.contains("On7kvXhzml4")
+    };
+    if let Some(url) = sanitize_gif_url(candidate) {
+        if reject_spinner(&url) {
+            return url;
+        }
+    }
+    if let Some(url) = sanitize_gif_url(fallback) {
+        if reject_spinner(&url) {
+            return url;
+        }
+    }
+    RPC_IMAGE_FALLBACK.into()
 }
 
 impl Discord {
@@ -129,7 +158,10 @@ fn worker(client_id: String, rx: Receiver<Job>) {
 
                     let details = trunc(&p.details, 128);
                     let state = trunc(&p.state, 128);
-                    let img = trunc(&p.large_image, 256);
+                    let img = trunc(
+                        &resolve_rpc_image(&p.large_image, RPC_IMAGE_FALLBACK),
+                        512,
+                    );
                     let text = trunc(&p.large_text, 128);
                     let assets = Assets::new().large_image(&img).large_text(&text);
 
@@ -139,6 +171,14 @@ fn worker(client_id: String, rx: Receiver<Job>) {
                         .details(&details)
                         .state(&state)
                         .assets(assets);
+
+                    if let Some(kind) = p.activity_type {
+                        let rpc_type = match kind {
+                            RpcActivityType::Playing => ActivityType::Playing,
+                            RpcActivityType::Listening => ActivityType::Listening,
+                        };
+                        activity = activity.activity_type(rpc_type);
+                    }
 
                     if let Some(start) = p.start {
                         activity = activity.timestamps(Timestamps::new().start(start));
