@@ -55,9 +55,6 @@ const gamingPreviewBar = $('#gamingPreviewBar');
 const gamingPreviewArt = $('#gamingPreviewArt');
 const gamingPreviewTitle = $('#gamingPreviewTitle');
 const gamingPreviewSub = $('#gamingPreviewSub');
-const codingPreviewBar = $('#codingPreviewBar');
-const codingPreviewTitle = $('#codingPreviewTitle');
-const codingPreviewSub = $('#codingPreviewSub');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -136,8 +133,6 @@ const musicNowPlayingToggle = $('#musicNowPlayingToggle');
 const musicNowPlayingAlbumArtToggle = $('#musicNowPlayingAlbumArtToggle');
 const gamingNowPlayingToggle = $('#gamingNowPlayingToggle');
 const gamingNowPlayingCoverArtToggle = $('#gamingNowPlayingCoverArtToggle');
-const codingNowPlayingToggle = $('#codingNowPlayingToggle');
-const codingNowPlayingTogglePanel = $('#codingNowPlayingTogglePanel');
 const gamingPresenceSection = $('#gamingPresenceSection');
 const settingsGamingStatePills = $('#gamingStatePills');
 const settingsGamingPreviewLargeArt = $('#gamingPreviewLargeArt');
@@ -155,8 +150,6 @@ const mainGamingPreviewElapsed = $('#mainGamingPreviewElapsed');
 const mainGamingPreviewLiveHint = $('#mainGamingPreviewLiveHint');
 const musicNowPlayingTogglePanel = $('#musicNowPlayingTogglePanel');
 const gamingNowPlayingTogglePanel = $('#gamingNowPlayingTogglePanel');
-const previewStateChips = $('#previewStateChips');
-const livePreviewBody = $('#livePreviewBody');
 const presenceControlsPanel = $('#presenceControlsPanel');
 const mainGamingDiscordPreview = $('#mainGamingDiscordPreview');
 const privacyConsentModal = $('#privacyConsentModal');
@@ -266,23 +259,7 @@ let nowPlayingArtworkUrl = null;
 let gamingSession = null;
 let gamingCoverUrl = null;
 let codingSession = null;
-const CODING_MOCK_PREVIEWS = {
-  editing: {
-    title: 'Cursor',
-    state: 'Editing xyz.py · Project Smiley',
-  },
-  idle: {
-    title: 'VS Code',
-    state: 'Idle · Smiley',
-  },
-  ai: {
-    title: 'Claude',
-    state: 'Refactoring auth module',
-  },
-};
-
-let codingPreviewState = 'editing';
-let livePreviewMode = 'activity';
+let gamingPreviewState = 'lobby';
 
 const GAMING_MOCK_PREVIEWS = {
   lobby: {
@@ -332,28 +309,9 @@ function syncMusicPanelToggle() {
   }
 }
 
-function setLivePreviewMode(mode) {
-  livePreviewMode = mode === 'coding' ? 'coding' : 'activity';
-  if (livePreviewBody) livePreviewBody.dataset.previewMode = livePreviewMode;
-  previewStateChips?.querySelectorAll('.preview-state-chip').forEach((chip) => {
-    const active = chip.dataset.preview === livePreviewMode;
-    chip.classList.toggle('active', active);
-    chip.setAttribute('aria-selected', active ? 'true' : 'false');
-  });
-  if (livePreviewMode === 'coding') updateCodingSettingsPreview();
-}
-
-function syncCodingPanelToggle() {
-  if (codingNowPlayingTogglePanel && codingNowPlayingToggle) {
-    codingNowPlayingTogglePanel.checked = codingNowPlayingToggle.checked;
-  }
-}
-
 function setupDashboardUI() {
   syncMusicPanelToggle();
   syncGamingPresenceSectionVisibility();
-  syncCodingPanelToggle();
-  setLivePreviewMode('activity');
 
   if (musicNowPlayingTogglePanel && musicNowPlayingToggle) {
     musicNowPlayingTogglePanel.addEventListener('change', () => {
@@ -370,19 +328,6 @@ function setupDashboardUI() {
     });
     gamingNowPlayingToggle.addEventListener('change', syncGamingPresenceSectionVisibility);
   }
-
-  if (codingNowPlayingTogglePanel && codingNowPlayingToggle) {
-    codingNowPlayingTogglePanel.addEventListener('change', () => {
-      codingNowPlayingToggle.checked = codingNowPlayingTogglePanel.checked;
-      codingNowPlayingToggle.dispatchEvent(new Event('change'));
-    });
-    codingNowPlayingToggle.addEventListener('change', syncCodingPanelToggle);
-  }
-
-  previewStateChips?.querySelectorAll('.preview-state-chip').forEach((chip) => {
-    chip.addEventListener('click', () => setLivePreviewMode(chip.dataset.preview || 'activity'));
-  });
-
 }
 
 function applyGamingPresenceOptionsToUI(opts) {
