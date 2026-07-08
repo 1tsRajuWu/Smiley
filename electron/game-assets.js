@@ -7,15 +7,19 @@ const GAMING_FALLBACK = 'https://media.tenor.com/On7kvXhzml4AAAAi/loading-gif.gi
 /** Valorant competitive tier act UUID (valorant-api.com) */
 const VALORANT_TIER_ACT = '03621f52-342b-cf4e-4f86-0cad5e4b6960';
 
-const GAME_DEFAULTS = {
-  'riot-valorant': 'https://media.valorant-api.com/agents/9338a55c-4ab7-4634-9ac9-e2e799c4f4d7/displayicon.png',
-  'riot-lol': 'https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/29.png',
+/** Per-game logo for Discord large_image (square icons on trusted CDNs). */
+const GAME_LOGOS = {
+  // Valorant "Standard" gamemode icon — the red V mark
+  'riot-valorant': 'https://media.valorant-api.com/gamemodes/96bd3920-4f36-d026-2b28-c683eb0bcac5/displayicon.png',
+  'riot-lol': `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/profileicon/662.png`,
   fortnite: 'https://cdn2.unrealengine.com/fortnite-chapter-5-lobby-background-1920x1080-1920x1080-f550d56711fa.jpg',
   overwatch: 'https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440cf/blt77c4f0b6234b1b29/1683835839683/OW2_Launch_Key_Art.jpg',
   roblox: 'https://images.rbxcdn.com/5348266ea6c5e5c58c58b8667b5d8d01.jpg',
   minecraft: 'https://www.minecraft.net/content/dam/games/minecraft/key-art/Games_Subnav_Minecraft-300x465.jpg',
-  window: GAMING_FALLBACK,
 };
+
+/** @deprecated alias — use GAME_LOGOS */
+const GAME_DEFAULTS = { ...GAME_LOGOS, window: GAMING_FALLBACK };
 
 /** Valorant queueId → gamemode UUID (valorant-api.com, verified 2026-07) */
 const VALORANT_MODE_UUID = {
@@ -94,6 +98,12 @@ function steamHeader(steamAppId) {
   return `https://cdn.akamai.steamstatic.com/steam/apps/${id}/header.jpg`;
 }
 
+function steamLogo(steamAppId) {
+  const id = Number(steamAppId);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return `https://cdn.akamai.steamstatic.com/steam/apps/${id}/logo.png`;
+}
+
 function partyLabel(partySize) {
   const n = Number(partySize);
   if (!Number.isFinite(n) || n < 1) return null;
@@ -106,53 +116,50 @@ function artEnabled(opts) {
 }
 
 /**
- * Resolve Discord large_image — map (ingame/pregame) or mode icon (lobby/queue)
+ * Resolve Discord large_image — always the game logo (not map/agent/champion art).
  */
-function resolveGameArtwork(session, opts) {
+function resolveGameArtwork(session) {
   if (!session) return GAMING_FALLBACK;
 
-  if (session.provider === 'riot-valorant') {
-    if (!artEnabled(opts)) return GAME_DEFAULTS['riot-valorant'];
-    if (session.inPregame || session.inMatch) {
-      const map = valorantMapIcon(session.mapId || session.map);
-      if (map) return map;
-    }
-    const mode = valorantModeIcon(session.queueId || session.modeKey);
-    if (mode) return mode;
-    return GAME_DEFAULTS['riot-valorant'];
+  if (session.provider && GAME_LOGOS[session.provider]) {
+    return GAME_LOGOS[session.provider];
   }
 
-  if (session.provider === 'riot-lol') {
-    const champ = lolChampionIcon(session.champ);
-    if (champ) return champ;
-    return GAME_DEFAULTS['riot-lol'];
-  }
-
-  if (session.artworkUrl && /^https:\/\//i.test(session.artworkUrl)) {
-    return session.artworkUrl;
-  }
-
-  const steam = steamHeader(session.steamAppId);
+  const steam = steamLogo(session.steamAppId);
   if (steam) return steam;
 
-  return GAME_DEFAULTS[session.provider] || GAMING_FALLBACK;
+  return GAMING_FALLBACK;
 }
 
 /**
- * Resolve Discord small_image — agent icon or rank badge overlay
+ * Resolve Discord small_image — contextual overlay (agent, map, rank, mode, champion).
  */
 function resolveSmallImage(session, opts) {
-  if (!session || session.provider !== 'riot-valorant') return null;
+  if (!session) return null;
   const o = opts || {};
 
-  if (o.showAgent !== false && (session.inMatch || session.inPregame) && session.agentId) {
-    const agent = valorantAgentIcon(session.agentId);
-    if (agent) return agent;
+  if (session.provider === 'riot-valorant') {
+    if (o.showAgent !== false && (session.inMatch || session.inPregame) && session.agentId) {
+      const agent = valorantAgentIcon(session.agentId);
+      if (agent) return agent;
+    }
+    if (artEnabled(o) && (session.inPregame || session.inMatch)) {
+      const map = valorantMapIcon(session.mapId || session.map);
+      if (map) return map;
+    }
+    if (o.showRank !== false && session.rankTierNum) {
+      const rank = valorantRankIcon(session.rankTierNum);
+      if (rank) return rank;
+    }
+    if (o.showMode !== false && (session.inLobby || session.inQueue)) {
+      const mode = valorantModeIcon(session.queueId || session.modeKey);
+      if (mode) return mode;
+    }
+    return null;
   }
 
-  if (o.showRank !== false && session.rankTierNum) {
-    const rank = valorantRankIcon(session.rankTierNum);
-    if (rank) return rank;
+  if (session.provider === 'riot-lol' && session.champ) {
+    return lolChampionIcon(session.champ);
   }
 
   return null;
@@ -160,17 +167,13 @@ function resolveSmallImage(session, opts) {
 
 function resolveLargeImageText(session) {
   if (!session) return '';
-  if (session.provider === 'riot-valorant') {
-    if ((session.inPregame || session.inMatch) && session.map) return session.map;
-    if (session.mode) return session.mode;
-    return session.title || '';
-  }
-  return session.agent || session.champ || session.map || session.mode
-    || session.experience || session.title || '';
+  return session.title || session.agent || session.champ || session.map || session.mode
+    || session.experience || '';
 }
 
 module.exports = {
   GAMING_FALLBACK,
+  GAME_LOGOS,
   GAME_DEFAULTS,
   DDRAGON_VERSION,
   VALORANT_TIER_ACT,
@@ -180,6 +183,7 @@ module.exports = {
   valorantRankIcon,
   lolChampionIcon,
   steamHeader,
+  steamLogo,
   partyLabel,
   resolveGameArtwork,
   resolveSmallImage,

@@ -108,10 +108,12 @@ ok('Pregame details = map', pregameLines.details === 'Haven');
 ok('Pregame state agent select', pregameLines.state.includes('Agent Select') && !pregameLines.state.includes('0-0'));
 
 const lobbyArt = buildPresenceFromSession(lobbySession, { category: 'gaming', state: 'In the zone' });
-ok('Lobby mode image large', lobbyArt.discordImageUrl?.includes('/gamemodes/'));
+ok('Lobby large = Valorant logo', lobbyArt.discordImageUrl?.includes('96bd3920-4f36-d026-2b28-c683eb0bcac5'));
+ok('Lobby small = mode icon', lobbyArt.smallImageUrl?.includes('/gamemodes/5d0f264b'));
 
 const pregameArt = buildPresenceFromSession(pregameSession, { category: 'gaming', state: 'In the zone' });
-ok('Pregame map image large', pregameArt.discordImageUrl?.includes('/maps/'));
+ok('Pregame large = Valorant logo', pregameArt.discordImageUrl?.includes('96bd3920-4f36-d026-2b28-c683eb0bcac5'));
+ok('Pregame small = map icon', pregameArt.smallImageUrl?.includes('/maps/'));
 ok('Pregame agent small image when agentId', (() => {
   const s = { ...pregameSession, agentId: 'add6443a-41bd-e414-f6ad-e58d267f4e95' };
   const a = buildPresenceFromSession(s, { category: 'gaming', state: 'In the zone' });
@@ -152,8 +154,9 @@ ok('Party labels', assets.partyLabel(2) === 'Duo' && assets.partyLabel(5) === 'F
 
 const activity = buildPresenceFromSession(valSession, { category: 'gaming', state: 'In the zone' });
 ok('Presence has discordImageUrl', /^https:\/\//.test(activity.discordImageUrl));
-ok('Presence map image large in match', activity.discordImageUrl.includes('/maps/'));
-ok('Presence agent small image', activity.smallImageUrl?.includes('/agents/'));
+ok('Presence large = Valorant logo', activity.discordImageUrl.includes('96bd3920-4f36-d026-2b28-c683eb0bcac5'));
+ok('Presence small = agent icon', activity.smallImageUrl?.includes('/agents/'));
+ok('Presence largeImageText = game title', activity.largeImageText === 'Valorant');
 
 const sanitized = sanitizeGameSession({
   title: 'Valorant',
