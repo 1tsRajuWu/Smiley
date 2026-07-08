@@ -1,6 +1,6 @@
 # Platform upgrade — for other chats / agents
 
-**Status (2026-07-09):** **Smiley v8.0.9** is the recommended desktop download (Tauri + Rust).
+**Status (2026-07-09):** **Smiley v8.0.10** is the recommended desktop download (Tauri + Rust).
 
 ## Do this in other conversations
 
@@ -12,7 +12,7 @@
    - **Music** Spotify/Apple Music + system players (`music.rs`, macOS mediaremote-adapter stream)
    - Process gaming probe optional
 4. Donation = PayPal tip (`paypal.me/1tsRaj`). Discord = Application Client ID + desktop IPC — **not a bot**.
-5. Website + GitHub release **v8.0.9** point end users at native installers.
+5. Website + GitHub release **v8.0.10** point end users at native installers.
 6. v8 in-app updates: `docs/RELEASING-V8-SIGNING.md` — `TAURI_SIGNING_PRIVATE_KEY` GitHub secret required for signed `latest.json`.
 
 ## Newbie map
