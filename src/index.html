@@ -70,10 +70,83 @@
         </div>
       </div>
 
-      <!-- Main Content -->
+      <!-- Main Content — Aurora dashboard -->
       <div class="content">
-        <!-- Left Sidebar -->
-        <aside class="preview-sidebar">
+        <!-- Left: feature controls -->
+        <aside class="control-panel" id="controlPanel">
+          <section class="panel-section">
+            <div class="panel-heading">Live sync</div>
+            <p class="panel-hint">Show music and games on Discord automatically.</p>
+            <div class="feature-cards">
+              <label class="feature-card feature-card--music">
+                <span class="feature-card__icon" aria-hidden="true">🎵</span>
+                <span class="feature-card__body">
+                  <span class="feature-card__title">Now playing</span>
+                  <span class="feature-card__desc">Spotify, Apple Music, YouTube Music</span>
+                </span>
+                <label class="toggle sm"><input type="checkbox" id="musicNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </label>
+              <label class="feature-card feature-card--gaming">
+                <span class="feature-card__icon" aria-hidden="true">🎮</span>
+                <span class="feature-card__body">
+                  <span class="feature-card__title">Gaming</span>
+                  <span class="feature-card__desc">Foreground game + Valorant stats</span>
+                </span>
+                <label class="toggle sm"><input type="checkbox" id="gamingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </label>
+            </div>
+          </section>
+          <section class="panel-section" id="presenceControlsPanel">
+            <div class="panel-heading">What to show</div>
+            <p class="panel-hint">Valorant uses local Riot client data only.</p>
+            <div class="gaming-presence-toggles">
+              <label class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowModePanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowPartyPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgentPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScorePanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRankPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArtPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsedPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKdaPanel" checked /><span class="toggle-slider"></span></label></label>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm panel-settings-link" id="openGamingSettingsBtn">Riot API key &amp; more</button>
+          </section>
+        </aside>
+
+        <!-- Center: Activity Picker -->
+        <main class="picker-main">
+          <div class="picker-header">
+            <div class="category-tabs" id="categoryTabs" role="tablist"></div>
+            <div class="search-wrap">
+              <input type="search" id="searchInput" placeholder="Search activities…" autocomplete="off" />
+            </div>
+          </div>
+          <div class="quick-access" id="quickAccess">
+            <div class="quick-section" id="recentSection" hidden>
+              <span class="quick-label">Recent</span>
+              <div class="quick-chips" id="recentChips"></div>
+            </div>
+          </div>
+          <div class="activity-grid" id="activityGrid"></div>
+          <section class="gif-picker-section" id="gifPickerSection" hidden aria-labelledby="gifPickerLabel">
+            <div class="gif-picker-header">
+              <h3 class="gif-picker-label" id="gifPickerLabel">Choose animation</h3>
+            </div>
+            <div class="gif-picker-strip" id="gifPickerStrip" role="listbox" aria-label="Activity animation"></div>
+          </section>
+        </main>
+
+        <!-- Right: Live preview dock -->
+        <aside class="live-preview preview-sidebar">
+          <div class="live-preview-header">
+            <div class="live-preview-title">Live preview</div>
+            <div class="preview-state-chips" id="previewStateChips" role="tablist" aria-label="Preview mode">
+              <button type="button" class="preview-state-chip active" data-preview="activity" role="tab" aria-selected="true">Activity</button>
+              <button type="button" class="preview-state-chip" data-preview="music" role="tab" aria-selected="false">Listening</button>
+              <button type="button" class="preview-state-chip" data-preview="gaming" role="tab" aria-selected="false">Gaming</button>
+            </div>
+          </div>
+          <div class="live-preview-body" id="livePreviewBody" data-preview-mode="activity">
           <!-- Character Stage with GIF -->
           <div class="character-stage" id="characterStage">
             <div class="character-container" id="characterContainer">
@@ -138,6 +211,32 @@
             </div>
           </div>
 
+          <div class="live-gaming-preview" id="mainGamingDiscordPreview">
+            <div class="gaming-discord-preview__header">
+              <span>Discord preview</span>
+              <div class="gaming-state-pills" id="mainGamingStatePills" role="tablist">
+                <button type="button" class="gaming-state-pill active" data-state="lobby">Lobby</button>
+                <button type="button" class="gaming-state-pill" data-state="queue">Queue</button>
+                <button type="button" class="gaming-state-pill" data-state="pregame">Agent Select</button>
+                <button type="button" class="gaming-state-pill" data-state="ingame">In Match</button>
+                <button type="button" class="gaming-state-pill" data-state="deathmatch">Deathmatch</button>
+              </div>
+            </div>
+            <div class="gaming-discord-card gaming-discord-card--preview">
+              <div class="gaming-discord-card__art-wrap">
+                <img class="gaming-discord-card__art" id="mainGamingPreviewLargeArt" alt="" decoding="async" />
+                <div class="gaming-discord-card__badge" id="mainGamingPreviewBadge" hidden></div>
+              </div>
+              <div class="gaming-discord-card__meta">
+                <div class="gaming-discord-card__app">Playing a game</div>
+                <div class="gaming-discord-card__title" id="mainGamingPreviewCardTitle">Valorant</div>
+                <div class="gaming-discord-card__state" id="mainGamingPreviewCardState">Swiftplay · Solo · In lobby</div>
+                <div class="gaming-discord-card__elapsed" id="mainGamingPreviewElapsed" hidden>0:00 elapsed</div>
+              </div>
+            </div>
+            <p class="field-hint gaming-preview-live-hint" id="mainGamingPreviewLiveHint" hidden>Showing your live session</p>
+          </div>
+
           <div class="preview-actions">
             <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
             <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
@@ -161,35 +260,13 @@
               <button type="button" class="donate-banner-cta donate-banner-cta-qr" id="donateUpiQrBtn" title="Show UPI QR code" aria-label="Show UPI QR code">QR</button>
             </div>
           </div>
+          </div>
         </aside>
-
-        <!-- Right: Activity Picker -->
-        <main class="picker-main">
-          <div class="picker-header">
-            <div class="category-tabs" id="categoryTabs" role="tablist"></div>
-            <div class="search-wrap">
-              <input type="search" id="searchInput" placeholder="Search activities…" autocomplete="off" />
-            </div>
-          </div>
-          <div class="quick-access" id="quickAccess">
-            <div class="quick-section" id="recentSection" hidden>
-              <span class="quick-label">Recent</span>
-              <div class="quick-chips" id="recentChips"></div>
-            </div>
-          </div>
-          <div class="activity-grid" id="activityGrid"></div>
-          <section class="gif-picker-section" id="gifPickerSection" hidden aria-labelledby="gifPickerLabel">
-            <div class="gif-picker-header">
-              <h3 class="gif-picker-label" id="gifPickerLabel">Choose animation</h3>
-            </div>
-            <div class="gif-picker-strip" id="gifPickerStrip" role="listbox" aria-label="Activity animation"></div>
-          </section>
-        </main>
       </div>
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.9.1</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.9.2</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -346,7 +423,7 @@
                 <label class="ui-version-option active" data-ui-version="v3">
                   <input type="radio" name="uiVersion" value="v3" checked hidden />
                   <strong>Aurora (v3)</strong>
-                  <span>Picker-first layout, preview dock, list activities</span>
+                  <span>Control panel, live preview dock, music &amp; gaming upfront</span>
                 </label>
                 <label class="ui-version-option" data-ui-version="v2">
                   <input type="radio" name="uiVersion" value="v2" hidden />
