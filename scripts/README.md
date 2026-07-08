@@ -7,6 +7,8 @@ Shell/Node scripts used when **building** Smiley — not loaded by the app at ru
 | `generate-icons.sh` | Regenerate `build/icon*` from master logo (`npm run icons`) |
 | `afterSign-mac.js` | electron-builder hook — Mac notarization |
 | `update-readme-downloads.sh` | Refresh download links in README (`npm run update-readme-downloads`) |
+| `generate-live-patch-keys.js` | Create ed25519 keypair for silent UI patches (`npm run live-ui:keys`) |
+| `publish-live-ui-patch.js` | Zip + sign `src/` into `docs/site/live/` (`npm run live-ui:publish`) |
 | `validate-gif-options.mjs` | Check activity GIF mappings |
 | `install-database-schema.sql` | Supabase schema for opt-in install stats |
 | `build-native-all.sh` | Build Smiley.Native for all platforms |

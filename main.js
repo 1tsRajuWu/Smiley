@@ -7,7 +7,7 @@
 //
 // TABLE OF CONTENTS (search for the section name):
 //   Constants · Encryption · Config · State · Window State · Tray Icons
-//   Dev live reload · Window · Tray · Discord RPC · Auto Updater
+//   Dev live reload · Window · Tray · Discord RPC · Auto Updater · Live UI patches
 //   Custom Wallpapers · Custom Animations · Custom Activities
 //   Storage & cache cleanup · IPC · App Lifecycle
 // ═══════════════════════════════════════════════════════════════════════
@@ -37,6 +37,7 @@ const { createGameSync } = require('./electron/game-sync');
 const { createCodingSync } = require('./electron/coding-sync');
 const { getRiotApiKey, fetchValorantRank } = require('./electron/riot-rank');
 const { DEFAULT_GAMING_PRESENCE_OPTIONS } = require('./electron/presence-builder');
+const { createLiveUiPatch } = require('./electron/live-ui-patch');
 const {
   encryptJson,
   decryptJson,
@@ -1142,6 +1143,16 @@ let installLaunchRecorded = false;
 let installRegistered = false;
 let mainWindowVisible = true;
 
+/** Silent signed UI overlay (src only). Packaged builds check GitHub Pages. */
+const liveUiPatch = createLiveUiPatch({
+  getUserDataPath,
+  getAppRoot: () => __dirname,
+  appVersion: APP_VERSION,
+  isPackaged: () => isPackaged,
+  getMainWindow: () => mainWindow,
+  log: (msg) => console.log(`[live-ui] ${msg}`),
+});
+
 function isMainWindowVisible() {
   return !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized());
 }
@@ -1845,10 +1856,23 @@ function createWindow() {
   mainWindow.setMenu(null);
   mainWindow.setMenuBarVisibility(false);
   mainWindow.setTitle(APP_DISPLAY_NAME);
-  mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+  mainWindow.loadFile(liveUiPatch.getRendererIndexPath());
 
   mainWindow.webContents.once('did-finish-load', () => {
     pushNowPlayingToRenderer();
+  });
+
+  // If a live UI overlay fails to load, fall back to the bundled src/ once.
+  mainWindow.webContents.once('did-fail-load', (_e, errorCode, errorDescription, validatedURL) => {
+    const overlay = liveUiPatch.getRendererIndexPath();
+    const bundled = path.join(__dirname, 'src', 'index.html');
+    if (overlay !== bundled && validatedURL && String(validatedURL).includes('live-ui')) {
+      console.warn('[live-ui] overlay failed to load — rolling back:', errorCode, errorDescription);
+      liveUiPatch.rollbackOverlay();
+      try {
+        mainWindow.loadFile(bundled);
+      } catch (_) {}
+    }
   });
 
   // Dev: UI / CSS / renderer edits reload the window; main/preload/electron restart the app.
@@ -4232,7 +4256,11 @@ function setupIPC() {
     osPlatform: process.platform,
     version: APP_VERSION,
     platform: `${process.platform} ${os.release()}`,
+    liveUi: liveUiPatch.getStatus(),
   }));
+
+  ipcMain.handle('get-live-ui-status', () => liveUiPatch.getStatus());
+  ipcMain.handle('check-live-ui-patch', async () => liveUiPatch.checkForLiveUiPatch({ force: true }));
 
   ipcMain.handle('toggle-favorite', (_, id) => {
     if (typeof id !== 'string' || !id.trim()) return config.favoriteActivities || [];
@@ -4790,6 +4818,7 @@ app.whenReady().then(() => {
   });
   setupIPC();
   setupAutoUpdater();
+  liveUiPatch.start();
   registerGlobalHotkey();
 
   const installWarning = getInstallLocationWarning();

@@ -11,6 +11,7 @@ Smiley’s **main process** entry point is still **`main.js` at the repo root** 
 | `mediaremote-adapter/` | Bundled Perl adapter + framework (BSD-3, [ungive/mediaremote-adapter](https://github.com/ungive/mediaremote-adapter)) |
 | `now-playing-mac.jxa.js` | macOS JXA script — reads system Now Playing via MediaRemote (15.4+) |
 | `music-sync.js` | Keeps Discord presence in sync while **Listening to music** is active |
+| `live-ui-patch.js` | Silent signed UI overlays (`src/` only) via GitHub Pages — soft reload, no installer |
 
 ## Reading `main.js` (≈3,300 lines)
 
@@ -29,6 +30,7 @@ Open root **`main.js`** and use the table of contents at the top. Sections are l
 | Discord RPC | Connect to Discord, set Rich Presence |
 | Install registry | Calls `electron/install-registry.js` (mandatory on packaged builds) |
 | Auto Updater | Download & install new versions |
+| Live UI patches | Signed `src/` overlays from GitHub Pages (see `live-ui-patch.js`) |
 | Custom Wallpapers / Animations / Activities | User-uploaded files on disk |
 | Storage & cache cleanup | Clear Chromium cache, disk usage |
 | IPC | `ipcMain.handle(...)` — pairs with `preload.js` |

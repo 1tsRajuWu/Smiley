@@ -2302,6 +2302,18 @@ function openSettings(tab = 'general') {
       if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
     }
 
+    const liveHint = $('#aboutLiveUiHint');
+    if (liveHint && cfg.liveUi) {
+      const live = cfg.liveUi;
+      if (live.usingLiveUi && live.appliedPatchVersion) {
+        liveHint.textContent = `Live UI: patch ${live.appliedPatchVersion} active (silent, signed).`;
+      } else if (live.enabled) {
+        liveHint.textContent = 'Live UI: checking silently for signed layout/style patches — no restart prompt.';
+      } else {
+        liveHint.textContent = 'Live UI patches apply on packaged installs only.';
+      }
+    }
+
     settingsModal?.showModal();
   }).catch((err) => {
     console.error('[Smiley] openSettings failed:', err);

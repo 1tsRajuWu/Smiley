@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('smiley', {
   clearActivity: () => ipcRenderer.invoke('clear-activity'),
   getStatus: () => ipcRenderer.invoke('get-status'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  getLiveUiStatus: () => ipcRenderer.invoke('get-live-ui-status'),
+  checkLiveUiPatch: () => ipcRenderer.invoke('check-live-ui-patch'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   downloadMacUpdate: (version) => ipcRenderer.invoke('download-mac-update', version),
   openMacUpdateDmg: (version) => ipcRenderer.invoke('open-mac-update-dmg', version),

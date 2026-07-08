@@ -1,8 +1,42 @@
 # Releasing Smiley — Push Updates to Installed Users
 
-Installed Smiley apps (Electron) **check GitHub Releases automatically** on launch and download updates in the background. Users restart when prompted.
+Smiley has **two update channels**:
 
-## Quick release (3 steps)
+| Channel | What it updates | User experience | When to use |
+|--|--|--|--|
+| **Live UI patches** (silent) | `src/` only — CSS, layout, `renderer.js`, assets | Soft window refresh — **no** “Restart to update” | UI polish after the live-patch client is installed |
+| **GitHub Releases** (`electron-updater`) | Full app — `main.js`, Discord RPC, security, native | Download + restart / install prompt | Privileged / backend / security changes |
+
+Privacy notes for live UI: apps only **GET** a public signed zip from GitHub Pages. No config, Discord token, or identity is uploaded. Offline users keep the last good local UI.
+
+## Silent live UI (after first bootstrap release)
+
+```bash
+# Edit src/ (styles, layout, renderer) — then:
+git add src/ && git commit -m "ui: polish layout"
+git push origin main
+```
+
+GitHub Actions (Pages) zips + ed25519-signs `src/` and deploys to  
+`https://1tsrajuwu.github.io/Smiley/live/`. Packaged apps pull, verify, and soft-reload.
+
+Local dry-run (needs private key):
+
+```bash
+npm run live-ui:publish
+```
+
+### One-time live-patch signing setup
+
+1. Generate keys (if missing): `npm run live-ui:keys`
+2. Commit **`build/live-patch-public.pem`** only
+3. Repo secret: `SMILEY_LIVE_PATCH_PRIVATE_KEY` = contents of `build/live-patch-private.pem`  
+   (`gh secret set SMILEY_LIVE_PATCH_PRIVATE_KEY < build/live-patch-private.pem`)
+4. Never commit the private key (gitignored)
+
+Rotating keys requires shipping a new full release with the new public key.
+
+## Full release (installer / privileged code)
 
 ```bash
 # 1. Bump version in package.json (e.g. 2.1.1 → 2.1.2)
@@ -14,60 +48,67 @@ git tag v2.1.2
 git push origin main --tags
 ```
 
-That's it. Within ~15–30 minutes, GitHub Actions uploads `.dmg`, `.exe`, and Linux packages to [Releases](https://github.com/1tsRajuWu/Smiley/releases). Installed users get the update automatically.
+Within ~15–30 minutes, CI uploads installers to [Releases](https://github.com/1tsRajuWu/Smiley/releases). Installed users get the update via `electron-updater`.
 
 ### After bumping version
 
-1. Update download URLs in **README.md** (search for old version number in download links)
-2. Copy release notes from [RELEASE_BODY_TEMPLATE.md](./RELEASE_BODY_TEMPLATE.md) into the GitHub Release description
+1. Update download URLs in **README.md** (or wait for CI `update-readme-downloads`)
+2. Add notes at `docs/releases/v{VERSION}.md` (CI attaches them)
 
 ## One-time GitHub setup
 
-1. **Repository secret** (Settings → Secrets → Actions):
-   - `DISCORD_CLIENT_ID` = your Discord Application ID (`1522538045989982279`)
-
-2. **Workflow** is at `.github/workflows/release.yml` — runs on every `v*` tag push.
-
-3. **First release**: push a tag after merging to `main`.
+1. **Repository secrets** (Settings → Secrets → Actions):
+   - `DISCORD_CLIENT_ID` — Discord Application ID
+   - `SMILEY_LIVE_PATCH_PRIVATE_KEY` — ed25519 private PEM for live UI
+2. **Workflows**: `.github/workflows/release.yml` (tags), `.github/workflows/pages.yml` (site + live UI)
 
 ## What users experience
 
+### Live UI patch
+
 | Step | What happens |
 |------|----------------|
-| App launch | Checks GitHub for newer version (5s after open) |
-| Update found | Downloads silently in background |
-| Download done | Dialog + banner: **"Restart to update"** |
+| App launch / every ~45 min | GET signed manifest from GitHub Pages |
+| Newer UI patch | Download zip → verify hash + signature → extract to `userData/live-ui` |
+| Applied | Window soft-reloads — **no installer dialog** |
+
+### Full app update
+
+| Step | What happens |
+|------|----------------|
+| App launch | Checks GitHub Releases |
+| Update found | Downloads in background |
+| Download done | Dialog / banner: **"Restart to update"** |
 | User restarts | New version installed |
 
 Users can also use **Settings → Check for Updates** or tray → **Check for Updates**.
 
 ## Manual publish (from your Mac/PC)
 
-If you prefer building locally instead of CI:
-
 ```bash
-# Ensure discord.app.json exists with your Client ID
 echo '{"clientId":"YOUR_ID"}' > discord.app.json
-
 npm ci
 npm run publish    # builds + uploads to GitHub Releases
 ```
 
-Requires `GH_TOKEN` env var with `repo` scope, or logged-in `gh auth`.
+Requires `GH_TOKEN` with `repo` scope, or logged-in `gh auth`.
 
 ## Version numbering
 
 - Use **semver** in `package.json`: `MAJOR.MINOR.PATCH`
 - Tag must match: `v2.1.2` for version `2.1.2`
+- Live UI `patchVersion` is a date stamp (independent of app semver); `minAppVersion` gates old clients
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| Users don't get updates | Ensure they installed from a **packaged** build (not `npm start`) |
-| CI fails on discord.app.json | Add `DISCORD_CLIENT_ID` secret in repo settings |
-| macOS "app is damaged" / won't open | Ad-hoc sign is in CI; users right-click → Open. See [INSTALL-MAC.md](../INSTALL-MAC.md). Notarize when Developer account exists — [NOTARIZATION.md](./NOTARIZATION.md). |
-| Windows SmartScreen | Sign with a code-signing cert, or users click "More info → Run anyway" |
+| Users don't get full updates | Packaged install only (not `npm start`) |
+| Live UI not applying | Need a release that includes the live-patch client; secret must be set; check About → live UI hint |
+| Signature errors after key rotate | Ship full release with new public PEM |
+| CI fails on discord.app.json | Add `DISCORD_CLIENT_ID` secret |
+| macOS "app is damaged" | See [INSTALL-MAC.md](../INSTALL-MAC.md) / [NOTARIZATION.md](./NOTARIZATION.md) |
+| Windows SmartScreen | Code-signing cert, or “More info → Run anyway” |
 
 ---
 

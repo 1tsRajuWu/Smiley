@@ -1,6 +1,6 @@
 # Security & End-to-End Encryption (E2EE)
 
-**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.9.17)
+**Raj (@1tsRaj)** — last updated 9 July 2026 (v7.9.18)
 
 Smiley is designed so your personal settings stay on your device, encrypted at rest, with optional passphrase-protected exports. This document explains what is protected, how encryption works, and what we do **not** claim.
 
@@ -13,6 +13,7 @@ Smiley is designed so your personal settings stay on your device, encrypted at r
 | Discord Application Client ID | `discord.app.json` (gitignored) or GitHub Actions `DISCORD_CLIENT_ID` |
 | Supabase URL + anon key | `downloads.registry.json` (gitignored) or `SUPABASE_URL` / `SUPABASE_ANON_KEY` in Actions |
 | Database admin / service role keys | GitHub Actions secrets only — never in source |
+| Live UI patch signing key | GitHub Actions `SMILEY_LIVE_PATCH_PRIVATE_KEY` only — commit **public** `build/live-patch-public.pem`; never commit the private PEM |
 | User `config.secure` | End-user device only |
 
 Use `discord.app.example.json`, `downloads.registry.example.json`, and `config.example.json` as templates. Official release workflows inject secrets at build time.
@@ -59,6 +60,7 @@ When enabled, Smiley reads **local** game state only — never uploads it to Smi
 | **Settings export** | **True E2EE** — AES-256-GCM with **your passphrase** (scrypt KDF) |
 | **Network traffic** | HTTPS/TLS only to allowed hosts |
 | **Discord RPC** | Local IPC only — no Smiley cloud relay |
+| **Live UI patches** | Signed `src/` overlays only (ed25519 + SHA-256); never remote main/preload/native code |
 | **Renderer** | Context isolation, no Node integration, CSP |
 
 ## What “E2EE” means in Smiley
