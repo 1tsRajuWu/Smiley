@@ -1,6 +1,6 @@
 [package]
 name = "smiley-v8"
-version = "8.0.6"
+version = "8.0.7"
 description = "Smiley v8 — clean native Discord Rich Presence"
 authors = ["1tsRajuWu (Raj)"]
 edition = "2021"
@@ -27,6 +27,7 @@ uuid = { version = "1", features = ["v4"] }
 base64 = "0.22"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
+tauri-plugin-process = "2"
 
 [profile.release]
 codegen-units = 1
@@ -37,3 +38,6 @@ strip = true
 
 [profile.dev]
 opt-level = 1
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"

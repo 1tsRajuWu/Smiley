@@ -1,4 +1,5 @@
 node_modules/
+.tauri/
 electron/native/*.node
 dist/
 dist-native/

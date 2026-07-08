@@ -13,6 +13,7 @@ import {
   type Snapshot,
   type UpdateCheck,
 } from "./types";
+import { restartToUpdate, runUpdateFlow, type UpdateUiState } from "./updater";
 import { markupFor } from "../skins/markup";
 import "../skins/all.css";
 
@@ -32,6 +33,7 @@ export class AppController {
   private lastBoardKey = "";
   private lastGameProbe = 0;
   private lastUpdateCheck: UpdateCheck | null = null;
+  private updateUi: UpdateUiState | null = null;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -49,12 +51,14 @@ export class AppController {
       const { listen } = await import("@tauri-apps/api/event");
       await listen("wallpaper-pause", () => this.setWallpaperPaused(true));
       await listen("wallpaper-resume", () => this.setWallpaperPaused(false));
-      await listen<UpdateCheck>("update-check-result", (e) => {
-        this.showUpdateResult(e.payload);
+      await listen("update-check-requested", () => {
+        void this.checkUpdates(false);
       });
     } catch {
       /* browser preview without Tauri events */
     }
+
+    window.setTimeout(() => void this.silentUpdateCheck(), 15_000);
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.setWallpaperPaused(true);
@@ -155,7 +159,9 @@ export class AppController {
       case "donate":
         return this.donate();
       case "check-updates":
-        return this.checkUpdates();
+        return this.checkUpdates(true);
+      case "install-update":
+        return this.installUpdate();
       case "open-release":
         return this.openRelease();
       case "settings":
@@ -702,10 +708,37 @@ export class AppController {
     }
   }
 
-  private async checkUpdates() {
+  private async silentUpdateCheck() {
+    const result = await runUpdateFlow({
+      silent: true,
+      autoDownload: true,
+      onState: (state) => {
+        if (state.status === "ready") {
+          this.toast(`Update v${state.version} ready — restart from Settings → App`);
+        }
+      },
+    });
+    if (result.status === "ready" && this.snap?.config.toastEnabled !== false) {
+      this.toast(`Update v${result.version} ready — restart from Settings → App`);
+    }
+  }
+
+  private async checkUpdates(manual = true) {
     try {
-      const result = await api.checkUpdates();
-      this.showUpdateResult(result);
+      const result = await runUpdateFlow({
+        silent: !manual,
+        autoDownload: true,
+        onState: (state) => this.paintUpdateState(state),
+      });
+      this.paintUpdateState(result);
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async installUpdate() {
+    try {
+      await restartToUpdate();
     } catch (e) {
       this.toast(errMsg(e));
     }
@@ -723,19 +756,62 @@ export class AppController {
     }
   }
 
-  private showUpdateResult(result: UpdateCheck) {
-    this.lastUpdateCheck = result;
+  private paintUpdateState(state: UpdateUiState) {
+    this.updateUi = state;
     const el = this.$("cfgUpdateStatus");
-    if (el) {
-      el.hidden = false;
-      if (result.upToDate) {
-        el.textContent = result.message;
-      } else {
-        el.innerHTML = `${esc(result.message)} <button type="button" data-act="open-release">Download</button>`;
-      }
+    if (!el) {
+      if (state.status === "up-to-date") this.toast(state.check.message);
+      else if (state.status === "ready") this.toast(`Update v${state.version} ready — restart to apply`);
+      else if (state.status === "error") this.toast(state.message);
+      else if (state.status === "fallback") this.toast(state.check.message);
+      return;
     }
-    this.toast(result.message);
-    void api.log(`update: ${result.message}`);
+    el.hidden = false;
+
+    switch (state.status) {
+      case "checking":
+        el.textContent = "Checking for updates…";
+        break;
+      case "up-to-date":
+        this.lastUpdateCheck = state.check;
+        el.textContent = state.check.message;
+        break;
+      case "available":
+        el.textContent = `Update v${state.version} available — downloading…`;
+        break;
+      case "downloading":
+        el.textContent = `Downloading v${state.version}… ${state.percent}%`;
+        break;
+      case "ready":
+        el.innerHTML = `Update v${esc(state.version)} ready. <button type="button" data-act="install-update">Restart to update</button>`;
+        break;
+      case "fallback":
+        this.lastUpdateCheck = state.check;
+        el.innerHTML = `${esc(state.check.message)} <button type="button" data-act="open-release">Download from GitHub</button>`;
+        break;
+      case "error":
+        if (state.check) this.lastUpdateCheck = state.check;
+        if (state.check && !state.check.upToDate) {
+          el.innerHTML = `${esc(state.message)} <button type="button" data-act="open-release">Download from GitHub</button>`;
+        } else {
+          el.textContent = state.message;
+        }
+        break;
+    }
+
+    if (state.status === "up-to-date") {
+      this.toast(state.check.message);
+      void api.log(`update: ${state.check.message}`);
+    } else if (state.status === "ready") {
+      this.toast(`Update v${state.version} ready — restart to apply`);
+      void api.log(`update: ready v${state.version}`);
+    } else if (state.status === "fallback") {
+      this.toast(state.check.message);
+      void api.log(`update: fallback ${state.check.message}`);
+    } else if (state.status === "error") {
+      this.toast(state.message);
+      void api.log(`update: error ${state.message}`);
+    }
   }
 
   private setWallpaperPaused(paused: boolean) {
@@ -818,6 +894,7 @@ export class AppController {
     if (!body || !dlg) return;
     fillSettings(body, this.snap.config, this.snap);
     setCfgTab(body, "look");
+    if (this.updateUi) this.paintUpdateState(this.updateUi);
     dlg.showModal();
   }
 

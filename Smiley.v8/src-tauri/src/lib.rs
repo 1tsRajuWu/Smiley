@@ -78,10 +78,7 @@ fn clear_activity(state: tauri::State<'_, Arc<App>>) -> Result<Status, error::Ap
 }
 
 #[tauri::command]
-fn set_paused(
-    state: tauri::State<'_, Arc<App>>,
-    paused: bool,
-) -> Result<Status, error::AppError> {
+fn set_paused(state: tauri::State<'_, Arc<App>>, paused: bool) -> Result<Status, error::AppError> {
     state.set_paused(paused)
 }
 
@@ -140,7 +137,9 @@ fn remove_custom(
 }
 
 #[tauri::command]
-fn probe_game(state: tauri::State<'_, Arc<App>>) -> Result<Option<gaming::GameHit>, error::AppError> {
+fn probe_game(
+    state: tauri::State<'_, Arc<App>>,
+) -> Result<Option<gaming::GameHit>, error::AppError> {
     if !state.config.lock().gaming_probe && !state.config.lock().live_gaming {
         return Ok(None);
     }
@@ -184,10 +183,7 @@ fn check_for_updates() -> Result<updates::UpdateCheck, error::AppError> {
 }
 
 #[tauri::command]
-fn open_release_url(
-    app: tauri::AppHandle,
-    url: Option<String>,
-) -> Result<(), error::AppError> {
+fn open_release_url(app: tauri::AppHandle, url: Option<String>) -> Result<(), error::AppError> {
     let target = url
         .filter(|u| updates::is_safe_release_url(u))
         .unwrap_or_else(|| updates::GITHUB_RELEASES_PAGE.to_string());
@@ -202,6 +198,8 @@ fn open_release_url(
 pub fn run() {
     log_file::append("boot: Smiley v8 starting");
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
@@ -294,22 +292,7 @@ pub fn run() {
                     "show" => show_main_window(app),
                     "updates" => {
                         show_main_window(app);
-                        match updates::check_for_updates() {
-                            Ok(result) => {
-                                let _ = app.emit("update-check-result", &result);
-                            }
-                            Err(e) => {
-                                let fallback = updates::UpdateCheck {
-                                    current_version: env!("CARGO_PKG_VERSION").into(),
-                                    latest_version: None,
-                                    up_to_date: true,
-                                    releases_url: updates::GITHUB_RELEASES_PAGE.into(),
-                                    download_url: None,
-                                    message: e.to_string(),
-                                };
-                                let _ = app.emit("update-check-result", &fallback);
-                            }
-                        }
+                        let _ = app.emit("update-check-requested", ());
                     }
                     "donate" => {
                         if let Some(st) = app.try_state::<Arc<App>>() {

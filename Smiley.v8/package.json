@@ -1,7 +1,7 @@
 {
   "name": "smiley-v8",
   "private": true,
-  "version": "8.0.6",
+  "version": "8.0.7",
   "productName": "Smiley v8",
   "description": "Smiley v8 — ultra-premium native Discord Rich Presence (Rust + Tauri)",
   "type": "module",
@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.10.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
