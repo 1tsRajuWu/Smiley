@@ -4,723 +4,733 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Smiley — Premium Discord Rich Presence</title>
-  <meta name="description" content="Premium-feel Discord Rich Presence for Windows, macOS, and Linux. Gaming, coding, music, anime, food, chilling, and more in one polished desktop app.">
+  <meta name="description" content="A refined Discord Rich Presence desktop app for gaming, coding, music, food, chilling, anime, and studying. Free for Windows, macOS, and Linux.">
   <meta name="author" content="Himanshu Raj (1tsRajuWu)">
   <link rel="canonical" href="https://1tsrajuwu.github.io/Smiley/">
   <meta property="og:title" content="Smiley — Premium Discord Rich Presence">
-  <meta property="og:description" content="A premium-feel Discord Rich Presence app for gaming, coding, music, anime, food, chilling, and more.">
+  <meta property="og:description" content="Premium Discord Rich Presence for every part of your day — gaming, coding, music, food, chilling, anime, studying.">
   <meta property="og:url" content="https://1tsrajuwu.github.io/Smiley/">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://1tsrajuwu.github.io/Smiley/icon.png">
   <link rel="icon" href="icon.png" type="image/png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg: #06070b;
-      --bg-soft: #0d1018;
-      --panel: #11141d;
-      --panel-strong: #171b25;
-      --panel-alt: #0f131b;
-      --line: rgba(255, 255, 255, 0.09);
-      --line-strong: rgba(255, 255, 255, 0.14);
-      --text: #f5f1e8;
-      --muted: #b2a99a;
-      --dim: #82796c;
-      --gold: #c9a86a;
-      --gold-2: #e3c894;
-      --violet: #8d7cff;
-      --rose: #ff8f8f;
-      --blue: #6fa7ff;
-      --green: #78c89d;
-      --shadow-lg: 0 28px 80px rgba(0, 0, 0, 0.42);
-      --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 16px;
+      --bg: #07080c;
+      --bg-elevated: #0c0e14;
+      --surface: #12151d;
+      --surface-2: #181c27;
+      --surface-3: #1e2431;
+      --hairline: rgba(255, 248, 236, 0.08);
+      --hairline-strong: rgba(255, 248, 236, 0.14);
+      --text: #f4f0e8;
+      --text-secondary: #b9b1a4;
+      --text-tertiary: #847c70;
+      --champagne: #d4b883;
+      --champagne-bright: #ead7b2;
+      --champagne-deep: #a88b52;
+      --lilac: #b5a6d8;
+      --lilac-soft: rgba(181, 166, 216, 0.16);
+      --champagne-soft: rgba(212, 184, 131, 0.14);
+      --ink-on-gold: #1a140c;
+      --success: #7dba9a;
+      --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
+      --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 18px 48px rgba(0, 0, 0, 0.38);
+      --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 32px 80px rgba(0, 0, 0, 0.48);
+      --radius-xs: 8px;
       --radius-sm: 12px;
-      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-xl: 28px;
+      --radius-pill: 999px;
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.5rem;
+      --space-6: 2rem;
+      --space-7: 3rem;
+      --space-8: 4.5rem;
+      --space-9: 7rem;
+      --text-xs: 0.72rem;
+      --text-sm: 0.85rem;
+      --text-md: 0.95rem;
+      --text-lg: 1.05rem;
+      --text-xl: clamp(1.75rem, 3vw, 2.35rem);
+      --text-display: clamp(2.75rem, 6.2vw, 4.75rem);
+      --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --max: 1120px;
+      --nav-h: 4.5rem;
     }
+
+    html[data-theme="bright"] {
+      --bg: #f3efe6;
+      --bg-elevated: #faf7f0;
+      --surface: #ffffff;
+      --surface-2: #f7f2e8;
+      --surface-3: #efe8da;
+      --hairline: rgba(28, 24, 18, 0.1);
+      --hairline-strong: rgba(28, 24, 18, 0.16);
+      --text: #17140f;
+      --text-secondary: #5c554b;
+      --text-tertiary: #8a8174;
+      --champagne: #9a7540;
+      --champagne-bright: #b2894d;
+      --champagne-deep: #7a5a2e;
+      --lilac: #6f5f96;
+      --lilac-soft: rgba(111, 95, 150, 0.12);
+      --champagne-soft: rgba(154, 117, 64, 0.12);
+      --ink-on-gold: #fffaf0;
+      --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 24px rgba(40, 30, 10, 0.08);
+      --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 18px 48px rgba(40, 30, 10, 0.1);
+      --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 28px 64px rgba(40, 30, 10, 0.14);
+    }
+
     html { scroll-behavior: smooth; }
     body {
       font-family: var(--font);
       background:
-        radial-gradient(circle at top left, rgba(141, 124, 255, 0.16), transparent 28%),
-        radial-gradient(circle at 82% 18%, rgba(201, 168, 106, 0.16), transparent 24%),
-        linear-gradient(180deg, #08090d 0%, #06070b 45%, #090b10 100%);
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(181, 166, 216, 0.11), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 92% 8%, rgba(212, 184, 131, 0.1), transparent 50%),
+        linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg) 42%, var(--bg) 100%);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
       overflow-x: hidden;
     }
-    a { color: inherit; }
-    .wrap { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; }
-    .site-shell { position: relative; }
-    .site-shell::before,
-    .site-shell::after {
-      content: "";
-      position: fixed;
-      inset: auto;
-      pointer-events: none;
-      z-index: 0;
-      width: 28rem;
-      height: 28rem;
-      border-radius: 999px;
-      opacity: 0.48;
-    }
-    .site-shell::before {
-      top: -9rem;
-      left: -10rem;
-      background: radial-gradient(circle, rgba(141, 124, 255, 0.18), transparent 68%);
-    }
-    .site-shell::after {
-      right: -10rem;
-      top: 14rem;
-      background: radial-gradient(circle, rgba(201, 168, 106, 0.18), transparent 68%);
+    html[data-theme="bright"] body {
+      background:
+        radial-gradient(ellipse 70% 45% at 8% -5%, rgba(181, 166, 216, 0.18), transparent 55%),
+        radial-gradient(ellipse 55% 35% at 95% 5%, rgba(212, 184, 131, 0.22), transparent 50%),
+        linear-gradient(180deg, #faf7f0 0%, #f3efe6 100%);
     }
 
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    button { font: inherit; }
+    :focus-visible {
+      outline: 2px solid var(--champagne);
+      outline-offset: 3px;
+    }
+
+    .wrap {
+      width: min(var(--max), calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+
+    /* —— Nav —— */
     .nav-shell {
       position: sticky;
       top: 0;
-      z-index: 40;
-      padding: 1rem 0 0;
+      z-index: 50;
+      padding: var(--space-4) 0 0;
     }
-    nav {
-      position: relative;
-      z-index: 1;
+    .nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(13, 16, 24, 0.94);
-      box-shadow: var(--shadow-md);
+      gap: var(--space-4);
+      min-height: 3.35rem;
+      padding: 0.45rem 0.45rem 0.45rem 0.9rem;
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-pill);
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: var(--shadow-sm);
     }
-    .nav-brand {
+    .brand {
       display: inline-flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.7rem;
       text-decoration: none;
     }
-    .nav-brand img {
-      width: 36px;
-      height: 36px;
-      border-radius: 11px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      border: 1px solid var(--hairline);
     }
-    .nav-brand span {
-      font-size: 1.02rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
+    .brand-name {
+      font-size: var(--text-md);
+      font-weight: 650;
+      letter-spacing: -0.035em;
     }
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 0.3rem;
+      gap: 0.15rem;
     }
     .nav-links a:not(.btn) {
       text-decoration: none;
-      color: var(--muted);
-      font-size: 0.88rem;
-      padding: 0.45rem 0.85rem;
-      border-radius: 999px;
-      transition: color 0.2s ease, background 0.2s ease;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      padding: 0.5rem 0.8rem;
+      border-radius: var(--radius-pill);
+      transition: color 0.2s var(--ease), transform 0.2s var(--ease);
     }
-    .nav-links a:not(.btn):hover {
+    .nav-links a:not(.btn):hover { color: var(--text); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .theme-toggle {
+      display: inline-grid;
+      place-items: center;
+      width: 2.35rem;
+      height: 2.35rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--hairline);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+    }
+    .theme-toggle:hover {
       color: var(--text);
-      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--hairline-strong);
+      transform: translateY(-1px);
     }
+    .theme-toggle svg { width: 1rem; height: 1rem; }
+
+    /* —— Buttons —— */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 0.45rem;
       text-decoration: none;
-      border-radius: 999px;
+      border-radius: var(--radius-pill);
       border: 1px solid transparent;
-      font-weight: 700;
+      font-weight: 600;
       letter-spacing: -0.02em;
       cursor: pointer;
-      transition: transform 0.25s var(--ease), border-color 0.25s ease, background 0.25s ease;
+      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.25s var(--ease), background 0.25s var(--ease), color 0.25s var(--ease);
     }
+    .btn:hover { transform: translateY(-1.5px); }
+    .btn:active { transform: translateY(0); }
     .btn-primary {
-      padding: 0.72rem 1.18rem;
-      background: linear-gradient(135deg, var(--gold-2), var(--gold));
-      color: #20160a;
-      box-shadow: 0 14px 30px rgba(201, 168, 106, 0.22);
+      padding: 0.65rem 1.15rem;
+      background: linear-gradient(165deg, var(--champagne-bright), var(--champagne) 55%, var(--champagne-deep));
+      color: var(--ink-on-gold);
+      box-shadow: 0 10px 28px rgba(168, 139, 82, 0.22);
     }
-    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-primary:hover { box-shadow: 0 14px 34px rgba(168, 139, 82, 0.3); }
     .btn-secondary {
-      padding: 0.72rem 1.18rem;
-      border-color: var(--line);
-      background: rgba(255, 255, 255, 0.03);
+      padding: 0.65rem 1.15rem;
+      border-color: var(--hairline);
+      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
       color: var(--text);
     }
-    .btn-secondary:hover {
-      transform: translateY(-2px);
-      border-color: var(--line-strong);
-    }
-    .btn-lg {
-      padding: 0.95rem 1.5rem;
-      font-size: 0.95rem;
-    }
+    .btn-secondary:hover { border-color: var(--hairline-strong); }
+    .btn-lg { padding: 0.9rem 1.45rem; font-size: var(--text-md); }
 
-    .farewell-banner {
-      position: relative;
-      z-index: 1;
-      margin-top: 1rem;
-      padding: 1rem 1.2rem;
-      border: 1px solid rgba(201, 168, 106, 0.25);
+    /* —— Notice —— */
+    .notice {
+      margin-top: var(--space-4);
+      padding: 0.85rem 1.1rem;
+      border: 1px solid color-mix(in srgb, var(--champagne) 28%, var(--hairline));
       border-radius: var(--radius-md);
-      background: linear-gradient(135deg, rgba(201, 168, 106, 0.11), rgba(141, 124, 255, 0.08));
+      background:
+        linear-gradient(135deg, var(--champagne-soft), transparent 55%),
+        var(--surface);
+      box-shadow: var(--shadow-sm);
     }
-    .farewell-banner strong { color: var(--gold-2); }
-    .farewell-banner p {
-      margin-top: 0.35rem;
-      color: var(--muted);
-      font-size: 0.92rem;
+    .notice strong {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--champagne-bright);
     }
-    .farewell-banner a {
-      color: #d6c8ff;
+    .notice p {
+      margin-top: 0.28rem;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+    }
+    .notice a {
+      color: var(--lilac);
       text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, var(--lilac) 40%, transparent);
     }
 
+    /* —— Hero —— */
     .hero {
-      position: relative;
-      z-index: 1;
       display: grid;
-      grid-template-columns: 1.03fr 0.97fr;
-      gap: 3rem;
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+      gap: clamp(2rem, 5vw, 4rem);
       align-items: center;
-      padding: 4.4rem 0 5.2rem;
+      padding: clamp(3.25rem, 7vw, 5.5rem) 0 clamp(4rem, 8vw, 6.5rem);
     }
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      margin-bottom: 1.15rem;
-      color: var(--gold-2);
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 0.73rem;
+    .hero-brand {
+      font-size: clamp(1.15rem, 2vw, 1.35rem);
+      font-weight: 650;
+      letter-spacing: -0.04em;
+      color: var(--champagne-bright);
+      margin-bottom: var(--space-4);
+    }
+    .hero h1 {
+      font-size: var(--text-display);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
       font-weight: 700;
+      max-width: 11.5ch;
     }
-    .eyebrow::before {
-      content: "";
-      width: 28px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--gold-2));
-    }
-    h1 {
-      max-width: 11ch;
-      font-size: clamp(3rem, 6vw, 5.4rem);
-      line-height: 0.96;
-      letter-spacing: -0.06em;
-    }
-    .headline-accent {
-      background: linear-gradient(135deg, var(--gold-2), #f7e5bf 38%, #cab7ff 78%, #8d7cff);
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(120deg, var(--champagne-bright) 0%, #f0e4c8 42%, var(--lilac) 100%);
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       background-clip: text;
+      color: transparent;
     }
-    .hero-copy {
-      max-width: 34rem;
-      margin-top: 1.35rem;
-      color: var(--muted);
-      font-size: 1.06rem;
+    .hero-lede {
+      margin-top: 1.25rem;
+      max-width: 32rem;
+      color: var(--text-secondary);
+      font-size: var(--text-lg);
+      line-height: 1.6;
     }
-    .hero-badges {
+    .hero-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.65rem;
-      margin-top: 1.6rem;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+      margin-top: 1.35rem;
+      color: var(--text-tertiary);
+      font-size: var(--text-sm);
     }
-    .badge {
+    .meta-pill {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      padding: 0.48rem 0.8rem;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--muted);
-      font-size: 0.76rem;
-      font-weight: 600;
+      color: var(--champagne-bright);
+      font-weight: 550;
     }
-    .badge-live {
-      color: var(--gold-2);
-      border-color: rgba(201, 168, 106, 0.28);
-    }
-    .pulse {
-      width: 0.48rem;
-      height: 0.48rem;
+    .meta-dot {
+      width: 0.42rem;
+      height: 0.42rem;
       border-radius: 50%;
-      background: currentColor;
-      animation: pulse 1.8s ease-in-out infinite;
+      background: var(--success);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
+      animation: livePulse 2.2s var(--ease) infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.55; transform: scale(0.82); }
+    .hero-meta-sep {
+      width: 1px;
+      height: 0.9rem;
+      background: var(--hairline-strong);
     }
     .hero-cta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.85rem;
-      margin-top: 1.8rem;
-    }
-    .hero-note {
-      margin-top: 1rem;
-      color: var(--dim);
-      font-size: 0.84rem;
+      gap: 0.75rem;
+      margin-top: 1.75rem;
     }
 
-    .hero-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .premium-panel {
+    /* —— Product mockup —— */
+    .mockup {
       position: relative;
-      overflow: hidden;
       border-radius: var(--radius-xl);
-      border: 1px solid var(--line);
+      border: 1px solid var(--hairline);
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%),
-        linear-gradient(180deg, rgba(23, 27, 37, 0.96), rgba(11, 14, 20, 0.98));
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-3) 65%, transparent), transparent 28%),
+        var(--surface);
       box-shadow: var(--shadow-lg);
+      overflow: hidden;
     }
-    .premium-panel::before {
+    .mockup::before {
       content: "";
       position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(140deg, rgba(201, 168, 106, 0.12), transparent 22%),
-        linear-gradient(320deg, rgba(141, 124, 255, 0.1), transparent 24%);
+      inset: 0 0 auto 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--champagne) 45%, transparent), color-mix(in srgb, var(--lilac) 35%, transparent), transparent);
+      opacity: 0.7;
       pointer-events: none;
     }
-    .presence-window {
-      position: relative;
-      z-index: 1;
-      padding: 1.1rem;
-    }
-    .window-top {
+    .mockup-chrome {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1rem;
+      gap: var(--space-3);
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--hairline);
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
     }
-    .window-dots {
+    .traffic {
       display: flex;
-      gap: 0.45rem;
+      gap: 0.4rem;
     }
-    .window-dots span {
-      width: 0.58rem;
-      height: 0.58rem;
+    .traffic i {
+      width: 0.55rem;
+      height: 0.55rem;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.12);
+      background: var(--hairline-strong);
+      display: block;
     }
-    .window-status {
-      color: var(--dim);
-      font-size: 0.74rem;
+    .mockup-title {
+      font-size: var(--text-xs);
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+      color: var(--text-tertiary);
     }
-    .presence-hero-card {
+    .mockup-body { padding: 1rem; }
+
+    .presence-preview {
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 1rem;
       align-items: center;
       padding: 1rem;
-      border-radius: 22px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.025);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--hairline);
+      background:
+        linear-gradient(145deg, var(--champagne-soft), transparent 40%),
+        var(--surface-2);
+      box-shadow: var(--shadow-sm);
     }
-    .presence-icon {
+    .presence-mark {
       display: grid;
       place-items: center;
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      font-size: 2rem;
-      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
-      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      transform: translateZ(0);
+      width: 4.25rem;
+      height: 4.25rem;
+      border-radius: 18px;
+      border: 1px solid var(--hairline);
+      background: linear-gradient(160deg, var(--surface-3), var(--surface));
+      color: var(--champagne-bright);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
-    .presence-label {
-      color: var(--gold-2);
-      font-size: 0.72rem;
+    .presence-mark svg { width: 1.65rem; height: 1.65rem; }
+    .presence-kicker {
+      font-size: var(--text-xs);
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
+      color: var(--champagne-bright);
     }
     .presence-title {
-      margin-top: 0.28rem;
-      font-size: 1.24rem;
+      margin-top: 0.2rem;
+      font-size: 1.2rem;
       font-weight: 700;
       letter-spacing: -0.03em;
+      line-height: 1.2;
     }
     .presence-state {
-      margin-top: 0.16rem;
-      color: var(--muted);
-      font-size: 0.92rem;
+      margin-top: 0.2rem;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
     }
-    .presence-meta-row {
+    .presence-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.65rem;
+      gap: 0.4rem;
       margin-top: 0.75rem;
     }
-    .presence-chip {
-      padding: 0.38rem 0.62rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      color: var(--muted);
-      font-size: 0.74rem;
-    }
-    .presence-side-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.8rem;
-      margin-top: 0.95rem;
-    }
-    .metric-card {
-      padding: 0.95rem;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      background: rgba(255, 255, 255, 0.03);
-    }
-    .metric-card span {
-      display: block;
-      color: var(--dim);
-      font-size: 0.74rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .metric-card strong {
-      display: block;
-      margin-top: 0.32rem;
-      font-size: 1rem;
-      letter-spacing: -0.02em;
+    .tag {
+      padding: 0.28rem 0.55rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--hairline);
+      background: color-mix(in srgb, var(--surface) 70%, transparent);
+      color: var(--text-tertiary);
+      font-size: 0.7rem;
+      font-weight: 550;
     }
 
-    .activity-browser {
-      position: relative;
-      z-index: 1;
-      padding: 1rem;
-    }
-    .activity-header {
+    .activity-panel { margin-top: 1rem; }
+    .activity-panel-head {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0.95rem;
+      gap: var(--space-3);
+      margin-bottom: 0.75rem;
+      padding-inline: 0.15rem;
     }
-    .activity-header h2 {
-      font-size: 1rem;
-      letter-spacing: -0.03em;
+    .activity-panel-head h2 {
+      font-size: var(--text-sm);
+      font-weight: 650;
+      letter-spacing: -0.02em;
     }
-    .activity-header p {
-      color: var(--dim);
-      font-size: 0.8rem;
+    .activity-panel-head p {
+      color: var(--text-tertiary);
+      font-size: var(--text-xs);
+      font-variant-numeric: tabular-nums;
     }
     .activity-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.75rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.5rem;
     }
     .activity-card {
-      position: relative;
-      padding: 0.9rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.55rem;
+      padding: 0.8rem 0.7rem;
       text-align: left;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      background: rgba(255, 255, 255, 0.03);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--hairline);
+      background: var(--surface-2);
       color: var(--text);
       cursor: pointer;
-      transition: transform 0.25s var(--ease), border-color 0.25s ease, background 0.25s ease;
+      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease);
     }
     .activity-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(201, 168, 106, 0.3);
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--champagne) 35%, var(--hairline));
     }
     .activity-card.is-selected {
-      border-color: rgba(201, 168, 106, 0.45);
-      background: linear-gradient(180deg, rgba(201, 168, 106, 0.12), rgba(255, 255, 255, 0.04));
-      box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.12);
+      border-color: color-mix(in srgb, var(--champagne) 55%, var(--hairline));
+      background: linear-gradient(180deg, var(--champagne-soft), var(--surface-2));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--champagne) 18%, transparent);
     }
-    .activity-card .emoji {
-      display: inline-grid;
+    .activity-monogram {
+      display: grid;
       place-items: center;
-      width: 2.45rem;
-      height: 2.45rem;
-      margin-bottom: 0.7rem;
-      border-radius: 14px;
-      font-size: 1.15rem;
-      background: rgba(255, 255, 255, 0.06);
-      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 9px;
+      border: 1px solid var(--hairline);
+      background: var(--surface-3);
+      color: var(--lilac);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .activity-card.is-selected .activity-monogram {
+      color: var(--ink-on-gold);
+      border-color: transparent;
+      background: linear-gradient(160deg, var(--champagne-bright), var(--champagne));
     }
     .activity-card strong {
-      display: block;
-      font-size: 0.93rem;
+      font-size: 0.8rem;
+      font-weight: 650;
       letter-spacing: -0.02em;
+      line-height: 1.2;
     }
     .activity-card span {
-      display: block;
-      margin-top: 0.12rem;
-      color: var(--muted);
-      font-size: 0.76rem;
+      color: var(--text-tertiary);
+      font-size: 0.68rem;
+      line-height: 1.35;
     }
 
+    /* —— Sections —— */
     .section {
-      position: relative;
-      z-index: 1;
-      padding: 4.8rem 0;
-    }
-    .section-header {
-      max-width: 42rem;
-      margin-bottom: 2.4rem;
+      padding: var(--space-8) 0;
+      border-top: 1px solid var(--hairline);
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 720px;
     }
     .section-label {
-      display: inline-block;
-      margin-bottom: 0.75rem;
-      color: var(--gold-2);
-      font-size: 0.72rem;
+      display: block;
+      margin-bottom: 0.7rem;
+      color: var(--champagne-bright);
+      font-size: var(--text-xs);
+      font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      font-weight: 700;
+    }
+    .section-header {
+      max-width: 36rem;
+      margin-bottom: 2.25rem;
     }
     .section-header h2 {
-      font-size: clamp(2rem, 4vw, 3.2rem);
-      line-height: 1.02;
-      letter-spacing: -0.05em;
+      font-size: var(--text-xl);
+      line-height: 1.08;
+      letter-spacing: -0.045em;
+      font-weight: 700;
     }
     .section-header p {
-      margin-top: 0.85rem;
-      color: var(--muted);
-      font-size: 1rem;
+      margin-top: 0.75rem;
+      color: var(--text-secondary);
+      font-size: var(--text-md);
     }
 
     .feature-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.85rem;
     }
     .feature-card {
-      padding: 1.35rem;
+      padding: 1.35rem 1.25rem;
       border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
-      transition: transform 0.25s var(--ease), border-color 0.25s ease;
+      border: 1px solid var(--hairline);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 90%, transparent), var(--surface));
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease);
     }
     .feature-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(201, 168, 106, 0.25);
+      transform: translateY(-3px);
+      border-color: color-mix(in srgb, var(--champagne) 30%, var(--hairline));
     }
     .feature-icon {
-      display: inline-grid;
+      display: grid;
       place-items: center;
-      width: 3rem;
-      height: 3rem;
-      margin-bottom: 0.9rem;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.05);
-      font-size: 1.35rem;
-      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+      width: 2.5rem;
+      height: 2.5rem;
+      margin-bottom: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--hairline);
+      background: var(--surface-2);
+      color: var(--champagne-bright);
     }
+    .feature-icon svg { width: 1.15rem; height: 1.15rem; }
     .feature-card h3 {
       font-size: 1rem;
-      letter-spacing: -0.03em;
+      font-weight: 650;
+      letter-spacing: -0.025em;
     }
     .feature-card p {
-      margin-top: 0.45rem;
-      color: var(--muted);
-      font-size: 0.88rem;
+      margin-top: 0.4rem;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      line-height: 1.55;
     }
 
-    .showcase-layout {
-      display: grid;
-      grid-template-columns: 0.92fr 1.08fr;
-      gap: 1.2rem;
-      align-items: stretch;
-    }
-    .showcase-copy,
-    .showcase-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .story-card {
-      padding: 1.25rem;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
-    }
-    .story-card strong {
-      display: block;
-      margin-bottom: 0.35rem;
-      font-size: 0.98rem;
-    }
-    .story-card p {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-    .mini-presence {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.9rem;
-      align-items: center;
-      padding: 1rem;
-      border-radius: 20px;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
-    }
-    .mini-icon {
-      width: 3rem;
-      height: 3rem;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      background: rgba(255, 255, 255, 0.06);
-      font-size: 1.25rem;
-      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
-    }
-    .mini-presence h3 {
-      font-size: 0.95rem;
-      letter-spacing: -0.02em;
-    }
-    .mini-presence p {
-      margin-top: 0.16rem;
-      color: var(--muted);
-      font-size: 0.83rem;
-    }
-
+    /* —— How it works —— */
     .steps {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1rem;
+      gap: 1.25rem;
     }
     .step {
-      padding: 1.4rem;
+      position: relative;
+      padding: 1.6rem 1.35rem 1.5rem;
       border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      border: 1px solid var(--hairline);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
     }
     .step-num {
-      display: inline-grid;
-      place-items: center;
-      width: 2.4rem;
-      height: 2.4rem;
-      margin-bottom: 1rem;
-      border-radius: 999px;
-      color: #20160a;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--gold-2), var(--gold));
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--champagne-bright);
+      margin-bottom: 1.15rem;
     }
     .step h3 {
-      font-size: 1rem;
-      letter-spacing: -0.02em;
+      font-size: 1.05rem;
+      font-weight: 650;
+      letter-spacing: -0.03em;
     }
     .step p {
-      margin-top: 0.35rem;
-      color: var(--muted);
-      font-size: 0.88rem;
+      margin-top: 0.45rem;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      line-height: 1.55;
     }
 
-    #download { scroll-margin-top: 5rem; }
+    /* —— Download —— */
+    #download { scroll-margin-top: 5.5rem; }
     .download-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1rem;
+      gap: 0.75rem;
     }
     .download-card {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
-      padding: 1.15rem;
+      gap: 0.35rem;
+      padding: 1.15rem 1.1rem;
       border-radius: var(--radius-md);
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      border: 1px solid var(--hairline);
+      background: var(--surface);
       text-decoration: none;
-      transition: transform 0.25s var(--ease), border-color 0.25s ease;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
     }
     .download-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(201, 168, 106, 0.28);
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--champagne) 35%, var(--hairline));
+      box-shadow: var(--shadow-md);
+    }
+    .download-card .plat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
     }
     .download-card strong {
-      font-size: 0.96rem;
+      font-size: 0.95rem;
+      font-weight: 650;
       letter-spacing: -0.02em;
     }
+    .download-card .arrow {
+      color: var(--champagne);
+      font-size: 0.9rem;
+      opacity: 0.7;
+      transition: transform 0.25s var(--ease), opacity 0.25s var(--ease);
+    }
+    .download-card:hover .arrow {
+      opacity: 1;
+      transform: translateX(2px);
+    }
     .download-card span {
-      color: var(--dim);
-      font-size: 0.79rem;
+      color: var(--text-tertiary);
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+    }
+    .download-note {
+      margin-top: 1.25rem;
+      color: var(--text-tertiary);
+      font-size: var(--text-sm);
+    }
+    .download-note a {
+      color: var(--lilac);
+      text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, var(--lilac) 35%, transparent);
     }
 
+    /* —— Footer —— */
     footer {
-      position: relative;
-      z-index: 1;
-      padding: 2.8rem 0 2rem;
-      border-top: 1px solid var(--line);
-      color: var(--dim);
+      padding: 2.5rem 0 2.25rem;
+      border-top: 1px solid var(--hairline);
       text-align: center;
-      font-size: 0.84rem;
+      color: var(--text-tertiary);
+      font-size: var(--text-sm);
     }
     footer a {
-      color: #d8cbff;
+      color: var(--lilac);
       text-decoration: none;
     }
+    footer p + p { margin-top: 0.45rem; }
 
-    @media (max-width: 1024px) {
-      .hero,
-      .showcase-layout {
-        grid-template-columns: 1fr;
-      }
-      .feature-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.85); }
     }
-    @media (max-width: 840px) {
-      .nav-links a:not(.btn) { display: none; }
-      .hero {
-        padding-top: 3.4rem;
-      }
-      h1 {
-        max-width: none;
-      }
-      .activity-grid,
-      .download-grid,
-      .steps {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-    @media (max-width: 640px) {
-      .wrap { width: min(100% - 1.25rem, 1180px); }
-      nav {
-        border-radius: 24px;
-      }
-      .presence-hero-card,
-      .mini-presence {
-        grid-template-columns: 1fr;
-      }
-      .activity-grid,
+
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero h1 { max-width: none; }
+      .activity-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .feature-grid,
-      .download-grid,
-      .steps,
-      .presence-side-grid {
-        grid-template-columns: 1fr;
-      }
-      .hero-cta,
-      .hero-badges {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .btn {
-        width: 100%;
-      }
+      .steps { grid-template-columns: 1fr 1fr; }
     }
+    @media (max-width: 780px) {
+      .nav-links a:not(.btn) { display: none; }
+      .activity-grid,
+      .download-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 1.35rem, var(--max)); }
+      .nav { border-radius: 20px; padding-left: 0.7rem; }
+      .feature-grid,
+      .steps,
+      .download-grid,
+      .activity-grid { grid-template-columns: 1fr; }
+      .presence-preview { grid-template-columns: 1fr; }
+      .hero-cta { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+      .hero-meta { flex-direction: column; align-items: flex-start; }
+      .hero-meta-sep { display: none; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       *, *::before, *::after {
@@ -733,371 +743,340 @@
   </style>
 </head>
 <body>
-  <div class="site-shell">
-    <div class="wrap">
-      <div class="nav-shell">
-        <nav>
-          <a class="nav-brand" href="#">
-            <img src="icon.png" alt="" width="36" height="36">
-            <span>Smiley</span>
-          </a>
-          <div class="nav-links">
-            <a href="#features">Features</a>
-            <a href="#showcase">Preview</a>
-            <a href="#download">Download</a>
-            <a class="btn btn-primary" href="#download">Get v7.9.19</a>
-          </div>
-        </nav>
-        <div class="farewell-banner">
-          <strong>v8.0.0 will be the final planned release.</strong>
-          <p>After v8, Smiley will receive only occasional bug fixes. The community is welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork, modify, and keep it moving</a>. Thank you for being here. — Raj</p>
+  <div class="wrap">
+    <header class="nav-shell">
+      <nav class="nav" aria-label="Primary">
+        <a class="brand" href="#">
+          <img src="icon.png" alt="Smiley app icon" width="30" height="30">
+          <span class="brand-name">Smiley</span>
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#download">Download</a>
         </div>
-      </div>
+        <div class="nav-actions">
+          <button class="theme-toggle" type="button" id="themeToggle" aria-label="Toggle surface theme" title="Toggle theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+              <circle cx="12" cy="12" r="3.5"/>
+            </svg>
+          </button>
+          <a class="btn btn-primary" href="#download">Get v7.9.19</a>
+        </div>
+      </nav>
 
-      <section class="hero">
+      <aside class="notice" aria-label="Product status">
+        <strong>v8.0.0 will be the final planned release.</strong>
+        <p>After v8, Smiley receives occasional bug fixes only. You’re welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue the project</a>. — Raj</p>
+      </aside>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-heading">
         <div>
-          <div class="eyebrow">Discord Rich Presence</div>
-          <h1>Make every <span class="headline-accent">activity feel collectible.</span></h1>
-          <p class="hero-copy">Smiley turns your Discord profile into a premium live card for gaming, coding, music, anime, food, chilling, and more. One free desktop app for Windows, macOS, and Linux. No developer portal. No config files.</p>
-          <div class="hero-badges">
-            <span class="badge badge-live"><span class="pulse"></span>v7.9.19 live now</span>
-            <span class="badge">Gaming</span>
-            <span class="badge">Coding</span>
-            <span class="badge">Music</span>
-            <span class="badge">Food</span>
-            <span class="badge">Chilling</span>
-            <span class="badge">Anime</span>
+          <p class="hero-brand">Smiley</p>
+          <h1 id="hero-heading">Presence that feels <em>considered.</em></h1>
+          <p class="hero-lede">A free desktop app that turns Discord Rich Presence into a polished live card — for gaming, coding, music, food, chilling, anime, and studying. No portal. No config files.</p>
+          <div class="hero-meta">
+            <span class="meta-pill"><span class="meta-dot" aria-hidden="true"></span> v7.9.19 live</span>
+            <span class="hero-meta-sep" aria-hidden="true"></span>
+            <span>Windows · macOS · Linux</span>
           </div>
           <div class="hero-cta">
             <a class="btn btn-primary btn-lg" href="#download">Download free</a>
             <a class="btn btn-secondary btn-lg" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">View on GitHub</a>
           </div>
-          <p class="hero-note">The download section and release links stay exactly where users expect them: jump straight to <a href="#download">the download section</a>.</p>
         </div>
 
-        <div class="hero-stack">
-          <div class="premium-panel">
-            <div class="presence-window">
-              <div class="window-top">
-                <div class="window-dots"><span></span><span></span><span></span></div>
-                <div class="window-status">Live preview</div>
+        <div class="mockup" aria-label="Interactive Smiley app preview">
+          <div class="mockup-chrome">
+            <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="mockup-title">Smiley.app</div>
+            <div aria-hidden="true" style="width: 2.8rem;"></div>
+          </div>
+          <div class="mockup-body">
+            <div class="presence-preview">
+              <div class="presence-mark" id="heroPresenceIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="6" width="18" height="12" rx="2"/>
+                  <path d="M8 18v2M16 18v2M12 6V4"/>
+                  <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/>
+                  <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>
+                </svg>
               </div>
-              <div class="presence-hero-card">
-                <div class="presence-icon" id="heroPresenceIcon" aria-hidden="true">🎮</div>
-                <div>
-                  <div class="presence-label" id="heroPresenceLabel">Playing now</div>
-                  <div class="presence-title" id="heroPresenceTitle">Valorant</div>
-                  <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
-                  <div class="presence-meta-row">
-                    <span class="presence-chip" id="heroPresenceChipOne">Activity: Gaming</span>
-                    <span class="presence-chip" id="heroPresenceChipTwo">via Smiley</span>
-                    <span class="presence-chip" id="heroPresenceChipThree">Discord synced</span>
-                  </div>
-                </div>
-              </div>
-              <div class="presence-side-grid">
-                <div class="metric-card">
-                  <span>Current category</span>
-                  <strong id="heroMetricCategory">Gaming</strong>
-                </div>
-                <div class="metric-card">
-                  <span>Status tone</span>
-                  <strong id="heroMetricTone">Competitive</strong>
-                </div>
-                <div class="metric-card">
-                  <span>Platform</span>
-                  <strong>Windows, macOS, Linux</strong>
-                </div>
-                <div class="metric-card">
-                  <span>Setup</span>
-                  <strong>No config files</strong>
+              <div>
+                <div class="presence-kicker" id="heroPresenceLabel">Playing now</div>
+                <div class="presence-title" id="heroPresenceTitle">Valorant</div>
+                <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
+                <div class="presence-tags">
+                  <span class="tag" id="heroPresenceChipOne">Gaming</span>
+                  <span class="tag" id="heroPresenceChipTwo">via Smiley</span>
+                  <span class="tag" id="heroPresenceChipThree">Synced</span>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="premium-panel">
-            <div class="activity-browser">
-              <div class="activity-header">
-                <div>
-                  <h2>Choose a live activity</h2>
-                  <p>Click any card to update the hero preview.</p>
-                </div>
-                <p id="selectedActivityText">Selected: Gaming</p>
+            <div class="activity-panel">
+              <div class="activity-panel-head">
+                <h2>Activity</h2>
+                <p id="selectedActivityText">Selected · Gaming</p>
               </div>
-              <div class="activity-grid" id="activityGrid">
-                <button class="activity-card is-selected" type="button" data-key="gaming">
-                  <span class="emoji">🎮</span>
+              <div class="activity-grid" id="activityGrid" role="group" aria-label="Activity categories">
+                <button class="activity-card is-selected" type="button" data-key="gaming" aria-pressed="true">
+                  <span class="activity-monogram" aria-hidden="true">GM</span>
                   <strong>Gaming</strong>
-                  <span>Ranked, maps, squads</span>
+                  <span>Maps, ranks, squads</span>
                 </button>
-                <button class="activity-card" type="button" data-key="coding">
-                  <span class="emoji">💻</span>
+                <button class="activity-card" type="button" data-key="coding" aria-pressed="false">
+                  <span class="activity-monogram" aria-hidden="true">CD</span>
                   <strong>Coding</strong>
-                  <span>Editors, files, projects</span>
+                  <span>Editors &amp; files</span>
                 </button>
-                <button class="activity-card" type="button" data-key="music">
-                  <span class="emoji">🎵</span>
+                <button class="activity-card" type="button" data-key="music" aria-pressed="false">
+                  <span class="activity-monogram" aria-hidden="true">MU</span>
                   <strong>Music</strong>
-                  <span>Tracks, artists, albums</span>
+                  <span>Tracks &amp; artists</span>
                 </button>
-                <button class="activity-card" type="button" data-key="eating">
-                  <span class="emoji">🍜</span>
-                  <strong>Eating / Food</strong>
-                  <span>Meals, cafes, cravings</span>
+                <button class="activity-card" type="button" data-key="eating" aria-pressed="false">
+                  <span class="activity-monogram" aria-hidden="true">FD</span>
+                  <strong>Food</strong>
+                  <span>Meals &amp; breaks</span>
                 </button>
-                <button class="activity-card" type="button" data-key="chilling">
-                  <span class="emoji">🛋️</span>
+                <button class="activity-card" type="button" data-key="chilling" aria-pressed="false">
+                  <span class="activity-monogram" aria-hidden="true">CH</span>
                   <strong>Chilling</strong>
-                  <span>Relaxed, late-night vibes</span>
+                  <span>Late-night calm</span>
                 </button>
-                <button class="activity-card" type="button" data-key="anime">
-                  <span class="emoji">✨</span>
+                <button class="activity-card" type="button" data-key="anime" aria-pressed="false">
+                  <span class="activity-monogram" aria-hidden="true">AN</span>
                   <strong>Anime</strong>
-                  <span>Episodes, arcs, rewatches</span>
+                  <span>Episodes &amp; arcs</span>
                 </button>
-                <button class="activity-card" type="button" data-key="studying">
-                  <span class="emoji">📚</span>
+                <button class="activity-card" type="button" data-key="studying" aria-pressed="false">
+                  <span class="activity-monogram" aria-hidden="true">ST</span>
                   <strong>Studying</strong>
-                  <span>Sessions, notes, focus</span>
+                  <span>Focus sessions</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
       </section>
-    </div>
+    </main>
+  </div>
 
-    <section class="section" id="features">
-      <div class="wrap">
-        <div class="section-header">
-          <span class="section-label">Features</span>
-          <h2>Built to feel premium without feeling heavy.</h2>
-          <p>Smiley keeps the page fast and the product flexible: static gradients, transform-only interactions, local-first presence updates, and a wider set of everyday activities than just gaming or music.</p>
-        </div>
-        <div class="feature-grid">
-          <article class="feature-card">
-            <div class="feature-icon">🎮</div>
-            <h3>Gaming presence</h3>
-            <p>Share maps, agents, squads, rank context, and game states directly on Discord with richer local data.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">💻</div>
-            <h3>Coding sync</h3>
-            <p>Show which editor or AI tool is active, what file you are editing, and when you have gone idle.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">🍜</div>
-            <h3>Everyday categories</h3>
-            <p>Food, chilling, anime, and studying fit naturally beside gaming and music, so your profile feels personal all day.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">🎬</div>
-            <h3>Animated personality</h3>
-            <p>Anime GIFs, branded states, and custom activities keep the app expressive without complicating setup.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="showcase">
-      <div class="wrap">
-        <div class="section-header">
-          <span class="section-label">Preview</span>
-          <h2>A landing page tuned for clarity, contrast, and mood.</h2>
-          <p>The redesign shifts from bright orange-heavy styling to a deeper luxury palette with gold, lilac, and graphite tones while keeping the interaction model lightweight.</p>
-        </div>
-        <div class="showcase-layout">
-          <div class="showcase-copy">
-            <div class="story-card">
-              <strong>Ultra-premium color system</strong>
-              <p>Warm gold accents, soft violet highlights, and darker graphite panels create a more expensive look while preserving readable contrast.</p>
-            </div>
-            <div class="story-card">
-              <strong>Performance guardrails</strong>
-              <p>No blur-heavy overlays or expensive looping effects. Motion stays on transform and opacity only for a cleaner, faster feel.</p>
-            </div>
-            <div class="story-card">
-              <strong>Interactive category preview</strong>
-              <p>The hero now behaves like a small live selector, making it obvious that Smiley supports more than just gaming, music, and coding.</p>
-            </div>
-          </div>
-          <div class="showcase-stack">
-            <div class="mini-presence">
-              <div class="mini-icon">🎵</div>
-              <div>
-                <h3>Music stays polished</h3>
-                <p>Album, artist, and listening presence still read clearly in the new visual system.</p>
-              </div>
-            </div>
-            <div class="mini-presence">
-              <div class="mini-icon">🍱</div>
-              <div>
-                <h3>Food and chill states belong</h3>
-                <p>The grid now covers relaxed and everyday activities so the hero better reflects the app’s full personality.</p>
-              </div>
-            </div>
-            <div class="mini-presence">
-              <div class="mini-icon">✨</div>
-              <div>
-                <h3>Anime still has space</h3>
-                <p>Anime is now one of the visible first-class categories instead of being implied only in text lower on the page.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="how">
-      <div class="wrap">
-        <div class="section-header">
-          <span class="section-label">How it works</span>
-          <h2>Three steps. Still zero config.</h2>
-          <p>Install Smiley, open Discord desktop, choose any activity category that matches what you are actually doing.</p>
-        </div>
-        <div class="steps">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h3>Download</h3>
-            <p>Pick the installer or package for Windows, macOS, or Linux from the release section below.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h3>Launch Discord desktop</h3>
-            <p>Rich Presence works in the desktop app, so Smiley can publish your selected status cleanly.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h3>Switch activities instantly</h3>
-            <p>Gaming, coding, music, eating, chilling, anime, or studying can become your live identity in seconds.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="download">
-      <div class="wrap">
-        <div class="section-header">
-          <span class="section-label">Download</span>
-          <h2>Smiley v7.9.19</h2>
-          <p>Premium landing page, same trusted release links. <strong style="color: var(--gold-2);">v8</strong> remains the planned final release.</p>
-        </div>
-        <div class="download-grid">
-          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-Setup-7.9.19.exe" target="_blank" rel="noopener">
-            <strong>Windows</strong>
-            <span>Smiley-Setup-7.9.19.exe</span>
-          </a>
-          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19-arm64.dmg" target="_blank" rel="noopener">
-            <strong>macOS Apple Silicon</strong>
-            <span>Smiley-7.9.19-arm64.dmg</span>
-          </a>
-          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19-x64.dmg" target="_blank" rel="noopener">
-            <strong>macOS Intel</strong>
-            <span>Smiley-7.9.19-x64.dmg</span>
-          </a>
-          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19.AppImage" target="_blank" rel="noopener">
-            <strong>Linux AppImage</strong>
-            <span>Smiley-7.9.19.AppImage</span>
-          </a>
-          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19.deb" target="_blank" rel="noopener">
-            <strong>Linux .deb</strong>
-            <span>Smiley-7.9.19.deb</span>
-          </a>
-          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
-            <strong>All releases</strong>
-            <span>github.com/1tsRajuWu/Smiley</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
+  <section class="section" id="features">
     <div class="wrap">
-      <footer>
-        <p>Made by <a href="https://github.com/1tsRajuWu">Raj (1tsRajuWu)</a> · MIT License · <a href="https://paypal.me/1tsRaj">Support</a></p>
-        <p style="margin-top: 0.5rem;"><a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">A note on Smiley's future (v8 final)</a></p>
-      </footer>
+      <header class="section-header">
+        <span class="section-label">Features</span>
+        <h2>Quiet power. Clear presence.</h2>
+        <p>Everything you need to show what you’re actually doing — without turning Discord into a project.</p>
+      </header>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 18v2M16 18v2"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <h3>Seven first-class modes</h3>
+          <p>Gaming, coding, music, food, chilling, anime, and studying — each with room for detail, not just a vague status.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 4-6"/>
+            </svg>
+          </div>
+          <h3>Local, instant updates</h3>
+          <p>Switch activities from the desktop app. Your profile updates without developer portals or hand-written JSON.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/>
+            </svg>
+          </div>
+          <h3>Cross-platform by default</h3>
+          <p>Native-feeling installs for Windows, Apple Silicon, Intel Mac, and Linux — same product, same polish.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/>
+            </svg>
+          </div>
+          <h3>Designed for all-day use</h3>
+          <p>Not a gamer-only overlay. Carry one presence language from deep work through lunch, anime, and late-night chill.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l2.2 4.6L19 9l-3.5 3.3.9 5.2L12 15.2 7.6 17.5l.9-5.2L5 9l4.8-1.4L12 3z"/>
+            </svg>
+          </div>
+          <h3>Expressive when you want it</h3>
+          <p>Custom activities and animated flair stay optional. The default experience stays calm and intentional.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="5" y="11" width="14" height="10" rx="2"/>
+            </svg>
+          </div>
+          <h3>Free and open</h3>
+          <p>MIT-licensed. Fork-friendly. Built for people who care how their profile looks — without a subscription.</p>
+        </article>
+      </div>
     </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <header class="section-header">
+        <span class="section-label">How it works</span>
+        <h2>Three steps. Zero config.</h2>
+        <p>Install once, keep Discord desktop open, switch activities as your day changes.</p>
+      </header>
+      <div class="steps">
+        <article class="step">
+          <div class="step-num">01</div>
+          <h3>Download</h3>
+          <p>Grab the build for your platform from the release section below.</p>
+        </article>
+        <article class="step">
+          <div class="step-num">02</div>
+          <h3>Open Discord desktop</h3>
+          <p>Rich Presence publishes through the desktop client — keep it running alongside Smiley.</p>
+        </article>
+        <article class="step">
+          <div class="step-num">03</div>
+          <h3>Pick an activity</h3>
+          <p>Gaming, coding, music, food, chilling, anime, or studying — select, refine, done.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="download">
+    <div class="wrap">
+      <header class="section-header">
+        <span class="section-label">Download</span>
+        <h2>Smiley v7.9.19</h2>
+        <p>Same trusted release artifacts. <strong style="color: var(--champagne-bright); font-weight: 650;">v8</strong> remains the planned final major release.</p>
+      </header>
+      <div class="download-grid">
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-Setup-7.9.19.exe" target="_blank" rel="noopener">
+          <div class="plat"><strong>Windows</strong><span class="arrow" aria-hidden="true">→</span></div>
+          <span>Smiley-Setup-7.9.19.exe</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19-arm64.dmg" target="_blank" rel="noopener">
+          <div class="plat"><strong>macOS Apple Silicon</strong><span class="arrow" aria-hidden="true">→</span></div>
+          <span>Smiley-7.9.19-arm64.dmg</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19-x64.dmg" target="_blank" rel="noopener">
+          <div class="plat"><strong>macOS Intel</strong><span class="arrow" aria-hidden="true">→</span></div>
+          <span>Smiley-7.9.19-x64.dmg</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19.AppImage" target="_blank" rel="noopener">
+          <div class="plat"><strong>Linux AppImage</strong><span class="arrow" aria-hidden="true">→</span></div>
+          <span>Smiley-7.9.19.AppImage</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19.deb" target="_blank" rel="noopener">
+          <div class="plat"><strong>Linux .deb</strong><span class="arrow" aria-hidden="true">→</span></div>
+          <span>Smiley-7.9.19.deb</span>
+        </a>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
+          <div class="plat"><strong>All releases</strong><span class="arrow" aria-hidden="true">→</span></div>
+          <span>github.com/1tsRajuWu/Smiley</span>
+        </a>
+      </div>
+      <p class="download-note">Looking for the download section specifically? You’re here — or jump via <a href="#download">#download</a>. Direct link: <a href="download.html">download.html</a>.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <footer>
+      <p>Made by <a href="https://github.com/1tsRajuWu">Raj (1tsRajuWu)</a> · MIT License · <a href="https://paypal.me/1tsRaj">Support</a></p>
+      <p><a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">A note on Smiley’s future (v8 final)</a></p>
+    </footer>
   </div>
 
   <script>
+    const icons = {
+      gaming: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 18v2M16 18v2M12 6V4"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
+      coding: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 9 4 12 8 15"/><polyline points="16 9 20 12 16 15"/><line x1="13" y1="7" x2="11" y2="17"/></svg>',
+      music: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+      eating: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16"/><path d="M12 4v7"/><path d="M7 11c0 5 2 8 5 9 3-1 5-4 5-9"/><path d="M8 4c.5 2 1 3.5 0 5M16 4c-.5 2-1 3.5 0 5"/></svg>',
+      chilling: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3z"/><path d="M6 14V9a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v5"/><path d="M8 19v2M16 19v2"/></svg>',
+      anime: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 19v1M16 19v1M10 11h.01M14 11h.01"/><path d="M9 14.5s1.2 1.2 3 1.2 3-1.2 3-1.2"/></svg>',
+      studying: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
+    };
+
     const activityData = {
       gaming: {
-        icon: "🎮",
         label: "Playing now",
         title: "Valorant",
         state: "Ascent · Jett · Competitive 3-stack",
-        chipOne: "Activity: Gaming",
+        chipOne: "Gaming",
         chipTwo: "via Smiley",
-        chipThree: "Discord synced",
-        category: "Gaming",
-        tone: "Competitive"
+        chipThree: "Synced",
+        category: "Gaming"
       },
       coding: {
-        icon: "💻",
         label: "Building now",
         title: "Cursor",
-        state: "Editing landing-page-redesign.html · Project Smiley",
-        chipOne: "Activity: Coding",
-        chipTwo: "AI tools supported",
-        chipThree: "File + project shown",
-        category: "Coding",
-        tone: "Focused"
+        state: "Editing presence-panel.tsx · Project Smiley",
+        chipOne: "Coding",
+        chipTwo: "File-aware",
+        chipThree: "Synced",
+        category: "Coding"
       },
       music: {
-        icon: "🎵",
         label: "Listening now",
         title: "Night Dancer",
-        state: "imase · replaying favorites late at night",
-        chipOne: "Activity: Music",
+        state: "imase · late replay",
+        chipOne: "Music",
         chipTwo: "Album-aware",
-        chipThree: "Discord synced",
-        category: "Music",
-        tone: "Replay mode"
+        chipThree: "Synced",
+        category: "Music"
       },
       eating: {
-        icon: "🍜",
         label: "Eating now",
         title: "Ramen break",
-        state: "Warm bowl, no notifications, perfect timing",
-        chipOne: "Activity: Food",
-        chipTwo: "Custom status ready",
-        chipThree: "Discord synced",
-        category: "Eating / Food",
-        tone: "Comfort"
+        state: "Warm bowl · notifications off",
+        chipOne: "Food",
+        chipTwo: "Custom status",
+        chipThree: "Synced",
+        category: "Eating / Food"
       },
       chilling: {
-        icon: "🛋️",
         label: "Unwinding now",
         title: "Late-night chill",
-        state: "Lights low · playlist on · zero pressure",
-        chipOne: "Activity: Chilling",
-        chipTwo: "Mood-friendly",
-        chipThree: "Discord synced",
-        category: "Chilling",
-        tone: "Relaxed"
+        state: "Lights low · playlist on",
+        chipOne: "Chilling",
+        chipTwo: "Mood-first",
+        chipThree: "Synced",
+        category: "Chilling"
       },
       anime: {
-        icon: "✨",
         label: "Watching now",
         title: "Anime session",
-        state: "Episode queue open · favorite arc rewatch",
-        chipOne: "Activity: Anime",
+        state: "Favorite arc · episode queue",
+        chipOne: "Anime",
         chipTwo: "GIF-ready",
-        chipThree: "Discord synced",
-        category: "Anime",
-        tone: "Immersed"
+        chipThree: "Synced",
+        category: "Anime"
       },
       studying: {
-        icon: "📚",
         label: "Studying now",
         title: "Deep focus block",
-        state: "Notes open · timer on · distractions muted",
-        chipOne: "Activity: Studying",
+        state: "Notes open · timer on",
+        chipOne: "Studying",
         chipTwo: "Focus state",
-        chipThree: "Discord synced",
-        category: "Studying",
-        tone: "Locked in"
+        chipThree: "Synced",
+        category: "Studying"
       }
     };
 
@@ -1108,8 +1087,6 @@
     const heroPresenceChipOne = document.getElementById("heroPresenceChipOne");
     const heroPresenceChipTwo = document.getElementById("heroPresenceChipTwo");
     const heroPresenceChipThree = document.getElementById("heroPresenceChipThree");
-    const heroMetricCategory = document.getElementById("heroMetricCategory");
-    const heroMetricTone = document.getElementById("heroMetricTone");
     const selectedActivityText = document.getElementById("selectedActivityText");
     const activityCards = document.querySelectorAll(".activity-card");
 
@@ -1117,16 +1094,14 @@
       const next = activityData[key];
       if (!next) return;
 
-      heroPresenceIcon.textContent = next.icon;
+      heroPresenceIcon.innerHTML = icons[key] || icons.gaming;
       heroPresenceLabel.textContent = next.label;
       heroPresenceTitle.textContent = next.title;
       heroPresenceState.textContent = next.state;
       heroPresenceChipOne.textContent = next.chipOne;
       heroPresenceChipTwo.textContent = next.chipTwo;
       heroPresenceChipThree.textContent = next.chipThree;
-      heroMetricCategory.textContent = next.category;
-      heroMetricTone.textContent = next.tone;
-      selectedActivityText.textContent = "Selected: " + next.category;
+      selectedActivityText.textContent = "Selected · " + next.category;
 
       activityCards.forEach((card) => {
         const selected = card.dataset.key === key;
@@ -1136,8 +1111,23 @@
     }
 
     activityCards.forEach((card) => {
-      card.setAttribute("aria-pressed", card.classList.contains("is-selected") ? "true" : "false");
       card.addEventListener("click", () => updateHeroActivity(card.dataset.key));
+    });
+
+    const themeToggle = document.getElementById("themeToggle");
+    const root = document.documentElement;
+    const storedTheme = localStorage.getItem("smiley-theme");
+    if (storedTheme === "bright") root.setAttribute("data-theme", "bright");
+
+    themeToggle.addEventListener("click", () => {
+      const isBright = root.getAttribute("data-theme") === "bright";
+      if (isBright) {
+        root.removeAttribute("data-theme");
+        localStorage.setItem("smiley-theme", "dark");
+      } else {
+        root.setAttribute("data-theme", "bright");
+        localStorage.setItem("smiley-theme", "bright");
+      }
     });
   </script>
 </body>
