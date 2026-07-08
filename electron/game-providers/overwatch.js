@@ -1,4 +1,4 @@
-const OW2_ART = 'https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440cf/blt77c4f0b6234b1b29/1683835839683/OW2_Launch_Key_Art.jpg';
+const { GAME_LOGOS } = require('../game-assets');
 
 function parseMap(t) {
   const m = String(t || '').match(/^([^|–-]+)\s*[|–-]\s*overwatch/i)
@@ -26,6 +26,7 @@ function enrichOverwatch(game) {
 
   const map = parseMap(t);
   const scoreHint = parseScore(t);
+  const inMatch = !!(mode || scoreHint);
 
   return {
     provider: 'overwatch',
@@ -33,10 +34,12 @@ function enrichOverwatch(game) {
     map,
     mode,
     scoreHint,
+    phase: inMatch ? 'match' : 'lobby',
     inGame: true,
-    inMatch: !!(mode || scoreHint),
+    inMatch,
+    inLobby: !inMatch,
     launcher: 'Battle.net',
-    artworkUrl: OW2_ART,
+    artworkUrl: GAME_LOGOS.overwatch,
     updatedAt: Date.now(),
   };
 }

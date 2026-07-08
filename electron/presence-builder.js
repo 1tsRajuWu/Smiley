@@ -110,9 +110,84 @@ function buildValorantPresence(session, opts, fallbackState) {
 }
 
 /**
- * Build details (primary line) and state (live stats) from session.
+ * Soft parse status from a native window title (Steam / generic).
+ * Local/safe only — no memory reads. CS2 usually exposes no map here.
  */
-function buildPresenceLines(session, fallbackState = 'In the zone', options = {}) {
+function parseWindowHints(session) {
+  const raw = String(session?.windowTitle || '').trim();
+  const title = String(session?.title || '').trim();
+  const isCs2 = /^counter-strike/i.test(title)
+    || session?.steamAppId === 730
+    || session?.knownGameId === 'cs2';
+
+  if (!raw) {
+    return { map: null, mode: null, status: isCs2 || session?.steamAppId ? 'Playing' : null };
+  }
+
+  if (/\b(main\s*menu|in\s*lobby|^\s*lobby\s*$)\b/i.test(raw) && !/\bin\s*match\b/i.test(raw)) {
+    return { map: null, mode: null, status: 'In menu' };
+  }
+
+  // CS2's native window title is almost always just the product name — no public map
+  // without GSI/kernel cheats. Show "Playing" rather than catalog fluff.
+  if (isCs2 && (/^counter-strike\s*2?$/i.test(raw) || /^cs2$/i.test(raw))) {
+    return { map: null, mode: null, status: 'Playing' };
+  }
+
+  if (!title) return { map: null, mode: null, status: null };
+
+  let rest = raw;
+  const stripped = rest.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[|–\\-:]\\s*`, 'i'), '').trim();
+  if (stripped && stripped.toLowerCase() !== title.toLowerCase()) rest = stripped;
+  else if (raw.toLowerCase() === title.toLowerCase()) {
+    return { map: null, mode: null, status: 'Playing' };
+  }
+
+  let mode = null;
+  if (/\b(competitive|premier|wingman|deathmatch|casual|arms race|demolition|retakes?)\b/i.test(rest)) {
+    mode = rest.match(/\b(competitive|premier|wingman|deathmatch|casual|arms race|demolition|retakes?)\b/i)?.[1];
+    if (mode) mode = mode.replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  const mapCand = rest
+    .replace(/\b(competitive|premier|wingman|deathmatch|casual|arms race|demolition|retakes?)\b/gi, '')
+    .replace(/[|–\-:/]+/g, ' ')
+    .trim();
+  const map = mapCand && mapCand.length >= 2 && mapCand.length <= 40 && !/^playing$/i.test(mapCand)
+    ? mapCand
+    : null;
+  return { map, mode, status: map || mode ? null : 'Playing' };
+}
+
+function steamPhaseLabel(session, hints) {
+  if (session.inMatch || session.phase === 'match') return 'In match';
+  if (session.inLobby || session.phase === 'lobby') return 'In lobby';
+  if (session.inQueue || session.phase === 'queue') return 'In queue';
+  if (hints?.status) return hints.status;
+  if (session.steamAppId || session.launcher === 'Steam') return 'Playing';
+  return null;
+}
+
+function buildSteamOrWindowPresence(session, opts, fallbackState) {
+  const hints = parseWindowHints(session);
+  const map = session.map || hints.map;
+  const mode = (opts.showMode !== false && (session.mode || hints.mode)) || null;
+  const phaseLabel = steamPhaseLabel(session, hints);
+  const details = truncate(session.title || map || 'Gaming');
+  // Prefer game title on details; put phase + mode on state (Discord state line).
+  const state = truncate(joinParts([
+    phaseLabel && phaseLabel !== 'Playing' ? phaseLabel : null,
+    mode,
+    opts.showScore !== false && session.scoreHint,
+    opts.showParty !== false && partyDisplay(session.party, session.partySize),
+    map && map !== details ? map : null,
+    !phaseLabel || phaseLabel === 'Playing'
+      ? (mode || session.scoreHint || map ? null : 'Playing')
+      : null,
+  ]) || session.liveLine || phaseLabel || fallbackState || 'Playing');
+  return { details, state };
+}
+
+function buildPresenceLines(session, fallbackState = 'Playing', options = {}) {
   if (!session) {
     return { details: 'Gaming', state: fallbackState };
   }
@@ -125,9 +200,11 @@ function buildPresenceLines(session, fallbackState = 'In the zone', options = {}
   }
 
   const provider = session.provider || 'window';
+  // Live game sessions should never ship catalog fluff ("In the zone") as status
+  const liveFallback = fallbackState === 'In the zone' ? 'Playing' : (fallbackState || 'Playing');
 
   if (provider === 'riot-valorant') {
-    return buildValorantPresence(session, options, fallbackState);
+    return buildValorantPresence(session, options, liveFallback);
   }
 
   if (provider === 'riot-lol') {
@@ -138,7 +215,7 @@ function buildPresenceLines(session, fallbackState = 'In the zone', options = {}
       session.gameTime,
       o.showMode && session.mode,
       session.inMatch ? 'In game' : null,
-    ]) || session.liveLine || fallbackState);
+    ]) || session.liveLine || liveFallback);
     return { details, state };
   }
 
@@ -150,7 +227,7 @@ function buildPresenceLines(session, fallbackState = 'In the zone', options = {}
         o.showMode && session.mode,
         o.showParty && session.party,
         session.placement && `#${session.placement}`,
-      ]) || session.liveLine || 'Playing'),
+      ]) || session.liveLine || (session.inLobby ? 'In lobby' : 'Playing')),
     };
   }
 
@@ -162,7 +239,7 @@ function buildPresenceLines(session, fallbackState = 'In the zone', options = {}
         o.showMode && session.mode,
         o.showScore && session.scoreHint,
         o.showParty && session.party,
-      ]) || session.liveLine || 'Playing'),
+      ]) || session.liveLine || (session.inLobby ? 'In lobby' : 'Playing')),
     };
   }
 
@@ -170,7 +247,7 @@ function buildPresenceLines(session, fallbackState = 'In the zone', options = {}
     return {
       details: truncate(session.experience || session.server || 'Roblox'),
       state: truncate(joinParts([
-        session.inMatch ? 'Playing' : null,
+        session.inMatch ? 'In experience' : 'Playing',
         session.server && session.server !== session.experience ? session.server : null,
       ]) || session.liveLine || 'Playing'),
     };
@@ -187,13 +264,7 @@ function buildPresenceLines(session, fallbackState = 'In the zone', options = {}
   }
 
   const o = normalizeGamingPresenceOptions(options);
-  const details = truncate(session.title || 'Gaming');
-  const state = truncate(joinParts([
-    o.showScore && session.scoreHint && `Score ${session.scoreHint}`,
-    session.launcher,
-    o.showMode && session.mode,
-  ]) || session.liveLine || fallbackState);
-  return { details, state };
+  return buildSteamOrWindowPresence(session, o, liveFallback);
 }
 
 function buildGameSessionPayload(session, lines) {
@@ -255,7 +326,9 @@ function buildPresenceFromSession(session, template, {
     };
   }
 
-  const lines = buildPresenceLines(session, template.state || 'In the zone', opts);
+  // Catalog default "In the zone" is for idle Gaming only — live sessions use Playing
+  const fallbackState = template.state === 'In the zone' ? 'Playing' : (template.state || 'Playing');
+  const lines = buildPresenceLines(session, fallbackState, opts);
   const artworkUrl = resolveGameArtwork(session, opts);
   const smallImageUrl = resolveSmallImage(session, opts);
   const largeImageText = truncate(resolveLargeImageText(session) || lines.details);
@@ -265,7 +338,9 @@ function buildPresenceFromSession(session, template, {
     details: lines.details,
     state: lines.state,
     largeImageText,
-    smallImageText: session.agent || session.rankTier || session.rank || undefined,
+    smallImageText: session.agent || session.rankTier || session.rank
+      || (session.steamAppId ? 'Steam' : undefined)
+      || (session.launcher && session.launcher !== 'Steam' ? session.launcher : undefined),
     gameSession: buildGameSessionPayload({
       ...session,
       artworkUrl,
@@ -294,6 +369,8 @@ module.exports = {
   truncate,
   joinParts,
   partyDisplay,
+  parseWindowHints,
+  steamPhaseLabel,
   buildPresenceLines,
   buildPresenceFromSession,
   buildGameSessionPayload,

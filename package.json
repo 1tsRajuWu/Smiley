@@ -1,11 +1,11 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "7.9.22",
-  "description": "Smiley \u2014 Discord status with anime GIFs",
+  "version": "7.9.23",
+  "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
-  "copyright": "Copyright \u00a9 2025\u20132026 1tsRajuWu (Raj). All Rights Reserved.",
+  "copyright": "Copyright © 2025–2026 1tsRajuWu (Raj). All Rights Reserved.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -61,7 +61,7 @@
   "build": {
     "appId": "com.smiley.rpc",
     "productName": "Smiley",
-    "copyright": "Copyright \u00a9 2025\u20132026 Raj (1tsRaj). All Rights Reserved.",
+    "copyright": "Copyright © 2025–2026 Raj (1tsRaj). All Rights Reserved.",
     "compression": "maximum",
     "asar": true,
     "asarUnpack": [
@@ -196,7 +196,7 @@
       "maintainer": "Raj (1tsRaj)",
       "vendor": "Raj (1tsRaj)",
       "synopsis": "Smiley",
-      "description": "Smiley \u2014 Discord status with anime GIFs",
+      "description": "Smiley — Discord status with anime GIFs",
       "desktop": {
         "Name": "Smiley",
         "Comment": "Smiley"

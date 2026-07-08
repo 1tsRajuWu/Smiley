@@ -1,4 +1,4 @@
-const MINECRAFT_ART = 'https://www.minecraft.net/content/dam/games/minecraft/key-art/Games_Subnav_Minecraft-300x465.jpg';
+const { GAME_LOGOS } = require('../game-assets');
 
 function enrichMinecraft(game) {
   const title = String(game?.windowTitle || game?.title || '');
@@ -10,6 +10,7 @@ function enrichMinecraft(game) {
     : (server ? 'Multiplayer' : 'Playing');
   const versionMatch = title.match(/Minecraft\s+([\d.]+(?:\s*\([^)]+\))?)/i);
   const version = versionMatch?.[1]?.trim() || null;
+  const inMatch = !!server || /singleplayer/i.test(title);
 
   return {
     provider: 'minecraft',
@@ -17,9 +18,11 @@ function enrichMinecraft(game) {
     server,
     playMode,
     version,
+    phase: inMatch ? 'match' : 'lobby',
     inGame: true,
-    inMatch: !!server,
-    artworkUrl: MINECRAFT_ART,
+    inMatch,
+    inLobby: !inMatch,
+    artworkUrl: GAME_LOGOS.minecraft,
     updatedAt: Date.now(),
   };
 }

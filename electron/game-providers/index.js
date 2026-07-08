@@ -1,6 +1,8 @@
 // Game providers — merge Riot local API + foreground window detection
-const { lookupSteamMetadata, validateImageUrl } = require('../game-api');
-const { resolveGameArtwork, resolveSmallImage, SMILEY_LOGO, GAME_LOGOS } = require('../game-assets');
+const { lookupSteamMetadata, resolveSteamAppIdAlias, validateImageUrl } = require('../game-api');
+const {
+  resolveGameArtwork, resolveSmallImage, steamCapsule, SMILEY_LOGO, GAME_LOGOS,
+} = require('../game-assets');
 const { buildPresenceLines } = require('../presence-builder');
 const { getRiotLiveSession, isRiotGameProcess } = require('./riot');
 const { enrichMinecraft } = require('./minecraft');
@@ -36,13 +38,42 @@ function enrichForeground(foreground) {
     const hit = fn(foreground);
     if (hit) return { ...hit, processName: foreground.processName, windowTitle: foreground.windowTitle };
   }
-  return {
+  const base = {
     provider: 'window',
     title: foreground.title,
     processName: foreground.processName,
     windowTitle: foreground.windowTitle,
+    knownGameId: foreground.knownGameId || null,
     updatedAt: foreground.updatedAt || Date.now(),
   };
+  return attachSteamAlias(base);
+}
+
+/** Sync AppID + capsule from alias table (no network) so first RPC isn't empty. */
+function attachSteamAlias(session) {
+  if (!session || (session.provider && session.provider !== 'window')) return session;
+  if (session.steamAppId) {
+    const capsule = steamCapsule(session.steamAppId);
+    return {
+      ...session,
+      steamArtworkUrl: session.steamArtworkUrl || capsule,
+      artworkUrl: session.artworkUrl || capsule,
+    };
+  }
+  const queries = [session.knownGameId, session.processName, session.title].filter(Boolean);
+  for (const q of queries) {
+    const id = resolveSteamAppIdAlias(q);
+    if (!id) continue;
+    const capsule = steamCapsule(id);
+    return {
+      ...session,
+      steamAppId: id,
+      steamArtworkUrl: session.steamArtworkUrl || capsule,
+      artworkUrl: session.artworkUrl || capsule,
+      launcher: session.launcher || 'Steam',
+    };
+  }
+  return session;
 }
 
 function mergeForegroundWithSession(session, foreground) {
@@ -81,15 +112,19 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
 
   if (!session?.title) return { session: null, steamKey: lastSteamKey };
 
-  let meta = null;
-  // Also try processName for Steam AppID aliases (e.g. cs2.exe → 730)
-  const steamKey = [session.title, session.processName]
+  // Also try processName for Steam AppID aliases (e.g. cs2.exe → 730).
+  // Always re-apply from cache on every poll — sessions are rebuilt from foreground
+  // each tick, so skipping when steamKey === lastSteamKey dropped AppID/artwork and
+  // left Discord on Smiley logo + vague "In the zone".
+  const steamKey = [session.title, session.processName, session.knownGameId]
     .filter(Boolean)
     .map((s) => String(s).toLowerCase())
     .join('|');
   const needsSteam = !session.provider || session.provider === 'window';
-  if (needsSteam && steamKey !== lastSteamKey) {
-    const queries = [session.title, session.processName].filter(Boolean);
+  if (needsSteam) {
+    session = attachSteamAlias(session);
+    let meta = null;
+    const queries = [session.title, session.processName, session.knownGameId].filter(Boolean);
     for (const q of queries) {
       try { meta = await lookupSteamMetadata(q); } catch (_) { meta = null; }
       if (meta?.steamAppId) break;
@@ -97,16 +132,18 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
     if (meta) {
       session = {
         ...session,
-        artworkUrl: session.artworkUrl || meta.artworkUrl,
-        steamArtworkUrl: meta.steamArtworkUrl || meta.artworkUrl || null,
-        tags: session.tags || meta.tags,
+        artworkUrl: meta.artworkUrl || session.artworkUrl,
+        steamArtworkUrl: meta.steamArtworkUrl || meta.artworkUrl || session.steamArtworkUrl || null,
+        tags: session.tags?.length ? session.tags : (meta.tags || []),
         metascore: session.metascore || meta.metascore,
         steamAppId: session.steamAppId || meta.steamAppId,
+        launcher: session.launcher || 'Steam',
       };
     }
   }
 
-  const lines = buildPresenceLines(session, 'In the zone', presenceOpts);
+  // Prefer real Playing status over template fluff for live game sessions
+  const lines = buildPresenceLines(session, 'Playing', presenceOpts);
   session.details = lines.details;
   session.state = lines.state;
   session.liveLine = lines.state;
@@ -139,6 +176,7 @@ function getRiotPollMs(session) {
 module.exports = {
   resolveLiveGameSession,
   mergeForegroundWithSession,
+  attachSteamAlias,
   sessionSignature,
   getRiotPollMs,
   RIOT_POLL_MENU_MS,

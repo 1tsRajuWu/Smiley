@@ -1,4 +1,4 @@
-const FORTNITE_ART = 'https://cdn2.unrealengine.com/fortnite-chapter-5-lobby-background-1920x1080-1920x1080-f550d56711fa.jpg';
+const { GAME_LOGOS } = require('../game-assets');
 
 function parseParty(t) {
   if (/\bsolo\b/i.test(t)) return 'Solo';
@@ -27,6 +27,7 @@ function enrichFortnite(game) {
 
   const party = parseParty(t);
   const placement = parsePlacement(t);
+  const inMatch = !!(mode || placement);
 
   return {
     provider: 'fortnite',
@@ -34,10 +35,12 @@ function enrichFortnite(game) {
     mode,
     party,
     placement,
+    phase: inMatch ? 'match' : 'lobby',
     inGame: true,
-    inMatch: !!(mode || placement),
+    inMatch,
+    inLobby: !inMatch,
     launcher: 'Epic Games',
-    artworkUrl: FORTNITE_ART,
+    artworkUrl: GAME_LOGOS.fortnite,
     updatedAt: Date.now(),
   };
 }

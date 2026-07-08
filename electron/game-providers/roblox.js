@@ -1,4 +1,4 @@
-const ROBLOX_ART = 'https://images.rbxcdn.com/5348266ea6c5e5c58c58b8667b5d8d01.jpg';
+const { GAME_LOGOS } = require('../game-assets');
 
 function enrichRoblox(game) {
   const n = String(game?.processName || '').toLowerCase();
@@ -10,15 +10,19 @@ function enrichRoblox(game) {
     exp = exp.replace(/^roblox\s*[-–|]\s*/i, '').replace(/\s*[-–|]\s*roblox$/i, '').trim();
   }
 
+  const inMatch = !!exp;
+
   return {
     provider: 'roblox',
     title: 'Roblox',
     experience: exp || null,
     server: exp || null,
+    phase: inMatch ? 'match' : 'lobby',
     inGame: true,
-    inMatch: !!exp,
+    inMatch,
+    inLobby: !inMatch,
     launcher: 'Roblox',
-    artworkUrl: ROBLOX_ART,
+    artworkUrl: GAME_LOGOS.roblox,
     updatedAt: Date.now(),
   };
 }

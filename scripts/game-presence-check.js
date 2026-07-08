@@ -388,12 +388,22 @@ ok('Alias table has CS2', STEAM_APP_ALIASES.cs2 === 730);
 const cs2Art = buildPresenceFromSession({
   provider: 'window',
   title: 'Counter-Strike 2',
+  processName: 'cs2',
+  knownGameId: 'cs2',
   steamAppId: 730,
   steamArtworkUrl: assets.steamCapsule(730),
+  launcher: 'Steam',
 }, { category: 'gaming', state: 'In the zone' });
 ok('CS2 presence large_image is Steam capsule', cs2Art.discordImageUrl?.includes('capsule_231x87.jpg') && cs2Art.discordImageUrl.includes('730'));
 ok('CS2 presence not spinner', !/loading-gif/i.test(cs2Art.discordImageUrl || ''));
 ok('CS2 details = game title', cs2Art.details === 'Counter-Strike 2');
+ok('CS2 state is Playing (not In the zone)', cs2Art.state === 'Playing');
+ok('CS2 not vague zone fluff', !/in the zone/i.test(cs2Art.state || ''));
+ok('CS2 small_image has Steam mark', /steamcommunity|steamstatic/i.test(cs2Art.smallImageUrl || ''));
+
+const cs2Norm = normalizeGame({ processName: 'cs2', windowTitle: '' });
+ok('CS2 normalize attaches AppID 730', cs2Norm?.steamAppId === 730);
+ok('CS2 normalize attaches Steam capsule', cs2Norm?.steamArtworkUrl?.includes('/730/capsule'));
 
 const unknownArt = buildPresenceFromSession({
   provider: 'window',
@@ -401,12 +411,22 @@ const unknownArt = buildPresenceFromSession({
 }, { category: 'gaming', state: 'In the zone' });
 ok('Unknown game large_image = Smiley logo (no spinner)', unknownArt.discordImageUrl === assets.SMILEY_LOGO);
 ok('Unknown game not loading-gif', !/loading-gif|On7kvXhzml4/i.test(unknownArt.discordImageUrl || ''));
+ok('Unknown game state Playing not zone', unknownArt.state === 'Playing');
 
 // Other games must not get Valorant Queue/Lobby labels
 const fortniteLines = buildPresenceLines({
   provider: 'fortnite', title: 'Fortnite', mode: 'Battle Royale', party: 'Duo',
 });
 ok('Fortnite no Queue label', !fortniteLines.state.includes('Queue') && !fortniteLines.state.includes('In lobby'));
+ok('Fortnite details = Fortnite', fortniteLines.details === 'Fortnite');
+ok('Fortnite state has mode+party', fortniteLines.state.includes('Battle Royale') && fortniteLines.state.includes('Duo'));
+
+const fortniteArt = buildPresenceFromSession({
+  provider: 'fortnite', title: 'Fortnite', mode: 'Battle Royale', party: 'Duo', inMatch: true,
+}, { category: 'gaming', state: 'In the zone' });
+ok('Fortnite large_image is game logo CDN', fortniteArt.discordImageUrl === assets.GAME_LOGOS.fortnite
+  || /jtvnw\.net|unrealengine/i.test(fortniteArt.discordImageUrl || ''));
+ok('Fortnite state not In the zone', fortniteArt.state !== 'In the zone');
 
 const owLines = buildPresenceLines({
   provider: 'overwatch', title: 'Overwatch 2', map: 'Oasis', mode: 'Control', scoreHint: '1-0',

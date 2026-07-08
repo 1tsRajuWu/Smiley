@@ -50,9 +50,21 @@ async function main() {
     title: 'Counter-Strike 2',
     steamAppId: 730,
     steamArtworkUrl: picked || assets.steamCapsule(730),
-  }, { category: 'gaming', state: 'Playing' });
+    launcher: 'Steam',
+  }, { category: 'gaming', state: 'In the zone' });
   ok('CS2 payload large_image HTTPS', /^https:\/\//.test(activity.discordImageUrl || ''));
   ok('CS2 payload not spinner', !/loading-gif/i.test(activity.discordImageUrl || ''));
+  ok('CS2 payload details = Counter-Strike 2', activity.details === 'Counter-Strike 2');
+  ok('CS2 payload state = Playing', activity.state === 'Playing');
+  ok('CS2 payload example shape', activity.details === 'Counter-Strike 2' && activity.state === 'Playing'
+    && /730.*capsule|capsule.*730/i.test(activity.discordImageUrl || ''));
+
+  ok('Fortnite GAME_LOGO is Twitch box / CDN', /jtvnw\.net|unrealengine/i.test(assets.GAME_LOGOS.fortnite));
+  const fn = buildPresenceFromSession({
+    provider: 'fortnite', title: 'Fortnite', mode: 'Zero Build', party: 'Squad',
+  }, { category: 'gaming', state: 'In the zone' });
+  ok('Fortnite large_image uses GAME_LOGOS', fn.discordImageUrl === assets.GAME_LOGOS.fortnite);
+  ok('Fortnite text useful', fn.details === 'Fortnite' && /Zero Build/.test(fn.state) && !/in the zone/i.test(fn.state));
 
   const val = buildPresenceFromSession({
     provider: 'riot-valorant',

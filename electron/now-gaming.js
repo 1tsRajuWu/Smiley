@@ -3,6 +3,8 @@ const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const { resolveSteamAppIdAlias } = require('./game-api');
+const { steamCapsule } = require('./game-assets');
 
 const execFileAsync = promisify(execFile);
 const MAC_JXA = path.join(__dirname, 'now-gaming-mac.jxa.js');
@@ -94,19 +96,28 @@ function normalizeGame(raw) {
   const key = processName.toLowerCase();
   if (!processName || isIgnoredProcess(processName)) return null;
 
-  let title = String(raw.windowTitle || '').trim();
+  const known = matchKnownGame(processName);
+  const windowTitle = String(raw.windowTitle || '').trim();
+  let title = windowTitle;
   if (!title || title.toLowerCase() === key) {
-    const known = matchKnownGame(processName);
     title = known?.title || processName;
   }
   title = title.replace(/\s*[-–|]\s*(Riot Client|VALORANT)$/i, '').trim() || processName;
+  // Known catalog games always use branded titles (not process names).
+  if (known?.title) title = known.title;
 
-  const known = matchKnownGame(processName);
+  const steamAppId = resolveSteamAppIdAlias(known?.id)
+    || resolveSteamAppIdAlias(processName)
+    || resolveSteamAppIdAlias(title)
+    || null;
   return {
     title,
     processName,
-    windowTitle: raw.windowTitle || '',
+    windowTitle,
     knownGameId: known?.id || null,
+    steamAppId,
+    steamArtworkUrl: steamAppId ? steamCapsule(steamAppId) : null,
+    launcher: steamAppId ? 'Steam' : null,
     focused: raw.focused !== false,
     sticky: raw.sticky === true,
     updatedAt: Date.now(),

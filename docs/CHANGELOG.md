@@ -2,6 +2,16 @@
 
 All notable Smiley releases are documented here. Full release notes live in [docs/releases/](releases/).
 
+## [7.9.23] — 2026-07-08
+
+### Fixed
+- Steam / CS2 live Rich Presence: game logo capsule + title + Playing (no vague “In the zone”)
+- Steam AppID/artwork re-applied every poll from TTL cache (was dropped after first resolve)
+- Non-Riot games (Fortnite / OW / Roblox / Minecraft) share CDN GAME_LOGOS
+
+### Notes
+- Discord streak badges are Discord’s feature — Smiley does not set them
+
 ## [7.9.0] — 2026-07-08
 
 ### Added

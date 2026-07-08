@@ -21,21 +21,27 @@ const VALORANT_TIER_ACT = '03621f52-342b-cf4e-4f86-0cad5e4b6960';
 const VALORANT_GAME_LOGO =
   'https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76-128x128.png';
 
-/** Steam CDN host Discord's image proxy reliably fetches. */
+/** Steam CDN host Discord's image proxy reliably fetches (direct 200, no HTML redirect). */
 const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 
 /**
+ * Twitch CDN box art — small, HTTPS, Discord-proxy friendly (validated 200 image/*).
+ * Used for non-Steam titles whose official CDNs 403 / hotlink-block.
+ */
+const TWITCH_BOX = 'https://static-cdn.jtvnw.net/ttv-boxart';
+
+/**
  * Per-game logo for Discord large_image.
- * Prefer square ~128–256 CDN icons over multi-MB key art.
+ * Prefer square ~128–256 CDN icons over multi-MB key art / blocked hotlinks.
  */
 const GAME_LOGOS = {
   'riot-valorant': VALORANT_GAME_LOGO,
   'riot-lol': `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/profileicon/662.png`,
-  // Opaque store capsules / mid-size key arts (still URL-only — not bundled)
-  fortnite: 'https://cdn2.unrealengine.com/fortnite-chapter-5-lobby-background-1920x1080-1920x1080-f550d56711fa.jpg',
-  overwatch: 'https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440cf/blt77c4f0b6234b1b29/1683835839683/OW2_Launch_Key_Art.jpg',
-  roblox: 'https://images.rbxcdn.com/5348266ea6c5e5c58c58b8667b5d8d01.jpg',
-  minecraft: 'https://www.minecraft.net/content/dam/games/minecraft/key-art/Games_Subnav_Minecraft-300x465.jpg',
+  // Twitch catalog box art (Fortnite / OW / Roblox / Minecraft) — Epic/Blizzard/rbxcdn often 403
+  fortnite: `${TWITCH_BOX}/33214-144x192.jpg`,
+  overwatch: `${TWITCH_BOX}/515025-144x192.jpg`,
+  roblox: `${TWITCH_BOX}/263758-144x192.jpg`,
+  minecraft: `${TWITCH_BOX}/27471_IGDB-144x192.jpg`,
 };
 
 /** @deprecated alias — use GAME_LOGOS */
@@ -99,6 +105,7 @@ function normalizeSteamAppId(steamAppId) {
 /**
  * Smallest Steam CDN candidates first (Discord large_image).
  * Prefer opaque JPEG capsules over transparent logo.png (proxy often struggles).
+ * Prefer cloudflare host paths that return image/* with HTTP 200 (no HTML intermediate).
  */
 function steamArtworkCandidates(steamAppId) {
   const id = normalizeSteamAppId(steamAppId);
@@ -106,7 +113,8 @@ function steamArtworkCandidates(steamAppId) {
   return [
     `${STEAM_CDN}/${id}/capsule_231x87.jpg`,
     `${STEAM_CDN}/${id}/capsule_184x69.jpg`,
-    `${STEAM_CDN}/${id}/header.jpg`,
+    // header on cloudflare host can 301→HTML; use steamstatic host that returns JPEG
+    `https://cdn.steamstatic.com/steam/apps/${id}/header.jpg`,
     `${STEAM_CDN}/${id}/library_600x900.jpg`,
   ];
 }
@@ -121,7 +129,7 @@ function steamCapsule(steamAppId) {
 function steamHeader(steamAppId) {
   const id = normalizeSteamAppId(steamAppId);
   if (!id) return null;
-  return `${STEAM_CDN}/${id}/header.jpg`;
+  return `https://cdn.steamstatic.com/steam/apps/${id}/header.jpg`;
 }
 
 /** @deprecated prefer steamCapsule — logo.png is often transparent / heavier */
@@ -201,6 +209,11 @@ function resolveSmallImage(session, opts) {
     return lolChampionIcon(session.champ);
   }
 
+  // Steam: light community icon as small_image; large_image stays the game capsule
+  if (session.steamAppId || session.launcher === 'Steam') {
+    return 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/753/fe5c8408ba35b6a9174e985fe9589ad92944a4bc.jpg';
+  }
+
   return null;
 }
 
@@ -218,6 +231,7 @@ module.exports = {
   GAME_DEFAULTS,
   VALORANT_GAME_LOGO,
   STEAM_CDN,
+  TWITCH_BOX,
   DDRAGON_VERSION,
   VALORANT_TIER_ACT,
   valorantAgentIcon,
