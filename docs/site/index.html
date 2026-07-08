@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Smiley — Premium Discord Rich Presence</title>
   <meta name="description" content="A refined Discord Rich Presence desktop app for gaming, coding, music, food, chilling, anime, and studying. Free for Windows, macOS, and Linux.">
   <meta name="author" content="Himanshu Raj (1tsRajuWu)">
@@ -36,6 +36,10 @@
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
       --rail: 1.25rem;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
     }
 
     html[data-theme="paper"] {
@@ -63,6 +67,8 @@
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+      padding-left: var(--safe-left);
+      padding-right: var(--safe-right);
     }
     img { display: block; max-width: 100%; }
     a { color: inherit; }
@@ -72,7 +78,7 @@
       outline-offset: 3px;
     }
 
-    /* —— Top bar (minimal, not pill-nav) —— */
+    /* —— Top bar —— */
     .topbar {
       position: sticky;
       top: 0;
@@ -80,8 +86,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      padding: 0.85rem var(--rail);
+      gap: 0.75rem;
+      padding: calc(0.85rem + var(--safe-top)) calc(var(--rail) + var(--safe-right)) 0.85rem calc(var(--rail) + var(--safe-left));
       border-bottom: 1px solid var(--line);
       background: color-mix(in srgb, var(--ink) 94%, transparent);
     }
@@ -135,6 +141,91 @@
     }
     .icon-btn svg { width: 0.95rem; height: 0.95rem; }
 
+    .menu-btn {
+      display: none;
+      width: 2.75rem;
+      height: 2.75rem;
+      min-width: 44px;
+      min-height: 44px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--silver-dim);
+      transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+    .menu-btn:hover { color: var(--mint); border-color: var(--line-strong); }
+    .menu-btn svg { width: 1.1rem; height: 1.1rem; }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s var(--ease);
+    }
+    .mobile-nav.is-open {
+      display: block;
+      pointer-events: auto;
+      opacity: 1;
+    }
+    .mobile-nav-backdrop {
+      position: absolute;
+      inset: 0;
+      background: color-mix(in srgb, var(--ink) 72%, transparent);
+    }
+    .mobile-nav-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(18rem, 88vw);
+      height: 100%;
+      padding: calc(1rem + var(--safe-top)) calc(1.25rem + var(--safe-right)) calc(1.5rem + var(--safe-bottom)) 1.25rem;
+      border-left: 1px solid var(--line);
+      background: var(--ink-2);
+      transform: translateX(100%);
+      transition: transform 0.3s var(--ease);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .mobile-nav.is-open .mobile-nav-panel { transform: translateX(0); }
+    .mobile-nav-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .mobile-nav-head span {
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      font-size: 0.95rem;
+    }
+    .mobile-nav a {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0.65rem 0.5rem;
+      text-decoration: none;
+      color: var(--silver);
+      font-weight: 550;
+      font-size: 0.95rem;
+      border-radius: 8px;
+      transition: color 0.2s var(--ease), background 0.2s var(--ease);
+    }
+    .mobile-nav a:hover {
+      color: var(--mint);
+      background: var(--mint-soft);
+    }
+    .mobile-nav-cta {
+      margin-top: auto;
+      padding-top: 1rem;
+    }
+    .mobile-nav-cta .btn { width: 100%; min-height: 44px; }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -176,7 +267,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      padding: 3rem var(--rail) 0;
+      padding: 3rem calc(var(--rail) + var(--safe-right)) 0 calc(var(--rail) + var(--safe-left));
       overflow: hidden;
       isolation: isolate;
     }
@@ -317,12 +408,13 @@
       background: var(--mint);
     }
     .wordmark {
-      font-size: clamp(4.5rem, 18vw, 11rem);
+      font-size: clamp(3.2rem, 16vw, 11rem);
       font-weight: 800;
       letter-spacing: -0.07em;
       line-height: 0.85;
       color: var(--silver-bright);
       margin-bottom: 1.5rem;
+      overflow-wrap: anywhere;
     }
     .wordmark span {
       display: block;
@@ -361,7 +453,7 @@
       display: flex;
       align-items: flex-start;
       gap: 1rem;
-      padding: 1rem var(--rail);
+      padding: 1rem calc(var(--rail) + var(--safe-right)) 1rem calc(var(--rail) + var(--safe-left));
       border-top: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
       background: var(--ink-2);
@@ -384,18 +476,46 @@
     }
 
     /* —— Activity filmstrip (horizontal scroll) —— */
+    .filmstrip-wrap {
+      position: relative;
+    }
+    .filmstrip-wrap::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: calc(var(--rail) * -1);
+      width: 3rem;
+      height: calc(100% - 1rem);
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, var(--ink));
+      opacity: 0.85;
+    }
+    .filmstrip-hint {
+      display: none;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--silver-faint);
+      margin-bottom: 0.5rem;
+    }
+    .filmstrip-hint span { color: var(--mint); }
+
     .filmstrip {
       display: flex;
       gap: 0.65rem;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
+      scroll-padding-inline: var(--rail);
       padding: 0.35rem 0 1rem;
       margin: 0 calc(var(--rail) * -1);
-      padding-left: var(--rail);
-      padding-right: var(--rail);
+      padding-left: calc(var(--rail) + var(--safe-left));
+      padding-right: calc(var(--rail) + var(--safe-right));
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
       scrollbar-width: thin;
       scrollbar-color: var(--mint-deep) transparent;
+      touch-action: pan-x;
     }
     .filmstrip::-webkit-scrollbar { height: 3px; }
     .filmstrip::-webkit-scrollbar-track { background: transparent; }
@@ -403,8 +523,10 @@
 
     .film-card {
       flex: 0 0 auto;
-      width: min(200px, 68vw);
+      width: min(200px, 72vw);
+      min-height: 44px;
       scroll-snap-align: start;
+      scroll-snap-stop: always;
       padding: 1.2rem 1.1rem 1.1rem;
       border: 1px solid color-mix(in srgb, var(--silver) 12%, transparent);
       border-radius: 14px;
@@ -548,7 +670,7 @@
 
     /* —— Manifesto / features as numbered columns —— */
     .manifesto {
-      padding: 5rem var(--rail);
+      padding: 5rem calc(var(--rail) + var(--safe-right)) 5rem calc(var(--rail) + var(--safe-left));
       border-top: 1px solid var(--line);
       content-visibility: auto;
       contain-intrinsic-size: 1px 640px;
@@ -609,7 +731,7 @@
 
     /* —— How: tall stacked timeline —— */
     .how {
-      padding: 5rem var(--rail);
+      padding: 5rem calc(var(--rail) + var(--safe-right)) 5rem calc(var(--rail) + var(--safe-left));
       border-top: 1px solid var(--line);
       content-visibility: auto;
       contain-intrinsic-size: 1px 480px;
@@ -684,7 +806,7 @@
     /* —— Download: platform table, not cards —— */
     #download, #download-v8 { scroll-margin-top: 4rem; }
     .download {
-      padding: 5rem var(--rail) 4rem;
+      padding: 5rem calc(var(--rail) + var(--safe-right)) calc(4rem + var(--safe-bottom)) calc(var(--rail) + var(--safe-left));
       border-top: 1px solid var(--line);
       content-visibility: auto;
       contain-intrinsic-size: 1px 520px;
@@ -778,10 +900,49 @@
       text-decoration: none;
       border-bottom: 1px solid color-mix(in srgb, var(--mint) 35%, transparent);
     }
+    .dl-detect {
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--silver-dim);
+    }
+    .dl-detect strong {
+      color: var(--mint);
+      font-weight: 650;
+    }
+    .dl-row.is-recommended {
+      position: relative;
+      background: linear-gradient(90deg, var(--mint-soft), transparent 70%);
+      box-shadow:
+        inset 3px 0 0 var(--mint),
+        inset 0 0 0 1px color-mix(in srgb, var(--mint) 22%, transparent),
+        0 0 28px color-mix(in srgb, var(--mint) 10%, transparent);
+      z-index: 1;
+    }
+    .dl-row.is-recommended:hover {
+      background: linear-gradient(90deg, color-mix(in srgb, var(--mint) 18%, transparent), transparent 70%);
+    }
+    .dl-row.is-recommended .dl-plat::after {
+      content: "Recommended";
+      display: inline-block;
+      margin-left: 0.45rem;
+      padding: 0.12rem 0.45rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #04110c;
+      background: var(--mint);
+      border-radius: 999px;
+      vertical-align: middle;
+      box-shadow: 0 0 12px var(--mint-glow);
+    }
+    .dl-row.is-recommended .dl-cta {
+      color: var(--mint);
+    }
 
     /* —— Footer —— */
     footer {
-      padding: 2.5rem var(--rail) 3rem;
+      padding: 2.5rem calc(var(--rail) + var(--safe-right)) calc(3rem + var(--safe-bottom)) calc(var(--rail) + var(--safe-left));
       border-top: 1px solid var(--line);
       display: flex;
       flex-wrap: wrap;
@@ -810,16 +971,55 @@
       .feature-item:nth-child(2n+1) { padding-left: 0; }
       .how-grid { grid-template-columns: 1fr; gap: 2rem; }
       .hero-activities-head { flex-direction: column; align-items: flex-start; }
-      .hero-activities-head p { text-align: left; }
+      .hero-activities-head p { text-align: left; max-width: none; }
       .download-head { flex-direction: column; align-items: flex-start; }
       .download-head p { text-align: left; }
       .presence-readout { grid-template-columns: auto 1fr; }
       .presence-chips { grid-column: 1 / -1; justify-content: flex-start; }
+      .manifesto, .how, .download { padding-top: 3.5rem; padding-bottom: 3rem; }
     }
-    @media (max-width: 720px) {
-      .topbar-links { display: none; }
+
+    @media (max-width: 768px) {
       :root { --rail: 1rem; }
-      .wordmark { font-size: clamp(3.8rem, 22vw, 6rem); }
+      .topbar-links { display: none; }
+      .menu-btn { display: grid; }
+      .topbar .btn-mint { display: none; }
+      .topbar-actions { gap: 0.35rem; }
+      .icon-btn, .menu-btn { min-width: 44px; min-height: 44px; }
+
+      .hero {
+        min-height: auto;
+        padding-top: 2rem;
+        justify-content: flex-start;
+      }
+      .hero-copy { padding-bottom: 1rem; }
+      .wordmark { font-size: clamp(3rem, 20vw, 5.5rem); margin-bottom: 1.1rem; }
+      .hero-lede { font-size: clamp(0.95rem, 4vw, 1.1rem); max-width: none; }
+      .hero-eyebrow { font-size: 0.65rem; margin-bottom: 1rem; }
+      .hero-meta { font-size: 0.72rem; gap: 0.5rem 1rem; }
+      .hero-activities { padding-bottom: 2rem; }
+      .hero-activities-head h2 { font-size: clamp(1.2rem, 5vw, 1.5rem); }
+      .hero-activities-head p { font-size: 0.8rem; }
+
+      .filmstrip-hint { display: block; }
+      .filmstrip-wrap::after { width: 2.5rem; }
+      .film-card { width: min(180px, 78vw); padding: 1.1rem 1rem; }
+      .film-card strong { font-size: 1rem; }
+      .film-icon { width: 2.75rem; height: 2.75rem; }
+
+      .presence-readout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1.15rem;
+      }
+      .presence-mark { width: 3.25rem; height: 3.25rem; }
+      .presence-title { font-size: 1.15rem; }
+      .presence-state { font-size: 0.82rem; }
+
+      .ribbon { flex-direction: column; gap: 0.5rem; }
+      .ribbon strong { font-size: 0.75rem; }
+      .ribbon p { font-size: 0.8rem; }
+
       .feature-rail { grid-template-columns: 1fr; }
       .feature-item,
       .feature-item:nth-child(3n),
@@ -828,14 +1028,60 @@
         padding-left: 0;
         padding-right: 0;
       }
-      .dl-row {
-        grid-template-columns: 1fr auto;
-        gap: 0.35rem 1rem;
+      .manifesto-intro h2, .how h2, .download-head h2 {
+        font-size: clamp(1.5rem, 6vw, 2rem);
       }
-      .dl-file { grid-column: 1 / -1; order: 3; }
+
+      .timeline { padding-left: 1.35rem; }
+      .timeline li { padding-bottom: 1.75rem; }
+      .timeline li::before { left: -1.55rem; }
+
+      .dl-table {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        border: none;
+        background: transparent;
+        overflow: visible;
+      }
+      .dl-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+        padding: 1.15rem 1.2rem;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--ink-2);
+      }
+      .dl-row:last-child { border-bottom: 1px solid var(--line); }
+      .dl-plat { font-size: 1rem; }
+      .dl-file {
+        white-space: normal;
+        word-break: break-all;
+        font-size: 0.72rem;
+        order: unset;
+        grid-column: unset;
+      }
+      .dl-cta {
+        align-self: flex-end;
+        margin-top: 0.25rem;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
+
       .hero-cta { flex-direction: column; align-items: stretch; }
-      .btn { width: 100%; }
+      .hero-cta .btn { width: 100%; min-height: 44px; }
       footer { flex-direction: column; }
+    }
+
+    @media (max-width: 390px) {
+      .wordmark { font-size: clamp(2.75rem, 19vw, 3.5rem); letter-spacing: -0.06em; }
+      .topbar-brand { font-size: 0.88rem; }
+      .topbar-brand img { width: 24px; height: 24px; }
+      .film-card { width: min(168px, 82vw); }
+      .btn-xl { padding: 0.85rem 1.2rem; font-size: 0.92rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -868,9 +1114,36 @@
           <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>
         </svg>
       </button>
-      <a class="btn btn-mint" href="#download-v8">Get v8.0.6</a>
+      <button class="menu-btn" type="button" id="menuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <a class="btn btn-mint" href="#download-v8">Get v8.0.8</a>
     </div>
   </header>
+
+  <nav class="mobile-nav" id="mobileNav" aria-label="Mobile" hidden>
+    <div class="mobile-nav-backdrop" id="mobileNavBackdrop" tabindex="-1"></div>
+    <div class="mobile-nav-panel">
+      <div class="mobile-nav-head">
+        <span>Menu</span>
+        <button class="icon-btn" type="button" id="menuClose" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+      <a href="#modes">Modes</a>
+      <a href="#features">Craft</a>
+      <a href="#how">Flow</a>
+      <a href="#download">Install</a>
+      <a href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">GitHub</a>
+      <div class="mobile-nav-cta">
+        <a class="btn btn-mint" href="#download-v8">Download v8.0.8</a>
+      </div>
+    </div>
+  </nav>
 
   <section class="hero" aria-labelledby="hero-mark">
     <div class="hero-stage" aria-hidden="true">
@@ -888,12 +1161,12 @@
       <h1 class="wordmark" id="hero-mark">SMILEY<span>STATUS.</span></h1>
       <p class="hero-lede">Presence that looks intentional. Free desktop app for gaming, coding, music, food, chilling, anime, and studying — no portal, no JSON.</p>
       <div class="hero-cta">
-        <a class="btn btn-mint btn-xl" href="#download-v8">Download v8.0.6</a>
+        <a class="btn btn-mint btn-xl" href="#download-v8">Download v8.0.8</a>
         <a class="btn btn-ghost btn-xl" href="#download">v7.9.28 legacy</a>
         <a class="btn btn-ghost btn-xl" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">GitHub</a>
       </div>
       <div class="hero-meta">
-        <span><strong>v8.0.6</strong> native · <em>v7.9.28 Electron legacy</em></span>
+        <span><strong>v8.0.8</strong> native · <em>v7.9.28 Electron legacy</em></span>
         <span>Windows · macOS · Linux</span>
         <span>MIT · Open source</span>
       </div>
@@ -904,7 +1177,9 @@
         <h2>Seven modes.<br>One live card.</h2>
         <p>Scroll the strip. Tap a mode. Watch the presence update — same language all day.</p>
       </div>
-      <div class="filmstrip" id="activityStrip" role="group" aria-label="Activity categories">
+      <div class="filmstrip-wrap">
+        <p class="filmstrip-hint" aria-hidden="true">Swipe <span>→</span> to browse modes</p>
+        <div class="filmstrip" id="activityStrip" role="group" aria-label="Activity categories">
         <button class="film-card is-selected" type="button" data-key="gaming" aria-pressed="true">
           <div class="film-num">01</div>
           <div class="film-icon" aria-hidden="true" data-icon="gaming"></div>
@@ -947,6 +1222,7 @@
           <strong>Studying</strong>
           <span>Focus sessions</span>
         </button>
+        </div>
       </div>
 
       <div class="presence-readout" aria-live="polite">
@@ -971,8 +1247,8 @@
   </aside>
 
   <aside class="ribbon" aria-label="Product status">
-    <strong>v8.0.6 latest</strong>
-    <p>v8.0.6 is the current release. After v8.0.7, only occasional bug fixes are planned. You're welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue</a>. — Raj</p>
+    <strong>v8.0.8 latest</strong>
+    <p>v8.0.8 is the current release — music GIF presence and live coding detection. After v8.0.7, only occasional bug fixes are planned. You're welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue</a>. — Raj</p>
   </aside>
 
   <section class="manifesto" id="features">
@@ -1049,28 +1325,29 @@
       </div>
       <p>Native Tauri build — Valorant live board, music sync, privacy controls. <a href="https://github.com/1tsRajuWu/Smiley/blob/main/Smiley.v8/docs/PRIVACY-SECURITY.md">Privacy</a></p>
     </div>
+    <p class="dl-detect" data-dl-detect hidden></p>
     <div class="dl-table">
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64-setup.exe" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="windows" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64-setup.exe" target="_blank" rel="noopener">
         <span class="dl-plat">Windows</span>
         <span class="dl-file">Smiley.v8_8.0.6_x64-setup.exe</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_aarch64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="mac-arm64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_aarch64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Apple Silicon</span>
         <span class="dl-file">Smiley.v8_8.0.6_aarch64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="mac-x64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Intel</span>
         <span class="dl-file">Smiley.v8_8.0.6_x64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.AppImage" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="linux-appimage" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.AppImage" target="_blank" rel="noopener">
         <span class="dl-plat">Linux AppImage</span>
         <span class="dl-file">Smiley.v8_8.0.6_amd64.AppImage</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.deb" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="linux-deb" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.deb" target="_blank" rel="noopener">
         <span class="dl-plat">Linux .deb</span>
         <span class="dl-file">Smiley.v8_8.0.6_amd64.deb</span>
         <span class="dl-cta">Download →</span>
@@ -1092,28 +1369,29 @@
       </div>
       <p>Previous Electron shell — still supported for compatibility.</p>
     </div>
+    <p class="dl-detect" data-dl-detect hidden></p>
     <div class="dl-table">
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-Setup-7.9.28.exe" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="windows" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-Setup-7.9.28.exe" target="_blank" rel="noopener">
         <span class="dl-plat">Windows</span>
         <span class="dl-file">Smiley-Setup-7.9.28.exe</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-arm64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="mac-arm64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-arm64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Apple Silicon</span>
         <span class="dl-file">Smiley-7.9.28-arm64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-x64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="mac-x64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-x64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Intel</span>
         <span class="dl-file">Smiley-7.9.28-x64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.AppImage" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="linux-appimage" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.AppImage" target="_blank" rel="noopener">
         <span class="dl-plat">Linux AppImage</span>
         <span class="dl-file">Smiley-7.9.28.AppImage</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.deb" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="linux-deb" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.deb" target="_blank" rel="noopener">
         <span class="dl-plat">Linux .deb</span>
         <span class="dl-file">Smiley-7.9.28.deb</span>
         <span class="dl-cta">Download →</span>
@@ -1265,6 +1543,61 @@
         localStorage.setItem("smiley-theme", "paper");
       }
     });
+
+    function detectDownloadPlatform() {
+      const ua = navigator.userAgent || "";
+      const platform = navigator.platform || "";
+
+      if (/Win/i.test(platform) || /Windows/i.test(ua)) {
+        return { keys: ["windows"], label: "Windows" };
+      }
+
+      if (/Mac/i.test(platform) || /Macintosh|Mac OS X/i.test(ua)) {
+        if (/arm64|aarch64/i.test(ua)) {
+          return { keys: ["mac-arm64"], label: "macOS (Apple Silicon)" };
+        }
+        if (/x86_64|x64/i.test(ua) && !/arm64|aarch64/i.test(ua)) {
+          return { keys: ["mac-x64"], label: "macOS (Intel)" };
+        }
+        return { keys: ["mac-arm64"], label: "macOS (Apple Silicon)" };
+      }
+
+      if (/Linux/i.test(platform) || /Linux|X11/i.test(ua)) {
+        const debianish = /Debian|Ubuntu|Mint|Pop!_OS|elementary|Zorin|KDE neon|Parrot|Kali/i.test(ua);
+        if (debianish) {
+          return { keys: ["linux-deb"], label: "Linux (Debian/Ubuntu)" };
+        }
+        return { keys: ["linux-appimage"], label: "Linux" };
+      }
+
+      return { keys: [], label: null };
+    }
+
+    function highlightDownloads() {
+      const detected = detectDownloadPlatform();
+      if (!detected.keys.length) return;
+
+      document.querySelectorAll("[data-dl-detect]").forEach((el) => {
+        el.hidden = false;
+        el.innerHTML = "Detected: <strong>" + detected.label + "</strong> — recommended for your device";
+      });
+
+      const recommended = [];
+      document.querySelectorAll(".dl-row[data-platform]").forEach((row) => {
+        if (!detected.keys.includes(row.dataset.platform)) return;
+        row.classList.add("is-recommended");
+        recommended.push(row);
+      });
+
+      if (window.matchMedia("(max-width: 720px)").matches) {
+        recommended.forEach((row) => {
+          const table = row.closest(".dl-table");
+          if (table) table.prepend(row);
+        });
+      }
+    }
+
+    highlightDownloads();
   </script>
 </body>
 </html>
