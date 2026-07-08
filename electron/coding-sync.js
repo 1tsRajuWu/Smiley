@@ -141,6 +141,9 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
     template = { ...act, details: 'Coding', state: act.state || 'Building something cool' };
     lastSig = '';
     foreground = null;
+    // Apply static coding presence immediately (with GIF from selected activity),
+    // then live-update when a coding app is detected.
+    pushPresence(null, { force: true }).catch(() => {});
     ensureRunning().catch(() => {});
   }
 

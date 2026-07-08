@@ -1,32 +1,42 @@
 // Foreground coding-app detection — editors, terminals, and AI dev tools
 const { pollRawForeground } = require('./now-gaming');
 
-const POLL_MS = process.platform === 'darwin' ? 6000 : 4000;
+const POLL_MS = process.platform === 'darwin' ? 3000 : 2500;
 
 const CODING_APPS = [
   { id: 'cursor', name: 'Cursor', processes: ['cursor'], bundles: ['com.todesktop.230313mzl4w4u92'] },
-  { id: 'vscode', name: 'VS Code', processes: ['code', 'code - insiders', 'code - oss'], bundles: ['com.microsoft.vscode', 'com.microsoft.vscodeinsiders'] },
-  { id: 'vscodium', name: 'VSCodium', processes: ['vscodium'], bundles: ['com.vscodium'] },
+  {
+    id: 'vscode',
+    name: 'VS Code',
+    processes: ['code', 'code - insiders', 'code - oss', 'visual studio code'],
+    bundles: ['com.microsoft.vscode', 'com.microsoft.vscodeinsiders', 'com.microsoft.VSCode'],
+  },
+  { id: 'vscodium', name: 'VSCodium', processes: ['vscodium'], bundles: ['com.vscodium', 'com.visualstudio.code.oss'] },
   { id: 'windsurf', name: 'Windsurf', processes: ['windsurf'], bundles: ['com.exafunction.windsurf'] },
   { id: 'zed', name: 'Zed', processes: ['zed'], bundles: ['dev.zed.zed'] },
-  { id: 'sublime', name: 'Sublime Text', processes: ['sublime_text', 'subl'], bundles: [] },
-  { id: 'idea', name: 'IntelliJ IDEA', processes: ['idea', 'idea64'], bundles: [] },
-  { id: 'pycharm', name: 'PyCharm', processes: ['pycharm', 'pycharm64'], bundles: [] },
-  { id: 'webstorm', name: 'WebStorm', processes: ['webstorm', 'webstorm64'], bundles: [] },
-  { id: 'androidstudio', name: 'Android Studio', processes: ['studio', 'studio64'], bundles: [] },
+  { id: 'sublime', name: 'Sublime Text', processes: ['sublime text', 'sublime_text', 'subl'], bundles: ['com.sublimetext.4', 'com.sublimetext.3'] },
+  { id: 'idea', name: 'IntelliJ IDEA', processes: ['idea', 'idea64', 'intellij idea'], bundles: ['com.jetbrains.intellij'] },
+  { id: 'pycharm', name: 'PyCharm', processes: ['pycharm', 'pycharm64'], bundles: ['com.jetbrains.pycharm'] },
+  { id: 'webstorm', name: 'WebStorm', processes: ['webstorm', 'webstorm64'], bundles: ['com.jetbrains.webstorm'] },
+  { id: 'androidstudio', name: 'Android Studio', processes: ['studio', 'studio64', 'android studio'], bundles: ['com.google.android.studio'] },
   { id: 'xcode', name: 'Xcode', processes: ['xcode'], bundles: ['com.apple.dt.xcode'] },
   { id: 'nvim', name: 'Neovim', processes: ['nvim', 'neovide'], bundles: [] },
   { id: 'vim', name: 'Vim', processes: ['vim', 'gvim'], bundles: [] },
   { id: 'emacs', name: 'Emacs', processes: ['emacs'], bundles: [] },
   { id: 'opencode', name: 'OpenCode', processes: ['opencode'], bundles: [] },
   { id: 'openclaw', name: 'OpenClaw', processes: ['openclaw'], bundles: [] },
-  { id: 'ollama', name: 'Ollama', processes: ['ollama'], bundles: [] },
+  { id: 'ollama', name: 'Ollama', processes: ['ollama'], bundles: ['com.electron.ollama', 'ai.ollama.ollama'] },
   { id: 'chatgpt', name: 'ChatGPT', processes: ['chatgpt'], bundles: ['com.openai.chat'] },
-  { id: 'claude', name: 'Claude', processes: ['claude'], bundles: ['com.anthropic.claude'] },
+  { id: 'claude', name: 'Claude', processes: ['claude'], bundles: ['com.anthropic.claude', 'com.anthropic.claudefordesktop'] },
   { id: 'copilot', name: 'GitHub Copilot', processes: ['github copilot', 'copilot'], bundles: [] },
   { id: 'trae', name: 'Trae', processes: ['trae'], bundles: [] },
-  { id: 'fleet', name: 'Fleet', processes: ['fleet'], bundles: [] },
-  { id: 'terminal', name: 'Terminal', processes: ['terminal', 'iterm2', 'warp', 'alacritty', 'kitty', 'wezterm'], bundles: [] },
+  { id: 'fleet', name: 'Fleet', processes: ['fleet'], bundles: ['com.jetbrains.fleet'] },
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    processes: ['terminal', 'iterm2', 'warp', 'alacritty', 'kitty', 'wezterm'],
+    bundles: ['com.apple.terminal', 'com.googlecode.iterm2', 'dev.warp.Warp-Stable'],
+  },
 ];
 
 const IDE_SUFFIX = /(?:visual studio code|cursor|windsurf|vscodium|vs code|intellij idea|pycharm|webstorm|android studio|xcode|zed|sublime text)$/i;
@@ -41,11 +51,19 @@ function matchCodingApp(raw) {
   const processName = humanize(raw.processName);
   const bundleId = String(raw.bundleId || '').toLowerCase();
   const key = processName.toLowerCase();
+  // Ignore helpers / crashpads / Smiley itself.
   if (!processName || /smiley/i.test(processName)) return null;
+  if (/\bhelper\b|\bcrashpad\b|\bgpu\b|\brenderer\b/i.test(key) && !/^cursor$/i.test(key)) return null;
 
   for (const app of CODING_APPS) {
-    const procMatch = app.processes.some((p) => key === p || key.startsWith(`${p} `));
-    const bundleMatch = bundleId && app.bundles.some((b) => bundleId === b || bundleId.startsWith(`${b}.`));
+    const procMatch = app.processes.some((p) => {
+      const needle = String(p).toLowerCase();
+      return key === needle || key.startsWith(`${needle} `) || key.includes(needle);
+    });
+    const bundleMatch = bundleId && app.bundles.some((b) => {
+      const needle = String(b).toLowerCase();
+      return bundleId === needle || bundleId.startsWith(`${needle}.`);
+    });
     if (procMatch || bundleMatch) return { ...app, processName, bundleId };
   }
   return null;
