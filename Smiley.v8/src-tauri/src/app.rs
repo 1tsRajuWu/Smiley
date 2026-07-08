@@ -4,7 +4,6 @@ use crate::discord::{Discord, Presence};
 use crate::error::{AppError, AppResult};
 use crate::models::{sanitize_gif_url, sanitize_gif_url_or, *};
 use parking_lot::Mutex;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
@@ -24,6 +23,8 @@ pub struct App {
     pub started_at: Mutex<Option<u64>>,
     pub rotate_index: Mutex<usize>,
     pub last_set_at: Mutex<Option<Instant>>,
+    /// Last pushed music track signature — skip Discord when unchanged.
+    pub last_music_sig: Mutex<String>,
 }
 
 impl App {
@@ -48,6 +49,7 @@ impl App {
             started_at: Mutex::new(None),
             rotate_index: Mutex::new(0),
             last_set_at: Mutex::new(None),
+            last_music_sig: Mutex::new(String::new()),
         }))
     }
 
@@ -497,7 +499,62 @@ impl App {
         self.save_config(cfg)
     }
 
-    /// Overlay live Valorant/Riot or music onto Discord when those modes are active.
+    pub fn music_listening_active(&self) -> bool {
+        let cfg = self.config.lock();
+        let status = self.status.lock();
+        status.connected
+            && !status.paused
+            && cfg.music_now_playing
+            && status.activity_id.as_deref() == Some("listening")
+    }
+
+    /// Fast music overlay — dedicated bg thread (~2s). Timed osascript only.
+    pub fn music_tick(&self) -> AppResult<()> {
+        let cfg = self.config.lock().clone();
+        let status = self.status.lock().clone();
+        if !status.connected || status.paused {
+            *self.last_music_sig.lock() = String::new();
+            return Ok(());
+        }
+        if Self::in_quiet_hours(&cfg) {
+            return Ok(());
+        }
+        if !cfg.music_now_playing || status.activity_id.as_deref() != Some("listening") {
+            *self.last_music_sig.lock() = String::new();
+            return Ok(());
+        }
+
+        if let Ok(Some(track)) = crate::music::probe_now_playing() {
+            let sig = crate::music::track_signature(&track);
+            if sig == *self.last_music_sig.lock() {
+                return Ok(());
+            }
+            *self.last_music_sig.lock() = sig;
+
+            let details = trunc(&track.title, 128);
+            let state = trunc(&format!("{} · {}", track.artist, track.app), 128);
+            let gif = status.gif.clone().unwrap_or_else(|| {
+                "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif"
+                    .into()
+            });
+            self.discord.set(self.build_presence(
+                &details,
+                &state,
+                "🎧",
+                &gif,
+                None,
+            ))?;
+            {
+                let mut s = self.status.lock();
+                s.details = Some(details);
+                s.state = Some(state);
+                s.message = "Music live".into();
+            }
+        }
+        Ok(())
+    }
+
+    /// Overlay live Valorant/Riot onto Discord when gaming modes are active.
     /// Safe: local lockfile / timed osascript only. Never blocks the UI (bg thread).
     pub fn live_tick(&self) -> AppResult<()> {
         let cfg = self.config.lock().clone();
@@ -509,37 +566,8 @@ impl App {
             return Ok(());
         }
 
-        // Music overlay while listening template is selected (probe every ~12s)
-        static MUSIC_TICK: AtomicU32 = AtomicU32::new(0);
+        // Music has its own fast thread — don't let gaming steal the listening slot.
         if cfg.music_now_playing && status.activity_id.as_deref() == Some("listening") {
-            let tick = MUSIC_TICK.fetch_add(1, Ordering::Relaxed);
-            if tick % 3 == 0 {
-                if let Ok(Some(track)) = crate::music::probe_now_playing() {
-                    let details = trunc(&track.title, 128);
-                    let state = trunc(
-                        &format!("{} · {}", track.artist, track.app),
-                        128,
-                    );
-                    let gif = status.gif.clone().unwrap_or_else(|| {
-                        "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif"
-                            .into()
-                    });
-                    self.discord.set(self.build_presence(
-                        &details,
-                        &state,
-                        "🎧",
-                        &gif,
-                        None,
-                    ))?;
-                    {
-                        let mut s = self.status.lock();
-                        s.details = Some(details);
-                        s.state = Some(state);
-                        s.message = "Music live".into();
-                    }
-                }
-            }
-            // Stay on listening slot even if no track yet — don't let gaming steal it
             return Ok(());
         }
 

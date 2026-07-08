@@ -252,12 +252,28 @@ pub fn run() {
                 });
             }
 
-            // Live gaming + music — off UI thread, rate-limited
+            // Live gaming — off UI thread (8s)
             {
                 let st = state.clone();
                 std::thread::spawn(move || loop {
                     std::thread::sleep(Duration::from_secs(8));
                     let _ = st.live_tick();
+                });
+            }
+
+            // Music now-playing — fast poll when listening (2s), idle otherwise (8s)
+            {
+                let st = state.clone();
+                std::thread::spawn(move || loop {
+                    let active = st.music_listening_active();
+                    std::thread::sleep(if active {
+                        Duration::from_secs(2)
+                    } else {
+                        Duration::from_secs(8)
+                    });
+                    if active {
+                        let _ = st.music_tick();
+                    }
                 });
             }
 

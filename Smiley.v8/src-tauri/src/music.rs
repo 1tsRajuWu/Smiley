@@ -126,3 +126,57 @@ fn run_script(script: &str) -> AppResult<Option<TrackHit>> {
         playing: parts[4].trim() == "1",
     }))
 }
+
+/// Stable dedup key — title + artist + app + playing state (case-insensitive).
+pub fn track_signature(track: &TrackHit) -> String {
+    format!(
+        "{}\0{}\0{}\0{}",
+        track.title.trim().to_ascii_lowercase(),
+        track.artist.trim().to_ascii_lowercase(),
+        track.app.trim().to_ascii_lowercase(),
+        if track.playing { "1" } else { "0" },
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn track_signature_dedupes_same_song() {
+        let a = TrackHit {
+            title: "Song".into(),
+            artist: "Artist".into(),
+            album: "Album".into(),
+            app: "Spotify".into(),
+            playing: true,
+        };
+        let b = TrackHit {
+            title: "song".into(),
+            artist: "ARTIST".into(),
+            album: "other".into(),
+            app: "spotify".into(),
+            playing: true,
+        };
+        assert_eq!(track_signature(&a), track_signature(&b));
+    }
+
+    #[test]
+    fn track_signature_changes_on_new_track() {
+        let a = TrackHit {
+            title: "A".into(),
+            artist: "B".into(),
+            album: "".into(),
+            app: "Music".into(),
+            playing: true,
+        };
+        let b = TrackHit {
+            title: "C".into(),
+            artist: "B".into(),
+            album: "".into(),
+            app: "Music".into(),
+            playing: true,
+        };
+        assert_ne!(track_signature(&a), track_signature(&b));
+    }
+}
