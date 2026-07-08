@@ -636,8 +636,6 @@ body.has-window-controls .app-header {
   color: var(--text-muted);
 }
 .toggle.sm { transform: scale(0.85); transform-origin: right center; }
-.riot-key-row { display: flex; gap: 8px; align-items: center; }
-.riot-key-row .text-input { flex: 1; min-width: 0; }
 .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
 .gaming-discord-preview {
   margin-top: 16px;

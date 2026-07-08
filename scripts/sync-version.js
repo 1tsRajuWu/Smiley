@@ -40,6 +40,18 @@ patchFile(path.join(ROOT, 'src/index.html'), (html) =>
   html.replace(/(<span class="footer-version" id="footerVersion">Smiley v)[\d.]+(<\/span>)/, `$1${version}$2`)
 );
 
+patchFile(path.join(ROOT, 'docs/site/index.html'), (html) =>
+  html
+    .replace(/(Get v)[\d.]+/g, `$1${version}`)
+    .replace(/(badge badge--live"><span class="pulse"><\/span>v)[\d.]+/g, `$1${version}`)
+    .replace(/(<h2>Smiley v)[\d.]+(<\/h2>)/g, `$1${version}$2`)
+    .replace(/(releases\/download\/v)[\d.]+/g, `$1${version}`)
+    .replace(/(Smiley-Setup-)[\d.]+(\.exe)/g, `$1${version}$2`)
+    .replace(/(Smiley-)[\d.]+(-(arm64|x64)\.dmg)/g, `$1${version}$2`)
+    .replace(/(Smiley-)[\d.]+(\.AppImage)/g, `$1${version}$2`)
+    .replace(/(Smiley-)[\d.]+(\.deb)/g, `$1${version}$2`)
+);
+
 const mobilePkgPath = path.join(ROOT, 'mobile/package.json');
 patchFile(mobilePkgPath, (json) => {
   const pkg = JSON.parse(json);

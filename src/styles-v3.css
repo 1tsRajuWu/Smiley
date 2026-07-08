@@ -5,8 +5,7 @@
 
 :root,
 [data-ui-version='v3'] {
-  --v3-control-width: 240px;
-  --v3-preview-width: 320px;
+  --v3-preview-width: 360px;
   --v3-radius: 20px;
   --v3-radius-sm: 12px;
   --v3-purple: #a78bfa;
@@ -15,6 +14,8 @@
   --v3-music-soft: rgba(251, 113, 133, 0.12);
   --v3-gaming: #7aa2f7;
   --v3-gaming-soft: rgba(122, 162, 247, 0.12);
+  --v3-coding: #bb9af7;
+  --v3-coding-soft: rgba(187, 154, 247, 0.12);
   --v3-surface-glass: color-mix(in srgb, var(--bg-card) 72%, transparent);
   --v3-surface-2: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
   --v3-border: color-mix(in srgb, var(--border) 50%, var(--v3-purple) 14%);
@@ -36,8 +37,8 @@
 
 [data-ui-version='v3'] .content {
   display: grid;
-  grid-template-columns: var(--v3-control-width) 1fr var(--v3-preview-width);
-  grid-template-areas: 'controls picker preview';
+  grid-template-columns: minmax(0, 1fr) var(--v3-preview-width);
+  grid-template-areas: 'picker preview';
   gap: 0;
   padding: 0;
   min-height: 0;
@@ -108,6 +109,7 @@
 }
 [data-ui-version='v3'] .feature-card--music { border-left: 3px solid var(--v3-music); }
 [data-ui-version='v3'] .feature-card--gaming { border-left: 3px solid var(--v3-gaming); }
+[data-ui-version='v3'] .feature-card--coding { border-left: 3px solid var(--v3-coding); }
 [data-ui-version='v3'] .feature-card--gifs { border-left: 3px solid var(--v3-purple); }
 [data-ui-version='v3'] .feature-card--rpc { border-left: 3px solid var(--accent); }
 [data-ui-version='v3'] .feature-card__icon { font-size: 1.25rem; flex-shrink: 0; width: 32px; text-align: center; }
@@ -118,7 +120,7 @@
 [data-ui-version='v3'] .gaming-presence-toggles { display: flex; flex-direction: column; gap: 6px; }
 [data-ui-version='v3'] .toggle-row { padding: 4px 0; font-size: 0.78rem; }
 
-[data-ui-version='v3'] .picker-main { grid-area: picker; display: flex; flex-direction: column; min-width: 0; padding: 0 16px 16px; }
+[data-ui-version='v3'] .picker-main { grid-area: picker; display: flex; flex-direction: column; min-width: 0; padding: 0 20px 18px; }
 [data-ui-version='v3'] .picker-header {
   flex-direction: column;
   align-items: stretch;
@@ -244,16 +246,10 @@
   flex: 1;
 }
 
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='music'] .character-stage,
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='music'] .discord-card,
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='music'] .live-gaming-preview,
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='music'] #gamingPreviewBar { display: none !important; }
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='music'] #musicPreviewBar { display: flex !important; }
-
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='gaming'] .character-stage,
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='gaming'] .discord-card,
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='gaming'] #musicPreviewBar { opacity: 0.35; pointer-events: none; }
-[data-ui-version='v3'] .live-preview-body[data-preview-mode='gaming'] .live-gaming-preview { order: -1; }
+[data-ui-version='v3'] .live-preview-body[data-preview-mode='coding'] .character-stage,
+[data-ui-version='v3'] .live-preview-body[data-preview-mode='coding'] .discord-card,
+[data-ui-version='v3'] .live-preview-body[data-preview-mode='coding'] .character-stage { opacity: 0.35; pointer-events: none; }
+[data-ui-version='v3'] .live-preview-body[data-preview-mode='coding'] #codingPreviewBar { display: flex !important; border-left: 3px solid var(--v3-coding); }
 
 [data-ui-version='v3'] .character-stage {
   background: var(--v3-surface-glass);
@@ -273,18 +269,8 @@
 [data-ui-version='v3'] .discord-card { border-radius: var(--v3-radius-sm); background: #1e1f22; border: 1px solid rgba(255,255,255,0.06); }
 [data-ui-version='v3'] .discord-details { font-size: 0.82rem; font-weight: 700; color: #f2f3f5; }
 [data-ui-version='v3'] .discord-state { font-size: 0.72rem; color: #b5bac1; }
-[data-ui-version='v3'] #musicPreviewBar { border-left: 3px solid var(--v3-music); }
-[data-ui-version='v3'] #gamingPreviewBar { border-left: 3px solid var(--v3-gaming); }
-[data-ui-version='v3'] .music-preview-progress-fill { background: linear-gradient(90deg, var(--v3-music), var(--v3-purple)); }
-[data-ui-version='v3'] .live-gaming-preview {
-  border-color: color-mix(in srgb, var(--v3-gaming) 40%, var(--v3-border));
-  background: linear-gradient(145deg, color-mix(in srgb, var(--v3-gaming) 10%, var(--bg-card)), color-mix(in srgb, var(--v3-purple) 6%, var(--bg-elevated)));
-}
-[data-ui-version='v3'] .gaming-state-pill.active {
-  background: color-mix(in srgb, var(--v3-gaming) 22%, var(--bg-card));
-  border-color: var(--v3-gaming);
-  color: #c0d4ff;
-}
+[data-ui-version='v3'] #codingPreviewBar { border-left: 3px solid var(--v3-coding); }
+[data-ui-version='v3'] .coding-preview-icon { font-size: 1.35rem; }
 [data-ui-version='v3'] .preview-actions { flex-direction: column; gap: 6px; margin-top: auto; }
 [data-ui-version='v3'] .preview-actions .btn { width: 100%; justify-content: center; border-radius: var(--v3-radius-sm); }
 [data-ui-version='v3'] .donate-banner { border-radius: var(--v3-radius-sm); padding: 12px; border: 1px solid var(--v3-border); }
@@ -299,15 +285,13 @@
 [data-ui-version='v3'].animations-off .activity-card { animation: none; }
 
 @media (max-width: 1100px) {
-  [data-ui-version='v3'] .content { grid-template-columns: 200px 1fr 280px; }
+  [data-ui-version='v3'] .content { grid-template-columns: minmax(0, 1fr) 300px; }
 }
 @media (max-width: 900px) {
   [data-ui-version='v3'] .content {
     grid-template-columns: 1fr;
-    grid-template-areas: 'preview' 'controls' 'picker';
+    grid-template-areas: 'preview' 'picker';
   }
-  [data-ui-version='v3'] .control-panel { border-right: none; border-bottom: 1px solid var(--v3-border); flex-direction: row; flex-wrap: wrap; gap: 12px; }
-  [data-ui-version='v3'] .panel-section { flex: 1 1 220px; border-bottom: none; margin-bottom: 0; }
   [data-ui-version='v3'] .live-preview { border-left: none; border-bottom: 1px solid var(--v3-border); }
   [data-ui-version='v3'] .ui-version-options { grid-template-columns: 1fr; }
 }

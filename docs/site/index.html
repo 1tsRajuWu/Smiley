@@ -8,7 +8,7 @@
   <meta name="author" content="Himanshu Raj (1tsRajuWu)">
   <link rel="canonical" href="https://1tsrajuwu.github.io/Smiley/">
   <meta property="og:title" content="Smiley — Discord Rich Presence">
-  <meta property="og:description" content="Anime GIFs, live music sync, and Valorant gaming presence on Discord.">
+  <meta property="og:description" content="Anime GIFs, live music sync, and gaming presence on Discord.">
   <meta property="og:url" content="https://1tsrajuwu.github.io/Smiley/">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://1tsrajuwu.github.io/Smiley/icon.png">
@@ -28,6 +28,8 @@
       --orange-glow: rgba(249, 115, 22, 0.35);
       --gaming: #7aa2f7;
       --gaming-soft: rgba(122, 162, 247, 0.12);
+      --coding: #bb9af7;
+      --coding-soft: rgba(187, 154, 247, 0.12);
       --music: #fb7185;
       --music-soft: rgba(251, 113, 133, 0.12);
       --success: #34d399;
@@ -140,6 +142,7 @@
     }
     .presence-card--music { border-left: 3px solid var(--music); }
     .presence-card--gaming { border-left: 3px solid var(--gaming); }
+    .presence-card--coding { border-left: 3px solid var(--coding); }
     .presence-art {
       width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
@@ -147,6 +150,7 @@
     }
     .presence-art--music { background: linear-gradient(135deg, #831843, #be185d); }
     .presence-art--gaming { background: linear-gradient(135deg, #1e3a5f, #2d4a6f); }
+    .presence-art--coding { background: linear-gradient(135deg, #3b2d5f, #5b3d8f); }
     .presence-badge {
       position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px;
       border-radius: 50%; border: 2px solid #1e1f22; background: #2b2d31;
@@ -181,11 +185,12 @@
     .feature-card p { font-size: 0.85rem; color: var(--text-muted); }
     .feature-card--music { --accent-card: var(--music); }
     .feature-card--gaming { --accent-card: var(--gaming); }
+    .feature-card--coding { --accent-card: var(--coding); }
     .feature-card--music .feature-icon { filter: drop-shadow(0 0 8px var(--music-soft)); }
     .feature-card--gaming .feature-icon { filter: drop-shadow(0 0 8px var(--gaming-soft)); }
 
     /* Showcase */
-    .showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    .showcase { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; align-items: start; }
     .showcase-panel {
       padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);
       background: var(--bg-card);
@@ -194,6 +199,7 @@
     .showcase-panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; }
     .dot--music { background: var(--music); }
     .dot--gaming { background: var(--gaming); }
+    .dot--coding { background: var(--coding); }
 
     /* Steps */
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
@@ -252,7 +258,7 @@
           <a href="#features">Features</a>
           <a href="#showcase">Showcase</a>
           <a href="#download">Download</a>
-          <a class="btn btn-primary" href="#download">Get v7.9.2</a>
+          <a class="btn btn-primary" href="#download">Get v7.9.3</a>
         </div>
       </nav>
       <div class="farewell-banner">
@@ -265,11 +271,12 @@
       <div class="hero-content">
         <div class="hero-eyebrow">Discord Rich Presence</div>
         <h1>Your status,<br><span class="gradient">alive on Discord.</span></h1>
-        <p class="hero-tagline">Anime GIFs, live music sync, and gaming stats — one free desktop app for Windows, macOS, and Linux. No Developer Portal. No config files.</p>
+        <p class="hero-tagline">Anime GIFs, live music sync, gaming stats, and coding presence — one free desktop app for Windows, macOS, and Linux. No Developer Portal. No config files.</p>
         <div class="hero-badges">
-          <span class="badge badge--live"><span class="pulse"></span>v7.9.2</span>
+          <span class="badge badge--live"><span class="pulse"></span>v7.9.3</span>
           <span class="badge">Music sync</span>
           <span class="badge">Gaming presence</span>
+          <span class="badge">Coding sync</span>
           <span class="badge">MIT · Open source</span>
         </div>
         <div class="hero-cta">
@@ -299,6 +306,15 @@
             <div class="presence-via">via Smiley</div>
           </div>
         </div>
+        <div class="presence-card presence-card--coding">
+          <div class="presence-art presence-art--coding">💻</div>
+          <div class="presence-meta">
+            <div class="presence-app">Coding</div>
+            <div class="presence-title">Cursor</div>
+            <div class="presence-state">Editing xyz.py · Project Smiley</div>
+            <div class="presence-via">via Smiley</div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -319,17 +335,17 @@
         <article class="feature-card feature-card--gaming">
           <div class="feature-icon">🎮</div>
           <h3>Gaming Rich Presence</h3>
-          <p>Valorant map, agent, score, rank, and party — live from your local Riot client.</p>
+          <p>Map, agent, score, rank, and party — live from your local game client.</p>
+        </article>
+        <article class="feature-card feature-card--coding">
+          <div class="feature-icon">💻</div>
+          <h3>Coding sync</h3>
+          <p>Cursor, VS Code, Claude, ChatGPT, Ollama — shows your editor, file, project, or idle state live.</p>
         </article>
         <article class="feature-card">
           <div class="feature-icon">🎬</div>
           <h3>Anime GIFs</h3>
           <p>32+ activities with animated status art. Custom activities and GIF picker built in.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h3>Discord RPC</h3>
-          <p>One click to connect. Aurora UI v3, themes, tray icon, hotkeys, auto-updates.</p>
         </article>
       </div>
     </div>
@@ -360,8 +376,8 @@
           <div class="presence-card presence-card--gaming" style="box-shadow:none;margin-bottom:0.75rem;">
             <div class="presence-art presence-art--gaming">⚔️</div>
             <div class="presence-meta">
-              <div class="presence-title">Valorant</div>
-              <div class="presence-state">Swiftplay · Solo · In lobby</div>
+              <div class="presence-title">Ranked match</div>
+              <div class="presence-state">Ranked · Solo · In lobby</div>
             </div>
           </div>
           <div class="presence-card presence-card--gaming" style="box-shadow:none;">
@@ -371,7 +387,32 @@
               <div class="presence-state">Competitive · Agent Select · 3-Stack</div>
             </div>
           </div>
-          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:1rem;">Customize every field in Settings → Gaming Rich Presence. Optional Riot API key for rank.</p>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:1rem;">Customize every field in Settings → Gaming Rich Presence. Optional API key for rank.</p>
+        </div>
+        <div class="showcase-panel">
+          <h3><span class="dot dot--coding"></span> Coding states</h3>
+          <div class="presence-card presence-card--coding" style="box-shadow:none;margin-bottom:0.75rem;">
+            <div class="presence-art presence-art--coding">⌨️</div>
+            <div class="presence-meta">
+              <div class="presence-title">Cursor</div>
+              <div class="presence-state">Editing renderer.js · Project Smiley</div>
+            </div>
+          </div>
+          <div class="presence-card presence-card--coding" style="box-shadow:none;margin-bottom:0.75rem;">
+            <div class="presence-art presence-art--coding">📝</div>
+            <div class="presence-meta">
+              <div class="presence-title">VS Code</div>
+              <div class="presence-state">Idle · Smiley</div>
+            </div>
+          </div>
+          <div class="presence-card presence-card--coding" style="box-shadow:none;">
+            <div class="presence-art presence-art--coding">🤖</div>
+            <div class="presence-meta">
+              <div class="presence-title">Claude</div>
+              <div class="presence-state">Refactoring auth module</div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:1rem;">Pick the Coding activity — Smiley reads your foreground editor or AI tool and updates Discord with file, project, or idle state.</p>
         </div>
       </div>
     </div>
@@ -407,24 +448,24 @@
     <div class="wrap">
       <div class="section-header">
         <span class="section-label">Download</span>
-        <h2>Smiley v7.9.2</h2>
+        <h2>Smiley v7.9.3</h2>
         <p>Aurora dashboard UI — control panel, live preview dock, music &amp; gaming upfront. <strong style="color:var(--orange)">v8</strong> will be the final release.</p>
       </div>
       <div class="download-grid">
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-Setup-7.9.2.exe" target="_blank" rel="noopener">
-          <strong>Windows</strong><span>Smiley-Setup-7.9.2.exe</span>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.3/Smiley-Setup-7.9.3.exe" target="_blank" rel="noopener">
+          <strong>Windows</strong><span>Smiley-Setup-7.9.3.exe</span>
         </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2-arm64.dmg" target="_blank" rel="noopener">
-          <strong>macOS Apple Silicon</strong><span>Smiley-7.9.2-arm64.dmg</span>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.3/Smiley-7.9.3-arm64.dmg" target="_blank" rel="noopener">
+          <strong>macOS Apple Silicon</strong><span>Smiley-7.9.3-arm64.dmg</span>
         </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2-x64.dmg" target="_blank" rel="noopener">
-          <strong>macOS Intel</strong><span>Smiley-7.9.2-x64.dmg</span>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.3/Smiley-7.9.3-x64.dmg" target="_blank" rel="noopener">
+          <strong>macOS Intel</strong><span>Smiley-7.9.3-x64.dmg</span>
         </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2.AppImage" target="_blank" rel="noopener">
-          <strong>Linux AppImage</strong><span>Smiley-7.9.2.AppImage</span>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.3/Smiley-7.9.3.AppImage" target="_blank" rel="noopener">
+          <strong>Linux AppImage</strong><span>Smiley-7.9.3.AppImage</span>
         </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2.deb" target="_blank" rel="noopener">
-          <strong>Linux .deb</strong><span>Smiley-7.9.2.deb</span>
+        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.3/Smiley-7.9.3.deb" target="_blank" rel="noopener">
+          <strong>Linux .deb</strong><span>Smiley-7.9.3.deb</span>
         </a>
         <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
           <strong>All releases</strong><span>github.com/1tsRajuWu/Smiley</span>

@@ -12,5 +12,6 @@
   "activityGifChoice": {},
   "installTrackingEnabled": true,
   "musicNowPlaying": true,
-  "musicNowPlayingAlbumArt": true
+  "musicNowPlayingAlbumArt": true,
+  "codingNowPlaying": true
 }
