@@ -7,7 +7,7 @@
 //
 // TABLE OF CONTENTS (search for the section name):
 //   Constants · Encryption · Config · State · Window State · Tray Icons
-//   Window · Tray · Discord RPC · Auto Updater
+//   Dev live reload · Window · Tray · Discord RPC · Auto Updater
 //   Custom Wallpapers · Custom Animations · Custom Activities
 //   Storage & cache cleanup · IPC · App Lifecycle
 // ═══════════════════════════════════════════════════════════════════════
@@ -1751,6 +1751,64 @@ function getAppIcon() {
   return getDefaultTrayIcon();
 }
 
+// ─── Dev live reload ─────────────────────────────────────────────────
+/** Watch project files in `npm run dev` so edits show up without a manual restart. */
+let devLiveReloadReady = false;
+
+function setupDevLiveReload() {
+  if (!isDev || isPackaged || devLiveReloadReady) return;
+  devLiveReloadReady = true;
+
+  const debounce = (fn, ms) => {
+    let timer = null;
+    return () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(fn, ms);
+    };
+  };
+
+  const reloadRenderer = debounce(() => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    console.log('[dev] UI changed — reloading window');
+    try {
+      mainWindow.webContents.reloadIgnoringCache();
+    } catch (err) {
+      console.warn('[dev] reload failed:', err.message);
+    }
+  }, 180);
+
+  const restartApp = debounce(() => {
+    console.log('[dev] main process changed — restarting app');
+    try {
+      app.relaunch({ args: process.argv.slice(1) });
+      app.exit(0);
+    } catch (err) {
+      console.warn('[dev] relaunch failed:', err.message);
+    }
+  }, 400);
+
+  const watch = (target, onChange, recursive = false) => {
+    try {
+      if (!fs.existsSync(target)) return;
+      fs.watch(target, { recursive }, (_eventType, filename) => {
+        // Ignore noisy editor / OS junk
+        const name = String(filename || '');
+        if (!name || name.endsWith('~') || name.endsWith('.swp') || name.startsWith('.')) return;
+        onChange();
+      });
+    } catch (err) {
+      console.warn(`[dev] watch failed for ${target}:`, err.message);
+    }
+  };
+
+  watch(path.join(__dirname, 'src'), reloadRenderer, true);
+  watch(path.join(__dirname, 'preload.js'), restartApp);
+  watch(path.join(__dirname, 'main.js'), restartApp);
+  watch(path.join(__dirname, 'electron'), restartApp, true);
+
+  console.log('[dev] live reload on — edit src/ to refresh UI; edit main/preload/electron to restart');
+}
+
 // ─── Window ──────────────────────────────────────────────────────────
 function createWindow() {
   const state = getWindowState();
@@ -1792,6 +1850,11 @@ function createWindow() {
   mainWindow.webContents.once('did-finish-load', () => {
     pushNowPlayingToRenderer();
   });
+
+  // Dev: UI / CSS / renderer edits reload the window; main/preload/electron restart the app.
+  if (isDev && !isPackaged && !devLiveReloadReady) {
+    setupDevLiveReload();
+  }
 
   mainWindow.once('ready-to-show', () => {
     if (state.maximized) mainWindow.maximize();
