@@ -21,6 +21,8 @@ function sessionSignature(session) {
     session.liveLine, session.scoreHint, session.map, session.mode,
     session.kda, session.agent, session.champ, session.party,
     session.inMatch ? '1' : '0',
+    session.inPregame ? '1' : '0',
+    session.inLobby ? '1' : '0',
     resolveGameArtwork(session),
   ].join('\0');
 }

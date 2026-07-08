@@ -32,21 +32,21 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 <summary><strong>Direct downloads</strong></summary>
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-Setup-7.8.2.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-Setup-7.8.3.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-7.8.2.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-Setup-7.8.2.exe) |
-| macOS Apple Silicon | [Smiley-7.8.2-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-arm64.dmg) |
-| macOS Intel | [Smiley-7.8.2-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-x64.dmg) |
-| Linux (AppImage) | [Smiley-7.8.2.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.AppImage) |
-| Linux (.deb) | [Smiley-7.8.2.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.deb) |
+| Windows | [Smiley-Setup-7.8.3.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-Setup-7.8.3.exe) |
+| macOS Apple Silicon | [Smiley-7.8.3-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-arm64.dmg) |
+| macOS Intel | [Smiley-7.8.3-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-x64.dmg) |
+| Linux (AppImage) | [Smiley-7.8.3.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.AppImage) |
+| Linux (.deb) | [Smiley-7.8.3.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
@@ -57,6 +57,23 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 1. **Download** from [the website](https://1tsrajuwu.github.io/Smiley/) or links above.
 2. **Open Discord** desktop (browser won't work).
 3. **Pick an activity** — your profile updates with the same GIF.
+
+</details>
+
+<details>
+<summary><strong>About v7.8.3 — Valorant lobby presence (July 8, 2026)</strong></summary>
+
+**v7.8.3** fixes Valorant showing fake in-match scores and blank images while in the PLAY lobby.
+
+- **Lobby vs in-match** — `sessionLoopState` drives presence; no `0-0` in menus
+- **Tracker-style text** — mode · party · state (lobby / agent select / live score)
+- **Discord images** — corrected valorant-api gamemode/map UUIDs; lobby mode icon, pregame map, in-match agent
+
+| | |
+|---|---|
+| **Release notes** | [docs/releases/v7.8.3.md](docs/releases/v7.8.3.md) |
+| **Code** | Fork & PR — [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Support** | [paypal.me/1tsRaj](https://paypal.me/1tsRaj) |
 
 </details>
 

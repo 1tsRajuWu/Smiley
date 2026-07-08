@@ -14,34 +14,36 @@ const GAME_DEFAULTS = {
   window: GAMING_FALLBACK,
 };
 
-/** Valorant queueId → gamemode UUID (valorant-api.com) */
+/** Valorant queueId → gamemode UUID (valorant-api.com, verified 2026-07) */
 const VALORANT_MODE_UUID = {
-  competitive: '0f1203cb-0c83-46e0-8821-aa6edd3eb168',
-  unrated: '96e37eab-7efb-4f93-9da4-0f9ab09387df',
-  swiftplay: '680311d4-4def-8c8d-4d4d-b9b2b7a0c4ef',
-  deathmatch: '3f0c3dcb-4c65-4f67-b573-0ec8cdbf3c04',
-  ggteam: '952adb6a-4a9b-4d3a-b7c5-9c8a2e4e7b1f',
-  spikeRush: '952adb6a-4a9b-4d3a-b7c5-9c8a2e4e7b1f',
-  onefa: '952adb6a-4a9b-4d3a-b7c5-9c8a2e4e7b1f',
-  escalation: '49ab6300-4f7f-4a8d-8b68d-2b0e3d3e8e48',
-  replication: '0cee8f74-f0c5-4704-95fc-949a8996ab8c',
-  snowball: '4b73d314-4c4c-4a4c-9d2e-0e8a4b5c3f2a',
-  custom: '96e37eab-7efb-4f93-9da4-0f9ab09387df',
-  newmap: '96e37eab-7efb-4f93-9da4-0f9ab09387df',
-  premier: '0f1203cb-0c83-46e0-8821-aa6edd3eb168',
+  competitive: '96bd3920-4f36-d026-2b28-c683eb0bcac5',
+  unrated: '96bd3920-4f36-d026-2b28-c683eb0bcac5',
+  swiftplay: '5d0f264b-4ebe-cc63-c147-809e1374484b',
+  deathmatch: 'a8790ec5-4237-f2f0-e93b-08a8e89865b2',
+  ggteam: 'e921d1e6-416b-c31f-1291-74930c330b7b',
+  spikeRush: 'e921d1e6-416b-c31f-1291-74930c330b7b',
+  onefa: 'e086db66-47fd-e791-ca81-06a645ac7661',
+  escalation: 'a4ed6518-4741-6dcb-35bd-f884aecdc859',
+  replication: '4744698a-4513-dc96-9c22-a9aa437e4a58',
+  snowball: '57038d6d-49b1-3a74-c5ef-3395d9f23a97',
+  custom: '96bd3920-4f36-d026-2b28-c683eb0bcac5',
+  newmap: '96bd3920-4f36-d026-2b28-c683eb0bcac5',
+  premier: '96bd3920-4f36-d026-2b28-c683eb0bcac5',
 };
 
 const VALORANT_MAP_UUID = {
-  ascent: '7eaecc1b-1427-d35c-8a03-6b4a9e9e3705',
-  bind: '2c9d57ec-4431-9c5e-2939-8f9ef6dd5ba1',
-  breeze: 'ad9f1c9e-4571-0f03-e8b3-5b4c9b7e1cde',
-  fracture: 'b529448b-4d60-346e-e89d-757a59e60e28',
-  haven: '2bee0dc9-4ffe-533b-a3f0-f7402f2e3f9f',
-  icebox: 'e2ad5c54-4114-a870-9611-0ca7db44c2b9',
-  lotus: '2d267977-4d25-8e9e-6c4e-2f8d4b8e5e1a',
-  pearl: 'fd267378-4885-ccd4-7252-3671dfcc2a52',
-  split: 'd960549e-485c-e861-8e71-9e2011a0129d',
-  sunset: 'a7b1c2d3-e4f5-6789-abcd-ef0123456789',
+  ascent: '7eaecc1b-4337-bbf6-6ab9-04b8f06b3319',
+  bind: '2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba',
+  breeze: '2fb9a4fd-47b8-4e7d-a969-74b4046ebd53',
+  fracture: 'b529448b-4d60-346e-e89e-00a4c527a405',
+  haven: '2bee0dc9-4ffe-519b-1cbd-7fbe763a6047',
+  icebox: 'e2ad5c54-4114-a870-9641-8ea21279579a',
+  lotus: '2fe4ed3a-450a-948b-6d6b-e89a78e680a9',
+  pearl: 'fd267378-4d1d-484f-ff52-77821ed10dc2',
+  split: 'd960549e-485c-e861-8d71-aa9d1aed12a2',
+  sunset: '92584fbe-486a-b1b2-9faa-39b0f486b498',
+  abyss: '224b0a95-48b9-f703-1bd8-67aca101a61f',
+  corrode: '1c18ab1f-420d-0d8b-71d0-77ad3c439115',
 };
 
 function valorantAgentIcon(agentId) {
@@ -97,10 +99,14 @@ function resolveGameArtwork(session) {
   if (!session) return GAMING_FALLBACK;
 
   if (session.provider === 'riot-valorant') {
-    const agent = valorantAgentIcon(session.agentId);
-    if (agent) return agent;
-    const map = valorantMapIcon(session.mapId || session.map);
-    if (map) return map;
+    if (session.inMatch) {
+      const agent = valorantAgentIcon(session.agentId);
+      if (agent) return agent;
+    }
+    if (session.inPregame || session.inMatch) {
+      const map = valorantMapIcon(session.mapId || session.map);
+      if (map) return map;
+    }
     const mode = valorantModeIcon(session.queueId || session.modeKey);
     if (mode) return mode;
     return GAME_DEFAULTS['riot-valorant'];
@@ -124,6 +130,12 @@ function resolveGameArtwork(session) {
 
 function resolveLargeImageText(session) {
   if (!session) return '';
+  if (session.provider === 'riot-valorant') {
+    if (session.inMatch && session.agent) return session.agent;
+    if ((session.inPregame || session.inMatch) && session.map) return session.map;
+    if (session.mode) return session.mode;
+    return session.title || '';
+  }
   return session.agent || session.champ || session.map || session.mode
     || session.experience || session.title || '';
 }

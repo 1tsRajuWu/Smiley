@@ -58,15 +58,16 @@ function parseParty(privateData) {
 function parseValorant(privateData) {
   if (!privateData) return null;
   const loop = String(privateData.sessionLoopState || privateData.partyOwnerSessionLoopState || '').toUpperCase();
-  const inGame = loop === 'INGAME';
+  const inMatch = loop === 'INGAME';
   const inPregame = loop === 'PREGAME';
+  const inLobby = loop === 'MENUS' || loop === 'FRONTEND' || (!inMatch && !inPregame);
   const queueId = String(privateData.queueId || privateData.partyOwnerQueueId || '').trim();
   const map = mapPathToName(privateData.partyOwnerMatchMap || privateData.matchMap);
   const mode = queueName(queueId);
   const party = parseParty(privateData);
   const ally = Number(privateData.partyOwnerMatchScoreAllyTeam ?? privateData.partyOwnerMatchCurrentTeamRoundScore);
   const enemy = Number(privateData.partyOwnerMatchScoreEnemyTeam);
-  const scoreHint = Number.isFinite(ally) && Number.isFinite(enemy) ? `${ally}-${enemy}` : null;
+  const scoreHint = inMatch && Number.isFinite(ally) && Number.isFinite(enemy) ? `${ally}-${enemy}` : null;
 
   return {
     provider: 'riot-valorant',
@@ -77,9 +78,10 @@ function parseValorant(privateData) {
     queueId,
     scoreHint,
     party,
-    inGame: inGame || inPregame,
-    inMatch: inGame,
+    inGame: inMatch || inPregame,
+    inMatch,
     inPregame,
+    inLobby,
     launcher: 'Riot Games',
     updatedAt: Date.now(),
   };
@@ -173,4 +175,4 @@ function isRiotGameProcess(name) {
   return n.includes('valorant') || n.includes('league') || n.includes('riot');
 }
 
-module.exports = { getRiotLiveSession, isRiotGameProcess, parseParty };
+module.exports = { getRiotLiveSession, isRiotGameProcess, parseParty, parseValorant };

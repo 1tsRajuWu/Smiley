@@ -7,7 +7,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const assets = require(path.join(root, 'electron/game-assets'));
 const { buildPresenceLines, buildPresenceFromSession } = require(path.join(root, 'electron/presence-builder'));
-const { parseParty } = require(path.join(root, 'electron/game-providers/riot'));
+const { parseParty, parseValorant } = require(path.join(root, 'electron/game-providers/riot'));
 const { mergeForegroundWithSession } = require(path.join(root, 'electron/game-providers'));
 const { sanitizeGameSession } = require(path.join(root, 'electron/security'));
 
@@ -27,13 +27,60 @@ function ok(name, cond) {
 console.log('=== Smiley Game Presence Self-Check ===\n');
 
 ok('Valorant agent icon HTTPS', /^https:\/\//.test(assets.valorantAgentIcon('9338a55c-4ab7-4634-9ac9-e2e799c4f4d7')));
-ok('Valorant mode icon swiftplay', /^https:\/\//.test(assets.valorantModeIcon('swiftplay')));
-ok('LoL champion icon', assets.lolChampionIcon('Jinx')?.includes('Jinx'));
-ok('Steam header', assets.steamHeader(730)?.includes('730'));
-ok('Party labels', assets.partyLabel(2) === 'Duo' && assets.partyLabel(5) === 'Full stack');
+ok('Valorant mode icon swiftplay', assets.valorantModeIcon('swiftplay')?.includes('5d0f264b-4ebe-cc63-c147-809e1374484b'));
 ok('Valorant partySize parsed', parseParty({ partySize: 3 }) === 'Trio');
+ok('Valorant partySize solo', parseParty({ partySize: 1 }) === 'Solo');
 ok('Valorant partyMembers fallback', parseParty({ partyMembers: ['a', 'b'] }) === 'Duo');
 ok('partySizeMax not used as current size', parseParty({ partySizeMax: 5 }) === null);
+
+const lobbyParsed = parseValorant({
+  sessionLoopState: 'MENUS',
+  queueId: 'swiftplay',
+  partySize: 1,
+  partyOwnerMatchScoreAllyTeam: 0,
+  partyOwnerMatchScoreEnemyTeam: 0,
+});
+ok('Lobby MENUS detected', lobbyParsed.inLobby === true && lobbyParsed.inMatch === false);
+ok('Lobby no fake score', lobbyParsed.scoreHint === null);
+ok('Lobby party solo', lobbyParsed.party === 'Solo');
+ok('Lobby mode swiftplay', lobbyParsed.mode === 'Swiftplay');
+
+const lobbySession = {
+  provider: 'riot-valorant',
+  title: 'Valorant',
+  mode: 'Swiftplay',
+  queueId: 'swiftplay',
+  party: 'Solo',
+  inLobby: true,
+  inMatch: false,
+  inPregame: false,
+};
+const lobbyLines = buildPresenceLines(lobbySession);
+ok('Lobby details = Valorant', lobbyLines.details === 'Valorant');
+ok('Lobby state no score', !lobbyLines.state.includes('0-0'));
+ok('Lobby state has mode+party', lobbyLines.state.includes('Swiftplay') && lobbyLines.state.includes('Solo') && lobbyLines.state.includes('In lobby'));
+
+const pregameSession = {
+  provider: 'riot-valorant',
+  title: 'Valorant',
+  map: 'Haven',
+  mapId: '2bee0dc9-4ffe-519b-1cbd-7fbe763a6047',
+  mode: 'Swiftplay',
+  queueId: 'swiftplay',
+  party: 'Duo',
+  inPregame: true,
+  inMatch: false,
+  inLobby: false,
+};
+const pregameLines = buildPresenceLines(pregameSession);
+ok('Pregame details = map', pregameLines.details === 'Haven');
+ok('Pregame state agent select', pregameLines.state.includes('Agent select') && !pregameLines.state.includes('0-0'));
+
+const lobbyArt = buildPresenceFromSession(lobbySession, { category: 'gaming', state: 'In the zone' });
+ok('Lobby mode image', lobbyArt.discordImageUrl?.includes('/gamemodes/'));
+
+const pregameArt = buildPresenceFromSession(pregameSession, { category: 'gaming', state: 'In the zone' });
+ok('Pregame map image', pregameArt.discordImageUrl?.includes('/maps/'));
 
 const valSession = {
   provider: 'riot-valorant',
@@ -47,11 +94,18 @@ const valSession = {
   queueId: 'swiftplay',
   party: 'Duo',
   inMatch: true,
+  inLobby: false,
+  inPregame: false,
 };
 const valLines = buildPresenceLines(valSession);
 ok('Valorant details = map', valLines.details === 'Ascent');
 ok('Valorant state has agent+score+mode', valLines.state.includes('Jett') && valLines.state.includes('8-6') && valLines.state.includes('Swiftplay'));
+ok('Valorant ingame score order', valLines.state.indexOf('Jett') < valLines.state.indexOf('8-6'));
 ok('Valorant details not mode-only', !valLines.details.includes('Swiftplay'));
+
+ok('LoL champion icon', assets.lolChampionIcon('Jinx')?.includes('Jinx'));
+ok('Steam header', assets.steamHeader(730)?.includes('730'));
+ok('Party labels', assets.partyLabel(2) === 'Duo' && assets.partyLabel(5) === 'Full stack');
 
 const lolSession = {
   provider: 'riot-lol',

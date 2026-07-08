@@ -31,13 +31,25 @@ function buildPresenceLines(session, fallbackState = 'In the zone') {
   const provider = session.provider || 'window';
 
   if (provider === 'riot-valorant') {
+    if (session.inLobby) {
+      return {
+        details: truncate('Valorant'),
+        state: truncate(joinParts([session.mode, session.party, 'In lobby']) || fallbackState),
+      };
+    }
+    if (session.inPregame) {
+      return {
+        details: truncate(session.map || 'Valorant'),
+        state: truncate(joinParts([session.mode, session.party, 'Agent select']) || fallbackState),
+      };
+    }
     const details = truncate(session.map || 'Valorant');
     const state = truncate(joinParts([
       session.agent,
-      session.kda,
       session.scoreHint,
       session.mode,
       session.party,
+      session.kda,
     ]) || session.liveLine || fallbackState);
     return { details, state };
   }
