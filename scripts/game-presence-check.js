@@ -359,6 +359,28 @@ ok('Unknown game artwork → Smiley logo', assets.resolveGameArtwork({ provider:
 ok('CS2 session with AppID → capsule URL', assets.resolveGameArtwork({ provider: 'window', title: 'Counter-Strike 2', steamAppId: 730 })?.includes('/730/capsule_231x87.jpg'));
 ok('Spinner URL detector', assets.isSpinnerFallbackUrl('https://media.tenor.com/On7kvXhzml4AAAAi/loading-gif.gif'));
 
+const {
+  matchKnownGame, isIgnoredProcess, findKnownGamesInProcessList, pickStickyGame, normalizeGame, gameSig,
+} = require(path.join(root, 'electron/now-gaming'));
+ok('Known game matches cs2', matchKnownGame('cs2')?.id === 'cs2');
+ok('Known game matches VALORANT-Win64-Shipping', matchKnownGame('VALORANT-Win64-Shipping')?.id === 'valorant');
+ok('Discord ignored for gaming clear', isIgnoredProcess('Discord') && isIgnoredProcess('Google Chrome'));
+ok('CS2 not ignored', !isIgnoredProcess('cs2'));
+ok('Process scan finds CS2+Valorant', findKnownGamesInProcessList(['Discord', 'cs2', 'chrome', 'VALORANT-Win64-Shipping']).length === 2);
+ok('Sticky prefers last CS2 when Discord focused', pickStickyGame(
+  findKnownGamesInProcessList(['Discord', 'cs2', 'chrome']),
+  'cs2',
+)?.title === 'Counter-Strike 2');
+ok('Sticky sole running game', pickStickyGame(findKnownGamesInProcessList(['Discord', 'cs2']), '')?.knownGameId === 'cs2');
+ok('Sticky multi-game no preference → null (keep caller)', pickStickyGame(
+  findKnownGamesInProcessList(['cs2', 'dota2']),
+  '',
+) === null);
+ok('Normalize Discord → null', normalizeGame({ processName: 'Discord', windowTitle: 'friends' }) === null);
+ok('Normalize CS2 title', normalizeGame({ processName: 'cs2', windowTitle: '' })?.title === 'Counter-Strike 2');
+ok('gameSig ignores sticky vs focused thrash', gameSig({ title: 'Counter-Strike 2', processName: 'cs2', sticky: true })
+  === gameSig({ title: 'Counter-Strike 2', processName: 'cs2', sticky: false }));
+
 const { resolveSteamAppIdAlias, STEAM_APP_ALIASES } = require(path.join(root, 'electron/game-api'));
 ok('CS2 alias → AppID 730', resolveSteamAppIdAlias('cs2') === 730 && resolveSteamAppIdAlias('Counter-Strike 2') === 730);
 ok('Alias table has CS2', STEAM_APP_ALIASES.cs2 === 730);

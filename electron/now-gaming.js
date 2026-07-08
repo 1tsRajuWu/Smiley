@@ -1,4 +1,4 @@
-// Foreground game detection — throttled for low-end PCs
+// Game detection — foreground preferred, sticky when alt-tabbed (process still running)
 const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -10,33 +10,118 @@ const POLL_MS = process.platform === 'darwin' ? 8000 : 5000;
 const BACKGROUND_POLL_MS = process.platform === 'darwin' ? 20000 : 12000;
 const MAC_TIMEOUT_MS = 3500;
 const MAC_BACKOFF_MAX_MS = 60000;
+const PROCESS_SCAN_TIMEOUT_MS = 4000;
 
+/** Apps that must never clear gaming presence when focused. */
 const IGNORED = new Set([
-  'electron', 'smiley', 'discord', 'discordcanary', 'code', 'cursor', 'finder', 'explorer',
-  'chrome', 'google chrome', 'firefox', 'safari', 'spotify', 'music', 'terminal', 'iterm2',
-  'steam', 'epicgameslauncher', 'riot client', 'riotclientux', 'riot client ux',
+  'electron', 'smiley', 'discord', 'discordcanary', 'discordptb', 'code', 'cursor',
+  'finder', 'explorer', 'chrome', 'google chrome', 'firefox', 'safari', 'edge',
+  'microsoft edge', 'brave', 'arc', 'spotify', 'music', 'terminal', 'iterm2',
+  'steam', 'steamwebhelper', 'epicgameslauncher', 'epic games launcher',
+  'riot client', 'riotclientux', 'riot client ux', 'riotclientservices',
+  'system settings', 'system preferences', 'dock', 'windowserver', 'loginwindow',
 ]);
+
+/**
+ * Known game processes — detected even when out of focus.
+ * `title` is the Discord details fallback; Steam AppID aliases live in game-api.
+ */
+const KNOWN_GAMES = [
+  { id: 'cs2', title: 'Counter-Strike 2', match: /^(cs2|csgo)$/i },
+  { id: 'valorant', title: 'Valorant', match: /^valorant(-win64-shipping)?$/i },
+  { id: 'lol', title: 'League of Legends', match: /^(league of legends|leagueclient|leagueclientux)$/i },
+  { id: 'fortnite', title: 'Fortnite', match: /^fortnite(client-win64-shipping)?$/i },
+  { id: 'overwatch', title: 'Overwatch 2', match: /^overwatch$/i },
+  { id: 'roblox', title: 'Roblox', match: /^roblox(playerbeta)?$/i },
+  { id: 'minecraft', title: 'Minecraft', match: /^minecraft(launcher|javaw)?$/i },
+  { id: 'dota2', title: 'Dota 2', match: /^dota2$/i },
+  { id: 'tf2', title: 'Team Fortress 2', match: /^(tf_win64|hl2)$/i },
+  { id: 'gta5', title: 'Grand Theft Auto V', match: /^(gta5|gtav|playgtav)$/i },
+  { id: 'apex', title: 'Apex Legends', match: /^(r5apex|r5apex_dx12)$/i },
+  { id: 'pubg', title: 'PUBG', match: /^(tslgame|pubg)$/i },
+  { id: 'rust', title: 'Rust', match: /^(rustclient|rust)$/i },
+  { id: 'eldenring', title: 'ELDEN RING', match: /^eldenring$/i },
+  { id: 'helldivers2', title: 'Helldivers 2', match: /^helldivers2$/i },
+  { id: 'destiny2', title: 'Destiny 2', match: /^destiny2$/i },
+  { id: 'warframe', title: 'Warframe', match: /^(warframe\.x64|warframe)$/i },
+  { id: 'rocketleague', title: 'Rocket League', match: /^rocketleague$/i },
+  { id: 'cyberpunk', title: 'Cyberpunk 2077', match: /^cyberpunk2077$/i },
+  { id: 'valheim', title: 'Valheim', match: /^valheim$/i },
+  { id: 'stardew', title: 'Stardew Valley', match: /^stardew ?valley|stardewvalley$/i },
+  { id: 'amongus', title: 'Among Us', match: /^among.?us$/i },
+  { id: 'hades', title: 'Hades', match: /^hades2?$/i },
+  { id: 'terraria', title: 'Terraria', match: /^terraria$/i },
+];
 
 function humanize(v) {
   return String(v || '').replace(/\.(exe|app)$/i, '').replace(/[_-]+/g, ' ').trim();
+}
+
+function isIgnoredProcess(processName) {
+  const key = humanize(processName).toLowerCase();
+  if (!key) return true;
+  if (IGNORED.has(key) || /smiley/i.test(key)) return true;
+  // Browser / chat helpers
+  if (/chrome|firefox|safari|discord|spotify|slack|zoom|teams/i.test(key) && !/counter-strike/i.test(key)) {
+    if (IGNORED.has(key) || /helper|gpu|crashpad|renderer/i.test(key)) return true;
+  }
+  return false;
+}
+
+function matchKnownGame(processName) {
+  const key = humanize(processName).toLowerCase().replace(/\s+/g, '');
+  const spaced = humanize(processName).toLowerCase();
+  for (const g of KNOWN_GAMES) {
+    if (g.match.test(humanize(processName)) || g.match.test(key) || g.match.test(spaced)) {
+      return g;
+    }
+  }
+  // Loose includes for Compound names
+  for (const g of KNOWN_GAMES) {
+    if (g.id === 'cs2' && /\bcs2\b|counter.?strike/i.test(spaced)) return g;
+    if (g.id === 'valorant' && /valorant/i.test(spaced)) return g;
+    if (g.id === 'fortnite' && /fortnite/i.test(spaced)) return g;
+    if (g.id === 'overwatch' && /overwatch/i.test(spaced)) return g;
+    if (g.id === 'roblox' && /roblox/i.test(spaced)) return g;
+    if (g.id === 'minecraft' && /minecraft/i.test(spaced)) return g;
+  }
+  return null;
 }
 
 function normalizeGame(raw) {
   if (!raw) return null;
   const processName = humanize(raw.processName);
   const key = processName.toLowerCase();
-  if (!processName || IGNORED.has(key) || /smiley/i.test(processName)) return null;
+  if (!processName || isIgnoredProcess(processName)) return null;
 
   let title = String(raw.windowTitle || '').trim();
-  if (!title || title.toLowerCase() === key) title = processName;
+  if (!title || title.toLowerCase() === key) {
+    const known = matchKnownGame(processName);
+    title = known?.title || processName;
+  }
   title = title.replace(/\s*[-–|]\s*(Riot Client|VALORANT)$/i, '').trim() || processName;
 
-  return { title, processName, windowTitle: raw.windowTitle || '', updatedAt: Date.now() };
+  const known = matchKnownGame(processName);
+  return {
+    title,
+    processName,
+    windowTitle: raw.windowTitle || '',
+    knownGameId: known?.id || null,
+    focused: raw.focused !== false,
+    sticky: raw.sticky === true,
+    updatedAt: Date.now(),
+  };
 }
 
 function gameSig(g) {
   if (!g) return '';
-  return [g.title, g.processName, g.windowTitle].join('\0');
+  // Sticky vs focused with same process shouldn't thrash Discord presence.
+  return [g.title, g.processName, g.knownGameId || ''].join('\0');
+}
+
+function processKey(g) {
+  if (!g?.processName) return '';
+  return String(g.processName).toLowerCase();
 }
 
 let macInFlight = false;
@@ -101,7 +186,7 @@ Write-Output ($proc.ProcessName+'|'+$t.ToString())
   try {
     const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-Command', ps], { timeout: 8000 });
     const [processName, windowTitle] = String(stdout || '').trim().split('|');
-    return normalizeGame({ processName, windowTitle });
+    return normalizeGame({ processName, windowTitle, focused: true });
   } catch { return null; }
 }
 
@@ -112,7 +197,7 @@ name=$(ps -p "$pid" -o comm= 2>/dev/null); printf '%s|%s' "$name" "$title"`;
   try {
     const { stdout } = await execFileAsync('bash', ['-lc', script], { timeout: 4000 });
     const [processName, windowTitle] = String(stdout || '').trim().split('|');
-    return normalizeGame({ processName, windowTitle });
+    return normalizeGame({ processName, windowTitle, focused: true });
   } catch { return null; }
 }
 
@@ -133,7 +218,7 @@ async function pollMacLsAppInfo() {
     const processName = (nameMatch?.[1] || '').trim();
     const bundleId = (bundleMatch?.[1] || '').trim();
     if (!processName && !bundleId) return null;
-    return { processName: processName || bundleId, bundleId, windowTitle: '' };
+    return { processName: processName || bundleId, bundleId, windowTitle: '', focused: true };
   } catch {
     return null;
   }
@@ -170,7 +255,6 @@ async function pollMacJxaRaw() {
 
 async function pollRawForeground() {
   if (process.platform === 'darwin') {
-    // Prefer lsappinfo (works without Accessibility). Enrich with JXA title when possible.
     const ls = await pollMacLsAppInfo();
     if (ls?.processName) {
       const jxa = await pollMacJxaRaw();
@@ -183,17 +267,19 @@ async function pollRawForeground() {
             ...ls,
             windowTitle: jxa.windowTitle,
             processName: jxa.processName || ls.processName,
+            focused: true,
           };
         }
         if (/^(smiley|electron)$/i.test(ls.processName)
           && jxa.processName
           && !/^(smiley|electron)$/i.test(jxa.processName)) {
-          return jxa;
+          return { ...jxa, focused: true };
         }
       }
       return ls;
     }
-    return pollMacJxaRaw();
+    const jxa = await pollMacJxaRaw();
+    return jxa ? { ...jxa, focused: true } : jxa;
   }
   if (process.platform === 'win32') {
     const ps = `
@@ -214,7 +300,7 @@ Write-Output ($proc.ProcessName+'|'+$t.ToString())
     try {
       const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-Command', ps], { timeout: 8000 });
       const [processName, windowTitle] = String(stdout || '').trim().split('|');
-      return { processName, windowTitle: windowTitle || '' };
+      return { processName, windowTitle: windowTitle || '', focused: true };
     } catch { return null; }
   }
   if (process.platform === 'linux') {
@@ -224,9 +310,89 @@ name=$(ps -p "$pid" -o comm= 2>/dev/null); printf '%s|%s' "$name" "$title"`;
     try {
       const { stdout } = await execFileAsync('bash', ['-lc', script], { timeout: 4000 });
       const [processName, windowTitle] = String(stdout || '').trim().split('|');
-      return { processName, windowTitle: windowTitle || '' };
+      return { processName, windowTitle: windowTitle || '', focused: true };
     } catch { return null; }
   }
+  return null;
+}
+
+/**
+ * Lightweight running-process name list (no window titles).
+ * Used only when foreground is Discord/Chrome/etc.
+ */
+async function listRunningProcessNames() {
+  try {
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+      const { stdout } = await execFileAsync(
+        'ps',
+        ['-A', '-o', 'comm='],
+        { timeout: PROCESS_SCAN_TIMEOUT_MS, maxBuffer: 2 * 1024 * 1024 },
+      );
+      return String(stdout || '')
+        .split('\n')
+        .map((l) => path.basename(l.trim()))
+        .filter(Boolean);
+    }
+    if (process.platform === 'win32') {
+      const { stdout } = await execFileAsync(
+        'powershell.exe',
+        ['-NoProfile', '-Command', '(Get-Process -EA SilentlyContinue | Select-Object -ExpandProperty ProcessName) -join "`n"'],
+        { timeout: PROCESS_SCAN_TIMEOUT_MS, maxBuffer: 2 * 1024 * 1024 },
+      );
+      return String(stdout || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+function findKnownGamesInProcessList(names) {
+  const hits = [];
+  const seen = new Set();
+  for (const name of names) {
+    const known = matchKnownGame(name);
+    if (!known || seen.has(known.id)) continue;
+    // Skip League Client alone if we already prefer VALORANT shipping — keep all unique ids
+    seen.add(known.id);
+    hits.push({
+      processName: humanize(name),
+      known,
+      title: known.title,
+      windowTitle: '',
+    });
+  }
+  return hits;
+}
+
+/**
+ * Pick sticky game when focus is on Discord/browser.
+ * Prefer previously sticky process if still running; else sole known game; else null (keep caller sticky).
+ */
+function pickStickyGame(runningHits, preferredProcessKey) {
+  if (!runningHits.length) return null;
+  if (preferredProcessKey) {
+    const pref = runningHits.find((h) => processKey(h) === preferredProcessKey
+      || h.known?.id && preferredProcessKey.includes(h.known.id));
+    if (pref) {
+      return normalizeGame({
+        processName: pref.processName,
+        windowTitle: pref.windowTitle,
+        focused: false,
+        sticky: true,
+      });
+    }
+  }
+  if (runningHits.length === 1) {
+    const only = runningHits[0];
+    return normalizeGame({
+      processName: only.processName,
+      windowTitle: only.windowTitle,
+      focused: false,
+      sticky: true,
+    });
+  }
+  // Multiple games + no preference: don't guess — caller keeps last sticky if still valid
   return null;
 }
 
@@ -234,6 +400,48 @@ async function pollForeground() {
   const raw = await pollRawForeground();
   if (raw === undefined) return undefined;
   return normalizeGame(raw);
+}
+
+/**
+ * Resolve the active game for presence:
+ * 1. Focused known / normalizeable game wins.
+ * 2. If focus is ignored (Discord/Chrome), stick to last game while its process runs.
+ * 3. If no last game, adopt the sole running known game.
+ * 4. Switching games: focusing a different known game switches immediately.
+ */
+async function resolveActiveGame(lastGame = null) {
+  const fg = await pollForeground();
+  if (fg === undefined) return undefined; // mac poll in-flight
+
+  if (fg) {
+    // Focused game (or any non-ignored app treated as game candidate)
+    return { ...fg, focused: true, sticky: false };
+  }
+
+  // Foreground is Discord / Chrome / Steam overlay / etc. — keep gaming presence.
+  const names = await listRunningProcessNames();
+  const hits = findKnownGamesInProcessList(names);
+
+  if (lastGame?.processName) {
+    const stillThere = names.some((n) => {
+      const h = humanize(n).toLowerCase();
+      const last = processKey(lastGame);
+      if (h === last) return true;
+      if (lastGame.knownGameId && matchKnownGame(n)?.id === lastGame.knownGameId) return true;
+      return false;
+    });
+    if (stillThere) {
+      return {
+        ...lastGame,
+        focused: false,
+        sticky: true,
+        updatedAt: Date.now(),
+      };
+    }
+  }
+
+  const picked = pickStickyGame(hits, processKey(lastGame));
+  return picked;
 }
 
 function createNowGamingService({ onUpdate } = {}) {
@@ -244,6 +452,7 @@ function createNowGamingService({ onUpdate } = {}) {
   let timer = null;
   let running = false;
   let lastSig = '';
+  let lastGame = null;
   let backgroundMode = false;
 
   const pollDelay = () =>
@@ -253,13 +462,14 @@ function createNowGamingService({ onUpdate } = {}) {
     const sig = gameSig(game);
     if (sig === lastSig) return;
     lastSig = sig;
+    lastGame = game;
     onUpdate?.(game);
   };
 
   const tick = async () => {
     if (!running) return;
     try {
-      const game = await pollForeground();
+      const game = await resolveActiveGame(lastGame);
       if (game !== undefined) emit(game);
     } catch (_) {}
     timer = setTimeout(tick, pollDelay());
@@ -270,7 +480,8 @@ function createNowGamingService({ onUpdate } = {}) {
       if (running) return;
       running = true;
       lastSig = '';
-      const game = await pollForeground();
+      lastGame = null;
+      const game = await resolveActiveGame(null);
       if (game !== undefined) emit(game);
       timer = setTimeout(tick, pollDelay());
     },
@@ -281,6 +492,7 @@ function createNowGamingService({ onUpdate } = {}) {
       macFailures = 0;
       macBackoff = 0;
       lastSig = '';
+      lastGame = null;
     },
     setBackgroundMode(background) {
       backgroundMode = background === true;
@@ -288,4 +500,18 @@ function createNowGamingService({ onUpdate } = {}) {
   };
 }
 
-module.exports = { createNowGamingService, pollForeground, pollRawForeground, normalizeGame, gameSig };
+module.exports = {
+  createNowGamingService,
+  pollForeground,
+  pollRawForeground,
+  normalizeGame,
+  gameSig,
+  resolveActiveGame,
+  matchKnownGame,
+  isIgnoredProcess,
+  listRunningProcessNames,
+  findKnownGamesInProcessList,
+  pickStickyGame,
+  KNOWN_GAMES,
+  IGNORED,
+};
