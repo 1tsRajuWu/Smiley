@@ -8,7 +8,7 @@ const { steamCapsule } = require('./game-assets');
 
 const execFileAsync = promisify(execFile);
 const MAC_JXA = path.join(__dirname, 'now-gaming-mac.jxa.js');
-const POLL_MS = process.platform === 'darwin' ? 8000 : 5000;
+const POLL_MS = process.platform === 'darwin' ? 5000 : 3500;
 const BACKGROUND_POLL_MS = process.platform === 'darwin' ? 20000 : 12000;
 const MAC_TIMEOUT_MS = 3500;
 const MAC_BACKOFF_MAX_MS = 60000;

@@ -6,9 +6,10 @@ const {
 const { buildPresenceFromSession } = require('./presence-builder');
 
 const GAMING_CATEGORY = 'gaming';
-const PRESENCE_MIN_MS = 5000;
-const PRESENCE_MATCH_MS = 3000;
-const RENDERER_MIN_MS = 1500;
+/** Steady-state Discord throttle — bypassed on any session/phase change. */
+const PRESENCE_MIN_MS = 2500;
+const PRESENCE_MATCH_MS = 2000;
+const RENDERER_MIN_MS = 600;
 
 function isEnabled(cfg) {
   return cfg?.gamingNowPlaying !== false;
@@ -33,9 +34,9 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
   let matchStartAt = null;
   let backgroundMode = false;
 
-  function sendRenderer(session) {
+  function sendRenderer(session, { immediate = false } = {}) {
     const now = Date.now();
-    if (session && now - lastRendererAt < RENDERER_MIN_MS) return;
+    if (!immediate && session && now - lastRendererAt < RENDERER_MIN_MS) return;
     lastRendererAt = now;
     sendToRenderer?.(session);
   }
@@ -79,13 +80,15 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
 
   async function pushPresence(session, meta, { force = false } = {}) {
     const sig = sessionSignature(session);
-    if (!force && sig === lastSig) return;
+    const changed = sig !== lastSig;
+    if (!force && !changed) return;
     const activity = buildActivity(session, meta);
     if (!activity) return;
 
     const minMs = session?.inMatch ? PRESENCE_MATCH_MS : PRESENCE_MIN_MS;
     const now = Date.now();
-    const wait = force ? 0 : Math.max(0, minMs - (now - lastPresenceAt));
+    const immediate = force || changed;
+    const wait = immediate ? 0 : Math.max(0, minMs - (now - lastPresenceAt));
 
     const run = async () => {
       if (presenceInFlight) {
@@ -97,7 +100,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
         await applyGamePresence(activity);
         lastSig = sig;
         lastPresenceAt = Date.now();
-        sendRenderer(activity.gameSession);
+        sendRenderer(activity.gameSession, { immediate });
       } finally {
         presenceInFlight = false;
         if (pendingPresence) {
@@ -155,7 +158,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
       lastResolvedSession = session;
       onSessionObserved?.(session);
       let meta = null;
-      await pushPresence(session, meta, { force: force || session.inMatch });
+      await pushPresence(session, meta, { force });
     } finally {
       resolveInFlight = false;
       if (pendingResolve) {

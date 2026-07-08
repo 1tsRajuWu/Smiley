@@ -2267,7 +2267,12 @@ async function applyGamePresence(activity) {
     const sig = session?.title
       ? [
         session.title, session.liveLine, session.map, session.mode, session.agent,
-        session.agentId, session.kda, session.champ, session.inMatch ? '1' : '0',
+        session.agentId, session.kda, session.champ, session.scoreHint,
+        session.phase || '',
+        session.inMatch ? '1' : '0',
+        session.inQueue ? '1' : '0',
+        session.inPregame ? '1' : '0',
+        session.inLobby ? '1' : '0',
         activity.discordImageUrl || activity.largeImageUrl || '',
         activity.smallImageUrl || '',
       ].join('\0')

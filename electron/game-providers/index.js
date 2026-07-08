@@ -11,8 +11,9 @@ const { enrichOverwatch } = require('./overwatch');
 const { enrichRoblox } = require('./roblox');
 const { isLockfileAvailable } = require('../riot-client');
 
-const RIOT_POLL_MENU_MS = 5000;
-const RIOT_POLL_MATCH_MS = 4000;
+const RIOT_POLL_MENU_MS = 3000;
+const RIOT_POLL_TRANSITION_MS = 2000;
+const RIOT_POLL_MATCH_MS = 2500;
 
 const FOREGROUND_ENRICHERS = [enrichFortnite, enrichOverwatch, enrichRoblox, enrichMinecraft];
 
@@ -170,7 +171,10 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
 }
 
 function getRiotPollMs(session) {
-  return session?.inMatch ? RIOT_POLL_MATCH_MS : RIOT_POLL_MENU_MS;
+  if (!session) return RIOT_POLL_MENU_MS;
+  if (session.inMatch) return RIOT_POLL_MATCH_MS;
+  if (session.inQueue || session.inPregame) return RIOT_POLL_TRANSITION_MS;
+  return RIOT_POLL_MENU_MS;
 }
 
 module.exports = {
