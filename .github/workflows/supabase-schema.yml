@@ -37,7 +37,8 @@ jobs:
           if [ -n "$DB_URL" ]; then
             sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
             psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/install-database-schema.sql
-            echo "Schema applied via psql."
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/migrate-v8-columns.sql
+            echo "Schema + v8 columns applied via psql."
             applied=1
           elif [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
             node scripts/apply-install-schema-management-api.js

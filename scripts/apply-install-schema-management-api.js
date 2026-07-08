@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 /**
- * Apply scripts/install-database-schema.sql via Supabase Management API.
+ * Apply install schema SQL via Supabase Management API.
  * Requires SUPABASE_ACCESS_TOKEN (Dashboard → Account → Access Tokens).
  * Optional: SUPABASE_PROJECT_REF (default smxpcmakejgxknpzrspg).
+ *
+ * Usage:
+ *   node scripts/apply-install-schema-management-api.js
+ *   node scripts/apply-install-schema-management-api.js scripts/migrate-v8-columns.sql
+ *   (default runs base schema + v8 migration)
  */
 const fs = require('fs');
 const path = require('path');
@@ -16,8 +21,13 @@ if (!token) {
   process.exit(1);
 }
 
-const sqlPath = path.join(__dirname, 'install-database-schema.sql');
-const query = fs.readFileSync(sqlPath, 'utf8');
+const defaultFiles = [
+  path.join(__dirname, 'install-database-schema.sql'),
+  path.join(__dirname, 'migrate-v8-columns.sql'),
+];
+const files = process.argv.length > 2
+  ? process.argv.slice(2).map((p) => path.resolve(p))
+  : defaultFiles;
 
 function postQuery(queryText) {
   const body = JSON.stringify({ query: queryText });
@@ -52,8 +62,14 @@ function postQuery(queryText) {
 }
 
 (async () => {
-  await postQuery(query);
-  console.log('Schema applied via Management API.');
+  for (const sqlPath of files) {
+    if (!fs.existsSync(sqlPath)) {
+      throw new Error(`SQL file not found: ${sqlPath}`);
+    }
+    const query = fs.readFileSync(sqlPath, 'utf8');
+    await postQuery(query);
+    console.log(`Applied ${path.relative(process.cwd(), sqlPath)} via Management API.`);
+  }
 })().catch((err) => {
   console.error(err.message);
   process.exit(1);
