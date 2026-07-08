@@ -2,6 +2,13 @@
 
 All notable Smiley releases are documented here. Full release notes live in [docs/releases/](releases/).
 
+## [7.9.25] — 2026-07-08
+
+### Fixed
+- Valorant Team Deathmatch Discord score missing: `TeamDeathmatch` ModeID no longer misclassified as FFA Deathmatch
+- TDM parses `NumPoints` / chat ally–enemy; DM stays kills-only; spike modes keep round scores
+- Richer in-match state (agent · map · score · party · mode) without trackers or injection
+
 ## [7.9.24] — 2026-07-08
 
 ### Fixed

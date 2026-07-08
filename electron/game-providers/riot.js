@@ -167,32 +167,47 @@ function resolveValorantPhase({ privateData, localTruth } = {}) {
 }
 
 function chatTeamScore(data) {
-  const ally = Number(data?.partyOwnerMatchScoreAllyTeam ?? data?.partyOwnerMatchCurrentTeamRoundScore);
-  const enemy = Number(data?.partyOwnerMatchScoreEnemyTeam);
+  if (!data || typeof data !== 'object') return null;
+  const allyRaw = data.partyOwnerMatchScoreAllyTeam
+    ?? data.partyOwnerMatchCurrentTeamRoundScore
+    ?? data.matchScoreAllyTeam
+    ?? data.allyScore;
+  const enemyRaw = data.partyOwnerMatchScoreEnemyTeam
+    ?? data.matchScoreEnemyTeam
+    ?? data.enemyScore;
+  const ally = Number(allyRaw);
+  const enemy = Number(enemyRaw);
   if (Number.isFinite(ally) && Number.isFinite(enemy)) return `${ally}-${enemy}`;
   return null;
 }
 
 /**
  * Presence score line.
- * Deathmatch: K/D (or kills) — never chat round scores (they're meaningless in FFA).
- * TDM / spike / standard: prefer localTruth then chat ally-enemy.
+ * Deathmatch (FFA): kills only — never chat ally-enemy (meaningless / leftover).
+ * TDM / spike / standard: ally-enemy from localTruth or chat presence.
+ * Reject local "N kills" leftovers when the live queue is a team mode.
  */
 function resolveScoreHint({ resolved, data, localTruth, queueId }) {
   if (!resolved.inMatch) return null;
-  if (isDeathmatchQueue(queueId)) {
-    if (localTruth?.scoreHint) return localTruth.scoreHint;
+
+  const local = localTruth?.scoreHint ? String(localTruth.scoreHint).trim() : '';
+  const localTeam = /^\d+-\d+$/.test(local) ? local : null;
+  const localKills = local && !localTeam ? local : null;
+  const chat = chatTeamScore(data);
+
+  // FFA Deathmatch only — TeamDeathmatch must take the team path
+  if (isDeathmatchQueue(queueId) && !isTeamDeathmatchQueue(queueId)) {
+    if (localKills) return localKills;
     if (localTruth?.kda) {
       const kills = String(localTruth.kda).split('/')[0];
       return kills ? `${kills} kills` : null;
     }
     return null;
   }
-  // Local team score (TDM NumPoints / round scores) wins when present
-  if (localTruth?.scoreHint) return localTruth.scoreHint;
-  const chat = chatTeamScore(data);
+
+  // Team modes (TDM / spike / Comp…): ally-enemy only
+  if (localTeam) return localTeam;
   if (chat) return chat;
-  if (isTeamDeathmatchQueue(queueId) && localTruth?.kda) return localTruth.kda;
   return null;
 }
 

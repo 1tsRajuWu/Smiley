@@ -62,9 +62,11 @@ function buildValorantPresence(session, opts, fallbackState) {
     const map = o.showMapArt !== false ? session.map : null;
     const agent = o.showAgent !== false ? session.agent : null;
     // details: agent + map; state: score · party · mode · kda · rank (agent already on details)
-    // Deathmatch: avoid duplicating kills in both scoreHint and kda
+    // Deathmatch FFA only — "Team Deathmatch" must still show team score + KDA
     const q = String(session.queueId || session.modeKey || '').toLowerCase();
-    const isDm = q === 'deathmatch' || /death\s*match/i.test(String(session.mode || ''));
+    const modeStr = String(session.mode || '');
+    const isDm = (q === 'deathmatch' || (/death\s*match/i.test(modeStr) && !/team/i.test(modeStr)))
+      && !/hurm|onefa|team/i.test(q);
     const detailLine = joinParts([agent, map]);
     const showKda = o.showKda && session.kda && !(isDm && session.scoreHint);
     const ingameParts = [

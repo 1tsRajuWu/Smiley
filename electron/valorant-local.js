@@ -37,6 +37,8 @@ function matchQueueId(match) {
   const raw = match?.QueueID
     || match?.QueueId
     || match?.queueId
+    || match?.MatchmakingData?.QueueID
+    || match?.MatchmakingData?.QueueId
     || match?.ModeID
     || match?.Mode
     || null;
@@ -49,8 +51,14 @@ function matchQueueId(match) {
     .replace(/_PrimaryAsset$/i, '')
     .replace(/Mode$/i, '')
     .trim();
-  if (/deathmatch/i.test(key) || /deathmatch/i.test(s)) return 'deathmatch';
-  if (/hurm|team.?death|onefa/i.test(key) || /hurm|TeamDeathmatch/i.test(s)) return 'hurm';
+  // Team Deathmatch BEFORE FFA — "TeamDeathmatch" contains the substring "deathmatch"
+  if (/hurm|team.?death|onefa/i.test(key) || /hurm|team.?deathmatch|onefa/i.test(s)) return 'hurm';
+  if (
+    (/^deathmatch$/i.test(key) || /(?:^|\/)deathmatch(?:\/|_|$)/i.test(s) || /^deathmatch$/i.test(s))
+    && !/team.?death/i.test(s)
+  ) {
+    return 'deathmatch';
+  }
   if (/swiftplay/i.test(key) || /swiftplay/i.test(s)) return 'swiftplay';
   if (/spikerush|ggteam/i.test(key) || /SpikeRush/i.test(s)) return 'spikerush';
   if (/bomb|standard|competitive/i.test(s) && /competitive/i.test(s)) return 'competitive';
@@ -113,12 +121,63 @@ function kda(player) {
   return `${k}/${d}/${a}`;
 }
 
-function teamScore(teams) {
+function teamPoints(team) {
+  if (!team || typeof team !== 'object') return null;
+  const n = Number(
+    team.NumPoints
+    ?? team.numPoints
+    ?? team.RoundsWon
+    ?? team.roundsWon
+    ?? team.RoundScore
+    ?? team.roundScore
+    ?? team.Score
+    ?? team.score
+    ?? team.points,
+  );
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Ally-enemy score from Teams[]. Prefer player's TeamID so order is self-first.
+ * Spike: RoundScore/RoundsWon. TDM: NumPoints (team kill/point total).
+ */
+function teamScore(teams, selfTeamId) {
   if (!Array.isArray(teams) || teams.length < 2) return null;
-  const s = teams.map((t) => Number(
-    t?.RoundScore ?? t?.roundScore ?? t?.NumPoints ?? t?.Score ?? t?.points,
-  )).filter(Number.isFinite);
-  return s.length >= 2 ? `${s[0]}-${s[1]}` : null;
+  const scored = teams.map((t) => ({
+    id: String(t?.TeamID ?? t?.TeamId ?? t?.teamId ?? '').trim(),
+    pts: teamPoints(t),
+  })).filter((t) => Number.isFinite(t.pts));
+  if (scored.length < 2) return null;
+
+  const want = String(selfTeamId || '').trim().toLowerCase();
+  if (want) {
+    const ally = scored.find((t) => t.id.toLowerCase() === want);
+    const enemy = scored.find((t) => !ally || t.id.toLowerCase() !== want);
+    if (ally && enemy && ally !== enemy) return `${ally.pts}-${enemy.pts}`;
+  }
+  return `${scored[0].pts}-${scored[1].pts}`;
+}
+
+/** Sum player kills per TeamID when Teams[] has no NumPoints (rare live shapes). */
+function teamScoreFromPlayers(players, selfTeamId) {
+  if (!Array.isArray(players) || players.length < 2) return null;
+  const byTeam = new Map();
+  for (const p of players) {
+    const tid = String(p?.TeamID ?? p?.TeamId ?? p?.teamId ?? '').trim();
+    if (!tid) continue;
+    const k = Number(p?.Stats?.Kills ?? p?.kills);
+    if (!Number.isFinite(k)) continue;
+    byTeam.set(tid, (byTeam.get(tid) || 0) + k);
+  }
+  if (byTeam.size < 2) return null;
+  const entries = [...byTeam.entries()];
+  const want = String(selfTeamId || '').trim().toLowerCase();
+  if (want) {
+    const ally = entries.find(([id]) => id.toLowerCase() === want);
+    const enemy = entries.find(([id]) => !ally || id.toLowerCase() !== want);
+    if (ally && enemy) return `${ally[1]}-${enemy[1]}`;
+  }
+  return `${entries[0][1]}-${entries[1][1]}`;
 }
 
 function killsOnly(player) {
@@ -128,17 +187,23 @@ function killsOnly(player) {
 
 /**
  * Score line for Discord.
- * Deathmatch: never fake round scores — prefer kills / KDA.
- * TDM + standard: team score when available.
+ * Deathmatch (FFA): kills only — never fake round / team scores.
+ * TDM: NumPoints (or summed team kills). Spike / standard: round wins.
+ * When core-game has no live Teams score, return null so chat presence can fill in.
  */
 function matchScoreHint(match, self, queueId) {
   if (isDeathmatchQueue(queueId)) {
     return killsOnly(self) || null;
   }
-  const teams = teamScore(match?.Teams);
+  const selfTeam = self?.TeamID ?? self?.TeamId ?? self?.teamId ?? null;
+  const teams = teamScore(match?.Teams, selfTeam)
+    || teamScore(match?.ScoreboardTeams, selfTeam)
+    || teamScore(match?.TeamScores, selfTeam);
   if (teams) return teams;
-  // TDM sometimes exposes scores via presence only; leave null here
-  if (isTeamDeathmatchQueue(queueId)) return null;
+  // TDM: some builds omit Teams[].NumPoints mid-match — sum player kills by team
+  if (isTeamDeathmatchQueue(queueId)) {
+    return teamScoreFromPlayers(match?.Players, selfTeam);
+  }
   return null;
 }
 
@@ -243,4 +308,6 @@ module.exports = {
   mapName,
   matchQueueId,
   matchScoreHint,
+  teamScore,
+  teamScoreFromPlayers,
 };

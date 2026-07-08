@@ -716,5 +716,154 @@ ok('Summit DM no round score', summitDm.scoreHint === '8 kills');
 const summitArt = buildPresenceFromSession(summitDm, { category: 'gaming', state: 'In the zone' });
 ok('Summit map icon via uuid', summitArt.smallImageUrl?.includes('/agents/') || assets.valorantMapIcon(summitDm.mapId)?.includes('756da597'));
 
+// ── Core-game score fixtures (TDM NumPoints / DM kills / spike RoundScore) ──
+const {
+  matchQueueId,
+  matchScoreHint,
+  teamScore,
+  teamScoreFromPlayers,
+} = require(path.join(root, 'electron/valorant-local'));
+
+// Regression: ModeID "TeamDeathmatch" contains substring "deathmatch" — must be hurm
+ok('ModeID TeamDeathmatch → hurm', matchQueueId({
+  ModeID: '/Game/GameModes/TeamDeathmatch/TeamDeathmatch_PrimaryAsset',
+}) === 'hurm');
+ok('ModeID Deathmatch path → deathmatch', matchQueueId({
+  ModeID: '/Game/GameModes/Deathmatch/Deathmatch_PrimaryAsset',
+}) === 'deathmatch');
+ok('QueueID hurm wins', matchQueueId({ QueueID: 'hurm', ModeID: '/Game/GameModes/Bomb/Bomb_PrimaryAsset' }) === 'hurm');
+ok('catalog TeamDeathmatch is TDM not FFA', catalog.isTeamDeathmatchQueue('TeamDeathmatch') && !catalog.isDeathmatchQueue('TeamDeathmatch'));
+ok('catalog deathmatch is FFA', catalog.isDeathmatchQueue('deathmatch') && !catalog.isTeamDeathmatchQueue('deathmatch'));
+
+// TDM core-game shape: Teams[].NumPoints (ally first via self TeamID)
+const tdmMatch = {
+  QueueID: 'hurm',
+  ModeID: '/Game/GameModes/TeamDeathmatch/TeamDeathmatch_PrimaryAsset',
+  MapID: '/Game/Maps/HURM/HURM_Bowl/HURM_Bowl',
+  Teams: [
+    { TeamID: 'Red', NumPoints: 48 },
+    { TeamID: 'Blue', NumPoints: 62 },
+  ],
+  Players: [
+    { Subject: 'me', TeamID: 'Blue', CharacterID: JETT_ID, Stats: { Kills: 9, Deaths: 5, Assists: 3 } },
+    { Subject: 'a', TeamID: 'Blue', Stats: { Kills: 20, Deaths: 8, Assists: 1 } },
+    { Subject: 'b', TeamID: 'Red', Stats: { Kills: 15, Deaths: 10, Assists: 2 } },
+    { Subject: 'c', TeamID: 'Red', Stats: { Kills: 12, Deaths: 11, Assists: 0 } },
+  ],
+};
+const tdmSelf = tdmMatch.Players[0];
+ok('TDM queue from match', matchQueueId(tdmMatch) === 'hurm');
+ok('TDM NumPoints ally-first', matchScoreHint(tdmMatch, tdmSelf, 'hurm') === '62-48');
+ok('TDM teamScore respects TeamID', teamScore(tdmMatch.Teams, 'Blue') === '62-48');
+
+// TDM without Teams[] — sum player kills by side
+const tdmNoTeams = { ...tdmMatch, Teams: undefined };
+ok('TDM kills-sum fallback', teamScoreFromPlayers(tdmNoTeams.Players, 'Blue') === '29-27');
+ok('TDM matchScoreHint kills-sum', matchScoreHint(tdmNoTeams, tdmSelf, 'hurm') === '29-27');
+
+// Full parse: localTruth null score + chat presence → still show TDM score (not swallowed as DM)
+const tdmModeIdOnly = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    partyState: 'DEFAULT',
+    queueId: 'hurm',
+    partySize: 2,
+    matchMap: '/Game/Maps/HURM/HURM_Bowl/HURM_Bowl',
+    partyOwnerMatchScoreAllyTeam: 71,
+    partyOwnerMatchScoreEnemyTeam: 55,
+  },
+  {
+    inMatch: true,
+    agent: 'Jett',
+    agentId: JETT_ID,
+    map: 'Kasbah',
+    queueId: 'hurm',
+    // local core-game often has no live Teams score mid-match
+    scoreHint: null,
+    kda: '9/5/3',
+  },
+);
+ok('TDM chat score when local null', tdmModeIdOnly.scoreHint === '71-55');
+ok('TDM not FFA kills', !/kills/i.test(tdmModeIdOnly.scoreHint));
+const tdmRich = buildPresenceLines(tdmModeIdOnly);
+ok('TDM ValShy state has score+party+mode', tdmRich.state.includes('71-55')
+  && tdmRich.state.includes('Team Deathmatch')
+  && tdmRich.state.includes('2-Stack'));
+ok('TDM details agent+map', tdmRich.details.includes('Jett') && tdmRich.details.includes('Kasbah'));
+
+// Misclassified localTruth (legacy): ModeID was parsed as deathmatch — chat queueId hurm must still win score
+const tdmRecovered = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    queueId: 'hurm',
+    partySize: 1,
+    matchMap: '/Game/Maps/HURM/HURM_Alley/HURM_Alley',
+    partyOwnerMatchScoreAllyTeam: 40,
+    partyOwnerMatchScoreEnemyTeam: 33,
+  },
+  {
+    inMatch: true,
+    agent: 'Sage',
+    agentId: '569fdd95-4d10-43ab-ca70-79becc265df1',
+    map: 'District',
+    queueId: 'deathmatch', // legacy bug: TeamDeathmatch ModeID → deathmatch
+    scoreHint: '9 kills',
+    kda: '9/5/3',
+  },
+);
+ok('TDM recovers score via chat queueId', tdmRecovered.scoreHint === '40-33');
+ok('TDM mode still Team Deathmatch', tdmRecovered.mode === 'Team Deathmatch');
+
+// FFA Deathmatch core-game: kills only, ignore Teams RoundScore noise
+const dmMatch = {
+  QueueID: 'deathmatch',
+  ModeID: '/Game/GameModes/Deathmatch/Deathmatch_PrimaryAsset',
+  Teams: [
+    { TeamID: 'Blue', RoundScore: 2 },
+    { TeamID: 'Red', RoundScore: 0 },
+  ],
+  Players: [
+    { Subject: 'me', TeamID: 'me', Stats: { Kills: 14, Deaths: 7, Assists: 2 } },
+  ],
+};
+ok('DM score is kills not rounds', matchScoreHint(dmMatch, dmMatch.Players[0], 'deathmatch') === '14 kills');
+
+// Spike / Comp: RoundScore ally-enemy
+const spikeMatch = {
+  QueueID: 'competitive',
+  Teams: [
+    { TeamID: 'Blue', RoundScore: 8 },
+    { TeamID: 'Red', RoundScore: 6 },
+  ],
+  Players: [
+    { Subject: 'me', TeamID: 'Blue', Stats: { Kills: 12, Deaths: 9, Assists: 4 } },
+  ],
+};
+ok('Comp RoundScore', matchScoreHint(spikeMatch, spikeMatch.Players[0], 'competitive') === '8-6');
+const compParsed = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    queueId: 'competitive',
+    partySize: 5,
+    matchMap: '/Game/Maps/Ascent/Ascent',
+    partyOwnerMatchScoreAllyTeam: 8,
+    partyOwnerMatchScoreEnemyTeam: 6,
+  },
+  {
+    inMatch: true,
+    agent: 'Jett',
+    agentId: JETT_ID,
+    map: 'Ascent',
+    queueId: 'competitive',
+    scoreHint: '8-6',
+    kda: '12/9/4',
+  },
+);
+const compLines = buildPresenceLines(compParsed);
+ok('Comp Discord has score·party·mode', compLines.state.includes('8-6')
+  && compLines.state.includes('5-Stack')
+  && compLines.state.includes('Competitive'));
+ok('Comp details agent·map', compLines.details === 'Jett · Ascent' || (compLines.details.includes('Jett') && compLines.details.includes('Ascent')));
+
 console.log(`\nResult: ${pass}/${pass + fail} checks passed`);
 process.exit(fail > 0 ? 1 : 0);

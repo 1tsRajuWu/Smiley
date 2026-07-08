@@ -157,13 +157,19 @@ function queueDisplayName(id) {
   return k.replace(/([a-z])([A-Z])/g, '$1 $2') || null;
 }
 
-function isDeathmatchQueue(id) {
-  return FFA_QUEUES.has(normalizeQueueKey(id));
+function isTeamDeathmatchQueue(id) {
+  const raw = String(id || '').trim();
+  if (!raw) return false;
+  const k = normalizeQueueKey(raw).toLowerCase().replace(/[\s_-]+/g, '');
+  // "TeamDeathmatch" / ModeID paths must NEVER classify as FFA deathmatch
+  if (k === 'hurm' || k === 'onefa' || k === 'teamdeathmatch') return true;
+  return /hurm|team.?death/i.test(raw);
 }
 
-function isTeamDeathmatchQueue(id) {
+function isDeathmatchQueue(id) {
+  if (isTeamDeathmatchQueue(id)) return false;
   const k = normalizeQueueKey(id);
-  return k === 'hurm' || k === 'onefa';
+  return FFA_QUEUES.has(k);
 }
 
 function slugifyMapToken(token) {
