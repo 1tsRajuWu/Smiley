@@ -4,6 +4,7 @@ use crate::discord::{Discord, Presence};
 use crate::error::{AppError, AppResult};
 use crate::models::{sanitize_gif_url, *};
 use parking_lot::Mutex;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
@@ -482,31 +483,34 @@ impl App {
             return Ok(());
         }
 
-        // Music overlay while listening template is selected
+        // Music overlay while listening template is selected (probe every ~12s)
+        static MUSIC_TICK: AtomicU32 = AtomicU32::new(0);
         if cfg.music_now_playing && status.activity_id.as_deref() == Some("listening") {
-            if let Ok(Some(track)) = crate::music::probe_now_playing() {
-                let details = trunc(&track.title, 128);
-                let state = trunc(
-                    &format!("{} · {}", track.artist, track.app),
-                    128,
-                );
-                let gif = status.gif.clone().unwrap_or_else(|| {
-                    "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif"
-                        .into()
-                });
-                // No elapsed timer for music (matches Electron — no green timer)
-                self.discord.set(self.build_presence(
-                    &details,
-                    &state,
-                    "🎧",
-                    &gif,
-                    None,
-                ))?;
-                {
-                    let mut s = self.status.lock();
-                    s.details = Some(details);
-                    s.state = Some(state);
-                    s.message = "Music live".into();
+            let tick = MUSIC_TICK.fetch_add(1, Ordering::Relaxed);
+            if tick % 3 == 0 {
+                if let Ok(Some(track)) = crate::music::probe_now_playing() {
+                    let details = trunc(&track.title, 128);
+                    let state = trunc(
+                        &format!("{} · {}", track.artist, track.app),
+                        128,
+                    );
+                    let gif = status.gif.clone().unwrap_or_else(|| {
+                        "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif"
+                            .into()
+                    });
+                    self.discord.set(self.build_presence(
+                        &details,
+                        &state,
+                        "🎧",
+                        &gif,
+                        None,
+                    ))?;
+                    {
+                        let mut s = self.status.lock();
+                        s.details = Some(details);
+                        s.state = Some(state);
+                        s.message = "Music live".into();
+                    }
                 }
             }
             // Stay on listening slot even if no track yet — don't let gaming steal it
@@ -515,7 +519,10 @@ impl App {
 
         // Always refresh match board when live gaming is on (Valshy-style UI)
         if cfg.live_gaming {
-            match crate::riot::probe_riot_presence() {
+            let riot_opts = crate::riot::RiotProbeOptions {
+                resolve_names: cfg.show_other_riot_ids,
+            };
+            match crate::riot::probe_riot_presence_opts(riot_opts) {
                 Ok(Some(live)) if live.product == "valorant" || live.board.active => {
                     let cfg_snap = cfg.clone();
                     {

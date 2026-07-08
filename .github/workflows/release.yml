@@ -19,6 +19,7 @@ permissions:
 # on release creation. A final job undrafts only after all assets are verified.
 jobs:
   create-draft:
+    if: ${{ !startsWith(github.ref_name, 'v8') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,6 +42,7 @@ jobs:
           fi
 
   build-mac:
+    if: ${{ !startsWith(github.ref_name, 'v8') }}
     needs: create-draft
     runs-on: macos-latest
 
@@ -81,6 +83,7 @@ jobs:
         run: npm run build:mac -- --publish always
 
   build-win:
+    if: ${{ !startsWith(github.ref_name, 'v8') }}
     needs: create-draft
     runs-on: windows-latest
 
@@ -118,6 +121,7 @@ jobs:
         run: npm run build:win -- --publish always
 
   build-linux:
+    if: ${{ !startsWith(github.ref_name, 'v8') }}
     needs: create-draft
     runs-on: ubuntu-latest
 
@@ -155,6 +159,7 @@ jobs:
         run: npm run build:linux -- --publish always
 
   publish-release:
+    if: ${{ !startsWith(github.ref_name, 'v8') }}
     needs: [build-mac, build-win, build-linux]
     runs-on: ubuntu-latest
 
@@ -208,6 +213,7 @@ jobs:
           fi
 
   update-readme-downloads:
+    if: ${{ !startsWith(github.ref_name, 'v8') }}
     needs: [publish-release]
     runs-on: ubuntu-latest
 

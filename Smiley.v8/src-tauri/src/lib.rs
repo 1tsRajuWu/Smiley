@@ -193,7 +193,7 @@ pub fn run() {
             {
                 let st = state.clone();
                 std::thread::spawn(move || loop {
-                    std::thread::sleep(Duration::from_secs(4));
+                    std::thread::sleep(Duration::from_secs(6));
                     let _ = st.live_tick();
                 });
             }

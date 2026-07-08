@@ -14,6 +14,21 @@ use std::time::{Duration, Instant};
 
 const TIMEOUT: Duration = Duration::from_secs(3);
 const AGENT_TTL: Duration = Duration::from_secs(86_400);
+const PROBE_CACHE_TTL: Duration = Duration::from_millis(3500);
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RiotProbeOptions {
+    /// Skip local name-service when false (faster + privacy default).
+    pub resolve_names: bool,
+}
+
+struct CachedProbe {
+    at: Instant,
+    live: RiotLive,
+}
+
+static PROBE_CACHE: OnceLock<Mutex<Option<CachedProbe>>> = OnceLock::new();
+static HTTP: OnceLock<reqwest::blocking::Client> = OnceLock::new();
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -116,12 +131,15 @@ fn read_lockfile() -> Option<Lockfile> {
     Some(Lockfile { port, password })
 }
 
-fn http_client() -> Option<reqwest::blocking::Client> {
-    reqwest::blocking::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .timeout(TIMEOUT)
-        .build()
-        .ok()
+fn http_client() -> &'static reqwest::blocking::Client {
+    HTTP.get_or_init(|| {
+        reqwest::blocking::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .timeout(TIMEOUT)
+            .pool_max_idle_per_host(2)
+            .build()
+            .expect("http client")
+    })
 }
 
 fn auth_header(lock: &Lockfile) -> String {
@@ -135,9 +153,8 @@ fn auth_header(lock: &Lockfile) -> String {
 }
 
 fn local_get(lock: &Lockfile, path: &str) -> Option<Value> {
-    let client = http_client()?;
     let url = format!("https://127.0.0.1:{}{}", lock.port, path);
-    let res = client
+    let res = http_client()
         .get(&url)
         .header("Authorization", auth_header(lock))
         .header("Accept", "application/json")
@@ -150,9 +167,8 @@ fn local_get(lock: &Lockfile, path: &str) -> Option<Value> {
 }
 
 fn local_post_json(lock: &Lockfile, path: &str, body: &Value) -> Option<Value> {
-    let client = http_client()?;
     let url = format!("https://127.0.0.1:{}{}", lock.port, path);
-    let res = client
+    let res = http_client()
         .post(&url)
         .header("Authorization", auth_header(lock))
         .header("Content-Type", "application/json")
@@ -210,11 +226,7 @@ fn refresh_agents() {
     if cache.at.elapsed() < AGENT_TTL && !cache.names.is_empty() {
         return;
     }
-    let client = match http_client() {
-        Some(c) => c,
-        None => return,
-    };
-    let Ok(res) = client
+    let Ok(res) = http_client()
         .get("https://valorant-api.com/v1/agents?isPlayableCharacter=true")
         .send()
     else {
@@ -537,6 +549,32 @@ fn build_player(
 
 /// Probe local Valorant truth + full match board for UI.
 pub fn probe_riot_presence() -> AppResult<Option<RiotLive>> {
+    probe_riot_presence_opts(RiotProbeOptions::default())
+}
+
+pub fn probe_riot_presence_opts(opts: RiotProbeOptions) -> AppResult<Option<RiotLive>> {
+    {
+        let cache = PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock();
+        if let Some(c) = cache.as_ref() {
+            if c.at.elapsed() < PROBE_CACHE_TTL {
+                return Ok(Some(c.live.clone()));
+            }
+        }
+    }
+
+    let live = probe_riot_presence_inner(opts)?;
+    if let Some(ref l) = live {
+        *PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock() = Some(CachedProbe {
+            at: Instant::now(),
+            live: l.clone(),
+        });
+    } else {
+        *PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock() = None;
+    }
+    Ok(live)
+}
+
+fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLive>> {
     let Some(lock) = read_lockfile() else {
         return Ok(None);
     };
@@ -610,7 +648,7 @@ pub fn probe_riot_presence() -> AppResult<Option<RiotLive>> {
     let mut self_kda: Option<String> = None;
     let mut players: Vec<MatchPlayer> = Vec::new();
 
-    if let Some(core) = fetch_core_board(&lock, &puuid) {
+    if let Some(core) = fetch_core_board(&lock, &puuid, opts.resolve_names) {
         phase = "match".into();
         map = core.map.or(map);
         mode = core.mode.or(mode);
@@ -618,7 +656,7 @@ pub fn probe_riot_presence() -> AppResult<Option<RiotLive>> {
         self_agent = core.self_agent;
         self_kda = core.self_kda;
         players = core.players;
-    } else if let Some(pre) = fetch_pregame_board(&lock, &puuid) {
+    } else if let Some(pre) = fetch_pregame_board(&lock, &puuid, opts.resolve_names) {
         phase = "pregame".into();
         map = pre.map.or(map);
         mode = pre.mode.or(mode);
@@ -696,7 +734,7 @@ struct BoardBits {
     players: Vec<MatchPlayer>,
 }
 
-fn fetch_core_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
+fn fetch_core_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Option<BoardBits> {
     let player = local_get(lock, &format!("/core-game/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/core-game/v1/matches/{match_id}"))?;
@@ -727,7 +765,11 @@ fn fetch_core_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
     });
 
     let puuids: Vec<String> = players_raw.iter().filter_map(subject_of).collect();
-    let names = resolve_names(lock, &puuids);
+    let names = if do_resolve_names {
+        resolve_names(lock, &puuids)
+    } else {
+        HashMap::new()
+    };
     let mut players: Vec<MatchPlayer> = players_raw
         .iter()
         .filter_map(|p| build_player(p, puuid, self_team.as_deref(), &names, true))
@@ -749,7 +791,7 @@ fn fetch_core_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
     })
 }
 
-fn fetch_pregame_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
+fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Option<BoardBits> {
     let player = local_get(lock, &format!("/pregame/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/pregame/v1/matches/{match_id}"))?;
@@ -772,7 +814,11 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
     });
 
     let puuids: Vec<String> = players_raw.iter().filter_map(subject_of).collect();
-    let names = resolve_names(lock, &puuids);
+    let names = if do_resolve_names {
+        resolve_names(lock, &puuids)
+    } else {
+        HashMap::new()
+    };
     // Pregame is usually ally-only; treat missing team as Ally
     let mut players: Vec<MatchPlayer> = players_raw
         .iter()
