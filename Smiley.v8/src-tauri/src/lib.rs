@@ -6,6 +6,8 @@ mod error;
 mod gaming;
 mod log_file;
 mod models;
+mod music;
+mod riot;
 
 use app::App;
 use models::*;
@@ -108,20 +110,31 @@ fn remove_custom(
 
 #[tauri::command]
 fn probe_game(state: tauri::State<'_, Arc<App>>) -> Result<Option<gaming::GameHit>, error::AppError> {
-    if !state.config.lock().gaming_probe {
+    if !state.config.lock().gaming_probe && !state.config.lock().live_gaming {
         return Ok(None);
     }
     gaming::probe_foreground_game()
 }
 
+/// Open donate URL from Rust only — webview cannot open arbitrary https.
 #[tauri::command]
-fn open_donation_url(state: tauri::State<'_, Arc<App>>) -> Result<String, error::AppError> {
-    Ok(state.config.lock().donation_url.clone())
+fn open_donation_url(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<App>>,
+) -> Result<(), error::AppError> {
+    let url = state.config.lock().donation_url.clone();
+    if !models::is_safe_donate_url(&url) {
+        return Err(error::AppError::Msg("Blocked donation URL".into()));
+    }
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| error::AppError::Msg(format!("open url: {e}")))?;
+    log_file::append("ui: opened donation link");
+    Ok(())
 }
 
 #[tauri::command]
 fn append_log(message: String) {
-    // Cap length so a buggy UI can't flood the disk
     let msg = if message.len() > 500 {
         format!("{}…", &message[..500])
     } else {
@@ -148,6 +161,7 @@ pub fn run() {
                 });
             }
 
+            // Auto-rotate
             {
                 let st = state.clone();
                 std::thread::spawn(move || {
@@ -168,6 +182,15 @@ pub fn run() {
                             let _ = st.rotate_tick();
                         }
                     }
+                });
+            }
+
+            // Live gaming + music — off UI thread, rate-limited
+            {
+                let st = state.clone();
+                std::thread::spawn(move || loop {
+                    std::thread::sleep(Duration::from_secs(5));
+                    let _ = st.live_tick();
                 });
             }
 
@@ -193,7 +216,9 @@ pub fn run() {
                     "donate" => {
                         if let Some(st) = app.try_state::<Arc<App>>() {
                             let url = st.config.lock().donation_url.clone();
-                            let _ = app.opener().open_url(url, None::<&str>);
+                            if models::is_safe_donate_url(&url) {
+                                let _ = app.opener().open_url(url, None::<&str>);
+                            }
                         }
                     }
                     "quit" => app.exit(0),

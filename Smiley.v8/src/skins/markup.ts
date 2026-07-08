@@ -17,6 +17,7 @@ export function studioMarkup(): string {
         <div class="st-status" id="statusPill" data-state="off"><i></i><div><strong id="statusLabel">Offline</strong><em id="statusMsg">—</em></div></div>
         <div class="st-actions">
           <button type="button" data-act="idle">Idle</button>
+          <button type="button" data-act="rotate">Rotate</button>
           <button type="button" data-act="pause" hidden id="btnPause">Pause</button>
           <button type="button" data-act="clear" hidden id="btnClear">Clear</button>
           <button type="button" class="primary" data-act="connect" id="btnConnect">Connect</button>

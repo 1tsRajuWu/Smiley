@@ -145,6 +145,15 @@ pub struct Config {
     pub wallpaper_enabled: bool,
     #[serde(default = "default_false")]
     pub gaming_probe: bool,
+    /// Local Riot lockfile Valorant/LoL presence (no malware patterns).
+    #[serde(default = "default_true")]
+    pub live_gaming: bool,
+    /// Spotify / Apple Music overlay while "Listening to music" is active.
+    #[serde(default = "default_true")]
+    pub music_now_playing: bool,
+    /// Prefer static activity tiles (hover reveals GIF) — saves CPU.
+    #[serde(default = "default_false")]
+    pub static_tiles: bool,
     #[serde(default = "default_false")]
     pub idle_enabled: bool,
     #[serde(default = "default_idle_details")]
@@ -211,6 +220,9 @@ impl Default for Config {
             show_donate: true,
             wallpaper_enabled: true,
             gaming_probe: false,
+            live_gaming: true,
+            music_now_playing: true,
+            static_tiles: false,
             idle_enabled: false,
             idle_details: default_idle_details(),
             idle_state: default_idle_state(),
@@ -277,10 +289,19 @@ impl Config {
         self.donation_url = default_donate_url();
         self.rotate_seconds = self.rotate_seconds.clamp(30, 3600);
         self.max_recents = self.max_recents.clamp(3, 20);
-        if self.presence_cooldown_ms > 800 {
-            self.presence_cooldown_ms = 400;
-        }
         self.presence_cooldown_ms = self.presence_cooldown_ms.clamp(200, 10_000);
+        for c in &mut self.custom {
+            c.details = sanitize_text(&c.details, 128);
+            c.state = sanitize_text(&c.state, 128);
+            c.emoji = sanitize_text(&c.emoji, 8);
+            if let Some(gif) = c.gif.as_mut() {
+                *gif = sanitize_gif_url(gif);
+            }
+        }
+        self.idle_gif = sanitize_gif_url(&self.idle_gif);
+        if !self.button_url.starts_with("https://") {
+            self.button_url = default_btn_url();
+        }
         if !["cozy", "comfy", "compact"].contains(&self.grid_density.as_str()) {
             self.grid_density = "cozy".into();
         }
@@ -309,4 +330,33 @@ pub struct Snapshot {
     pub status: Status,
     pub config: Config,
     pub categories: Vec<Category>,
+}
+
+fn sanitize_text(s: &str, max: usize) -> String {
+    s.chars()
+        .filter(|c| !c.is_control())
+        .take(max)
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+/// Tenor HTTPS only — Discord-safe + matches CSP img-src.
+pub fn sanitize_gif_url(url: &str) -> String {
+    let u = url.trim();
+    let ok = (u.starts_with("https://media.tenor.com/")
+        || u.starts_with("https://c.tenor.com/")
+        || u.starts_with("https://media1.tenor.com/"))
+        && !u.contains(['"', '\'', '<', '>', ' '])
+        && u.len() < 500;
+    if ok {
+        u.into()
+    } else {
+        default_idle_gif()
+    }
+}
+
+pub fn is_safe_donate_url(url: &str) -> bool {
+    let u = url.trim();
+    u == "https://paypal.me/1tsRaj" || u.starts_with("https://paypal.me/1tsRaj/")
 }

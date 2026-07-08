@@ -1,4 +1,4 @@
-import { api, errMsg } from "./api";
+import { api, errMsg, esc } from "./api";
 import {
   fillSettings,
   readSettings,
@@ -26,6 +26,8 @@ export class AppController {
   private pollTimer = 0;
   private toastTimer = 0;
   private mounted = false;
+
+  private lastGameProbe = 0;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -186,6 +188,10 @@ export class AppController {
         ev.stopPropagation();
         return this.toggleFav(el.dataset.id || "");
       }
+      case "del-custom": {
+        ev.stopPropagation();
+        return this.deleteCustom(el.dataset.id || "");
+      }
       case "search":
         return;
       default:
@@ -264,13 +270,18 @@ export class AppController {
 
     this.paintStatusOnly();
 
-    // Optional light gaming probe — never blocks clicks
-    if (cfg.gamingProbe && s.connected && !s.paused) {
-      void api.probeGame().then((hit) => {
-        if (!hit || !this.snap) return;
-        const meta = this.$("meta");
-        if (meta) meta.textContent = `game: ${hit.title}\n${hit.state}`;
-      }).catch(() => { /* ignore */ });
+    // Optional light gaming probe — throttled, never blocks clicks
+    if ((cfg.gamingProbe || cfg.liveGaming) && s.connected && !s.paused) {
+      const now = Date.now();
+      if (now - this.lastGameProbe > 20_000) {
+        this.lastGameProbe = now;
+        void api.probeGame().then((hit) => {
+          if (!hit || !this.snap) return;
+          if (normalizeSkin(this.snap.config.skin) !== "terminal") return;
+          const meta = this.$("meta");
+          if (meta) meta.textContent = `game-hint: ${hit.title}\n${hit.state}`;
+        }).catch(() => { /* ignore */ });
+      }
     }
 
     const pause = this.$<HTMLButtonElement>("btnPause");
@@ -324,7 +335,10 @@ export class AppController {
       if (card) card.hidden = false;
       if (empty) empty.hidden = true;
       const art = this.$<HTMLElement>("art");
-      if (art) art.style.backgroundImage = `url("${gifUrl}")`;
+      if (art) {
+        const safe = gifUrl.replace(/["'()\\\s]/g, "");
+        art.style.backgroundImage = safe ? `url("${safe}")` : "";
+      }
     } else {
       if (hero) hero.removeAttribute("src");
       if (card) card.hidden = true;
@@ -397,10 +411,11 @@ export class AppController {
     el.innerHTML = items
       .map((c) => {
         const on = c.id === this.cat ? " on" : "";
+        const id = esc(c.id);
         if (skin === "terminal") {
-          return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${c.id}">${this.cat === c.id ? ">" : " "} ${c.id}/</button>`;
+          return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${id}">${this.cat === c.id ? ">" : " "} ${id}/</button>`;
         }
-        return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`;
+        return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${id}">${esc(c.emoji)} ${esc(c.label)}</button>`;
       })
       .join("");
   }
@@ -414,14 +429,17 @@ export class AppController {
     const favs = new Set(this.snap.config.favorites);
     const active = this.snap.status.activityId;
     const skin = normalizeSkin(this.snap.config.skin);
+    const staticTiles = this.snap.config.staticTiles || this.snap.config.reduceMotion;
 
     if (skin === "terminal") {
       grid.innerHTML = list
         .map((a) => {
           const on = a.id === active ? " on" : "";
           const star = favs.has(a.id) ? "*" : " ";
-          return `<button type="button" class="row${on}" data-act="pick" data-id="${a.id}">
-            <code>${star}${a.id}</code><span>${a.emoji} ${a.details}</span><em>${a.state}</em>
+          const custom = a.category === "custom";
+          return `<button type="button" class="row${on}" data-act="pick" data-id="${esc(a.id)}">
+            <code>${star}${esc(a.id)}</code><span>${esc(a.emoji)} ${esc(a.details)}</span><em>${esc(a.state)}</em>
+            ${custom ? `<span class="tile-del" data-act="del-custom" data-id="${esc(a.id)}" role="button" title="Delete">×</span>` : ""}
           </button>`;
         })
         .join("");
@@ -432,16 +450,39 @@ export class AppController {
       .map((a) => {
         const on = a.id === active ? " on" : "";
         const favOn = favs.has(a.id) ? " on" : "";
-        return `<button type="button" class="tile${on}" data-act="pick" data-id="${a.id}" style="--c:${a.color}">
-          <img src="${a.gif}" alt="" loading="lazy" decoding="async" />
+        const color = /^#[0-9a-fA-F]{3,8}$/.test(a.color) ? a.color : "#888";
+        const gif = esc(a.gif);
+        const custom = a.category === "custom";
+        const img = staticTiles
+          ? `<img data-src="${gif}" alt="" loading="lazy" decoding="async" class="tile-still" />`
+          : `<img src="${gif}" alt="" loading="lazy" decoding="async" />`;
+        return `<button type="button" class="tile${on}" data-act="pick" data-id="${esc(a.id)}" style="--c:${color}">
+          ${img}
           <div class="tile-fade">
-            <b>${a.emoji} ${a.details}</b>
-            <i>${a.state}</i>
+            <b>${esc(a.emoji)} ${esc(a.details)}</b>
+            <i>${esc(a.state)}</i>
           </div>
-          <span class="tile-fav${favOn}" data-act="fav" data-id="${a.id}" role="button">${favs.has(a.id) ? "★" : "☆"}</span>
+          <span class="tile-fav${favOn}" data-act="fav" data-id="${esc(a.id)}" role="button">${favs.has(a.id) ? "★" : "☆"}</span>
+          ${custom ? `<span class="tile-del" data-act="del-custom" data-id="${esc(a.id)}" role="button" title="Delete">×</span>` : ""}
         </button>`;
       })
       .join("");
+
+    // Lazy-load GIFs on hover when static tiles mode is on
+    if (staticTiles) {
+      grid.querySelectorAll<HTMLImageElement>("img.tile-still").forEach((img) => {
+        const tile = img.closest(".tile");
+        if (!tile) return;
+        tile.addEventListener(
+          "mouseenter",
+          () => {
+            const src = img.dataset.src;
+            if (src && img.src !== src) img.src = src;
+          },
+          { once: true },
+        );
+      });
+    }
   }
 
   private async connect() {
@@ -571,6 +612,21 @@ export class AppController {
     try {
       this.snap.config = await api.toggleFavorite(id);
       this.paintGrid();
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async deleteCustom(id: string) {
+    if (!id || !this.snap) return;
+    if (!confirm("Delete this custom activity?")) return;
+    try {
+      this.snap.config = await api.removeCustom(id);
+      if (this.snap.status.activityId === id) {
+        this.snap.status = await api.clear();
+      }
+      this.paint();
+      this.toast("Deleted");
     } catch (e) {
       this.toast(errMsg(e));
     }

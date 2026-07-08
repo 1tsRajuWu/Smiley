@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Config, CustomActivity, Snapshot, Status } from "./types";
 
 export type GameHit = {
@@ -27,14 +26,22 @@ export const api = {
     invoke<Config>("remove_custom", { activityId }),
   probeGame: () => invoke<GameHit | null>("probe_game"),
   log: (message: string) => invoke<void>("append_log", { message }),
-  openDonate: async () => {
-    const url = await invoke<string>("open_donation_url");
-    await openUrl(url);
-  },
+  /** Donate opens only from Rust allowlist (no arbitrary https from UI). */
+  openDonate: () => invoke<void>("open_donation_url"),
 };
 
 export function errMsg(e: unknown): string {
   if (typeof e === "string") return e;
   if (e && typeof e === "object" && "message" in e) return String((e as Error).message);
   return String(e);
+}
+
+/** Escape text before inserting into HTML attribute/text contexts. */
+export function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

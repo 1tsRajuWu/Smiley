@@ -56,6 +56,9 @@ export type Config = {
   showDonate: boolean;
   wallpaperEnabled: boolean;
   gamingProbe: boolean;
+  liveGaming: boolean;
+  musicNowPlaying: boolean;
+  staticTiles: boolean;
   idleEnabled: boolean;
   idleDetails: string;
   idleState: string;

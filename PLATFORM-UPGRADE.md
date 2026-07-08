@@ -6,9 +6,13 @@
 
 1. Prefer **`Smiley.v8/`** for new UI / presence / security work.
 2. Treat repo-root Electron (`main.js`, `electron/`, `src/`) as **v7.9.x shipping** — see `legacy/electron-v7/README.md`.
-3. Full live **gaming status** still lands first on Electron; v8 has a **light, timed process probe** (`gaming.rs`) until full parity.
+3. v8 now has **safe live layers** (no malware patterns):
+   - Custom GIF activities (Tenor HTTPS)
+   - **Riot lockfile Valorant/LoL** presence (`riot.rs`) — local only, timed HTTPS to 127.0.0.1
+   - **Music** Spotify/Apple Music (`music.rs`) — timed osascript with hard kill
+   - Process gaming probe still optional
 4. Donation = PayPal tip (`paypal.me/1tsRaj`). Discord = Application Client ID + desktop IPC — **not a bot**.
-5. After gaming-status parity on v8 is solid, tag/release and point the website download rows at v8 artifacts.
+5. After full Electron-depth parity (agent/map/score art, multi-provider), tag/release and point website downloads at v8.
 
 ## Newbie map
 

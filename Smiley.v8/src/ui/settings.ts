@@ -79,7 +79,10 @@ export function settingsMarkup(): string {
           <label class="cfg-tog"><input type="checkbox" id="cfgElapsed" /><span>Show elapsed timer</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgShowBtn" /><span>Show Download button on Discord</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgRemember" /><span>Restore last activity on connect</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Light gaming probe (safe / optional)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Process gaming probe (optional)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant/Riot (local lockfile — no malware)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgStaticTiles" /><span>Static tiles (GIFs on hover — saves CPU)</span></label>
         </div>
       </section>
 
@@ -147,6 +150,9 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   set("cfgShowBtn", cfg.showButton);
   set("cfgRemember", cfg.rememberLast);
   set("cfgGaming", cfg.gamingProbe);
+  set("cfgLiveGaming", cfg.liveGaming !== false);
+  set("cfgMusic", cfg.musicNowPlaying !== false);
+  set("cfgStaticTiles", cfg.staticTiles);
   set("cfgWallpaper", cfg.wallpaperEnabled);
   set("cfgDonate", cfg.showDonate);
   set("cfgRotate", cfg.rotateEnabled);
@@ -225,6 +231,9 @@ export function readSettings(root: HTMLElement, base: Config): Config {
     showDonate: c("cfgDonate"),
     wallpaperEnabled: c("cfgWallpaper"),
     gamingProbe: c("cfgGaming"),
+    liveGaming: c("cfgLiveGaming"),
+    musicNowPlaying: c("cfgMusic"),
+    staticTiles: c("cfgStaticTiles"),
     idleEnabled: c("cfgIdle"),
     idleDetails: v("cfgIdleDetails") || base.idleDetails,
     idleState: v("cfgIdleState") || base.idleState,

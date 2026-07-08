@@ -1,29 +1,38 @@
-//! Append-only log file under the app data directory.
-//! Never stores Discord tokens — Smiley does not use a bot token.
+//! File logger — timestamps via Rust clock (no `date` spawn).
 
-use crate::config::data_dir;
-use std::fs::OpenOptions;
+use std::fs::{create_dir_all, OpenOptions};
 use std::io::Write;
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn append(line: &str) {
-    let Ok(dir) = data_dir() else {
-        return;
-    };
-    let path = dir.join("logs").join("smiley.log");
-    let _ = std::fs::create_dir_all(path.parent().unwrap_or(dir.as_path()));
-    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&path) {
-        let ts = chrono_stamp();
-        let _ = writeln!(f, "[{ts}] {line}");
-    }
+fn log_dir() -> Option<PathBuf> {
+    let base = dirs::data_dir()?.join("Smiley-v8").join("logs");
+    create_dir_all(&base).ok()?;
+    Some(base)
 }
 
-fn chrono_stamp() -> String {
-    // Local wall clock via `date` — avoids adding a chrono dependency
-    use std::process::Command;
-    if let Ok(out) = Command::new("date").arg("+%Y-%m-%d %H:%M:%S").output() {
-        if out.status.success() {
-            return String::from_utf8_lossy(&out.stdout).trim().to_string();
-        }
+fn stamp() -> String {
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let tod = secs % 86_400;
+    let h = tod / 3600;
+    let m = (tod % 3600) / 60;
+    let s = tod % 60;
+    format!("{h:02}:{m:02}:{s:02}Z")
+}
+
+pub fn path() -> Option<PathBuf> {
+    Some(log_dir()?.join("smiley.log"))
+}
+
+pub fn append(message: &str) {
+    let Some(p) = path() else {
+        return;
+    };
+    let line = format!("[{}] {}\n", stamp(), message.replace('\n', " "));
+    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(p) {
+        let _ = f.write_all(line.as_bytes());
     }
-    "unknown".into()
 }

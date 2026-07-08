@@ -6,7 +6,7 @@ use discord_rich_presence::{
     DiscordIpc, DiscordIpcClient,
 };
 use parking_lot::Mutex;
-use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
 use std::time::{Duration, Instant};
 
 #[derive(Clone)]
@@ -27,13 +27,13 @@ enum Job {
 }
 
 pub struct Discord {
-    tx: SyncSender<Job>,
+    tx: Sender<Job>,
     pub connected: Mutex<bool>,
 }
 
 impl Discord {
     pub fn start(client_id: String) -> Self {
-        let (tx, rx) = mpsc::sync_channel(4);
+        let (tx, rx) = mpsc::channel();
         std::thread::Builder::new()
             .name("discord-ipc".into())
             .spawn(move || worker(client_id, rx))

@@ -55,7 +55,8 @@ img { max-width: 100%; display: block; }
 html.wallpaper-paused .wallpaper,
 html.calm .wallpaper {
   opacity: 0 !important;
-  animation: none !important;
+  visibility: hidden !important;
+  content-visibility: hidden;
 }
 .wallpaper::before,
 .wallpaper::after {
@@ -68,12 +69,26 @@ html.calm .wallpaper {
     radial-gradient(ellipse at 50% 90%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 45%);
   animation: wallDrift 18s ease-in-out infinite alternate;
   filter: blur(2px);
+  will-change: transform;
 }
 .wallpaper::after {
   animation-duration: 26s;
   animation-direction: alternate-reverse;
   opacity: .7;
   mix-blend-mode: soft-light;
+}
+/* Actually stop pseudo-element work in tray / reduce-motion */
+.wallpaper.paused::before,
+.wallpaper.paused::after,
+html.wallpaper-paused .wallpaper::before,
+html.wallpaper-paused .wallpaper::after,
+html.calm .wallpaper::before,
+html.calm .wallpaper::after {
+  animation: none !important;
+  animation-play-state: paused !important;
+  filter: none !important;
+  will-change: auto !important;
+  opacity: 0 !important;
 }
 @keyframes wallDrift {
   from { transform: translate3d(-2%, -1%, 0) scale(1.05); }
@@ -98,10 +113,17 @@ html.calm .wallpaper {
 .tile-fade b { display: block; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-fade i { display: block; font-style: normal; opacity: .7; font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-fav {
-  position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%;
+  position: absolute; top: 8px; right: 8px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
   display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-size: .85rem;
 }
 .tile-fav.on { color: #ffd166; }
+.tile-del {
+  position: absolute; top: 8px; left: 8px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(0,0,0,.45); color: #ff8e8e; font-size: 1rem;
+  opacity: 0; transition: opacity .12s ease;
+}
+.tile:hover .tile-del, .row:hover .tile-del { opacity: 1; }
+.tile img.tile-still { filter: saturate(.85); }
 
 /* Dialogs / settings shared */
 .dlg { border: 0; background: transparent; padding: 0; max-width: 720px; width: calc(100% - 28px); color: inherit; }
