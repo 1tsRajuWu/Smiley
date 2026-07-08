@@ -36,6 +36,7 @@ const { createMusicSync } = require('./electron/music-sync');
 const { createGameSync } = require('./electron/game-sync');
 const { createCodingSync } = require('./electron/coding-sync');
 const { getRiotApiKey, fetchValorantRank } = require('./electron/riot-rank');
+const { setSteamCachePath } = require('./electron/game-api');
 const { DEFAULT_GAMING_PRESENCE_OPTIONS } = require('./electron/presence-builder');
 const { createLiveUiPatch } = require('./electron/live-ui-patch');
 const {
@@ -2146,12 +2147,18 @@ async function buildActivityPayload(activity) {
   }
 
   // Discord shows the app/bot logo when the image key is missing or invalid.
-  // Always use a direct HTTPS GIF URL resolved for this activity.
+  // Gaming art is a remote HTTPS URL (Steam capsule / 128px Valorant logo) — never a spinner GIF.
   let imageUrl =
     activity.discordImageUrl ||
     activity.largeImageUrl ||
     (activity.largeImageKey && /^https?:\/\//i.test(activity.largeImageKey) ? activity.largeImageKey : null) ||
     activity.fallbackGif;
+
+  // Never send Discord the old Tenor "loading" GIF — reads as a broken spinner large_image.
+  if (imageUrl && /loading-gif\.gif|On7kvXhzml4/i.test(imageUrl)) {
+    if (isDev) console.warn('[RPC] rejected spinner fallback URL');
+    imageUrl = null;
+  }
 
   // Last-resort: remap hosts Discord's proxy cannot fetch (nekos/waifu → Tenor)
   if (imageUrl && /nekos\.best|waifu\.pics/i.test(imageUrl)) {
@@ -4861,6 +4868,7 @@ app.whenReady().then(() => {
   }
   Menu.setApplicationMenu(null);
   initSecurity(app.getPath('userData'));
+  setSteamCachePath(app.getPath('userData'));
   loadConfig();
   ensureDir(getUserDataPath('custom-animations'));
   ensureDir(getUserDataPath('custom-activities'));

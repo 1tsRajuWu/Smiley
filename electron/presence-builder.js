@@ -230,6 +230,7 @@ function buildGameSessionPayload(session, lines) {
     tags: session.tags || [],
     metascore: session.metascore || null,
     steamAppId: session.steamAppId || null,
+    steamArtworkUrl: session.steamArtworkUrl || null,
     updatedAt: session.updatedAt || Date.now(),
   };
 }

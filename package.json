@@ -1,7 +1,7 @@
 {
   "name": "smiley-rpc",
   "productName": "Smiley",
-  "version": "7.9.19",
+  "version": "7.9.20",
   "description": "Smiley — Discord status with anime GIFs",
   "main": "main.js",
   "author": "1tsRajuWu (Raj)",
@@ -38,6 +38,7 @@
     "update-readme-downloads": "bash scripts/update-readme-downloads.sh",
     "security-check": "node scripts/security-check.js",
     "game-presence-check": "node scripts/game-presence-check.js",
+    "game-assets-check": "node scripts/game-assets-check.js",
     "build:mediaremote-adapter": "node scripts/build-mediaremote-adapter.js",
     "postinstall": "electron-builder install-app-deps && node scripts/install-now-playing-native.js && node scripts/build-mediaremote-adapter.js"
   },

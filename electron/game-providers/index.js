@@ -1,6 +1,6 @@
 // Game providers — merge Riot local API + foreground window detection
-const { lookupSteamMetadata } = require('../game-api');
-const { resolveGameArtwork, resolveSmallImage } = require('../game-assets');
+const { lookupSteamMetadata, validateImageUrl } = require('../game-api');
+const { resolveGameArtwork, resolveSmallImage, SMILEY_LOGO, GAME_LOGOS } = require('../game-assets');
 const { buildPresenceLines } = require('../presence-builder');
 const { getRiotLiveSession, isRiotGameProcess } = require('./riot');
 const { enrichMinecraft } = require('./minecraft');
@@ -82,13 +82,23 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
   if (!session?.title) return { session: null, steamKey: lastSteamKey };
 
   let meta = null;
-  const steamKey = session.title.toLowerCase();
-  if (steamKey !== lastSteamKey) {
-    try { meta = await lookupSteamMetadata(session.title); } catch (_) {}
+  // Also try processName for Steam AppID aliases (e.g. cs2.exe → 730)
+  const steamKey = [session.title, session.processName]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase())
+    .join('|');
+  const needsSteam = !session.provider || session.provider === 'window';
+  if (needsSteam && steamKey !== lastSteamKey) {
+    const queries = [session.title, session.processName].filter(Boolean);
+    for (const q of queries) {
+      try { meta = await lookupSteamMetadata(q); } catch (_) { meta = null; }
+      if (meta?.steamAppId) break;
+    }
     if (meta) {
       session = {
         ...session,
         artworkUrl: session.artworkUrl || meta.artworkUrl,
+        steamArtworkUrl: meta.steamArtworkUrl || meta.artworkUrl || null,
         tags: session.tags || meta.tags,
         metascore: session.metascore || meta.metascore,
         steamAppId: session.steamAppId || meta.steamAppId,
@@ -100,9 +110,26 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
   session.details = lines.details;
   session.state = lines.state;
   session.liveLine = lines.state;
-  session.artworkUrl = resolveGameArtwork(session, presenceOpts);
+  let artwork = resolveGameArtwork(session, presenceOpts);
+  // Never push a 404 / spinner URL — Discord would show a broken loading image.
+  // Validate Steam / generic CDN picks; known GAME_LOGOS + Valorant 128px skip re-fetch.
+  const providerLogo = session.provider && GAME_LOGOS[session.provider];
+  const needsValidate = artwork
+    && !providerLogo
+    && session.provider !== 'riot-valorant'
+    && /steamstatic\.com|steam\/apps/i.test(artwork);
+  if (needsValidate) {
+    try {
+      const ok = await validateImageUrl(artwork);
+      if (!ok) artwork = SMILEY_LOGO;
+    } catch (_) {
+      artwork = SMILEY_LOGO;
+    }
+  }
+  session.artworkUrl = artwork;
+  session.steamArtworkUrl = session.steamArtworkUrl || (session.steamAppId ? artwork : null);
   session.smallImageUrl = resolveSmallImage(session, presenceOpts);
-  return { session, steamKey };
+  return { session, steamKey: needsSteam ? steamKey : lastSteamKey };
 }
 
 function getRiotPollMs(session) {

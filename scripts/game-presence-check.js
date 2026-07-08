@@ -349,7 +349,36 @@ ok('Rank toggle off', !noRankLines.state.includes('Immortal'));
 
 ok('LoL champion icon', assets.lolChampionIcon('Jinx')?.includes('Jinx'));
 ok('Steam header', assets.steamHeader(730)?.includes('730'));
+ok('Steam CS2 capsule (light)', assets.steamCapsule(730)?.includes('/730/capsule_231x87.jpg'));
+ok('Steam artwork prefers capsule not library_600x900', assets.steamArtworkCandidates(730)[0]?.includes('capsule_231x87'));
+ok('Steam logo alias returns capsule not logo.png', assets.steamLogo(730)?.includes('capsule_231x87'));
 ok('Party labels', assets.partyLabel(2) === 'Duo' && assets.partyLabel(5) === 'Full stack');
+ok('Gaming fallback is Smiley logo (not spinner)', assets.GAMING_FALLBACK === assets.SMILEY_LOGO && !/loading-gif/i.test(assets.GAMING_FALLBACK));
+ok('Valorant logo is 128×128 CDN', VAL_LOGO.includes('128x128') && VAL_LOGO.includes('cmsassets.rgpub.io'));
+ok('Unknown game artwork → Smiley logo', assets.resolveGameArtwork({ provider: 'window', title: 'TotallyUnknownGameXYZ' }) === assets.SMILEY_LOGO);
+ok('CS2 session with AppID → capsule URL', assets.resolveGameArtwork({ provider: 'window', title: 'Counter-Strike 2', steamAppId: 730 })?.includes('/730/capsule_231x87.jpg'));
+ok('Spinner URL detector', assets.isSpinnerFallbackUrl('https://media.tenor.com/On7kvXhzml4AAAAi/loading-gif.gif'));
+
+const { resolveSteamAppIdAlias, STEAM_APP_ALIASES } = require(path.join(root, 'electron/game-api'));
+ok('CS2 alias → AppID 730', resolveSteamAppIdAlias('cs2') === 730 && resolveSteamAppIdAlias('Counter-Strike 2') === 730);
+ok('Alias table has CS2', STEAM_APP_ALIASES.cs2 === 730);
+
+const cs2Art = buildPresenceFromSession({
+  provider: 'window',
+  title: 'Counter-Strike 2',
+  steamAppId: 730,
+  steamArtworkUrl: assets.steamCapsule(730),
+}, { category: 'gaming', state: 'In the zone' });
+ok('CS2 presence large_image is Steam capsule', cs2Art.discordImageUrl?.includes('capsule_231x87.jpg') && cs2Art.discordImageUrl.includes('730'));
+ok('CS2 presence not spinner', !/loading-gif/i.test(cs2Art.discordImageUrl || ''));
+ok('CS2 details = game title', cs2Art.details === 'Counter-Strike 2');
+
+const unknownArt = buildPresenceFromSession({
+  provider: 'window',
+  title: 'SomeIndieNoSteamMatch',
+}, { category: 'gaming', state: 'In the zone' });
+ok('Unknown game large_image = Smiley logo (no spinner)', unknownArt.discordImageUrl === assets.SMILEY_LOGO);
+ok('Unknown game not loading-gif', !/loading-gif|On7kvXhzml4/i.test(unknownArt.discordImageUrl || ''));
 
 // Other games must not get Valorant Queue/Lobby labels
 const fortniteLines = buildPresenceLines({
