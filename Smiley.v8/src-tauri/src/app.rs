@@ -460,15 +460,15 @@ impl App {
 
     pub fn save_config(&self, next: Config) -> AppResult<Config> {
         let raw_idle = next.idle_gif.trim().to_string();
+        if !raw_idle.is_empty() && sanitize_gif_url(&raw_idle).is_none() {
+            return Err(AppError::Msg(
+                "Idle GIF must be a Tenor HTTPS URL (https://media.tenor.com/…)".into(),
+            ));
+        }
         let mut next = next.sanitize();
         // Guard: never let a partial settings write erase persisted lists.
         {
             let live = self.config.lock();
-            if !raw_idle.is_empty() && sanitize_gif_url(&raw_idle).is_none() {
-                return Err(AppError::Msg(
-                    "Idle GIF must be a Tenor HTTPS URL (https://media.tenor.com/…)".into(),
-                ));
-            }
             if next.custom.is_empty() && !live.custom.is_empty() {
                 next.custom = live.custom.clone();
             }
@@ -481,7 +481,9 @@ impl App {
             if next.last_activity_id.is_none() {
                 next.last_activity_id = live.last_activity_id.clone();
             }
-            if raw_idle.is_empty() && live.idle_gif != next.idle_gif {
+            if !raw_idle.is_empty() {
+                next.idle_gif = sanitize_gif_url(&raw_idle).unwrap_or(raw_idle);
+            } else if live.idle_gif != next.idle_gif {
                 next.idle_gif = live.idle_gif.clone();
             }
         }

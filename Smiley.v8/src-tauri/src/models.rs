@@ -494,4 +494,13 @@ mod tests {
         let loaded: Config = serde_json::from_str(&raw).expect("deserialize");
         assert_eq!(loaded.sanitize().idle_gif, custom);
     }
+
+    #[test]
+    fn idle_gif_deserializes_from_camel_case_payload() {
+        let custom = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif";
+        let json = format!(r#"{{"skin":"studio","idleGif":"{custom}"}}"#);
+        let cfg: Config = serde_json::from_str(&json).expect("parse frontend payload");
+        assert_eq!(cfg.idle_gif, custom);
+        assert_eq!(cfg.sanitize().idle_gif, custom);
+    }
 }

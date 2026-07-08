@@ -126,7 +126,12 @@ export class AppController {
 
     this.root.onsubmit = (e) => {
       const form = e.target as HTMLFormElement;
-      if (form.id === "settingsForm" || form.id === "createForm") {
+      if (form.id === "settingsForm") {
+        e.preventDefault();
+        void this.saveSettings();
+        return;
+      }
+      if (form.id === "createForm") {
         e.preventDefault();
         return;
       }

@@ -9,6 +9,17 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
+/** Read idle GIF from the Auto tab input — global id, never undefined. */
+function readIdleGif(root: HTMLElement, base: Config): string {
+  const el =
+    document.getElementById("cfgIdleGif") ??
+    root.querySelector<HTMLInputElement>("#cfgIdleGif");
+  const raw = (el instanceof HTMLInputElement ? el.value : "").trim();
+  if (raw.length > 0) return raw;
+  const saved = (base.idleGif ?? "").trim();
+  return saved.length > 0 ? saved : "";
+}
+
 export function settingsMarkup(): string {
   const skinCards = SKINS.map(
     (s) => `
@@ -267,10 +278,7 @@ export function readSettings(root: HTMLElement, base: Config): Config {
     idleEnabled: c("cfgIdle"),
     idleDetails: v("cfgIdleDetails") || base.idleDetails,
     idleState: v("cfgIdleState") || base.idleState,
-    idleGif: (() => {
-      const raw = v("cfgIdleGif");
-      return raw.length > 0 ? raw : base.idleGif;
-    })(),
+    idleGif: readIdleGif(root, base),
     rotateEnabled: c("cfgRotate"),
     rotateSeconds: n("cfgRotateSecs", base.rotateSeconds, 30, 3600),
     rotateFavoritesOnly: c("cfgRotateFav"),
