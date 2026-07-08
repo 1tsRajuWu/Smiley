@@ -34,7 +34,7 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 >
 > Read the full note from Raj: **[docs/FINAL.md](docs/FINAL.md)**
 
-**v7.9.0** (current) adds Gaming Rich Presence settings, a Discord preview card, and a redesigned website. **v8** will wrap up the project.
+**v7.9.1** (current) uses game logos for Discord gaming presence large image. **v8** will wrap up the project.
 
 ---
 
@@ -67,6 +67,22 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 1. **Download** from [the website](https://1tsrajuwu.github.io/Smiley/) or links above.
 2. **Open Discord** desktop (browser won't work).
 3. **Pick an activity** — your profile updates with the same GIF.
+
+</details>
+
+<details>
+<summary><strong>About v7.9.1 — Game logos on Discord presence (July 8, 2026)</strong></summary>
+
+**v7.9.1** uses game logos for the Discord gaming presence large image; map, agent, and mode art appear as small-image overlays.
+
+- **Game logos** — Discord no longer falls back to the Smiley app icon when contextual art 404s
+
+| | |
+|---|---|
+| **Release notes** | [docs/releases/v7.9.1.md](docs/releases/v7.9.1.md) |
+| **Changelog** | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
+| **Code** | Fork & PR — [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Support** | [paypal.me/1tsRaj](https://paypal.me/1tsRaj) |
 
 </details>
 
