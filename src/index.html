@@ -78,44 +78,44 @@
             <div class="panel-heading">Live sync</div>
             <p class="panel-hint">Show music, games, and coding on Discord automatically.</p>
             <div class="feature-cards">
-              <label class="feature-card feature-card--music">
+              <div class="feature-card feature-card--music">
                 <span class="feature-card__icon" aria-hidden="true">🎵</span>
                 <span class="feature-card__body">
                   <span class="feature-card__title">Now playing</span>
                   <span class="feature-card__desc">Spotify, Apple Music, YouTube Music</span>
                 </span>
-                <label class="toggle sm"><input type="checkbox" id="musicNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
-              </label>
-              <label class="feature-card feature-card--gaming">
+                <label class="toggle sm feature-card__toggle"><input type="checkbox" id="musicNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </div>
+              <div class="feature-card feature-card--gaming">
                 <span class="feature-card__icon" aria-hidden="true">🎮</span>
                 <span class="feature-card__body">
                   <span class="feature-card__title">Gaming</span>
                   <span class="feature-card__desc">Foreground game + Valorant stats</span>
                 </span>
-                <label class="toggle sm"><input type="checkbox" id="gamingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
-              </label>
-              <label class="feature-card feature-card--coding">
+                <label class="toggle sm feature-card__toggle"><input type="checkbox" id="gamingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </div>
+              <div class="feature-card feature-card--coding">
                 <span class="feature-card__icon" aria-hidden="true">💻</span>
                 <span class="feature-card__body">
                   <span class="feature-card__title">Coding</span>
                   <span class="feature-card__desc">Cursor, VS Code, and other editors</span>
                 </span>
-                <label class="toggle sm"><input type="checkbox" id="codingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
-              </label>
+                <label class="toggle sm feature-card__toggle"><input type="checkbox" id="codingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </div>
             </div>
           </section>
           <section class="panel-section presence-controls" id="presenceControlsPanel">
             <div class="panel-heading">What to show</div>
             <p class="panel-hint">Valorant uses local Riot client data only.</p>
             <div class="gaming-presence-toggles">
-              <label class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowModePanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowPartyPanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgentPanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScorePanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRankPanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArtPanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsedPanel" checked /><span class="toggle-slider"></span></label></label>
-              <label class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKdaPanel" checked /><span class="toggle-slider"></span></label></label>
+              <div class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowModePanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowPartyPanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgentPanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScorePanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRankPanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArtPanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsedPanel" checked /><span class="toggle-slider"></span></label></div>
+              <div class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKdaPanel" checked /><span class="toggle-slider"></span></label></div>
             </div>
             <button type="button" class="btn btn-ghost btn-sm panel-settings-link" id="openGamingSettingsBtn">Riot API key &amp; more</button>
           </section>
@@ -289,7 +289,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.9.11</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.9.12</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -375,14 +375,14 @@
                 <span class="field-label">Gaming presence details</span>
                 <p class="field-hint" style="margin:0 0 12px;">Customize what appears on Discord while gaming. Valorant uses local Riot client data only.</p>
                 <div class="gaming-presence-toggles">
-                  <label class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowMode" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowParty" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgent" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScore" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRank" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArt" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsed" checked /><span class="toggle-slider"></span></label></label>
-                  <label class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKda" checked /><span class="toggle-slider"></span></label></label>
+                  <div class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowMode" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowParty" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgent" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScore" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRank" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArt" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsed" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKda" checked /><span class="toggle-slider"></span></label></div>
                 </div>
               </div>
               <div class="field">

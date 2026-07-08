@@ -31,6 +31,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
   let lastArtworkKey = '';
   let lastResolvedSession = null;
   let matchStartAt = null;
+  let backgroundMode = false;
 
   function sendRenderer(session) {
     const now = Date.now();
@@ -184,6 +185,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
   async function ensureRunning() {
     if (fgService) return;
     fgService = createNowGamingService({ onUpdate: onForeground });
+    fgService.setBackgroundMode?.(backgroundMode);
     await fgService.start();
     await refresh({ force: true });
     scheduleLivePoll(null);
@@ -232,7 +234,8 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
     stop,
     getTemplate: () => template,
     setBackgroundMode(background) {
-      fgService?.setBackgroundMode?.(background === true);
+      backgroundMode = background === true;
+      fgService?.setBackgroundMode?.(backgroundMode);
     },
     handleConfigChange(enabled) {
       if (!template) return;

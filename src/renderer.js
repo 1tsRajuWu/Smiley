@@ -349,6 +349,40 @@ function syncCodingPanelToggle() {
   }
 }
 
+let liveSyncPersistTimer = null;
+function schedulePersistLiveSyncSettings() {
+  if (liveSyncPersistTimer) clearTimeout(liveSyncPersistTimer);
+  liveSyncPersistTimer = setTimeout(() => {
+    liveSyncPersistTimer = null;
+    const payload = {
+      musicNowPlaying: musicNowPlayingToggle?.checked !== false,
+      musicNowPlayingAlbumArt: musicNowPlayingAlbumArtToggle?.checked !== false,
+      gamingNowPlaying: gamingNowPlayingToggle?.checked !== false,
+      gamingNowPlayingCoverArt: gamingNowPlayingCoverArtToggle?.checked !== false,
+      codingNowPlaying: codingNowPlayingToggle?.checked !== false,
+      gamingPresenceOptions: getGamingPresenceOptionsFromUI(),
+    };
+    currentSettings = { ...currentSettings, ...payload };
+    window.smiley.saveConfig(payload).catch(() => {});
+  }, 120);
+}
+
+function applyLiveSyncTogglesFromConfig(cfg = {}) {
+  if (musicNowPlayingToggle) musicNowPlayingToggle.checked = cfg.musicNowPlaying !== false;
+  if (musicNowPlayingAlbumArtToggle) {
+    musicNowPlayingAlbumArtToggle.checked = cfg.musicNowPlayingAlbumArt !== false;
+  }
+  if (gamingNowPlayingToggle) gamingNowPlayingToggle.checked = cfg.gamingNowPlaying !== false;
+  if (gamingNowPlayingCoverArtToggle) {
+    gamingNowPlayingCoverArtToggle.checked = cfg.gamingNowPlayingCoverArt !== false;
+  }
+  if (codingNowPlayingToggle) codingNowPlayingToggle.checked = cfg.codingNowPlaying !== false;
+  applyGamingPresenceOptionsToUI(cfg.gamingPresenceOptions);
+  syncMusicPanelToggle();
+  syncGamingPresenceSectionVisibility();
+  syncCodingPanelToggle();
+}
+
 function setupDashboardUI() {
   syncMusicPanelToggle();
   syncGamingPresenceSectionVisibility();
@@ -360,7 +394,6 @@ function setupDashboardUI() {
       musicNowPlayingToggle.checked = musicNowPlayingTogglePanel.checked;
       musicNowPlayingToggle.dispatchEvent(new Event('change'));
     });
-    musicNowPlayingToggle.addEventListener('change', syncMusicPanelToggle);
   }
 
   if (gamingNowPlayingTogglePanel && gamingNowPlayingToggle) {
@@ -368,7 +401,6 @@ function setupDashboardUI() {
       gamingNowPlayingToggle.checked = gamingNowPlayingTogglePanel.checked;
       gamingNowPlayingToggle.dispatchEvent(new Event('change'));
     });
-    gamingNowPlayingToggle.addEventListener('change', syncGamingPresenceSectionVisibility);
   }
 
   if (codingNowPlayingTogglePanel && codingNowPlayingToggle) {
@@ -376,8 +408,22 @@ function setupDashboardUI() {
       codingNowPlayingToggle.checked = codingNowPlayingTogglePanel.checked;
       codingNowPlayingToggle.dispatchEvent(new Event('change'));
     });
-    codingNowPlayingToggle.addEventListener('change', syncCodingPanelToggle);
   }
+
+  musicNowPlayingToggle?.addEventListener('change', () => {
+    syncMusicPanelToggle();
+    schedulePersistLiveSyncSettings();
+  });
+  musicNowPlayingAlbumArtToggle?.addEventListener('change', schedulePersistLiveSyncSettings);
+  gamingNowPlayingToggle?.addEventListener('change', () => {
+    syncGamingPresenceSectionVisibility();
+    schedulePersistLiveSyncSettings();
+  });
+  gamingNowPlayingCoverArtToggle?.addEventListener('change', schedulePersistLiveSyncSettings);
+  codingNowPlayingToggle?.addEventListener('change', () => {
+    syncCodingPanelToggle();
+    schedulePersistLiveSyncSettings();
+  });
 
   previewStateChips?.querySelectorAll('.preview-state-chip').forEach((chip) => {
     chip.addEventListener('click', () => setLivePreviewMode(chip.dataset.preview || 'activity'));
@@ -488,10 +534,12 @@ function wireGamingPresenceToggleSync() {
     panel?.addEventListener('change', () => {
       if (settings) settings.checked = panel.checked;
       updateGamingSettingsPreview();
+      schedulePersistLiveSyncSettings();
     });
     settings?.addEventListener('change', () => {
       if (panel) panel.checked = settings.checked;
       updateGamingSettingsPreview();
+      schedulePersistLiveSyncSettings();
     });
   }
 }
@@ -509,9 +557,6 @@ function setGamingPreviewState(state) {
 function setupGamingPresenceSettings() {
   setupDashboardUI();
   wireGamingPresenceToggleSync();
-  if (gamingNowPlayingToggle) {
-    gamingNowPlayingToggle.addEventListener('change', syncGamingPresenceSectionVisibility);
-  }
   [settingsGamingStatePills, mainGamingStatePills].forEach((pillsEl) => {
     pillsEl?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
       pill.addEventListener('click', () => setGamingPreviewState(pill.dataset.state || 'lobby'));
@@ -1870,6 +1915,7 @@ async function updatePreview(activity) {
 
 // ─── Activity Grid ───────────────────────────────────────────────────
 function renderCategoryTabs() {
+  if (!categoryTabs) return;
   categoryTabs.innerHTML = ACTIVITY_CATEGORIES_WITH_CUSTOM.map(
     (cat) => `
     <button class="category-tab${cat.id === activeCategory ? ' active' : ''}" data-category="${cat.id}"
@@ -2195,23 +2241,13 @@ async function handleClear() {
 function openSettings(tab = 'general') {
   window.smiley.getConfig().then((cfg) => {
     currentSettings = { ...cfg };
-    autoConnectToggle.checked = cfg.autoConnect !== false;
-    minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
+    if (autoConnectToggle) autoConnectToggle.checked = cfg.autoConnect !== false;
+    if (minimizeTrayToggle) minimizeTrayToggle.checked = cfg.minimizeToTray !== false;
     if (autoCheckUpdatesToggle) autoCheckUpdatesToggle.checked = cfg.autoCheckUpdates !== false;
     if (autoInstallUpdatesToggle) autoInstallUpdatesToggle.checked = cfg.autoInstallUpdates !== false;
-    showTimerToggle.checked = cfg.showTimer !== false;
-    animationsToggle.checked = cfg.animationsEnabled !== false;
-    if (musicNowPlayingToggle) musicNowPlayingToggle.checked = cfg.musicNowPlaying !== false;
-    if (musicNowPlayingAlbumArtToggle) musicNowPlayingAlbumArtToggle.checked = cfg.musicNowPlayingAlbumArt !== false;
-    if (gamingNowPlayingToggle) gamingNowPlayingToggle.checked = cfg.gamingNowPlaying !== false;
-    if (gamingNowPlayingCoverArtToggle) {
-      gamingNowPlayingCoverArtToggle.checked = cfg.gamingNowPlayingCoverArt !== false;
-    }
-    if (codingNowPlayingToggle) codingNowPlayingToggle.checked = cfg.codingNowPlaying !== false;
-    syncCodingPanelToggle();
-    applyGamingPresenceOptionsToUI(cfg.gamingPresenceOptions);
-    syncGamingPresenceSectionVisibility();
-    syncMusicPanelToggle();
+    if (showTimerToggle) showTimerToggle.checked = cfg.showTimer !== false;
+    if (animationsToggle) animationsToggle.checked = cfg.animationsEnabled !== false;
+    applyLiveSyncTogglesFromConfig(cfg);
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
@@ -2320,12 +2356,12 @@ async function handleClearCache() {
 
 function buildSettingsPayload() {
   return {
-    autoConnect: autoConnectToggle.checked,
-    minimizeToTray: minimizeTrayToggle.checked,
+    autoConnect: autoConnectToggle?.checked !== false,
+    minimizeToTray: minimizeTrayToggle?.checked !== false,
     autoCheckUpdates: autoCheckUpdatesToggle?.checked !== false,
     autoInstallUpdates: autoInstallUpdatesToggle?.checked !== false,
-    showTimer: showTimerToggle.checked,
-    animationsEnabled: animationsToggle.checked,
+    showTimer: showTimerToggle?.checked !== false,
+    animationsEnabled: animationsToggle?.checked !== false,
     musicNowPlaying: musicNowPlayingToggle?.checked !== false,
     musicNowPlayingAlbumArt: musicNowPlayingAlbumArtToggle?.checked !== false,
     gamingNowPlaying: gamingNowPlayingToggle?.checked !== false,
@@ -3354,7 +3390,7 @@ async function init() {
     });
   });
 
-  settingsBtn.addEventListener('click', () => openSettings('general'));
+  if (settingsBtn) settingsBtn.addEventListener('click', () => openSettings('general'));
   setupGamingPresenceSettings();
   const openGamingSettingsBtn = $('#openGamingSettingsBtn');
   if (openGamingSettingsBtn) {
@@ -3477,7 +3513,7 @@ async function init() {
     }
   });
 
-  searchInput.addEventListener('input', (e) => {
+  searchInput?.addEventListener('input', (e) => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
       searchQuery = e.target.value;
@@ -3796,10 +3832,9 @@ async function init() {
     if (data?.codingNowPlaying !== undefined) currentSettings.codingNowPlaying = data.codingNowPlaying !== false;
     if (data?.gamingPresenceOptions) {
       currentSettings.gamingPresenceOptions = data.gamingPresenceOptions;
-      applyGamingPresenceOptionsToUI(data.gamingPresenceOptions);
     }
+    applyLiveSyncTogglesFromConfig(currentSettings);
     updateGamingSettingsPreview();
-    syncCodingPanelToggle();
   });
 
   let lastNowPlayingMetaSig = '';
@@ -3948,6 +3983,7 @@ async function init() {
   presencePaused = cfg.presencePaused === true;
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
+  applyLiveSyncTogglesFromConfig(cfg);
   syncConnectionPill();
   setupRotateFavorites();
   applyPlatformUI(cfg);

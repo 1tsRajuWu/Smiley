@@ -44,6 +44,7 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
   let pendingPresence = null;
   let presenceTimer = null;
   let presenceTimerToken = 0;
+  let backgroundMode = false;
 
   function sendRenderer(session) {
     const now = Date.now();
@@ -128,6 +129,7 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
   async function ensureRunning() {
     if (fgService) return;
     fgService = createNowCodingService({ onUpdate: onForeground });
+    fgService.setBackgroundMode?.(backgroundMode);
     await fgService.start();
     // start() already applied the static template; only re-apply if a live editor was found.
     if (foreground?.appName) {
@@ -176,7 +178,8 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
     stop,
     getTemplate: () => template,
     setBackgroundMode(background) {
-      fgService?.setBackgroundMode?.(background === true);
+      backgroundMode = background === true;
+      fgService?.setBackgroundMode?.(backgroundMode);
     },
     handleConfigChange(enabled) {
       if (!template) return;
