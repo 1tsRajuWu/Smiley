@@ -34,29 +34,50 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 >
 > Read the full note from Raj: **[docs/FINAL.md](docs/FINAL.md)**
 
-**v7.9.1** (current) uses game logos for Discord gaming presence large image. **v8** will wrap up the project.
+**Smiley v8.0.0** (recommended) is the native Tauri + Rust desktop app. Electron **v7.9.27** remains for legacy users.
 
 ---
 
+<details open>
+<summary><strong>Smiley v8.0.0 — Direct downloads (recommended)</strong></summary>
+
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_x64-setup.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_aarch64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_amd64.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_amd64.deb)
+
+| Platform | File |
+|----------|------|
+| Windows | [Smiley v8_8.0.0_x64-setup.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_x64-setup.exe) |
+| macOS Apple Silicon | [Smiley v8_8.0.0_aarch64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_aarch64.dmg) |
+| macOS Intel | [Smiley v8_8.0.0_x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_x64.dmg) |
+| Linux (AppImage) | [Smiley v8_8.0.0_amd64.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_amd64.AppImage) |
+| Linux (.deb) | [Smiley v8_8.0.0_amd64.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.0/Smiley%20v8_8.0.0_amd64.deb) |
+
+Release notes: [docs/releases/v8.0.0.md](docs/releases/v8.0.0.md)
+
+</details>
+
 <details>
-<summary><strong>Direct downloads</strong></summary>
+<summary><strong>Legacy Electron v7.9.27 downloads</strong></summary>
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-Setup-7.9.26.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-Setup-7.9.25.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-7.9.26.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-Setup-7.9.26.exe) |
-| macOS Apple Silicon | [Smiley-7.9.26-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26-arm64.dmg) |
-| macOS Intel | [Smiley-7.9.26-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26-x64.dmg) |
-| Linux (AppImage) | [Smiley-7.9.26.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26.AppImage) |
-| Linux (.deb) | [Smiley-7.9.26.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.26/Smiley-7.9.26.deb) |
+| Windows | [Smiley-Setup-7.9.25.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-Setup-7.9.25.exe) |
+| macOS Apple Silicon | [Smiley-7.9.25-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25-arm64.dmg) |
+| macOS Intel | [Smiley-7.9.25-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25-x64.dmg) |
+| Linux (AppImage) | [Smiley-7.9.25.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25.AppImage) |
+| Linux (.deb) | [Smiley-7.9.25.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.25/Smiley-7.9.25.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
