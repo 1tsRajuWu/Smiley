@@ -34,7 +34,7 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 >
 > Read the full note from Raj: **[docs/FINAL.md](docs/FINAL.md)**
 
-**Smiley v8.0.0** (recommended) is the native Tauri + Rust desktop app. Electron **v7.9.27** remains for legacy users.
+**Smiley v8.0.0** (recommended) is the native Tauri + Rust desktop app. Electron **v7.9.28** remains for legacy users.
 
 ---
 
@@ -60,7 +60,7 @@ Release notes: [docs/releases/v8.0.0.md](docs/releases/v8.0.0.md)
 </details>
 
 <details>
-<summary><strong>Legacy Electron v7.9.27 downloads</strong></summary>
+<summary><strong>Legacy Electron v7.9.28 downloads</strong></summary>
 
 <!-- HERO_DOWNLOADS_START -->
 [![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-Setup-7.9.28.exe)
