@@ -1071,6 +1071,14 @@
         align-items: center;
       }
 
+      .dl-row.is-recommended {
+        box-shadow:
+          inset 0 0 0 2px var(--mint),
+          0 0 28px color-mix(in srgb, var(--mint) 10%, transparent);
+        background: linear-gradient(180deg, var(--mint-soft), var(--ink-2));
+      }
+      .dl-row.is-recommended .dl-plat::after { display: inline; }
+
       .hero-cta { flex-direction: column; align-items: stretch; }
       .hero-cta .btn { width: 100%; min-height: 44px; }
       footer { flex-direction: column; }
@@ -1321,38 +1329,38 @@
     <div class="download-head">
       <div>
         <span class="label">Install · Recommended</span>
-        <h2>Smiley v8.0.6</h2>
+        <h2>Smiley v8.0.8</h2>
       </div>
-      <p>Native Tauri build — Valorant live board, music sync, privacy controls. <a href="https://github.com/1tsRajuWu/Smiley/blob/main/Smiley.v8/docs/PRIVACY-SECURITY.md">Privacy</a></p>
+      <p>Native Tauri build — music GIF presence, live coding sync, Valorant live board. <a href="https://github.com/1tsRajuWu/Smiley/blob/main/Smiley.v8/docs/PRIVACY-SECURITY.md">Privacy</a></p>
     </div>
     <p class="dl-detect" data-dl-detect hidden></p>
     <div class="dl-table">
-      <a class="dl-row" data-platform="windows" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64-setup.exe" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="windows" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.8/Smiley.v8_8.0.8_x64-setup.exe" target="_blank" rel="noopener">
         <span class="dl-plat">Windows</span>
-        <span class="dl-file">Smiley.v8_8.0.6_x64-setup.exe</span>
+        <span class="dl-file">Smiley.v8_8.0.8_x64-setup.exe</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" data-platform="mac-arm64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_aarch64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="mac-arm64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.8/Smiley.v8_8.0.8_aarch64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Apple Silicon</span>
-        <span class="dl-file">Smiley.v8_8.0.6_aarch64.dmg</span>
+        <span class="dl-file">Smiley.v8_8.0.8_aarch64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" data-platform="mac-x64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="mac-x64" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.8/Smiley.v8_8.0.8_x64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Intel</span>
-        <span class="dl-file">Smiley.v8_8.0.6_x64.dmg</span>
+        <span class="dl-file">Smiley.v8_8.0.8_x64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" data-platform="linux-appimage" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.AppImage" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="linux-appimage" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.8/Smiley.v8_8.0.8_amd64.AppImage" target="_blank" rel="noopener">
         <span class="dl-plat">Linux AppImage</span>
-        <span class="dl-file">Smiley.v8_8.0.6_amd64.AppImage</span>
+        <span class="dl-file">Smiley.v8_8.0.8_amd64.AppImage</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" data-platform="linux-deb" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.deb" target="_blank" rel="noopener">
+      <a class="dl-row" data-platform="linux-deb" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.8/Smiley.v8_8.0.8_amd64.deb" target="_blank" rel="noopener">
         <span class="dl-plat">Linux .deb</span>
-        <span class="dl-file">Smiley.v8_8.0.6_amd64.deb</span>
+        <span class="dl-file">Smiley.v8_8.0.8_amd64.deb</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/tag/v8.0.6" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/tag/v8.0.8" target="_blank" rel="noopener">
         <span class="dl-plat">All v8 assets</span>
         <span class="dl-file">GitHub Releases</span>
         <span class="dl-cta">Browse →</span>
@@ -1589,7 +1597,7 @@
         recommended.push(row);
       });
 
-      if (window.matchMedia("(max-width: 720px)").matches) {
+      if (window.matchMedia("(max-width: 768px)").matches) {
         recommended.forEach((row) => {
           const table = row.closest(".dl-table");
           if (table) table.prepend(row);
@@ -1598,6 +1606,37 @@
     }
 
     highlightDownloads();
+
+    const mobileNav = document.getElementById("mobileNav");
+    const menuToggle = document.getElementById("menuToggle");
+    const menuClose = document.getElementById("menuClose");
+    const mobileNavBackdrop = document.getElementById("mobileNavBackdrop");
+
+    function openMobileNav() {
+      mobileNav.hidden = false;
+      requestAnimationFrame(() => mobileNav.classList.add("is-open"));
+      menuToggle.setAttribute("aria-expanded", "true");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeMobileNav() {
+      mobileNav.classList.remove("is-open");
+      menuToggle.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = "";
+      mobileNav.addEventListener("transitionend", () => {
+        if (!mobileNav.classList.contains("is-open")) mobileNav.hidden = true;
+      }, { once: true });
+    }
+
+    menuToggle.addEventListener("click", openMobileNav);
+    menuClose.addEventListener("click", closeMobileNav);
+    mobileNavBackdrop.addEventListener("click", closeMobileNav);
+    mobileNav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", closeMobileNav);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && mobileNav.classList.contains("is-open")) closeMobileNav();
+    });
   </script>
 </body>
 </html>
