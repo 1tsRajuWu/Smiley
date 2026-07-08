@@ -123,6 +123,15 @@ export type Snapshot = {
   categories: Category[];
 };
 
+export type UpdateCheck = {
+  currentVersion: string;
+  latestVersion?: string | null;
+  upToDate: boolean;
+  releasesUrl: string;
+  downloadUrl?: string | null;
+  message: string;
+};
+
 export const SKINS: { id: SkinId; title: string; forWho: string }[] = [
   { id: "studio", title: "Studio", forWho: "Visual & creative" },
   { id: "arcade", title: "Arcade", forWho: "Gamers & neon" },

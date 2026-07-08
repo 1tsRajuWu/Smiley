@@ -534,7 +534,7 @@ impl App {
             return Ok(());
         }
 
-        // Always refresh match board when live gaming is on (Valshy-style UI)
+        // Always refresh match board when live gaming is on
         if cfg.live_gaming {
             let riot_opts = crate::riot::RiotProbeOptions {
                 resolve_names: cfg.show_other_riot_ids,

@@ -157,7 +157,7 @@ pub struct Config {
     /// Prefer static activity tiles (hover reveals GIF) — saves CPU.
     #[serde(default = "default_false")]
     pub static_tiles: bool,
-    /// Show Valshy-style live match panel in-app.
+    /// Show live Valorant match panel in-app.
     #[serde(default = "default_true")]
     pub show_match_board: bool,
     /// Show other players' Riot IDs on the match board (opt-in).

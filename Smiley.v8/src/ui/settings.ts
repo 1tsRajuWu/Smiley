@@ -81,7 +81,7 @@ export function settingsMarkup(): string {
           <label class="cfg-tog"><input type="checkbox" id="cfgShowBtn" /><span>Show Download button on Discord</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgRemember" /><span>Restore last activity on connect</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Process gaming probe (optional)</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant match board (local Riot — Valshy-style, no Tracker)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant match board (local Riot API)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgStaticTiles" /><span>Static tiles (GIFs on hover — saves CPU)</span></label>
         </div>
@@ -106,7 +106,7 @@ export function settingsMarkup(): string {
       </section>
 
       <section class="cfg-panel" data-panel="privacy">
-        <p class="cfg-lede">Your data stays on your machine. Smiley v8 never uses Tracker.gg or game injectors.</p>
+        <p class="cfg-lede">Your data stays on your machine. Smiley v8 uses only local APIs — no game injectors or memory reads.</p>
         <div class="cfg-toggles">
           <label class="cfg-tog"><input type="checkbox" id="cfgMatchBoard" /><span>Show live Valorant match board in-app</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgOtherNames" /><span>Show other players' Riot IDs (opt-in)</span></label>
@@ -131,6 +131,10 @@ export function settingsMarkup(): string {
           <label><span>Default category</span><select id="cfgDefaultCat"></select></label>
           <label><span>Max recents</span><input id="cfgMaxRecents" type="number" min="3" max="20" /></label>
         </div>
+        <p class="cfg-label">Updates</p>
+        <p class="cfg-version" id="cfgVersion">v8.0.0</p>
+        <button type="button" class="cfg-update-btn" data-act="check-updates">Check for updates</button>
+        <p class="cfg-hint" id="cfgUpdateStatus" hidden></p>
       </section>
     </div>
   </div>`;
@@ -188,6 +192,9 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   set("cfgFocusSearch", cfg.focusSearchOnOpen);
   set("cfgFavFirst", cfg.favoritesFirst);
   set("cfgMaxRecents", cfg.maxRecents);
+
+  const verEl = root.querySelector("#cfgVersion");
+  if (verEl) verEl.textContent = `v${snap.version}`;
 
   syncPickers(root);
 }

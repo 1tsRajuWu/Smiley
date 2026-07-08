@@ -11,6 +11,7 @@ import {
   listActivities,
   normalizeSkin,
   type Snapshot,
+  type UpdateCheck,
 } from "./types";
 import { markupFor } from "../skins/markup";
 import "../skins/all.css";
@@ -30,6 +31,7 @@ export class AppController {
   private lastGridKey = "";
   private lastBoardKey = "";
   private lastGameProbe = 0;
+  private lastUpdateCheck: UpdateCheck | null = null;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -47,6 +49,9 @@ export class AppController {
       const { listen } = await import("@tauri-apps/api/event");
       await listen("wallpaper-pause", () => this.setWallpaperPaused(true));
       await listen("wallpaper-resume", () => this.setWallpaperPaused(false));
+      await listen<UpdateCheck>("update-check-result", (e) => {
+        this.showUpdateResult(e.payload);
+      });
     } catch {
       /* browser preview without Tauri events */
     }
@@ -149,6 +154,10 @@ export class AppController {
         return this.rotate();
       case "donate":
         return this.donate();
+      case "check-updates":
+        return this.checkUpdates();
+      case "open-release":
+        return this.openRelease();
       case "settings":
         return this.openSettings();
       case "create":
@@ -691,6 +700,42 @@ export class AppController {
     } catch (e) {
       this.toast(errMsg(e));
     }
+  }
+
+  private async checkUpdates() {
+    try {
+      const result = await api.checkUpdates();
+      this.showUpdateResult(result);
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async openRelease() {
+    try {
+      const url =
+        this.lastUpdateCheck?.downloadUrl ||
+        this.lastUpdateCheck?.releasesUrl ||
+        null;
+      await api.openRelease(url);
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private showUpdateResult(result: UpdateCheck) {
+    this.lastUpdateCheck = result;
+    const el = this.$("cfgUpdateStatus");
+    if (el) {
+      el.hidden = false;
+      if (result.upToDate) {
+        el.textContent = result.message;
+      } else {
+        el.innerHTML = `${esc(result.message)} <button type="button" data-act="open-release">Download</button>`;
+      }
+    }
+    this.toast(result.message);
+    void api.log(`update: ${result.message}`);
   }
 
   private setWallpaperPaused(paused: boolean) {

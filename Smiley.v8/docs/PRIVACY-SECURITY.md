@@ -1,6 +1,6 @@
 # Privacy & security — Smiley v8
 
-**Local-first.** No Tracker.gg, no game injectors, no memory reads.
+**Local-first.** No third-party trackers, no game injectors, no memory reads.
 
 ## What never leaves your PC
 
@@ -13,7 +13,7 @@
 
 ## Live Valorant match board
 
-Data comes from **Riot Client on `127.0.0.1`** and optional **local name-service** (still Riot, not Tracker).
+Data comes from **Riot Client on `127.0.0.1`** and optional **local name-service** (still Riot APIs only).
 
 **Defaults (privacy-first):**
 
@@ -36,6 +36,7 @@ Data comes from **Riot Client on `127.0.0.1`** and optional **local name-service
 | `media.tenor.com` | Activity GIFs |
 | `media.valorant-api.com` | Agent icons (public CDN) |
 | `valorant-api.com` | Agent name lookup (public catalog) |
+| `api.github.com` | Check for Smiley v8 updates (Settings / tray) |
 | `paypal.me/1tsRaj` | Donate only — opened from Rust, not the webview |
 
 No `opener` permission for the webview — arbitrary URLs cannot be opened from JavaScript.

@@ -1,5 +1,5 @@
-//! Local Riot Client — Valorant live match board (Valshy-style, local-only).
-//! Lockfile + 127.0.0.1 HTTPS only. No Tracker.gg, no inject, no memory reads.
+//! Local Riot Client — Valorant live match board (local-only).
+//! Lockfile + 127.0.0.1 HTTPS only. No inject, no memory reads.
 //! Riot IDs come from local name-service when available; PUUID never leaves to UI.
 
 use crate::error::AppResult;
@@ -484,7 +484,7 @@ fn resolve_names(lock: &Lockfile, puuids: &[String]) -> HashMap<String, String> 
         return out;
     }
     let body = Value::Array(puuids.iter().map(|p| json!(p)).collect());
-    // Local name-service — same client, no cloud Tracker
+    // Local name-service — same client, no third-party cloud APIs
     let res = local_post_json(lock, "/name-service/v2/players", &body)
         .or_else(|| local_post_json(lock, "/player-name-service/v2/players", &body));
     let Some(Value::Array(arr)) = res else {

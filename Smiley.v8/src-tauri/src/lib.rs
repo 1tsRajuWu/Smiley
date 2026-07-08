@@ -9,6 +9,7 @@ mod models;
 mod music;
 mod privacy;
 mod riot;
+mod updates;
 
 use app::App;
 use models::*;
@@ -147,6 +148,27 @@ fn append_log(message: String) {
     log_file::append(&msg);
 }
 
+#[tauri::command]
+fn check_for_updates() -> Result<updates::UpdateCheck, error::AppError> {
+    log_file::append("update: check requested");
+    updates::check_for_updates()
+}
+
+#[tauri::command]
+fn open_release_url(
+    app: tauri::AppHandle,
+    url: Option<String>,
+) -> Result<(), error::AppError> {
+    let target = url
+        .filter(|u| updates::is_safe_release_url(u))
+        .unwrap_or_else(|| updates::GITHUB_RELEASES_PAGE.to_string());
+    app.opener()
+        .open_url(&target, None::<&str>)
+        .map_err(|e| error::AppError::Msg(format!("open url: {e}")))?;
+    log_file::append("update: opened release page");
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     log_file::append("boot: Smiley v8 starting");
@@ -201,9 +223,11 @@ pub fn run() {
             app.manage(state);
 
             let show = MenuItem::with_id(app, "show", "Show Smiley", true, None::<&str>)?;
+            let updates =
+                MenuItem::with_id(app, "updates", "Check for Updates", true, None::<&str>)?;
             let donate = MenuItem::with_id(app, "donate", "Donate (PayPal)", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &donate, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &updates, &donate, &quit])?;
 
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -215,6 +239,29 @@ pub fn run() {
                             let _ = w.show();
                             let _ = w.set_focus();
                             let _ = app.emit("wallpaper-resume", ());
+                        }
+                    }
+                    "updates" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                            let _ = app.emit("wallpaper-resume", ());
+                        }
+                        match updates::check_for_updates() {
+                            Ok(result) => {
+                                let _ = app.emit("update-check-result", &result);
+                            }
+                            Err(e) => {
+                                let fallback = updates::UpdateCheck {
+                                    current_version: env!("CARGO_PKG_VERSION").into(),
+                                    latest_version: None,
+                                    up_to_date: true,
+                                    releases_url: updates::GITHUB_RELEASES_PAGE.into(),
+                                    download_url: None,
+                                    message: e.to_string(),
+                                };
+                                let _ = app.emit("update-check-result", &fallback);
+                            }
                         }
                     }
                     "donate" => {
@@ -287,6 +334,8 @@ pub fn run() {
             get_match_board,
             open_donation_url,
             append_log,
+            check_for_updates,
+            open_release_url,
         ])
         .run(tauri::generate_context!())
         .expect("Smiley v8 failed to start");

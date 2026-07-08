@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Config, CustomActivity, Snapshot, Status } from "./types";
+import type { Config, CustomActivity, Snapshot, Status, UpdateCheck } from "./types";
 
 export type GameHit = {
   id: string;
@@ -29,6 +29,9 @@ export const api = {
   log: (message: string) => invoke<void>("append_log", { message }),
   /** Donate opens only from Rust allowlist (no arbitrary https from UI). */
   openDonate: () => invoke<void>("open_donation_url"),
+  checkUpdates: () => invoke<UpdateCheck>("check_for_updates"),
+  openRelease: (url?: string | null) =>
+    invoke<void>("open_release_url", { url: url ?? null }),
 };
 
 export function errMsg(e: unknown): string {
