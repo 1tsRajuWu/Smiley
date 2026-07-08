@@ -432,7 +432,9 @@ export class AppController {
     const show =
       !!mb?.active &&
       mb.product === "valorant" &&
-      (mb.phase === "match" || mb.phase === "pregame" || (mb.players?.length ?? 0) > 0);
+      (mb.phase === "match" || mb.phase === "pregame" || (mb.players?.length ?? 0) > 0) &&
+      !document.hidden &&
+      this.snap.config.showMatchBoard !== false;
 
     board.hidden = !show;
     if (!show || !mb) return;

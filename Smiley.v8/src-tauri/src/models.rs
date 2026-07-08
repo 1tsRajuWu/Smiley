@@ -157,6 +157,18 @@ pub struct Config {
     /// Prefer static activity tiles (hover reveals GIF) — saves CPU.
     #[serde(default = "default_false")]
     pub static_tiles: bool,
+    /// Show Valshy-style live match panel in-app.
+    #[serde(default = "default_true")]
+    pub show_match_board: bool,
+    /// Show other players' Riot IDs on the match board (opt-in).
+    #[serde(default = "default_false")]
+    pub show_other_riot_ids: bool,
+    /// Show other players' KDA on the match board.
+    #[serde(default = "default_false")]
+    pub show_other_player_stats: bool,
+    /// Share score / KDA / detailed lines on Discord (not just "In match").
+    #[serde(default = "default_true")]
+    pub share_valorant_stats_discord: bool,
     #[serde(default = "default_false")]
     pub idle_enabled: bool,
     #[serde(default = "default_idle_details")]
@@ -226,6 +238,10 @@ impl Default for Config {
             live_gaming: true,
             music_now_playing: true,
             static_tiles: false,
+            show_match_board: true,
+            show_other_riot_ids: false,
+            show_other_player_stats: false,
+            share_valorant_stats_discord: true,
             idle_enabled: false,
             idle_details: default_idle_details(),
             idle_state: default_idle_state(),

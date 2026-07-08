@@ -226,6 +226,7 @@ html.calm .wallpaper::after {
 .cfg-panel { display: none; gap: 12px; }
 .cfg-panel.on { display: grid; }
 .cfg-lede { margin: 0; opacity: .7; font-size: .9rem; }
+.cfg-hint { margin: 12px 0 0; opacity: .55; font-size: .78rem; line-height: 1.45; }
 .cfg-label { margin: 4px 0 0; font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
 .cfg-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .cfg-card {

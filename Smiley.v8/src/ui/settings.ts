@@ -24,6 +24,7 @@ export function settingsMarkup(): string {
       <button type="button" class="on" data-act="cfg-tab" data-tab="look">Look</button>
       <button type="button" data-act="cfg-tab" data-tab="discord">Discord</button>
       <button type="button" data-act="cfg-tab" data-tab="auto">Auto</button>
+      <button type="button" data-act="cfg-tab" data-tab="privacy">Privacy</button>
       <button type="button" data-act="cfg-tab" data-tab="app">App</button>
     </nav>
     <div class="cfg-panels">
@@ -104,6 +105,17 @@ export function settingsMarkup(): string {
         </div>
       </section>
 
+      <section class="cfg-panel" data-panel="privacy">
+        <p class="cfg-lede">Your data stays on your machine. Smiley v8 never uses Tracker.gg or game injectors.</p>
+        <div class="cfg-toggles">
+          <label class="cfg-tog"><input type="checkbox" id="cfgMatchBoard" /><span>Show live Valorant match board in-app</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgOtherNames" /><span>Show other players' Riot IDs (opt-in)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgOtherStats" /><span>Show other players' KDA on the board</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgShareDiscord" /><span>Share score &amp; KDA on Discord</span></label>
+        </div>
+        <p class="cfg-hint">Off by default: other players' names and stats. Lockfile passwords and PUUIDs never leave Rust. Match board hides in tray.</p>
+      </section>
+
       <section class="cfg-panel" data-panel="app">
         <p class="cfg-lede">Startup & library.</p>
         <div class="cfg-toggles">
@@ -153,6 +165,10 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   set("cfgLiveGaming", cfg.liveGaming !== false);
   set("cfgMusic", cfg.musicNowPlaying !== false);
   set("cfgStaticTiles", cfg.staticTiles);
+  set("cfgMatchBoard", cfg.showMatchBoard !== false);
+  set("cfgOtherNames", cfg.showOtherRiotIds);
+  set("cfgOtherStats", cfg.showOtherPlayerStats);
+  set("cfgShareDiscord", cfg.shareValorantStatsDiscord !== false);
   set("cfgWallpaper", cfg.wallpaperEnabled);
   set("cfgDonate", cfg.showDonate);
   set("cfgRotate", cfg.rotateEnabled);
@@ -234,6 +250,10 @@ export function readSettings(root: HTMLElement, base: Config): Config {
     liveGaming: c("cfgLiveGaming"),
     musicNowPlaying: c("cfgMusic"),
     staticTiles: c("cfgStaticTiles"),
+    showMatchBoard: c("cfgMatchBoard"),
+    showOtherRiotIds: c("cfgOtherNames"),
+    showOtherPlayerStats: c("cfgOtherStats"),
+    shareValorantStatsDiscord: c("cfgShareDiscord"),
     idleEnabled: c("cfgIdle"),
     idleDetails: v("cfgIdleDetails") || base.idleDetails,
     idleState: v("cfgIdleState") || base.idleState,

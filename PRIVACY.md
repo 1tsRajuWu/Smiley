@@ -91,6 +91,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/FINAL.md](docs/FINAL.md).
 
 - **Music sync** may store the latest player/source label (for example Spotify or Apple Music), current track title, artist/album text, and whether artwork was available.
 - **Gaming sync** may store the latest game/provider label plus sanitized state like mode, map, or whether you were in a match. It does **not** store Riot tokens, PUUIDs, lockfile passwords, or account identifiers in telemetry.
+- **Smiley v8 (beta)** — live Valorant match board is **in-app only**; other players' Riot IDs and KDA are **off by default** (Settings → Privacy). See [Smiley.v8/docs/PRIVACY-SECURITY.md](Smiley.v8/docs/PRIVACY-SECURITY.md).
 - **Coding sync** may store the latest editor/app name plus high-level status like editing/idle and a file or project label.
 - **Activity presets** may store the latest selected preset ID/details/category.
 

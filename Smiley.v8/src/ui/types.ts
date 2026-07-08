@@ -88,6 +88,10 @@ export type Config = {
   liveGaming: boolean;
   musicNowPlaying: boolean;
   staticTiles: boolean;
+  showMatchBoard: boolean;
+  showOtherRiotIds: boolean;
+  showOtherPlayerStats: boolean;
+  shareValorantStatsDiscord: boolean;
   idleEnabled: boolean;
   idleDetails: string;
   idleState: string;

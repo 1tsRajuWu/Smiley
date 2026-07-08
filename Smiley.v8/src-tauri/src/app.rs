@@ -125,6 +125,7 @@ impl App {
     }
 
     fn refresh_status_fields(&self) -> Status {
+        let cfg = self.config.lock().clone();
         let mut s = self.status.lock().clone();
         s.connected = *self.discord.connected.lock();
         if s.activity_id.is_some() {
@@ -134,10 +135,15 @@ impl App {
         } else {
             s.elapsed_secs = None;
         }
-        s.rotate_active = self.config.lock().rotate_enabled && !s.paused;
+        s.rotate_active = cfg.rotate_enabled && !s.paused;
+        if let Some(board) = s.match_board.clone() {
+            s.match_board = crate::privacy::sanitize_board(board, &cfg);
+        }
         {
             let mut lock = self.status.lock();
-            *lock = s.clone();
+            lock.connected = s.connected;
+            lock.elapsed_secs = s.elapsed_secs;
+            lock.rotate_active = s.rotate_active;
         }
         s
     }
@@ -317,6 +323,7 @@ impl App {
             s.state = None;
             s.gif = None;
             s.elapsed_secs = None;
+            s.match_board = None;
             s.message = if s.connected {
                 "Cleared".into()
             } else {
@@ -336,6 +343,7 @@ impl App {
             {
                 let mut s = self.status.lock();
                 s.message = "Paused".into();
+                s.match_board = None;
             }
             Ok(self.refresh_status_fields())
         } else if let Some(id) = self.status.lock().activity_id.clone() {
@@ -509,11 +517,11 @@ impl App {
         if cfg.live_gaming {
             match crate::riot::probe_riot_presence() {
                 Ok(Some(live)) if live.product == "valorant" || live.board.active => {
+                    let cfg_snap = cfg.clone();
                     {
                         let mut s = self.status.lock();
                         s.match_board = Some(live.board.clone());
                     }
-                    // Discord overlay only when gaming slot selected / empty / already live
                     let activity = status.activity_id.as_deref().unwrap_or("");
                     let gaming_slot = activity.is_empty()
                         || activity.starts_with("live-")
@@ -522,11 +530,13 @@ impl App {
                             "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
                         );
                     if gaming_slot {
+                        let (details, state) =
+                            crate::privacy::valorant_discord_lines(&live, &cfg_snap);
                         let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
                         let start = Some(Self::now_secs() as i64);
                         self.discord.set(self.build_presence(
-                            &live.details,
-                            &live.state,
+                            &details,
+                            &state,
                             "🎮",
                             gif,
                             start,
@@ -534,8 +544,8 @@ impl App {
                         {
                             let mut s = self.status.lock();
                             s.activity_id = Some(format!("live-{}", live.product));
-                            s.details = Some(live.details);
-                            s.state = Some(live.state);
+                            s.details = Some(details);
+                            s.state = Some(state);
                             s.gif = Some(gif.into());
                             s.message = format!("Live {}", live.title);
                         }

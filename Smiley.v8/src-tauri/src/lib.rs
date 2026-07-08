@@ -7,6 +7,7 @@ mod gaming;
 mod log_file;
 mod models;
 mod music;
+mod privacy;
 mod riot;
 
 use app::App;
@@ -118,7 +119,9 @@ fn probe_game(state: tauri::State<'_, Arc<App>>) -> Result<Option<gaming::GameHi
 
 #[tauri::command]
 fn get_match_board(state: tauri::State<'_, Arc<App>>) -> Option<riot::MatchBoard> {
-    state.get_status().match_board
+    let cfg = state.config.lock().clone();
+    let board = state.status.lock().match_board.clone()?;
+    crate::privacy::sanitize_board(board, &cfg)
 }
 
 /// Open donate URL from Rust only — webview cannot open arbitrary https.
@@ -140,11 +143,7 @@ fn open_donation_url(
 
 #[tauri::command]
 fn append_log(message: String) {
-    let msg = if message.len() > 500 {
-        format!("{}…", &message[..500])
-    } else {
-        message
-    };
+    let msg = crate::privacy::redact_log_message(&message);
     log_file::append(&msg);
 }
 

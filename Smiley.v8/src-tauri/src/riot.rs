@@ -25,6 +25,7 @@ pub struct MatchPlayer {
     pub agent_icon: Option<String>,
     pub kda: Option<String>,
     pub is_self: bool,
+    #[serde(skip_serializing)]
     pub team: Option<String>,
 }
 
