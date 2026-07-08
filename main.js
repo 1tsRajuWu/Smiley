@@ -2141,8 +2141,9 @@ async function applyGamePresence(activity) {
     const sig = session?.title
       ? [
         session.title, session.liveLine, session.map, session.mode, session.agent,
-        session.kda, session.champ, session.inMatch ? '1' : '0',
+        session.agentId, session.kda, session.champ, session.inMatch ? '1' : '0',
         activity.discordImageUrl || activity.largeImageUrl || '',
+        activity.smallImageUrl || '',
       ].join('\0')
       : `${activity.details}\0${activity.state}`;
     const now = Date.now();

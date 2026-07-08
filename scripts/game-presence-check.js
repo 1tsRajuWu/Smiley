@@ -35,14 +35,35 @@ function exclusiveFlags(s) {
 
 console.log('=== Smiley Game Presence Self-Check ===\n');
 
-ok('Valorant agent icon HTTPS', /^https:\/\//.test(assets.valorantAgentIcon('9338a55c-4ab7-4634-9ac9-e2e799c4f4d7')));
+const JETT_ID = 'add6443a-41bd-e414-f6ad-e58d267f4e95';
+const VAL_LOGO = assets.VALORANT_GAME_LOGO || assets.GAME_LOGOS['riot-valorant'];
+
+ok('Valorant agent icon HTTPS', /^https:\/\//.test(assets.valorantAgentIcon(JETT_ID)));
 ok('Valorant mode icon swiftplay', assets.valorantModeIcon('swiftplay')?.includes('5d0f264b-4ebe-cc63-c147-809e1374484b'));
 ok('Valorant rank icon', assets.valorantRankIcon(21)?.includes('/competitivetiers/'));
+ok('Valorant GAME_LOGOS is brand V logo', VAL_LOGO?.includes('cmsassets.rgpub.io') && VAL_LOGO.includes('cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76'));
+ok('Valorant logo is NOT gamemode/map UUID', !VAL_LOGO?.includes('/gamemodes/') && !VAL_LOGO?.includes('/maps/'));
 ok('Valorant partySize parsed', parseParty({ partySize: 3 }) === 'Trio');
 ok('Valorant partySize solo', parseParty({ partySize: 1 }) === 'Solo');
 ok('Valorant partyMembers fallback', parseParty({ partyMembers: ['a', 'b'] }) === 'Duo');
 ok('partySizeMax not used as current size', parseParty({ partySizeMax: 5 }) === null);
 ok('partyDisplay 2-Stack', partyDisplay('Duo', 2) === '2-Stack');
+
+// AllyTeam.Players CharacterID extraction (user bug: agent missing)
+const { findPlayer, pregamePlayerList, characterIdOf } = require(path.join(root, 'electron/valorant-local'));
+const pregameMatchShape = {
+  MapID: '/Game/Maps/Lotus/Lotus',
+  AllyTeam: {
+    Players: [
+      { Subject: 'puuid-me', CharacterID: JETT_ID },
+      { Subject: 'puuid-other', CharacterID: '00000000-0000-0000-0000-000000000000' },
+    ],
+  },
+};
+ok('Pregame AllyTeam.Players flattened', pregamePlayerList(pregameMatchShape).length === 2);
+ok('Pregame findPlayer by Subject', findPlayer(pregamePlayerList(pregameMatchShape), 'puuid-me')?.CharacterID === JETT_ID);
+ok('characterIdOf ignores empty UUID', characterIdOf({ CharacterID: '00000000-0000-0000-0000-000000000000' }) === null);
+ok('characterIdOf reads CharacterID', characterIdOf({ CharacterID: JETT_ID }) === JETT_ID);
 
 // ── Nested presence flattening (2025+ Riot shape) ──
 const nested = flattenValorantPresence({
@@ -253,21 +274,34 @@ const pregameSession = {
   inQueue: false,
 };
 const pregameLines = buildPresenceLines(pregameSession);
-ok('Pregame details = map', pregameLines.details === 'Haven');
-ok('Pregame state agent select', pregameLines.state.includes('Agent Select') && !pregameLines.state.includes('0-0'));
+ok('Pregame details = Agent Select', pregameLines.details === 'Agent Select');
+ok('Pregame state has mode+map', pregameLines.state.includes('Swiftplay') && pregameLines.state.includes('Haven'));
 ok('Pregame not Queue', !pregameLines.state.includes('Queue'));
 
+const pregameWithAgent = {
+  ...pregameSession,
+  agent: 'Jett',
+  agentId: JETT_ID,
+  map: 'Lotus',
+  mode: 'Competitive',
+  queueId: 'competitive',
+};
+const pregameAgentLines = buildPresenceLines(pregameWithAgent);
+ok('Pregame+agent details', pregameAgentLines.details === 'Jett · Agent Select');
+ok('Pregame+agent state', pregameAgentLines.state.includes('Competitive') && pregameAgentLines.state.includes('Lotus'));
+
 const lobbyArt = buildPresenceFromSession(lobbySession, { category: 'gaming', state: 'In the zone' });
-ok('Lobby large = Valorant logo', lobbyArt.discordImageUrl?.includes('96bd3920-4f36-d026-2b28-c683eb0bcac5'));
+ok('Lobby large = Valorant brand logo', lobbyArt.discordImageUrl === VAL_LOGO || lobbyArt.discordImageUrl?.includes('cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76'));
+ok('Lobby large not map/mode art', !lobbyArt.discordImageUrl?.includes('/maps/') && !lobbyArt.discordImageUrl?.includes('/gamemodes/'));
 ok('Lobby small = mode icon', lobbyArt.smallImageUrl?.includes('/gamemodes/5d0f264b'));
 
 const pregameArt = buildPresenceFromSession(pregameSession, { category: 'gaming', state: 'In the zone' });
-ok('Pregame large = Valorant logo', pregameArt.discordImageUrl?.includes('96bd3920-4f36-d026-2b28-c683eb0bcac5'));
+ok('Pregame large = Valorant brand logo', pregameArt.discordImageUrl?.includes('cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76'));
+ok('Pregame large not map', !pregameArt.discordImageUrl?.includes('/maps/'));
 ok('Pregame small = map icon', pregameArt.smallImageUrl?.includes('/maps/'));
 ok('Pregame agent small image when agentId', (() => {
-  const s = { ...pregameSession, agentId: 'add6443a-41bd-e414-f6ad-e58d267f4e95' };
-  const a = buildPresenceFromSession(s, { category: 'gaming', state: 'In the zone' });
-  return a.smallImageUrl?.includes('/agents/');
+  const a = buildPresenceFromSession(pregameWithAgent, { category: 'gaming', state: 'In the zone' });
+  return a.smallImageUrl?.includes(`/agents/${JETT_ID}`);
 })());
 
 const valSession = {
@@ -275,7 +309,7 @@ const valSession = {
   title: 'Valorant',
   map: 'Ascent',
   agent: 'Jett',
-  agentId: 'add6443a-41bd-e414-f6ad-e58d267f4e95',
+  agentId: JETT_ID,
   kda: '12/4/6',
   scoreHint: '8-6',
   mode: 'Swiftplay',
@@ -290,9 +324,9 @@ const valSession = {
   inQueue: false,
 };
 const valLines = buildPresenceLines(valSession);
-ok('Valorant details = map', valLines.details === 'Ascent');
-ok('Valorant state has agent+score', valLines.state.includes('Jett') && valLines.state.includes('8-6') && valLines.state.includes('2-Stack'));
-ok('Valorant ingame score order', valLines.state.indexOf('Jett') < valLines.state.indexOf('8-6'));
+ok('In-match details has agent+map', valLines.details.includes('Jett') && valLines.details.includes('Ascent'));
+ok('In-match state has score+party+mode', valLines.state.includes('8-6') && valLines.state.includes('2-Stack') && valLines.state.includes('Swiftplay'));
+ok('In-match agent not omitted', valLines.details.includes('Jett') || valLines.state.includes('Jett'));
 ok('Valorant rank in state', valLines.state.includes('Immortal 2'));
 ok('In-match not Queue', !valLines.state.includes('Queue') && !valLines.state.includes('Queuing'));
 
@@ -300,14 +334,14 @@ ok('In-match not Queue', !valLines.state.includes('Queue') && !valLines.state.in
 const seq = [
   parseValorant({ sessionLoopState: 'MENUS', partyState: 'DEFAULT', queueId: 'swiftplay', partySize: 1 }),
   parseValorant({ sessionLoopState: 'MENUS', partyState: 'MATCHMAKING', provisioningFlow: 'Matchmaking', queueId: 'swiftplay', partySize: 1 }),
-  parseValorant({ sessionLoopState: 'PREGAME', partyState: 'MATCHMAKING', provisioningFlow: 'Matchmaking', queueId: 'swiftplay', partySize: 1 }, { inPregame: true, map: 'Haven' }),
-  parseValorant({ sessionLoopState: 'INGAME', partyState: 'MATCHMAKING', provisioningFlow: 'Matchmaking', queueId: 'swiftplay', partySize: 1 }, { inMatch: true, agent: 'Jett', map: 'Haven', scoreHint: '1-0' }),
+  parseValorant({ sessionLoopState: 'PREGAME', partyState: 'MATCHMAKING', provisioningFlow: 'Matchmaking', queueId: 'swiftplay', partySize: 1 }, { inPregame: true, map: 'Haven', agent: 'Jett', agentId: JETT_ID }),
+  parseValorant({ sessionLoopState: 'INGAME', partyState: 'MATCHMAKING', provisioningFlow: 'Matchmaking', queueId: 'swiftplay', partySize: 1 }, { inMatch: true, agent: 'Jett', agentId: JETT_ID, map: 'Haven', scoreHint: '1-0' }),
 ];
-const seqLines = seq.map((s) => buildPresenceLines(s).state);
-ok('Seq lobby', seqLines[0].includes('In lobby') && !seqLines[0].includes('Queue'));
-ok('Seq queue', seqLines[1].includes('Queue') && !seqLines[1].includes('In lobby'));
-ok('Seq agent select', seqLines[2].includes('Agent Select') && !seqLines[2].includes('Queue'));
-ok('Seq in match', seqLines[3].includes('Jett') && !seqLines[3].includes('Queue'));
+const seqLines = seq.map((s) => buildPresenceLines(s));
+ok('Seq lobby', seqLines[0].state.includes('In lobby') && !seqLines[0].state.includes('Queue'));
+ok('Seq queue', seqLines[1].state.includes('Queue') && !seqLines[1].state.includes('In lobby'));
+ok('Seq agent select', seqLines[2].details.includes('Agent Select') && seqLines[2].details.includes('Jett') && !seqLines[2].state.includes('Queue'));
+ok('Seq in match', (seqLines[3].details.includes('Jett') || seqLines[3].state.includes('Jett')) && !seqLines[3].state.includes('Queue'));
 
 const noRankOpts = normalizeGamingPresenceOptions({ showRank: false });
 const noRankLines = buildPresenceLines(valSession, 'In the zone', noRankOpts);
@@ -335,10 +369,34 @@ ok('LoL no Valorant lobby/queue', !lolLines.state.includes('In lobby') && !lolLi
 
 const activity = buildPresenceFromSession(valSession, { category: 'gaming', state: 'In the zone' });
 ok('Presence has discordImageUrl', /^https:\/\//.test(activity.discordImageUrl));
-ok('Presence large = Valorant logo', activity.discordImageUrl.includes('96bd3920-4f36-d026-2b28-c683eb0bcac5'));
-ok('Presence small = agent icon', activity.smallImageUrl?.includes('/agents/'));
+ok('Presence large = brand V logo URL', activity.discordImageUrl.includes('cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76'));
+ok('Presence large NOT map/mode', !activity.discordImageUrl.includes('/maps/') && !activity.discordImageUrl.includes('/gamemodes/'));
+ok('Presence small = agent icon', activity.smallImageUrl?.includes(`/agents/${JETT_ID}`));
 ok('Presence largeImageText = game title', activity.largeImageText === 'Valorant');
+ok('Presence smallImageText = agent', activity.smallImageText === 'Jett');
 ok('Presence payload phase', activity.gameSession?.phase === 'match');
+ok('Presence details has agent', activity.details.includes('Jett'));
+
+// Screenshot regression: Ascent + 2-0 Solo must include agent when CharacterID known
+const screenshotReg = buildPresenceFromSession({
+  provider: 'riot-valorant',
+  title: 'Valorant',
+  map: 'Ascent',
+  mapId: '7eaecc1b-4337-bbf6-6ab9-04b8f06b3319',
+  agent: 'Jett',
+  agentId: JETT_ID,
+  scoreHint: '2-0',
+  party: 'Solo',
+  partySize: 1,
+  mode: 'Competitive',
+  queueId: 'competitive',
+  phase: 'match',
+  inMatch: true,
+}, { category: 'gaming', state: 'In the zone' });
+ok('Screenshot regression agent in text', screenshotReg.details.includes('Jett') || screenshotReg.state.includes('Jett'));
+ok('Screenshot regression score+party', screenshotReg.state.includes('2-0') && (screenshotReg.state.includes('Solo') || screenshotReg.state.includes('1-Stack')));
+ok('Screenshot regression large is V logo', screenshotReg.discordImageUrl?.includes('cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76'));
+ok('Screenshot regression small is agent', screenshotReg.smallImageUrl?.includes('/agents/'));
 
 const sanitized = sanitizeGameSession({
   title: 'Valorant',

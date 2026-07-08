@@ -60,26 +60,33 @@ function buildValorantPresence(session, opts, fallbackState) {
 
   if (phase === 'match' || session.inMatch) {
     const map = o.showMapArt !== false ? session.map : null;
+    const agent = o.showAgent !== false ? session.agent : null;
+    // details: agent + map; state: score · party · mode · kda · rank (agent already on details)
+    const detailLine = joinParts([agent, map]);
     const ingameParts = [
-      o.showAgent && session.agent,
+      agent && !detailLine ? agent : null,
       o.showScore && session.scoreHint,
       party,
+      mode,
       o.showKda && session.kda,
       rank,
     ];
     return {
-      details: truncate(map || session.title || 'Valorant'),
+      details: truncate(detailLine || map || session.title || 'Valorant'),
       state: truncate(joinParts(ingameParts) || session.liveLine || fallbackState),
     };
   }
 
   if (phase === 'pregame' || session.inPregame) {
     const map = o.showMapArt !== false ? session.map : null;
+    const agent = o.showAgent !== false ? session.agent : null;
+    // e.g. details "Jett · Agent Select" / state "Competitive · Lotus · Solo"
+    // or details "Agent Select" when agent not locked yet
     return {
-      details: truncate(map || session.title || 'Valorant'),
+      details: truncate(joinParts([agent, 'Agent Select']) || 'Agent Select'),
       state: truncate(joinParts([
         mode,
-        'Agent Select',
+        map,
         party,
       ]) || fallbackState),
     };

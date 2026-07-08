@@ -7,10 +7,16 @@ const GAMING_FALLBACK = 'https://media.tenor.com/On7kvXhzml4AAAAi/loading-gif.gi
 /** Valorant competitive tier act UUID (valorant-api.com) */
 const VALORANT_TIER_ACT = '03621f52-342b-cf4e-4f86-0cad5e4b6960';
 
+/**
+ * Official Valorant red "V" logomark (Riot CDN / asset kit).
+ * Never use map / gamemode display icons here — those look geometric, not the brand.
+ */
+const VALORANT_GAME_LOGO =
+  'https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76-128x128.png';
+
 /** Per-game logo for Discord large_image (square icons on trusted CDNs). */
 const GAME_LOGOS = {
-  // Valorant "Standard" gamemode icon — the red V mark
-  'riot-valorant': 'https://media.valorant-api.com/gamemodes/96bd3920-4f36-d026-2b28-c683eb0bcac5/displayicon.png',
+  'riot-valorant': VALORANT_GAME_LOGO,
   'riot-lol': `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/profileicon/662.png`,
   fortnite: 'https://cdn2.unrealengine.com/fortnite-chapter-5-lobby-background-1920x1080-1920x1080-f550d56711fa.jpg',
   overwatch: 'https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440cf/blt77c4f0b6234b1b29/1683835839683/OW2_Launch_Key_Art.jpg',
@@ -167,6 +173,7 @@ function resolveSmallImage(session, opts) {
 
 function resolveLargeImageText(session) {
   if (!session) return '';
+  if (session.provider === 'riot-valorant') return session.title || 'Valorant';
   return session.title || session.agent || session.champ || session.map || session.mode
     || session.experience || '';
 }
@@ -175,6 +182,7 @@ module.exports = {
   GAMING_FALLBACK,
   GAME_LOGOS,
   GAME_DEFAULTS,
+  VALORANT_GAME_LOGO,
   DDRAGON_VERSION,
   VALORANT_TIER_ACT,
   valorantAgentIcon,

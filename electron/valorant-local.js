@@ -16,9 +16,11 @@ async function getAgentMap() {
         if (a.displayName) idByName.set(a.displayName.toLowerCase(), a.uuid);
       }
     }
-    agentCache.map = map;
-    agentCache.idByName = idByName;
-    agentCache.at = Date.now();
+    if (map.size) {
+      agentCache.map = map;
+      agentCache.idByName = idByName;
+      agentCache.at = Date.now();
+    }
   } catch (_) {}
   return agentCache.map;
 }
@@ -31,8 +33,49 @@ function mapName(mapPath) {
 }
 
 function findPlayer(players, puuid) {
-  if (!Array.isArray(players)) return null;
-  return players.find((p) => p?.Subject === puuid || p?.sub === puuid) || null;
+  if (!Array.isArray(players) || !puuid) return null;
+  const want = String(puuid).toLowerCase();
+  return players.find((p) => {
+    const sub = p?.Subject || p?.subject || p?.PlayerIdentity?.Subject || p?.sub;
+    return sub && String(sub).toLowerCase() === want;
+  }) || null;
+}
+
+/**
+ * Pregame match shape varies:
+ *   AllyTeam: { Players: [...] }  ← current
+ *   AllyTeam: [...]               ← legacy flat
+ *   AllyTeam.Characters           ← rare
+ *   Teams: [{ Players }]          ← fallback
+ */
+function pregamePlayerList(match) {
+  const ally = match?.AllyTeam;
+  if (Array.isArray(ally?.Players)) return ally.Players;
+  if (Array.isArray(ally?.Characters)) return ally.Characters;
+  if (Array.isArray(ally)) return ally;
+  if (Array.isArray(match?.Players)) return match.Players;
+  if (Array.isArray(match?.Teams)) {
+    const flat = [];
+    for (const t of match.Teams) {
+      if (Array.isArray(t?.Players)) flat.push(...t.Players);
+      else if (t && (t.Subject || t.CharacterID)) flat.push(t);
+    }
+    if (flat.length) return flat;
+  }
+  return [];
+}
+
+function characterIdOf(player) {
+  if (!player || typeof player !== 'object') return null;
+  const raw = player.CharacterID
+    || player.CharacterId
+    || player.characterID
+    || player.Character?.ID
+    || player.Character?.id
+    || null;
+  const id = raw ? String(raw).trim() : '';
+  if (!id || id === '00000000-0000-0000-0000-000000000000') return null;
+  return id;
 }
 
 function kda(player) {
@@ -49,16 +92,22 @@ function teamScore(teams) {
   return s.length >= 2 ? `${s[0]}-${s[1]}` : null;
 }
 
+async function resolveAgent(agentId) {
+  if (!agentId) return { agent: null, agentId: null };
+  const agents = await getAgentMap();
+  const agent = agents.get(String(agentId).toLowerCase()) || null;
+  return { agent, agentId };
+}
+
 async function fetchCoreGame(lockfile, puuid) {
   const player = await localHttpsRequest(lockfile.port, `/core-game/v1/players/${puuid}`, lockfile.password);
   if (!player?.MatchID) return null;
   const match = await localHttpsRequest(lockfile.port, `/core-game/v1/matches/${player.MatchID}`, lockfile.password);
   if (!match) return null;
 
-  const agents = await getAgentMap();
   const self = findPlayer(match.Players, puuid);
-  const agentId = self?.CharacterID ? String(self.CharacterID) : null;
-  const agent = agentId ? agents.get(agentId.toLowerCase()) : null;
+  const agentId = characterIdOf(self);
+  const { agent } = await resolveAgent(agentId);
   const score = teamScore(match.Teams);
   const mapId = match.MapID || null;
   const map = mapName(mapId);
@@ -83,11 +132,12 @@ async function fetchPregame(lockfile, puuid) {
   const match = await localHttpsRequest(lockfile.port, `/pregame/v1/matches/${player.MatchID}`, lockfile.password);
   if (!match) return null;
 
-  const agents = await getAgentMap();
-  const team = match.AllyTeam || match.Teams || [];
-  const self = findPlayer(team, puuid) || findPlayer(match.AllyTeam?.Characters, puuid);
-  const agentId = self?.CharacterID ? String(self.CharacterID) : null;
-  const agent = agentId ? agents.get(agentId.toLowerCase()) : null;
+  const list = pregamePlayerList(match);
+  const self = findPlayer(list, puuid)
+    || findPlayer(match.AllyTeam?.Characters, puuid)
+    || findPlayer(match.Players, puuid);
+  const agentId = characterIdOf(self);
+  const { agent } = await resolveAgent(agentId);
   const mapId = match.MapID || null;
   const map = mapName(mapId);
 
@@ -133,4 +183,8 @@ async function fetchValorantLocalExtras(lockfile, puuid, { inGame, inPregame } =
 module.exports = {
   fetchValorantLocalTruth,
   fetchValorantLocalExtras,
+  // exported for presence-check fixtures
+  findPlayer,
+  pregamePlayerList,
+  characterIdOf,
 };

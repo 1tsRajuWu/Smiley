@@ -19,7 +19,7 @@ function sessionSignature(session) {
   return [
     session.title, session.provider, session.details, session.state,
     session.liveLine, session.scoreHint, session.map, session.mode,
-    session.kda, session.agent, session.champ, session.party, session.rank,
+    session.kda, session.agent, session.agentId, session.champ, session.party, session.rank,
     session.phase || '',
     session.inMatch ? '1' : '0',
     session.inPregame ? '1' : '0',
