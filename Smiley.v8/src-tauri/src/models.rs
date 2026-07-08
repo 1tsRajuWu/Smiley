@@ -317,8 +317,12 @@ impl Config {
                 *gif = sanitize_gif_url_or(gif, CUSTOM_GIF_FALLBACK);
             }
         }
-        let prev_idle = self.idle_gif.clone();
-        self.idle_gif = sanitize_gif_url(&prev_idle).unwrap_or_else(default_idle_gif);
+        let prev_idle = self.idle_gif.trim().to_string();
+        self.idle_gif = if prev_idle.is_empty() {
+            default_idle_gif()
+        } else {
+            sanitize_gif_url(&prev_idle).unwrap_or(prev_idle)
+        };
         if !self.button_url.starts_with("https://") {
             self.button_url = default_btn_url();
         }
@@ -369,6 +373,9 @@ pub fn normalize_gif_url(url: &str) -> String {
     let mut u = url.trim().to_string();
     if u.is_empty() {
         return u;
+    }
+    if !u.starts_with("http://") && !u.starts_with("https://") && u.contains("tenor.com") {
+        u = format!("https://{u}");
     }
     if u.starts_with("http://") {
         u = u.replacen("http://", "https://", 1);
@@ -461,5 +468,26 @@ mod tests {
         cfg.idle_gif = custom.into();
         let saved = cfg.sanitize();
         assert_eq!(saved.idle_gif, custom);
+    }
+
+    #[test]
+    fn normalize_protocol_less_tenor_cdn() {
+        let raw = "media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif";
+        let out = normalize_gif_url(raw);
+        assert_eq!(out, "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif");
+        assert!(sanitize_gif_url(&out).is_some());
+    }
+
+    #[test]
+    fn idle_gif_json_roundtrip_on_disk() {
+        let custom = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif";
+        let mut cfg = Config::default();
+        cfg.idle_gif = custom.into();
+        let cfg = cfg.sanitize();
+        let raw = serde_json::to_string_pretty(&cfg).expect("serialize");
+        assert!(raw.contains("idleGif"), "JSON must use camelCase idleGif field");
+        assert!(raw.contains(custom), "JSON must contain saved idle GIF URL");
+        let loaded: Config = serde_json::from_str(&raw).expect("deserialize");
+        assert_eq!(loaded.sanitize().idle_gif, custom);
     }
 }

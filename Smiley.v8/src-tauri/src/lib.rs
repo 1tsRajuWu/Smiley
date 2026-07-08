@@ -13,14 +13,43 @@ mod updates;
 
 use app::App;
 use models::*;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager, WindowEvent,
+    Emitter, Manager, RunEvent, WindowEvent,
 };
 use tauri_plugin_opener::OpenerExt;
+
+static APP_QUITTING: AtomicBool = AtomicBool::new(false);
+
+fn should_close_to_tray(app: &tauri::AppHandle) -> bool {
+    app.try_state::<Arc<App>>()
+        .map(|st| st.config.lock().minimize_to_tray)
+        .unwrap_or(true)
+}
+
+fn hide_main_to_tray(app: &tauri::AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.hide();
+    }
+    let _ = app.emit("wallpaper-pause", ());
+    #[cfg(target_os = "macos")]
+    let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    log_file::append("window: minimized to tray");
+}
+
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.set_focus();
+        let _ = app.emit("wallpaper-resume", ());
+        #[cfg(target_os = "macos")]
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+    }
+}
 
 #[tauri::command]
 fn get_snapshot(state: tauri::State<'_, Arc<App>>) -> Snapshot {
@@ -174,6 +203,18 @@ pub fn run() {
     log_file::append("boot: Smiley v8 starting");
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                if APP_QUITTING.load(Ordering::SeqCst) {
+                    return;
+                }
+                let app = window.app_handle();
+                if should_close_to_tray(&app) {
+                    api.prevent_close();
+                    hide_main_to_tray(&app);
+                }
+            }
+        })
         .setup(|app| {
             let state = App::boot().map_err(|e| {
                 Box::new(std::io::Error::other(e.to_string())) as Box<dyn std::error::Error>
@@ -234,19 +275,9 @@ pub fn run() {
                 .menu(&menu)
                 .tooltip("Smiley v8")
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                            let _ = app.emit("wallpaper-resume", ());
-                        }
-                    }
+                    "show" => show_main_window(app),
                     "updates" => {
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                            let _ = app.emit("wallpaper-resume", ());
-                        }
+                        show_main_window(app);
                         match updates::check_for_updates() {
                             Ok(result) => {
                                 let _ = app.emit("update-check-result", &result);
@@ -272,7 +303,10 @@ pub fn run() {
                             }
                         }
                     }
-                    "quit" => app.exit(0),
+                    "quit" => {
+                        APP_QUITTING.store(true, Ordering::SeqCst);
+                        app.exit(0);
+                    }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -282,37 +316,18 @@ pub fn run() {
                         ..
                     } = event
                     {
-                        if let Some(w) = tray.app_handle().get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                            let _ = tray.app_handle().emit("wallpaper-resume", ());
-                        }
+                        show_main_window(tray.app_handle());
                     }
                 })
                 .build(app)?;
 
-            if let Some(window) = app.get_webview_window("main") {
+            if app.get_webview_window("main").is_some() {
                 let handle = app.handle().clone();
                 if let Some(st) = handle.try_state::<Arc<App>>() {
                     if st.config.lock().launch_minimized && st.config.lock().minimize_to_tray {
-                        let _ = window.hide();
-                        let _ = handle.emit("wallpaper-pause", ());
+                        hide_main_to_tray(&handle);
                     }
                 }
-                window.on_window_event(move |event| {
-                    if let WindowEvent::CloseRequested { api, .. } = event {
-                        if let Some(st) = handle.try_state::<Arc<App>>() {
-                            if st.config.lock().minimize_to_tray {
-                                api.prevent_close();
-                                if let Some(w) = handle.get_webview_window("main") {
-                                    let _ = w.hide();
-                                }
-                                let _ = handle.emit("wallpaper-pause", ());
-                                log_file::append("window: minimized to tray");
-                            }
-                        }
-                    }
-                });
             }
             Ok(())
         })
@@ -337,6 +352,16 @@ pub fn run() {
             check_for_updates,
             open_release_url,
         ])
-        .run(tauri::generate_context!())
-        .expect("Smiley v8 failed to start");
+        .build(tauri::generate_context!())
+        .expect("Smiley v8 failed to start")
+        .run(|app_handle, event| {
+            if let RunEvent::ExitRequested { api, .. } = event {
+                if APP_QUITTING.load(Ordering::SeqCst) {
+                    return;
+                }
+                if should_close_to_tray(&app_handle) {
+                    api.prevent_exit();
+                }
+            }
+        });
 }

@@ -264,7 +264,10 @@ export function readSettings(root: HTMLElement, base: Config): Config {
     idleEnabled: c("cfgIdle"),
     idleDetails: v("cfgIdleDetails") || base.idleDetails,
     idleState: v("cfgIdleState") || base.idleState,
-    idleGif: v("cfgIdleGif") || base.idleGif,
+    idleGif: (() => {
+      const raw = v("cfgIdleGif");
+      return raw.length > 0 ? raw : base.idleGif;
+    })(),
     rotateEnabled: c("cfgRotate"),
     rotateSeconds: n("cfgRotateSecs", base.rotateSeconds, 30, 3600),
     rotateFavoritesOnly: c("cfgRotateFav"),

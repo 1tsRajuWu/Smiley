@@ -89,3 +89,27 @@ pub fn discord_client_id() -> AppResult<String> {
         "Missing Discord clientId — put it in src-tauri/discord.app.json".into(),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    #[test]
+    fn idle_gif_persists_across_disk_save_load() {
+        let dir = env::temp_dir().join(format!("smiley-v8-cfg-{}", std::process::id()));
+        fs::create_dir_all(&dir).expect("temp dir");
+        let path = dir.join("config.json");
+        let custom = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif";
+        let mut cfg = Config::default();
+        cfg.idle_gif = custom.into();
+        let cfg = cfg.sanitize();
+        fs::write(&path, serde_json::to_vec_pretty(&cfg).expect("serialize")).expect("write");
+        let raw = fs::read_to_string(&path).expect("read");
+        assert!(raw.contains("idleGif"), "config.json must store camelCase idleGif");
+        assert!(raw.contains(custom), "config.json must contain custom idle GIF URL");
+        let loaded: Config = serde_json::from_str(&raw).expect("parse");
+        assert_eq!(loaded.sanitize().idle_gif, custom);
+        let _ = fs::remove_dir_all(dir);
+    }
+}
