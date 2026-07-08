@@ -76,6 +76,14 @@ async function main() {
   }, { category: 'gaming', state: 'In the zone' });
   ok('Valorant large_image still 128 V logo', val.discordImageUrl === assets.VALORANT_GAME_LOGO);
 
+  for (const key of ['fortnite', 'overwatch', 'roblox', 'minecraft']) {
+    const url = assets.GAME_LOGOS[key];
+    ok(`${key} GAME_LOGOS is Twitch CDN`, /static-cdn\.jtvnw\.net/.test(url || ''));
+    ok(`${key} GAME_LOGOS validates`, await validateImageUrl(url));
+  }
+  ok('Steam mark validates', await validateImageUrl(assets.STEAM_MARK));
+  ok('Steam header CDN host', assets.steamHeader(730)?.includes('cdn.steamstatic.com'));
+
   const unknown = assets.resolveGameArtwork({ title: 'ZzNopeNoSteam' });
   ok('Unknown → Smiley logo', unknown === assets.SMILEY_LOGO);
   ok('Smiley logo validates', await validateImageUrl(assets.SMILEY_LOGO));

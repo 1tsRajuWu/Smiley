@@ -25,6 +25,12 @@ const VALORANT_GAME_LOGO =
 const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 
 /**
+ * Steam client store capsule — used as Discord small_image for Steam titles.
+ * (Community avatar hashes rot; this AppID 753 asset is stable JPEG.)
+ */
+const STEAM_MARK = `${STEAM_CDN}/753/capsule_231x87.jpg`;
+
+/**
  * Twitch CDN box art — small, HTTPS, Discord-proxy friendly (validated 200 image/*).
  * Used for non-Steam titles whose official CDNs 403 / hotlink-block.
  */
@@ -209,9 +215,9 @@ function resolveSmallImage(session, opts) {
     return lolChampionIcon(session.champ);
   }
 
-  // Steam: light community icon as small_image; large_image stays the game capsule
+  // Steam: Steam client capsule as small_image; large_image stays the game capsule
   if (session.steamAppId || session.launcher === 'Steam') {
-    return 'https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/753/fe5c8408ba35b6a9174e985fe9589ad92944a4bc.jpg';
+    return STEAM_MARK;
   }
 
   return null;
@@ -231,6 +237,7 @@ module.exports = {
   GAME_DEFAULTS,
   VALORANT_GAME_LOGO,
   STEAM_CDN,
+  STEAM_MARK,
   TWITCH_BOX,
   DDRAGON_VERSION,
   VALORANT_TIER_ACT,

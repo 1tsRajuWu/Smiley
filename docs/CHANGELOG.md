@@ -2,6 +2,12 @@
 
 All notable Smiley releases are documented here. Full release notes live in [docs/releases/](releases/).
 
+## [7.9.24] — 2026-07-08
+
+### Fixed
+- Steam Discord `small_image` used a 404 URL (spinner); now Steam client capsule AppID 753
+- Fixtures for CS2 lobby / in-match presence + validated Twitch logos for Fortnite/OW/Roblox/Minecraft
+
 ## [7.9.23] — 2026-07-08
 
 ### Fixed
