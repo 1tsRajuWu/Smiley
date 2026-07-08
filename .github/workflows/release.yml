@@ -33,12 +33,25 @@ jobs:
           set -euo pipefail
           VERSION="${TAG#v}"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists — leaving as-is (will stay/become draft until publish-release)"
-            # Ensure it is draft so /releases/latest is not consumed mid-upload
-            gh release edit "$TAG" --draft=true || true
+            IS_DRAFT="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+            ASSET_COUNT="$(gh release view "$TAG" --json assets --jq '.assets | length')"
+            if [[ "$IS_DRAFT" == "true" ]]; then
+              echo "Draft release $TAG already exists (${ASSET_COUNT} assets) — ready for platform uploads"
+            else
+              echo "Release $TAG is published (non-draft) — electron-builder cannot upload with EP_DRAFT"
+              echo "Deleting published release so CI can recreate it as draft"
+              gh release delete "$TAG" --yes
+              gh release create "$TAG" --draft --title "Smiley ${VERSION}" --notes "Build in progress — assets uploading from CI."
+              echo "Recreated $TAG as draft"
+            fi
           else
             gh release create "$TAG" --draft --title "Smiley ${VERSION}" --notes "Build in progress — assets uploading from CI."
             echo "Created draft release $TAG"
+          fi
+          IS_DRAFT="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+          if [[ "$IS_DRAFT" != "true" ]]; then
+            echo "::error::Release $TAG is not draft after create-draft — aborting to avoid silent upload skips"
+            exit 1
           fi
 
   build-mac:
