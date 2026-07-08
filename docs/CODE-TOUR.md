@@ -123,7 +123,7 @@ cp discord.app.example.json discord.app.json   # put your Discord Client ID insi
 npm start
 ```
 
-Discord **desktop** must be running. Use `npm run dev` for DevTools.
+Discord **desktop** must be running. Use `npm run dev` for DevTools + live reload (UI edits refresh the window; main/`preload`/`electron` edits restart the app).
 
 ---
 

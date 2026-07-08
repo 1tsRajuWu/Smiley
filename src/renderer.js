@@ -883,7 +883,9 @@ function uiStylesheetForVersion(uiVersion) {
 
 function applyUIVersion(version = 'v3') {
   const uiVersion = normalizeUIVersion(version);
+  const layoutNames = { v1: 'classic', v2: 'studio', v3: 'aurora', v4: 'zen' };
   document.documentElement.dataset.uiVersion = uiVersion;
+  document.documentElement.dataset.layout = layoutNames[uiVersion] || 'aurora';
   if (uiStylesheet) {
     uiStylesheet.href = uiStylesheetForVersion(uiVersion);
   }
@@ -2296,11 +2298,14 @@ function openSettings(tab = 'general') {
     if (tab === 'advanced') refreshStorageInfo();
 
     if (cfg.version) {
-      footerVersion.textContent = `Smiley v${cfg.version}`;
+      if (footerVersion) footerVersion.textContent = `Smiley v${cfg.version}`;
       if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
     }
 
-    settingsModal.showModal();
+    settingsModal?.showModal();
+  }).catch((err) => {
+    console.error('[Smiley] openSettings failed:', err);
+    showToast('Could not open Settings', 'error');
   });
 }
 
