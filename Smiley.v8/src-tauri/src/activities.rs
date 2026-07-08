@@ -27,7 +27,6 @@ pub fn categories() -> Vec<Category> {
     let work = "#bb9af7";
     let social = "#ff9e64";
 
-    let food_gif = "https://media.tenor.com/i-xS-A_DTCEAAAAM/pizza-food.gif";
     let gaming_gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
     let chill_gif = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif";
     let work_gif = "https://media.tenor.com/QLh0PhunTj8AAAAM/anime-typing.gif";
@@ -46,8 +45,8 @@ pub fn categories() -> Vec<Category> {
                 a("eating-burger", "Eating", "Burger time 🍔", "🍔", "food", food, "https://media.tenor.com/uk9xO0xpWoIAAAAM/burger-eating.gif"),
                 a("cooking", "Cooking", "Chef mode 👨‍🍳", "👨‍🍳", "food", food, "https://media.tenor.com/flX5arjPeDcAAAAM/sora-cooking.gif"),
                 a("eating-dessert", "Eating", "Sweet tooth 🍰", "🍰", "food", food, "https://media.tenor.com/DTRz6D1e5ZEAAAAM/eating-dessert-happily.gif"),
-                a("eating-tacos", "Eating", "Taco Tuesday 🌮", "🌮", "food", food, food_gif),
-                a("eating-snacks", "Snacking", "Midnight munchies 🍿", "🍿", "food", food, food_gif),
+                a("eating-tacos", "Eating", "Taco Tuesday 🌮", "🌮", "food", food, "https://media.tenor.com/tz1kb3yen6wAAAAM/uwu-taco.gif"),
+                a("eating-snacks", "Snacking", "Midnight munchies 🍿", "🍿", "food", food, "https://media.tenor.com/gBrP7QayoRkAAAAM/himouto-umaru-chan.gif"),
             ],
         },
         Category {
@@ -61,7 +60,7 @@ pub fn categories() -> Vec<Category> {
                 a("coop", "Gaming", "Co-op with friends", "👥", "gaming", gaming, "https://media.tenor.com/ZIlcnod9hnkAAAAM/anime-anime-hug.gif"),
                 a("retro", "Gaming", "Retro classics 🕹️", "🕹️", "gaming", gaming, "https://media.tenor.com/L99ayPjM6m4AAAAM/zyclunt-blue.gif"),
                 a("speedrun", "Gaming", "Speedrunning ⏱️", "⏱️", "gaming", gaming, "https://media.tenor.com/V2FWyvBLJ0kAAAAM/anime-run-run.gif"),
-                a("vr-gaming", "Gaming", "In VR 🥽", "🥽", "gaming", gaming, gaming_gif),
+                a("vr-gaming", "Gaming", "In VR 🥽", "🥽", "gaming", gaming, "https://media.tenor.com/qIvEeou-1FIAAAAM/play-network-anime-girl.gif"),
             ],
         },
         Category {

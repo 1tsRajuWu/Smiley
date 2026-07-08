@@ -27,6 +27,8 @@ export class AppController {
   private toastTimer = 0;
   private mounted = false;
 
+  private lastGridKey = "";
+  private lastBoardKey = "";
   private lastGameProbe = 0;
 
   constructor(root: HTMLElement) {
@@ -37,7 +39,7 @@ export class AppController {
     this.snap = await api.snapshot();
     this.cat = this.snap.config.defaultCategory || this.snap.categories[0]?.id || "food";
     this.mount();
-    this.pollTimer = window.setInterval(() => void this.poll(), 8000);
+    this.pollTimer = window.setInterval(() => void this.poll(), 12_000);
     void api.log("ui: ready");
 
     // Wallpaper pause/resume from Rust tray events
@@ -107,7 +109,10 @@ export class AppController {
 
     this.root.oninput = (e) => {
       const t = e.target as HTMLElement;
-      if (t.id === "search") this.paintGrid();
+      if (t.id === "search") {
+        this.lastGridKey = "";
+        this.paintGridIfNeeded();
+      }
     };
 
     this.root.onsubmit = (e) => {
@@ -180,6 +185,7 @@ export class AppController {
       }
       case "cat":
         this.cat = el.dataset.cat || this.cat;
+        this.lastGridKey = "";
         this.paint();
         return;
       case "pick":
@@ -401,6 +407,26 @@ export class AppController {
     }
 
     this.paintCats();
+    this.paintGridIfNeeded();
+  }
+
+  private gridCacheKey(): string {
+    if (!this.snap) return "";
+    const q = this.$<HTMLInputElement>("search")?.value ?? "";
+    return [
+      this.cat,
+      q,
+      this.snap.status.activityId ?? "",
+      this.snap.config.favorites.join(","),
+      this.snap.config.staticTiles ? "1" : "0",
+      normalizeSkin(this.snap.config.skin),
+    ].join("|");
+  }
+
+  private paintGridIfNeeded() {
+    const key = this.gridCacheKey();
+    if (key === this.lastGridKey) return;
+    this.lastGridKey = key;
     this.paintGrid();
   }
 
@@ -438,6 +464,16 @@ export class AppController {
 
     board.hidden = !show;
     if (!show || !mb) return;
+
+    const boardKey = JSON.stringify({
+      phase: mb.phase,
+      title: mb.title,
+      map: mb.map,
+      score: mb.score,
+      players: mb.players?.map((p) => [p.seat, p.name, p.agent, p.kda]),
+    });
+    if (boardKey === this.lastBoardKey) return;
+    this.lastBoardKey = boardKey;
 
     const phase = this.$("livePhase");
     const title = this.$("liveTitle");
@@ -708,7 +744,8 @@ export class AppController {
     if (!id || !this.snap) return;
     try {
       this.snap.config = await api.toggleFavorite(id);
-      this.paintGrid();
+      this.lastGridKey = "";
+      this.paintGridIfNeeded();
     } catch (e) {
       this.toast(errMsg(e));
     }

@@ -101,7 +101,7 @@ export function settingsMarkup(): string {
           <label><span>Quiet end</span><input id="cfgQuietEnd" placeholder="08:00" /></label>
           <label><span>Idle details</span><input id="cfgIdleDetails" maxlength="128" /></label>
           <label><span>Idle state</span><input id="cfgIdleState" maxlength="128" /></label>
-          <label><span>Idle GIF</span><input id="cfgIdleGif" /></label>
+          <label><span>Idle GIF</span><input id="cfgIdleGif" placeholder="https://media.tenor.com/…" /></label>
         </div>
       </section>
 

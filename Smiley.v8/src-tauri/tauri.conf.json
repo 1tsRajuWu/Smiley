@@ -26,7 +26,7 @@
       "csp": "default-src 'self'; img-src 'self' data: https://media.tenor.com https://*.tenor.com https://media.valorant-api.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src ipc: http://ipc.localhost; script-src 'self'"
     },
     "trayIcon": {
-      "iconPath": "icons/icon.png",
+      "iconPath": "icons/32x32.png",
       "iconAsTemplate": true
     }
   },

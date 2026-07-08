@@ -314,10 +314,11 @@ impl Config {
             c.state = sanitize_text(&c.state, 128);
             c.emoji = sanitize_text(&c.emoji, 8);
             if let Some(gif) = c.gif.as_mut() {
-                *gif = sanitize_gif_url(gif);
+                *gif = sanitize_gif_url_or(gif, CUSTOM_GIF_FALLBACK);
             }
         }
-        self.idle_gif = sanitize_gif_url(&self.idle_gif);
+        let prev_idle = self.idle_gif.clone();
+        self.idle_gif = sanitize_gif_url(&prev_idle).unwrap_or_else(default_idle_gif);
         if !self.button_url.starts_with("https://") {
             self.button_url = default_btn_url();
         }
@@ -360,22 +361,105 @@ fn sanitize_text(s: &str, max: usize) -> String {
         .to_string()
 }
 
-/// Tenor HTTPS only — Discord-safe + matches CSP img-src.
-pub fn sanitize_gif_url(url: &str) -> String {
-    let u = url.trim();
-    let ok = (u.starts_with("https://media.tenor.com/")
-        || u.starts_with("https://c.tenor.com/")
-        || u.starts_with("https://media1.tenor.com/"))
-        && !u.contains(['"', '\'', '<', '>', ' '])
-        && u.len() < 500;
-    if ok {
-        u.into()
-    } else {
-        default_idle_gif()
+const CUSTOM_GIF_FALLBACK: &str =
+    "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
+
+/// Normalize Tenor CDN variants (media1, media2, http) to Discord-safe HTTPS.
+pub fn normalize_gif_url(url: &str) -> String {
+    let mut u = url.trim().to_string();
+    if u.is_empty() {
+        return u;
     }
+    if u.starts_with("http://") {
+        u = u.replacen("http://", "https://", 1);
+    }
+    if let Some(rest) = u.strip_prefix("https://media1.tenor.com/m/") {
+        let mut parts = rest.splitn(2, '/');
+        if let (Some(id), Some(file)) = (parts.next(), parts.next()) {
+            let id = if id.ends_with("AAAAC") {
+                format!("{}AAAAM", &id[..id.len().saturating_sub(5)])
+            } else {
+                id.to_string()
+            };
+            return format!("https://media.tenor.com/{id}/{file}");
+        }
+        u = u.replace("https://media1.tenor.com", "https://media.tenor.com");
+    }
+    if u.starts_with("https://media1.tenor.com/") {
+        u = u.replace("https://media1.tenor.com", "https://media.tenor.com");
+    }
+    u
+}
+
+fn is_valid_tenor_gif_url(url: &str) -> bool {
+    let u = url.trim();
+    if u.is_empty() || u.len() >= 500 {
+        return false;
+    }
+    if u.contains(['"', '\'', '<', '>', ' ']) {
+        return false;
+    }
+    let host = u
+        .strip_prefix("https://")
+        .and_then(|rest| rest.split('/').next());
+    let Some(host) = host else {
+        return false;
+    };
+    host == "media.tenor.com"
+        || host == "c.tenor.com"
+        || host == "media1.tenor.com"
+        || (host.starts_with("media") && host.ends_with(".tenor.com"))
+}
+
+/// Tenor HTTPS only — Discord-safe + matches CSP img-src.
+pub fn sanitize_gif_url(url: &str) -> Option<String> {
+    let u = normalize_gif_url(url);
+    if is_valid_tenor_gif_url(&u) {
+        Some(u)
+    } else {
+        None
+    }
+}
+
+pub fn sanitize_gif_url_or(url: &str, fallback: &str) -> String {
+    sanitize_gif_url(url).unwrap_or_else(|| fallback.to_string())
 }
 
 pub fn is_safe_donate_url(url: &str) -> bool {
     let u = url.trim();
     u == "https://paypal.me/1tsRaj" || u.starts_with("https://paypal.me/1tsRaj/")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_media1_tenor_path() {
+        let raw = "https://media1.tenor.com/m/AbCdEfAAAAC/taco.gif";
+        let out = normalize_gif_url(raw);
+        assert_eq!(out, "https://media.tenor.com/AbCdEfAAAAM/taco.gif");
+    }
+
+    #[test]
+    fn accepts_media2_tenor_host() {
+        let url = "https://media2.tenor.com/abc/def.gif";
+        assert!(sanitize_gif_url(url).is_some());
+    }
+
+    #[test]
+    fn upgrades_http_tenor() {
+        let url = "http://media.tenor.com/abc/def.gif";
+        let out = sanitize_gif_url(url).expect("valid");
+        assert!(out.starts_with("https://media.tenor.com/"));
+    }
+
+    #[test]
+    fn idle_gif_roundtrip_survives_sanitize() {
+        let custom = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif";
+        let mut cfg = Config::default();
+        cfg.idle_gif = custom.into();
+        let saved = cfg.sanitize();
+        assert_eq!(saved.idle_gif, custom);
+    }
 }

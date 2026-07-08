@@ -2,7 +2,7 @@ use crate::activities;
 use crate::config;
 use crate::discord::{Discord, Presence};
 use crate::error::{AppError, AppResult};
-use crate::models::{sanitize_gif_url, *};
+use crate::models::{sanitize_gif_url_or, *};
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
@@ -402,20 +402,34 @@ impl App {
             return Ok(None);
         }
 
-        let mut idx = self.rotate_index.lock();
-        *idx = (*idx + 1) % pool.len();
-        let id = pool[*idx].clone();
-        drop(idx);
+        let current = self.status.lock().activity_id.clone();
+        let start = current
+            .as_ref()
+            .and_then(|id| pool.iter().position(|x| x == id))
+            .unwrap_or(usize::MAX);
+        let next_idx = if start == usize::MAX {
+            0
+        } else {
+            (start + 1) % pool.len()
+        };
+        *self.rotate_index.lock() = next_idx;
+        let id = pool[next_idx].clone();
         Ok(Some(self.set_activity(&id)?))
     }
 
     pub fn save_config(&self, next: Config) -> AppResult<Config> {
         let mut next = next.sanitize();
-        // Guard: never let a partial settings write erase customs accidentally.
+        // Guard: never let a partial settings write erase persisted lists.
         {
             let live = self.config.lock();
             if next.custom.is_empty() && !live.custom.is_empty() {
                 next.custom = live.custom.clone();
+            }
+            if next.favorites.is_empty() && !live.favorites.is_empty() {
+                next.favorites = live.favorites.clone();
+            }
+            if next.recents.is_empty() && !live.recents.is_empty() {
+                next.recents = live.recents.clone();
             }
             if next.last_activity_id.is_none() {
                 next.last_activity_id = live.last_activity_id.clone();
@@ -460,7 +474,10 @@ impl App {
             act.emoji = "✨".into();
         }
         if let Some(gif) = act.gif.as_ref() {
-            act.gif = Some(sanitize_gif_url(gif));
+            act.gif = Some(sanitize_gif_url_or(
+                gif,
+                "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif",
+            ));
         }
         act.details = act.details.chars().filter(|c| !c.is_control()).take(128).collect();
         act.state = act.state.chars().filter(|c| !c.is_control()).take(128).collect();
@@ -539,13 +556,20 @@ impl App {
                     if gaming_slot {
                         let (details, state) =
                             crate::privacy::valorant_discord_lines(&live, &cfg_snap);
-                        let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
+                        let gif = status
+                            .activity_id
+                            .as_deref()
+                            .and_then(|id| self.resolve(id).ok())
+                            .map(|(_, _, _, g)| g)
+                            .unwrap_or_else(|| {
+                                "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif".into()
+                            });
                         let start = Some(Self::now_secs() as i64);
                         self.discord.set(self.build_presence(
                             &details,
                             &state,
                             "🎮",
-                            gif,
+                            &gif,
                             start,
                         ))?;
                         {
@@ -553,7 +577,7 @@ impl App {
                             s.activity_id = Some(format!("live-{}", live.product));
                             s.details = Some(details);
                             s.state = Some(state);
-                            s.gif = Some(gif.into());
+                            s.gif = Some(gif);
                             s.message = format!("Live {}", live.title);
                         }
                     }
