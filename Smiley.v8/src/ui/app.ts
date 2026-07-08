@@ -1,0 +1,683 @@
+import { api, errMsg } from "./api";
+import {
+  fillSettings,
+  readSettings,
+  setCfgTab,
+  syncPickers,
+} from "./settings";
+import {
+  findActivity,
+  formatElapsed,
+  listActivities,
+  normalizeSkin,
+  type Snapshot,
+} from "./types";
+import { markupFor } from "../skins/markup";
+import "../skins/all.css";
+
+export class AppController {
+  private root: HTMLElement;
+  private snap: Snapshot | null = null;
+  private cat = "food";
+  private gen = 0;
+  private busy = false;
+  private log: string[] = [];
+  private clockTimer = 0;
+  private pollTimer = 0;
+  private toastTimer = 0;
+  private mounted = false;
+
+  constructor(root: HTMLElement) {
+    this.root = root;
+  }
+
+  async start() {
+    this.snap = await api.snapshot();
+    this.cat = this.snap.config.defaultCategory || this.snap.categories[0]?.id || "food";
+    this.mount();
+    this.pollTimer = window.setInterval(() => void this.poll(), 8000);
+    void api.log("ui: ready");
+
+    // Wallpaper pause/resume from Rust tray events
+    try {
+      const { listen } = await import("@tauri-apps/api/event");
+      await listen("wallpaper-pause", () => this.setWallpaperPaused(true));
+      await listen("wallpaper-resume", () => this.setWallpaperPaused(false));
+    } catch {
+      /* browser preview without Tauri events */
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) this.setWallpaperPaused(true);
+      else if (this.snap?.config.wallpaperEnabled) this.setWallpaperPaused(false);
+    });
+  }
+
+  destroy() {
+    window.clearInterval(this.pollTimer);
+    window.clearInterval(this.clockTimer);
+    this.root.onclick = null;
+    this.root.oninput = null;
+    this.root.onsubmit = null;
+    this.mounted = false;
+  }
+
+  private mount() {
+    if (!this.snap) return;
+    const skin = normalizeSkin(this.snap.config.skin);
+    document.documentElement.dataset.skin = skin;
+    document.documentElement.dataset.accent = this.snap.config.themeAccent || "ember";
+    document.documentElement.classList.toggle("calm", this.snap.config.reduceMotion);
+
+    window.clearInterval(this.clockTimer);
+    this.root.innerHTML = markupFor(skin);
+    this.bind();
+    this.mounted = true;
+    this.paint();
+
+    if (skin === "terminal") {
+      this.pushLog("ready — type help");
+      this.clockTimer = window.setInterval(() => {
+        const el = this.$<HTMLElement>("clock");
+        if (el) el.textContent = new Date().toLocaleTimeString();
+      }, 1000);
+    }
+
+    if (this.snap.config.focusSearchOnOpen) {
+      this.$<HTMLInputElement>("search")?.focus();
+    }
+  }
+
+  private remount() {
+    this.mount();
+  }
+
+  /** Single delegated click handler — every button uses data-act. */
+  private bind() {
+    this.root.onclick = (e) => {
+      const t = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-act]");
+      if (!t || !this.root.contains(t)) return;
+      const act = t.dataset.act;
+      if (!act) return;
+      e.preventDefault();
+      void this.handle(act, t, e);
+    };
+
+    this.root.oninput = (e) => {
+      const t = e.target as HTMLElement;
+      if (t.id === "search") this.paintGrid();
+    };
+
+    this.root.onsubmit = (e) => {
+      const form = e.target as HTMLFormElement;
+      if (form.id === "settingsForm" || form.id === "createForm") {
+        e.preventDefault();
+        return;
+      }
+      if (form.dataset.act === "cmd-form" || form.classList.contains("tm-prompt")) {
+        e.preventDefault();
+        void this.runCmd();
+      }
+    };
+
+    window.onkeydown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        this.openSettings();
+      }
+    };
+  }
+
+  private async handle(act: string, el: HTMLElement, ev: MouseEvent) {
+    switch (act) {
+      case "connect":
+        return this.connect();
+      case "pause":
+        return this.togglePause();
+      case "clear":
+        return this.clear();
+      case "idle":
+        return this.idle();
+      case "rotate":
+        return this.rotate();
+      case "donate":
+        return this.donate();
+      case "settings":
+        return this.openSettings();
+      case "create":
+        return this.openCreate();
+      case "close-settings":
+        return this.$<HTMLDialogElement>("settingsDlg")?.close();
+      case "close-create":
+        return this.$<HTMLDialogElement>("createDlg")?.close();
+      case "save-settings":
+        return this.saveSettings();
+      case "reset-settings":
+        return this.resetSettings();
+      case "save-custom":
+        return this.saveCustom();
+      case "cfg-tab":
+        return setCfgTab(this.$("settingsBody")!, el.dataset.tab || "look");
+      case "pick-skin": {
+        const sel = this.$<HTMLSelectElement>("cfgSkin");
+        if (sel && el.dataset.skin) sel.value = el.dataset.skin;
+        syncPickers(this.$("settingsBody")!);
+        return;
+      }
+      case "pick-accent": {
+        const sel = this.$<HTMLSelectElement>("cfgAccent");
+        if (sel && el.dataset.accent) sel.value = el.dataset.accent;
+        syncPickers(this.$("settingsBody")!);
+        return;
+      }
+      case "pick-density": {
+        const sel = this.$<HTMLSelectElement>("cfgDensity");
+        if (sel && el.dataset.density) sel.value = el.dataset.density;
+        syncPickers(this.$("settingsBody")!);
+        return;
+      }
+      case "cat":
+        this.cat = el.dataset.cat || this.cat;
+        this.paint();
+        return;
+      case "pick":
+        return this.pick(el.dataset.id || "");
+      case "fav": {
+        ev.stopPropagation();
+        return this.toggleFav(el.dataset.id || "");
+      }
+      case "search":
+        return;
+      default:
+        return;
+    }
+  }
+
+  private $<T extends HTMLElement = HTMLElement>(id: string): T | null {
+    return this.root.querySelector(`#${id}`);
+  }
+
+  private toast(msg: string) {
+    if (this.snap && !this.snap.config.toastEnabled) return;
+    let el = document.getElementById("toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "toast";
+      document.body.appendChild(el);
+    }
+    el.hidden = false;
+    el.textContent = msg;
+    window.clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => {
+      el!.hidden = true;
+    }, 2200);
+  }
+
+  private pushLog(line: string) {
+    const ts = new Date().toLocaleTimeString();
+    this.log.push(`[${ts}] ${line}`);
+    if (this.log.length > 60) this.log.shift();
+    const box = this.$<HTMLElement>("log");
+    if (box) {
+      box.textContent = this.log.join("\n");
+      box.scrollTop = box.scrollHeight;
+    }
+  }
+
+  private async poll() {
+    if (document.hidden || !this.snap || this.busy || !this.mounted) return;
+    try {
+      this.snap.status = await api.status();
+      this.paintStatusOnly();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private paintStatusOnly() {
+    if (!this.snap) return;
+    const s = this.snap.status;
+    const pill = this.$<HTMLElement>("statusPill");
+    if (pill) {
+      pill.dataset.state = s.paused ? "paused" : s.connected ? "ok" : "off";
+    }
+    const label = this.$("statusLabel");
+    if (label) {
+      label.textContent = s.paused ? "Paused" : s.connected ? "Live" : "Offline";
+    }
+    const msg = this.$("statusMsg");
+    if (msg) msg.textContent = s.message;
+    const elapsed = this.$("elapsed");
+    if (elapsed && this.snap.config.showElapsed) {
+      elapsed.textContent = formatElapsed(s.elapsedSecs);
+    }
+  }
+
+  private paint() {
+    if (!this.snap || !this.mounted) return;
+    const s = this.snap.status;
+    const cfg = this.snap.config;
+    const skin = normalizeSkin(cfg.skin);
+    document.documentElement.dataset.accent = cfg.themeAccent || "ember";
+    this.root.querySelector("#skin")?.setAttribute("data-density", cfg.gridDensity || "cozy");
+    this.syncWallpaper();
+
+    this.paintStatusOnly();
+
+    // Optional light gaming probe — never blocks clicks
+    if (cfg.gamingProbe && s.connected && !s.paused) {
+      void api.probeGame().then((hit) => {
+        if (!hit || !this.snap) return;
+        const meta = this.$("meta");
+        if (meta) meta.textContent = `game: ${hit.title}\n${hit.state}`;
+      }).catch(() => { /* ignore */ });
+    }
+
+    const pause = this.$<HTMLButtonElement>("btnPause");
+    const clear = this.$<HTMLButtonElement>("btnClear");
+    const connect = this.$<HTMLButtonElement>("btnConnect");
+    if (pause) {
+      pause.hidden = !s.connected && skin !== "arcade" && skin !== "terminal";
+      pause.textContent =
+        skin === "arcade"
+          ? s.paused
+            ? "RESUME"
+            : "PAUSE"
+          : skin === "terminal"
+            ? s.paused
+              ? "./resume"
+              : "./pause"
+            : s.paused
+              ? "Resume"
+              : "Pause";
+    }
+    if (clear) {
+      clear.hidden = !s.activityId && skin !== "arcade" && skin !== "terminal";
+    }
+    if (connect) {
+      connect.textContent =
+        skin === "arcade"
+          ? s.connected
+            ? "RELINK"
+            : "CONNECT"
+          : skin === "terminal"
+            ? s.connected
+              ? "./reconnect"
+              : "./connect"
+            : skin === "zen"
+              ? s.connected
+                ? "reconnect"
+                : "connect"
+              : s.connected
+                ? "Reconnect"
+                : "Connect";
+    }
+
+    const act = findActivity(this.snap, s.activityId);
+    const gifUrl = s.gif || act?.gif || "";
+    const hero = this.$<HTMLImageElement>("heroGif");
+    const card = this.$<HTMLElement>("discordCard");
+    const empty = this.$<HTMLElement>("emptyHero");
+
+    if (gifUrl) {
+      if (hero && hero.src !== gifUrl) hero.src = gifUrl;
+      if (card) card.hidden = false;
+      if (empty) empty.hidden = true;
+      const art = this.$<HTMLElement>("art");
+      if (art) art.style.backgroundImage = `url("${gifUrl}")`;
+    } else {
+      if (hero) hero.removeAttribute("src");
+      if (card) card.hidden = true;
+      if (empty) empty.hidden = false;
+    }
+
+    const title = this.$("title");
+    const subtitle = this.$("subtitle");
+    const details = this.$("details");
+    const stateLine = this.$("stateLine");
+    const kicker = this.$("kicker");
+    const meta = this.$("meta");
+
+    if (s.activityId && (s.details || act)) {
+      if (title) title.textContent = `${act?.emoji ?? ""} ${s.details || act?.details || ""}`.trim();
+      if (subtitle) subtitle.textContent = s.state || act?.state || s.message;
+      if (details) details.textContent = s.details || act?.details || "—";
+      if (stateLine) stateLine.textContent = s.state || act?.state || "—";
+      if (kicker) kicker.textContent = s.rotateActive ? "Auto-rotating" : "Now playing";
+      if (meta) {
+        meta.textContent = [
+          `details: ${s.details || act?.details}`,
+          `state: ${s.state || act?.state}`,
+          `id: ${s.activityId}`,
+        ].join("\n");
+      }
+    } else {
+      if (title) {
+        title.textContent =
+          skin === "arcade"
+            ? s.connected
+              ? "SELECT STAGE"
+              : "INSERT COIN"
+            : skin === "zen"
+              ? "what are you doing?"
+              : "Pick a vibe";
+      }
+      if (subtitle) {
+        subtitle.textContent = s.connected
+          ? "Tap any activity below"
+          : "Connect Discord, then pick an activity";
+      }
+      if (kicker) kicker.textContent = s.connected ? "Ready" : "No presence";
+      if (meta) meta.textContent = "no presence.bin";
+    }
+
+    if (skin === "terminal") {
+      const block = this.$("statusBlock");
+      if (block) {
+        block.textContent = [
+          `link: ${s.connected ? "hot" : "cold"}`,
+          `job: ${s.activityId ?? "none"}`,
+          `msg: ${s.message}`,
+          `elapsed: ${formatElapsed(s.elapsedSecs)}`,
+          `rotate: ${s.rotateActive ? "on" : "off"}`,
+        ].join("\n");
+      }
+    }
+
+    this.paintCats();
+    this.paintGrid();
+  }
+
+  private paintCats() {
+    if (!this.snap) return;
+    const el = this.$("cats");
+    if (!el) return;
+    const skin = normalizeSkin(this.snap.config.skin);
+    const items = [{ id: "favorites", emoji: "★", label: "Favorites" }, ...this.snap.categories];
+    el.innerHTML = items
+      .map((c) => {
+        const on = c.id === this.cat ? " on" : "";
+        if (skin === "terminal") {
+          return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${c.id}">${this.cat === c.id ? ">" : " "} ${c.id}/</button>`;
+        }
+        return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`;
+      })
+      .join("");
+  }
+
+  private paintGrid() {
+    if (!this.snap) return;
+    const grid = this.$("grid");
+    if (!grid) return;
+    const q = this.$<HTMLInputElement>("search")?.value ?? "";
+    const list = listActivities(this.snap, this.cat, q);
+    const favs = new Set(this.snap.config.favorites);
+    const active = this.snap.status.activityId;
+    const skin = normalizeSkin(this.snap.config.skin);
+
+    if (skin === "terminal") {
+      grid.innerHTML = list
+        .map((a) => {
+          const on = a.id === active ? " on" : "";
+          const star = favs.has(a.id) ? "*" : " ";
+          return `<button type="button" class="row${on}" data-act="pick" data-id="${a.id}">
+            <code>${star}${a.id}</code><span>${a.emoji} ${a.details}</span><em>${a.state}</em>
+          </button>`;
+        })
+        .join("");
+      return;
+    }
+
+    grid.innerHTML = list
+      .map((a) => {
+        const on = a.id === active ? " on" : "";
+        const favOn = favs.has(a.id) ? " on" : "";
+        return `<button type="button" class="tile${on}" data-act="pick" data-id="${a.id}" style="--c:${a.color}">
+          <img src="${a.gif}" alt="" loading="lazy" decoding="async" />
+          <div class="tile-fade">
+            <b>${a.emoji} ${a.details}</b>
+            <i>${a.state}</i>
+          </div>
+          <span class="tile-fav${favOn}" data-act="fav" data-id="${a.id}" role="button">${favs.has(a.id) ? "★" : "☆"}</span>
+        </button>`;
+      })
+      .join("");
+  }
+
+  private async connect() {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      const status = await api.connect();
+      if (this.snap) this.snap.status = status;
+      this.paint();
+      this.toast(status.connected ? "Connected" : status.message);
+      this.pushLog("link hot");
+    } catch (e) {
+      this.toast(errMsg(e));
+      this.pushLog(`error ${errMsg(e)}`);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private async togglePause() {
+    if (!this.snap) return;
+    try {
+      const status = await api.pause(!this.snap.status.paused);
+      this.snap.status = status;
+      this.paint();
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async clear() {
+    if (!this.snap) return;
+    if (this.snap.config.confirmClear && !confirm("Clear presence?")) return;
+    try {
+      this.snap.status = await api.clear();
+      this.paint();
+      this.toast("Cleared");
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async idle() {
+    try {
+      const status = await api.idle();
+      if (this.snap) this.snap.status = status;
+      this.paint();
+      this.toast("Idle set");
+      this.pushLog("idle");
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async rotate() {
+    try {
+      const status = await api.rotateOnce();
+      if (status && this.snap) {
+        this.snap.status = status;
+        this.paint();
+        this.toast("Rotated");
+        this.pushLog(`rotate -> ${status.activityId}`);
+      } else this.toast("Rotate off or empty");
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async donate() {
+    try {
+      await api.openDonate();
+      void api.log("ui: opened donation link");
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private setWallpaperPaused(paused: boolean) {
+    const wall = this.$<HTMLElement>("wallpaper");
+    if (!wall) return;
+    wall.classList.toggle("paused", paused);
+    document.documentElement.classList.toggle("wallpaper-paused", paused);
+  }
+
+  private syncWallpaper() {
+    if (!this.snap) return;
+    const wall = this.$<HTMLElement>("wallpaper");
+    const on = this.snap.config.wallpaperEnabled && !this.snap.config.reduceMotion;
+    if (wall) {
+      wall.hidden = !on;
+      wall.classList.toggle("on", on);
+    }
+    document.documentElement.classList.toggle("has-wallpaper", on);
+    const donate = this.$<HTMLElement>("btnDonate");
+    if (donate) donate.hidden = !this.snap.config.showDonate;
+  }
+
+  private async pick(id: string) {
+    if (!id || !this.snap) return;
+    if (!this.snap.status.connected) {
+      this.toast("Connect Discord first");
+      return;
+    }
+    const g = ++this.gen;
+    this.busy = true;
+    try {
+      const status = await api.setActivity(id);
+      if (g !== this.gen) return;
+      this.snap.status = status;
+      this.snap.config.recents = [
+        id,
+        ...this.snap.config.recents.filter((x) => x !== id),
+      ].slice(0, this.snap.config.maxRecents);
+      this.paint();
+      this.toast("Presence updated");
+      this.pushLog(`set ${id}`);
+    } catch (e) {
+      this.toast(errMsg(e));
+      this.pushLog(`error ${errMsg(e)}`);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private async toggleFav(id: string) {
+    if (!id || !this.snap) return;
+    try {
+      this.snap.config = await api.toggleFavorite(id);
+      this.paintGrid();
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private openSettings() {
+    if (!this.snap) return;
+    const body = this.$("settingsBody");
+    const dlg = this.$<HTMLDialogElement>("settingsDlg");
+    if (!body || !dlg) return;
+    fillSettings(body, this.snap.config, this.snap);
+    setCfgTab(body, "look");
+    dlg.showModal();
+  }
+
+  private openCreate() {
+    this.$<HTMLDialogElement>("createDlg")?.showModal();
+  }
+
+  private async saveSettings() {
+    if (!this.snap) return;
+    const body = this.$("settingsBody");
+    if (!body) return;
+    try {
+      const prevSkin = normalizeSkin(this.snap.config.skin);
+      const draft = readSettings(body, this.snap.config);
+      const saved = await api.saveConfig(draft);
+      this.snap.config = saved;
+      this.$<HTMLDialogElement>("settingsDlg")?.close();
+      const nextSkin = normalizeSkin(saved.skin);
+      if (nextSkin !== prevSkin) {
+        this.remount();
+        this.toast(`Switched to ${nextSkin}`);
+      } else {
+        this.paint();
+        this.toast("Settings saved");
+      }
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async resetSettings() {
+    if (!confirm("Reset ALL settings (including favorites & customs)?")) return;
+    try {
+      const saved = await api.resetConfig();
+      if (this.snap) this.snap.config = saved;
+      this.$<HTMLDialogElement>("settingsDlg")?.close();
+      this.remount();
+      this.toast("Factory reset");
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async saveCustom() {
+    const details = this.$<HTMLInputElement>("caDetails")?.value.trim() ?? "";
+    if (!details) {
+      this.toast("Details required");
+      return;
+    }
+    try {
+      await api.addCustom({
+        id: "",
+        details,
+        state: this.$<HTMLInputElement>("caState")?.value.trim() || "Custom",
+        emoji: this.$<HTMLInputElement>("caEmoji")?.value.trim() || "✨",
+        gif: this.$<HTMLInputElement>("caGif")?.value.trim() || null,
+      });
+      this.snap = await api.snapshot();
+      this.cat = "custom";
+      this.$<HTMLDialogElement>("createDlg")?.close();
+      this.paint();
+      this.toast("Activity added");
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
+  private async runCmd() {
+    const input = this.$<HTMLInputElement>("search");
+    if (!input) return;
+    const raw = input.value.trim();
+    input.value = "";
+    if (!raw) return;
+    const [cmd, ...rest] = raw.split(/\s+/);
+    const arg = rest.join(" ");
+    if (cmd === "help") {
+      this.pushLog("help | search <q> | set <id> | cd <dir> | connect | clear | config");
+    } else if (cmd === "search" || cmd === "ls") {
+      input.value = arg;
+      this.paintGrid();
+      this.pushLog(`search ${arg}`);
+    } else if (cmd === "set" && arg) {
+      await this.pick(arg);
+    } else if (cmd === "cd" && arg) {
+      this.cat = arg.replace(/\/$/, "");
+      this.paint();
+    } else if (cmd === "connect") {
+      await this.connect();
+    } else if (cmd === "clear") {
+      await this.clear();
+    } else if (cmd === "config") {
+      this.openSettings();
+    } else {
+      input.value = raw;
+      this.paintGrid();
+    }
+  }
+}

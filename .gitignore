@@ -18,8 +18,11 @@ docs/site/live/README.md
 Smiley.Native/bin/
 Smiley.Native/obj/
 .DS_Store
-*.log
-
+Smiley.v8/src-tauri/target/
+Smiley.v8/dist/
+Smiley.v8/node_modules/
+Smiley.v8/src-tauri/discord.app.json
+legacy/**/node_modules/
 # Mobile build artifacts (keep mobile/www source in git)
 mobile/dist/
 mobile/node_modules/

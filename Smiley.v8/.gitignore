@@ -1,0 +1,29 @@
+
+!.vscode/extensions.json
+# Build artifacts already covered; keep target huge dirs out of IDE noise
+# Editor directories and files
+# Logs
+# Secrets / local Discord app id
+*.local
+*.log
+*.njsproj
+*.ntvs*
+*.secure
+*.sln
+*.suo
+*.sw?
+.DS_Store
+.idea
+.vscode/*
+discord.app.json
+dist
+dist-ssr
+lerna-debug.log*
+logs
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+src-tauri/discord.app.json
+src-tauri/target
+yarn-debug.log*
+yarn-error.log*
