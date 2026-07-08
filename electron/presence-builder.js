@@ -42,50 +42,59 @@ function partyDisplay(party, partySize) {
   return stackMap[p] || p;
 }
 
+/**
+ * Valorant Discord/UI lines — phase flags are mutually exclusive from resolveValorantPhase.
+ * Priority: match > agent select > queue > lobby (never show Queue while match/pregame).
+ */
 function buildValorantPresence(session, opts, fallbackState) {
   const o = normalizeGamingPresenceOptions(opts);
   const mode = o.showMode ? session.mode : null;
   const party = o.showParty ? partyDisplay(session.party, session.partySize) : null;
   const rank = o.showRank ? session.rank : null;
+  const phase = session.phase
+    || (session.inMatch ? 'match'
+      : session.inPregame ? 'pregame'
+        : session.inQueue ? 'queue'
+          : session.inLobby ? 'lobby'
+            : null);
 
-  if (session.inQueue) {
+  if (phase === 'match' || session.inMatch) {
+    const map = o.showMapArt !== false ? session.map : null;
+    const ingameParts = [
+      o.showAgent && session.agent,
+      o.showScore && session.scoreHint,
+      party,
+      o.showKda && session.kda,
+      rank,
+    ];
     return {
-      details: truncate(session.title || 'Valorant'),
-      state: truncate(joinParts(['Queuing', mode, party]) || fallbackState),
+      details: truncate(map || session.title || 'Valorant'),
+      state: truncate(joinParts(ingameParts) || session.liveLine || fallbackState),
     };
   }
 
-  if (session.inLobby) {
-    return {
-      details: truncate(session.title || 'Valorant'),
-      state: truncate(joinParts([mode, party, 'In lobby']) || fallbackState),
-    };
-  }
-
-  if (session.inPregame) {
+  if (phase === 'pregame' || session.inPregame) {
     const map = o.showMapArt !== false ? session.map : null;
     return {
       details: truncate(map || session.title || 'Valorant'),
       state: truncate(joinParts([
         mode,
-        map,
         'Agent Select',
         party,
       ]) || fallbackState),
     };
   }
 
-  const map = o.showMapArt !== false ? session.map : null;
-  const ingameParts = [
-    o.showAgent && session.agent,
-    o.showScore && session.scoreHint,
-    party,
-    o.showKda && session.kda,
-    rank,
-  ];
+  if (phase === 'queue' || session.inQueue) {
+    return {
+      details: truncate(session.title || 'Valorant'),
+      state: truncate(joinParts(['Queue', mode, party]) || fallbackState),
+    };
+  }
+
   return {
-    details: truncate(map || session.title || 'Valorant'),
-    state: truncate(joinParts(ingameParts) || session.liveLine || fallbackState),
+    details: truncate(session.title || 'Valorant'),
+    state: truncate(joinParts([mode, party, 'In lobby']) || fallbackState),
   };
 }
 
@@ -199,6 +208,7 @@ function buildGameSessionPayload(session, lines) {
     playMode: session.playMode,
     liveLine: lines.state,
     provider: session.provider,
+    phase: session.phase || null,
     inMatch: session.inMatch === true,
     inPregame: session.inPregame === true,
     inLobby: session.inLobby === true,

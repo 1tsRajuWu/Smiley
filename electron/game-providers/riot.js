@@ -33,6 +33,7 @@ const QUEUE_PARTY_STATES = new Set([
   'STARTING_MATCHMAKING',
   'MATCHMAKINGREADYCHK',
   'MATCHMAKING_READY_CHECK',
+  'MATCHMADE_GAME_STARTING',
 ]);
 
 /**
@@ -149,7 +150,6 @@ function resolveValorantPhase({ privateData, localTruth } = {}) {
     && (
       QUEUE_PARTY_STATES.has(partyState)
       || loop === 'MATCHMAKING'
-      || partyState === 'LEAVING_MATCHMAKING'
     )
   ) {
     // Prefer partyState for queue — provisioningFlow stays "Matchmaking"

@@ -560,6 +560,7 @@ function sanitizeGameSession(session) {
     server: typeof session.server === 'string' ? session.server.slice(0, 128) : null,
     liveLine: typeof session.liveLine === 'string' ? session.liveLine.slice(0, 256) : null,
     inMatch: session.inMatch === true,
+    phase: typeof session.phase === 'string' ? session.phase.slice(0, 24) : null,
     inPregame: session.inPregame === true,
     inLobby: session.inLobby === true,
     inQueue: session.inQueue === true,
