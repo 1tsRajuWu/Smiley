@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Smiley — Discord Rich Presence · Music & Gaming</title>
-  <meta name="description" content="Free Discord Rich Presence for Windows, macOS, and Linux. Anime GIFs, live music sync, and gaming stats on your profile.">
+  <title>Smiley — Premium Discord Rich Presence</title>
+  <meta name="description" content="Premium-feel Discord Rich Presence for Windows, macOS, and Linux. Gaming, coding, music, anime, food, chilling, and more in one polished desktop app.">
   <meta name="author" content="Himanshu Raj (1tsRajuWu)">
   <link rel="canonical" href="https://1tsrajuwu.github.io/Smiley/">
-  <meta property="og:title" content="Smiley — Discord Rich Presence">
-  <meta property="og:description" content="Anime GIFs, live music sync, and gaming presence on Discord.">
+  <meta property="og:title" content="Smiley — Premium Discord Rich Presence">
+  <meta property="og:description" content="A premium-feel Discord Rich Presence app for gaming, coding, music, anime, food, chilling, and more.">
   <meta property="og:url" content="https://1tsrajuwu.github.io/Smiley/">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://1tsrajuwu.github.io/Smiley/icon.png">
@@ -16,469 +16,1129 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0c1220;
-      --bg-elevated: #111827;
-      --bg-card: #151d2e;
-      --border: rgba(148, 163, 184, 0.12);
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --orange: #f97316;
-      --orange-soft: rgba(249, 115, 22, 0.15);
-      --orange-glow: rgba(249, 115, 22, 0.35);
-      --gaming: #7aa2f7;
-      --gaming-soft: rgba(122, 162, 247, 0.12);
-      --coding: #bb9af7;
-      --coding-soft: rgba(187, 154, 247, 0.12);
-      --music: #fb7185;
-      --music-soft: rgba(251, 113, 133, 0.12);
-      --success: #34d399;
-      --radius: 18px;
+      --bg: #06070b;
+      --bg-soft: #0d1018;
+      --panel: #11141d;
+      --panel-strong: #171b25;
+      --panel-alt: #0f131b;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.14);
+      --text: #f5f1e8;
+      --muted: #b2a99a;
+      --dim: #82796c;
+      --gold: #c9a86a;
+      --gold-2: #e3c894;
+      --violet: #8d7cff;
+      --rose: #ff8f8f;
+      --blue: #6fa7ff;
+      --green: #78c89d;
+      --shadow-lg: 0 28px 80px rgba(0, 0, 0, 0.42);
+      --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
       --radius-sm: 12px;
-      --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
-      --shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.55);
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
     html { scroll-behavior: smooth; }
     body {
       font-family: var(--font);
-      background: var(--bg);
+      background:
+        radial-gradient(circle at top left, rgba(141, 124, 255, 0.16), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(201, 168, 106, 0.16), transparent 24%),
+        linear-gradient(180deg, #08090d 0%, #06070b 45%, #090b10 100%);
       color: var(--text);
-      line-height: 1.65;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
-    .ambient {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background:
-        radial-gradient(ellipse 70% 50% at 10% -5%, var(--orange-soft), transparent 55%),
-        radial-gradient(ellipse 50% 40% at 95% 10%, var(--gaming-soft), transparent 50%),
-        radial-gradient(ellipse 45% 35% at 50% 100%, var(--music-soft), transparent 55%),
-        var(--bg);
-    }
-    .wrap { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 0 1.5rem; }
-
-    /* Nav */
-    .nav-shell { position: sticky; top: 0; z-index: 50; padding: 1rem 0 0; }
-    nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.65rem 1.25rem;
-      background: rgba(17, 24, 39, 0.92);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; }
+    .site-shell { position: relative; }
+    .site-shell::before,
+    .site-shell::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      z-index: 0;
+      width: 28rem;
+      height: 28rem;
       border-radius: 999px;
-      box-shadow: var(--shadow);
+      opacity: 0.48;
     }
-    .nav-brand { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; color: inherit; }
-    .nav-brand img { width: 34px; height: 34px; border-radius: 9px; }
-    .nav-brand span { font-weight: 700; font-size: 1.02rem; letter-spacing: -0.02em; }
-    .nav-links { display: flex; align-items: center; gap: 0.2rem; }
+    .site-shell::before {
+      top: -9rem;
+      left: -10rem;
+      background: radial-gradient(circle, rgba(141, 124, 255, 0.18), transparent 68%);
+    }
+    .site-shell::after {
+      right: -10rem;
+      top: 14rem;
+      background: radial-gradient(circle, rgba(201, 168, 106, 0.18), transparent 68%);
+    }
+
+    .nav-shell {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      padding: 1rem 0 0;
+    }
+    nav {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(13, 16, 24, 0.94);
+      box-shadow: var(--shadow-md);
+    }
+    .nav-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+    .nav-brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .nav-brand span {
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
     .nav-links a:not(.btn) {
-      color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500;
-      padding: 0.4rem 0.8rem; border-radius: 999px; transition: color 0.2s;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      transition: color 0.2s ease, background 0.2s ease;
     }
-    .nav-links a:not(.btn):hover { color: var(--text); }
+    .nav-links a:not(.btn):hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
-      padding: 0.55rem 1.15rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem;
-      text-decoration: none; border: none; cursor: pointer; transition: transform 0.2s var(--ease), box-shadow 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      cursor: pointer;
+      transition: transform 0.25s var(--ease), border-color 0.25s ease, background 0.25s ease;
     }
     .btn-primary {
-      background: linear-gradient(135deg, var(--orange) 0%, #ea580c 100%);
-      color: #fff; box-shadow: 0 4px 20px var(--orange-glow);
+      padding: 0.72rem 1.18rem;
+      background: linear-gradient(135deg, var(--gold-2), var(--gold));
+      color: #20160a;
+      box-shadow: 0 14px 30px rgba(201, 168, 106, 0.22);
     }
     .btn-primary:hover { transform: translateY(-2px); }
-    .btn-ghost { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
-    .btn-lg { padding: 0.85rem 1.6rem; font-size: 0.95rem; }
+    .btn-secondary {
+      padding: 0.72rem 1.18rem;
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+    }
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      border-color: var(--line-strong);
+    }
+    .btn-lg {
+      padding: 0.95rem 1.5rem;
+      font-size: 0.95rem;
+    }
 
-    /* Farewell banner */
     .farewell-banner {
-      margin: 1.25rem 0 0;
-      padding: 1rem 1.25rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid color-mix(in srgb, var(--orange) 40%, var(--border));
-      background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(122,162,247,0.06));
-    }
-    .farewell-banner strong { color: var(--orange); }
-    .farewell-banner p { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.35rem; }
-    .farewell-banner a { color: var(--gaming); }
-
-    /* Hero */
-    .hero {
-      display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 3.5rem;
-      align-items: center; padding: 3.5rem 0 5rem;
-    }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 1.25rem;
-    }
-    .hero-eyebrow::before { content: ''; width: 24px; height: 2px; background: var(--orange); border-radius: 1px; }
-    .hero h1 {
-      font-size: clamp(2.5rem, 5.5vw, 3.75rem); font-weight: 800; line-height: 1.05;
-      letter-spacing: -0.04em; margin-bottom: 1.25rem;
-    }
-    .hero h1 .gradient {
-      background: linear-gradient(135deg, #fff 20%, var(--orange) 50%, var(--music) 85%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .hero-tagline { font-size: 1.08rem; color: var(--text-muted); max-width: 26rem; margin-bottom: 1.75rem; }
-    .hero-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.75rem; }
-    .badge {
-      font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 999px;
-      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
-    }
-    .badge--live { color: var(--orange); border-color: color-mix(in srgb, var(--orange) 35%, var(--border)); }
-    .pulse { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--orange); margin-right: 4px; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-    .hero-cta { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-
-    /* Presence mockups */
-    .hero-mockups { display: flex; flex-direction: column; gap: 1rem; }
-    .presence-card {
-      display: flex; gap: 12px; padding: 14px; border-radius: var(--radius-sm);
-      background: #1e1f22; border: 1px solid rgba(255,255,255,0.06);
-      box-shadow: var(--shadow);
-    }
-    .presence-card--music { border-left: 3px solid var(--music); }
-    .presence-card--gaming { border-left: 3px solid var(--gaming); }
-    .presence-card--coding { border-left: 3px solid var(--coding); }
-    .presence-art {
-      width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
       position: relative;
+      z-index: 1;
+      margin-top: 1rem;
+      padding: 1rem 1.2rem;
+      border: 1px solid rgba(201, 168, 106, 0.25);
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(201, 168, 106, 0.11), rgba(141, 124, 255, 0.08));
     }
-    .presence-art--music { background: linear-gradient(135deg, #831843, #be185d); }
-    .presence-art--gaming { background: linear-gradient(135deg, #1e3a5f, #2d4a6f); }
-    .presence-art--coding { background: linear-gradient(135deg, #3b2d5f, #5b3d8f); }
-    .presence-badge {
-      position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px;
-      border-radius: 50%; border: 2px solid #1e1f22; background: #2b2d31;
-      font-size: 0.55rem; display: flex; align-items: center; justify-content: center;
+    .farewell-banner strong { color: var(--gold-2); }
+    .farewell-banner p {
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.92rem;
     }
-    .presence-meta { min-width: 0; }
-    .presence-app { font-size: 0.65rem; color: #949ba4; text-transform: uppercase; letter-spacing: 0.04em; }
-    .presence-title { font-size: 0.88rem; font-weight: 600; color: #f2f3f5; margin-top: 2px; }
-    .presence-state { font-size: 0.76rem; color: #b5bac1; margin-top: 2px; }
-    .presence-elapsed { font-size: 0.68rem; color: var(--success); margin-top: 4px; }
-    .presence-via { font-size: 0.62rem; color: #5865f2; margin-top: 4px; }
+    .farewell-banner a {
+      color: #d6c8ff;
+      text-decoration: none;
+    }
 
-    /* Sections */
-    .section { padding: 4.5rem 0; }
-    .section-header { text-align: center; max-width: 36rem; margin: 0 auto 3rem; }
+    .hero {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.03fr 0.97fr;
+      gap: 3rem;
+      align-items: center;
+      padding: 4.4rem 0 5.2rem;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 1.15rem;
+      color: var(--gold-2);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.73rem;
+      font-weight: 700;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-2));
+    }
+    h1 {
+      max-width: 11ch;
+      font-size: clamp(3rem, 6vw, 5.4rem);
+      line-height: 0.96;
+      letter-spacing: -0.06em;
+    }
+    .headline-accent {
+      background: linear-gradient(135deg, var(--gold-2), #f7e5bf 38%, #cab7ff 78%, #8d7cff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-copy {
+      max-width: 34rem;
+      margin-top: 1.35rem;
+      color: var(--muted);
+      font-size: 1.06rem;
+    }
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.6rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.48rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .badge-live {
+      color: var(--gold-2);
+      border-color: rgba(201, 168, 106, 0.28);
+    }
+    .pulse {
+      width: 0.48rem;
+      height: 0.48rem;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.82); }
+    }
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-top: 1.8rem;
+    }
+    .hero-note {
+      margin-top: 1rem;
+      color: var(--dim);
+      font-size: 0.84rem;
+    }
+
+    .hero-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .premium-panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%),
+        linear-gradient(180deg, rgba(23, 27, 37, 0.96), rgba(11, 14, 20, 0.98));
+      box-shadow: var(--shadow-lg);
+    }
+    .premium-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(140deg, rgba(201, 168, 106, 0.12), transparent 22%),
+        linear-gradient(320deg, rgba(141, 124, 255, 0.1), transparent 24%);
+      pointer-events: none;
+    }
+    .presence-window {
+      position: relative;
+      z-index: 1;
+      padding: 1.1rem;
+    }
+    .window-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .window-dots {
+      display: flex;
+      gap: 0.45rem;
+    }
+    .window-dots span {
+      width: 0.58rem;
+      height: 0.58rem;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .window-status {
+      color: var(--dim);
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .presence-hero-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem;
+      border-radius: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.025);
+    }
+    .presence-icon {
+      display: grid;
+      place-items: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      font-size: 2rem;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transform: translateZ(0);
+    }
+    .presence-label {
+      color: var(--gold-2);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .presence-title {
+      margin-top: 0.28rem;
+      font-size: 1.24rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .presence-state {
+      margin-top: 0.16rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .presence-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 0.75rem;
+    }
+    .presence-chip {
+      padding: 0.38rem 0.62rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      font-size: 0.74rem;
+    }
+    .presence-side-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-top: 0.95rem;
+    }
+    .metric-card {
+      padding: 0.95rem;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .metric-card span {
+      display: block;
+      color: var(--dim);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .metric-card strong {
+      display: block;
+      margin-top: 0.32rem;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .activity-browser {
+      position: relative;
+      z-index: 1;
+      padding: 1rem;
+    }
+    .activity-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.95rem;
+    }
+    .activity-header h2 {
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+    .activity-header p {
+      color: var(--dim);
+      font-size: 0.8rem;
+    }
+    .activity-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    .activity-card {
+      position: relative;
+      padding: 0.9rem 0.85rem;
+      text-align: left;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.25s var(--ease), border-color 0.25s ease, background 0.25s ease;
+    }
+    .activity-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(201, 168, 106, 0.3);
+    }
+    .activity-card.is-selected {
+      border-color: rgba(201, 168, 106, 0.45);
+      background: linear-gradient(180deg, rgba(201, 168, 106, 0.12), rgba(255, 255, 255, 0.04));
+      box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.12);
+    }
+    .activity-card .emoji {
+      display: inline-grid;
+      place-items: center;
+      width: 2.45rem;
+      height: 2.45rem;
+      margin-bottom: 0.7rem;
+      border-radius: 14px;
+      font-size: 1.15rem;
+      background: rgba(255, 255, 255, 0.06);
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    }
+    .activity-card strong {
+      display: block;
+      font-size: 0.93rem;
+      letter-spacing: -0.02em;
+    }
+    .activity-card span {
+      display: block;
+      margin-top: 0.12rem;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .section {
+      position: relative;
+      z-index: 1;
+      padding: 4.8rem 0;
+    }
+    .section-header {
+      max-width: 42rem;
+      margin-bottom: 2.4rem;
+    }
     .section-label {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--orange); margin-bottom: 0.75rem;
+      display: inline-block;
+      margin-bottom: 0.75rem;
+      color: var(--gold-2);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
     }
-    .section-header h2 { font-size: clamp(1.85rem, 3.5vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
-    .section-header p { color: var(--text-muted); }
+    .section-header h2 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+    .section-header p {
+      margin-top: 0.85rem;
+      color: var(--muted);
+      font-size: 1rem;
+    }
 
-    /* Feature grid */
-    .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
     .feature-card {
-      padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);
-      background: var(--bg-card); transition: transform 0.25s var(--ease), border-color 0.25s;
+      padding: 1.35rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      transition: transform 0.25s var(--ease), border-color 0.25s ease;
     }
-    .feature-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--orange) 30%, var(--border)); }
-    .feature-icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
-    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .feature-card p { font-size: 0.85rem; color: var(--text-muted); }
-    .feature-card--music { --accent-card: var(--music); }
-    .feature-card--gaming { --accent-card: var(--gaming); }
-    .feature-card--coding { --accent-card: var(--coding); }
-    .feature-card--music .feature-icon { filter: drop-shadow(0 0 8px var(--music-soft)); }
-    .feature-card--gaming .feature-icon { filter: drop-shadow(0 0 8px var(--gaming-soft)); }
-
-    /* Showcase */
-    .showcase { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; align-items: start; }
-    .showcase-panel {
-      padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);
-      background: var(--bg-card);
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(201, 168, 106, 0.25);
     }
-    .showcase-panel h3 { font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .showcase-panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot--music { background: var(--music); }
-    .dot--gaming { background: var(--gaming); }
-    .dot--coding { background: var(--coding); }
+    .feature-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 3rem;
+      height: 3rem;
+      margin-bottom: 0.9rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 1.35rem;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    }
+    .feature-card h3 {
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+    .feature-card p {
+      margin-top: 0.45rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
 
-    /* Steps */
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-    .step { text-align: center; padding: 1.5rem; }
+    .showcase-layout {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 1.2rem;
+      align-items: stretch;
+    }
+    .showcase-copy,
+    .showcase-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .story-card {
+      padding: 1.25rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+    }
+    .story-card strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.98rem;
+    }
+    .story-card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .mini-presence {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.9rem;
+      align-items: center;
+      padding: 1rem;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+    }
+    .mini-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 1.25rem;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    }
+    .mini-presence h3 {
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+    .mini-presence p {
+      margin-top: 0.16rem;
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .step {
+      padding: 1.4rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+    }
     .step-num {
-      width: 40px; height: 40px; border-radius: 50%; margin: 0 auto 1rem;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--orange-soft); color: var(--orange); font-weight: 800;
+      display: inline-grid;
+      place-items: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      margin-bottom: 1rem;
+      border-radius: 999px;
+      color: #20160a;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--gold-2), var(--gold));
     }
-    .step h3 { font-size: 1rem; margin-bottom: 0.5rem; }
-    .step p { font-size: 0.85rem; color: var(--text-muted); }
+    .step h3 {
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+    .step p {
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
 
-    /* Download */
     #download { scroll-margin-top: 5rem; }
-    .download-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    .download-card {
-      display: flex; flex-direction: column; gap: 0.35rem; padding: 1.25rem;
-      border-radius: var(--radius-sm); border: 1px solid var(--border);
-      background: var(--bg-card); text-decoration: none; color: inherit;
-      transition: border-color 0.2s, transform 0.2s var(--ease);
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
     }
-    .download-card:hover { border-color: var(--orange); transform: translateY(-2px); }
-    .download-card strong { font-size: 0.95rem; }
-    .download-card span { font-size: 0.78rem; color: var(--text-dim); }
+    .download-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 1.15rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      text-decoration: none;
+      transition: transform 0.25s var(--ease), border-color 0.25s ease;
+    }
+    .download-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(201, 168, 106, 0.28);
+    }
+    .download-card strong {
+      font-size: 0.96rem;
+      letter-spacing: -0.02em;
+    }
+    .download-card span {
+      color: var(--dim);
+      font-size: 0.79rem;
+    }
 
     footer {
-      padding: 3rem 0 2rem; text-align: center; color: var(--text-dim); font-size: 0.82rem;
-      border-top: 1px solid var(--border); margin-top: 2rem;
+      position: relative;
+      z-index: 1;
+      padding: 2.8rem 0 2rem;
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      text-align: center;
+      font-size: 0.84rem;
     }
-    footer a { color: var(--gaming); text-decoration: none; }
+    footer a {
+      color: #d8cbff;
+      text-decoration: none;
+    }
 
-    @media (max-width: 900px) {
-      .hero, .showcase { grid-template-columns: 1fr; text-align: center; }
-      .hero-tagline, .hero-badges, .hero-cta { justify-content: center; margin-left: auto; margin-right: auto; }
-      .hero-eyebrow { justify-content: center; }
-      .feature-grid { grid-template-columns: 1fr 1fr; }
-      .download-grid { grid-template-columns: 1fr 1fr; }
-      .steps { grid-template-columns: 1fr; }
-      .nav-links a:not(.btn) { display: none; }
+    @media (max-width: 1024px) {
+      .hero,
+      .showcase-layout {
+        grid-template-columns: 1fr;
+      }
+      .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
-    @media (max-width: 540px) {
-      .feature-grid, .download-grid { grid-template-columns: 1fr; }
+    @media (max-width: 840px) {
+      .nav-links a:not(.btn) { display: none; }
+      .hero {
+        padding-top: 3.4rem;
+      }
+      h1 {
+        max-width: none;
+      }
+      .activity-grid,
+      .download-grid,
+      .steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 1.25rem, 1180px); }
+      nav {
+        border-radius: 24px;
+      }
+      .presence-hero-card,
+      .mini-presence {
+        grid-template-columns: 1fr;
+      }
+      .activity-grid,
+      .feature-grid,
+      .download-grid,
+      .steps,
+      .presence-side-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-cta,
+      .hero-badges {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn {
+        width: 100%;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="ambient" aria-hidden="true"></div>
-  <div class="wrap">
-    <div class="nav-shell">
-      <nav>
-        <a class="nav-brand" href="#">
-          <img src="icon.png" alt="" width="34" height="34">
-          <span>Smiley</span>
-        </a>
-        <div class="nav-links">
-          <a href="#features">Features</a>
-          <a href="#showcase">Showcase</a>
-          <a href="#download">Download</a>
-          <a class="btn btn-primary" href="#download">Get v7.9.4</a>
+  <div class="site-shell">
+    <div class="wrap">
+      <div class="nav-shell">
+        <nav>
+          <a class="nav-brand" href="#">
+            <img src="icon.png" alt="" width="36" height="36">
+            <span>Smiley</span>
+          </a>
+          <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#showcase">Preview</a>
+            <a href="#download">Download</a>
+            <a class="btn btn-primary" href="#download">Get v7.9.4</a>
+          </div>
+        </nav>
+        <div class="farewell-banner">
+          <strong>v8.0.0 will be the final planned release.</strong>
+          <p>After v8, Smiley will receive only occasional bug fixes. The community is welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork, modify, and keep it moving</a>. Thank you for being here. — Raj</p>
         </div>
-      </nav>
-      <div class="farewell-banner">
-        <strong>v8.0.0 will be the final planned release.</strong>
-        <p>After v8, Smiley will receive only occasional bug fixes — a major update is possible but unlikely. The community is free to <a href="https://github.com/1tsRajuWu/Smiley">fork, modify, and advance</a> the code. Thank you for being here. — Raj</p>
       </div>
+
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Discord Rich Presence</div>
+          <h1>Make every <span class="headline-accent">activity feel collectible.</span></h1>
+          <p class="hero-copy">Smiley turns your Discord profile into a premium live card for gaming, coding, music, anime, food, chilling, and more. One free desktop app for Windows, macOS, and Linux. No developer portal. No config files.</p>
+          <div class="hero-badges">
+            <span class="badge badge-live"><span class="pulse"></span>v7.9.4 live now</span>
+            <span class="badge">Gaming</span>
+            <span class="badge">Coding</span>
+            <span class="badge">Music</span>
+            <span class="badge">Food</span>
+            <span class="badge">Chilling</span>
+            <span class="badge">Anime</span>
+          </div>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href="#download">Download free</a>
+            <a class="btn btn-secondary btn-lg" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">View on GitHub</a>
+          </div>
+          <p class="hero-note">The download section and release links stay exactly where users expect them: jump straight to <a href="#download">the download section</a>.</p>
+        </div>
+
+        <div class="hero-stack">
+          <div class="premium-panel">
+            <div class="presence-window">
+              <div class="window-top">
+                <div class="window-dots"><span></span><span></span><span></span></div>
+                <div class="window-status">Live preview</div>
+              </div>
+              <div class="presence-hero-card">
+                <div class="presence-icon" id="heroPresenceIcon" aria-hidden="true">🎮</div>
+                <div>
+                  <div class="presence-label" id="heroPresenceLabel">Playing now</div>
+                  <div class="presence-title" id="heroPresenceTitle">Valorant</div>
+                  <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
+                  <div class="presence-meta-row">
+                    <span class="presence-chip" id="heroPresenceChipOne">Activity: Gaming</span>
+                    <span class="presence-chip" id="heroPresenceChipTwo">via Smiley</span>
+                    <span class="presence-chip" id="heroPresenceChipThree">Discord synced</span>
+                  </div>
+                </div>
+              </div>
+              <div class="presence-side-grid">
+                <div class="metric-card">
+                  <span>Current category</span>
+                  <strong id="heroMetricCategory">Gaming</strong>
+                </div>
+                <div class="metric-card">
+                  <span>Status tone</span>
+                  <strong id="heroMetricTone">Competitive</strong>
+                </div>
+                <div class="metric-card">
+                  <span>Platform</span>
+                  <strong>Windows, macOS, Linux</strong>
+                </div>
+                <div class="metric-card">
+                  <span>Setup</span>
+                  <strong>No config files</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="premium-panel">
+            <div class="activity-browser">
+              <div class="activity-header">
+                <div>
+                  <h2>Choose a live activity</h2>
+                  <p>Click any card to update the hero preview.</p>
+                </div>
+                <p id="selectedActivityText">Selected: Gaming</p>
+              </div>
+              <div class="activity-grid" id="activityGrid">
+                <button class="activity-card is-selected" type="button" data-key="gaming">
+                  <span class="emoji">🎮</span>
+                  <strong>Gaming</strong>
+                  <span>Ranked, maps, squads</span>
+                </button>
+                <button class="activity-card" type="button" data-key="coding">
+                  <span class="emoji">💻</span>
+                  <strong>Coding</strong>
+                  <span>Editors, files, projects</span>
+                </button>
+                <button class="activity-card" type="button" data-key="music">
+                  <span class="emoji">🎵</span>
+                  <strong>Music</strong>
+                  <span>Tracks, artists, albums</span>
+                </button>
+                <button class="activity-card" type="button" data-key="eating">
+                  <span class="emoji">🍜</span>
+                  <strong>Eating / Food</strong>
+                  <span>Meals, cafes, cravings</span>
+                </button>
+                <button class="activity-card" type="button" data-key="chilling">
+                  <span class="emoji">🛋️</span>
+                  <strong>Chilling</strong>
+                  <span>Relaxed, late-night vibes</span>
+                </button>
+                <button class="activity-card" type="button" data-key="anime">
+                  <span class="emoji">✨</span>
+                  <strong>Anime</strong>
+                  <span>Episodes, arcs, rewatches</span>
+                </button>
+                <button class="activity-card" type="button" data-key="studying">
+                  <span class="emoji">📚</span>
+                  <strong>Studying</strong>
+                  <span>Sessions, notes, focus</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <section class="hero">
-      <div class="hero-content">
-        <div class="hero-eyebrow">Discord Rich Presence</div>
-        <h1>Your status,<br><span class="gradient">alive on Discord.</span></h1>
-        <p class="hero-tagline">Anime GIFs, live music sync, gaming stats, and coding presence — one free desktop app for Windows, macOS, and Linux. No Developer Portal. No config files.</p>
-        <div class="hero-badges">
-          <span class="badge badge--live"><span class="pulse"></span>v7.9.4</span>
-          <span class="badge">Music sync</span>
-          <span class="badge">Gaming presence</span>
-          <span class="badge">Coding sync</span>
-          <span class="badge">MIT · Open source</span>
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-header">
+          <span class="section-label">Features</span>
+          <h2>Built to feel premium without feeling heavy.</h2>
+          <p>Smiley keeps the page fast and the product flexible: static gradients, transform-only interactions, local-first presence updates, and a wider set of everyday activities than just gaming or music.</p>
         </div>
-        <div class="hero-cta">
-          <a class="btn btn-primary btn-lg" href="#download">Download free</a>
-          <a class="btn btn-ghost btn-lg" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">GitHub</a>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon">🎮</div>
+            <h3>Gaming presence</h3>
+            <p>Share maps, agents, squads, rank context, and game states directly on Discord with richer local data.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">💻</div>
+            <h3>Coding sync</h3>
+            <p>Show which editor or AI tool is active, what file you are editing, and when you have gone idle.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">🍜</div>
+            <h3>Everyday categories</h3>
+            <p>Food, chilling, anime, and studying fit naturally beside gaming and music, so your profile feels personal all day.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">🎬</div>
+            <h3>Animated personality</h3>
+            <p>Anime GIFs, branded states, and custom activities keep the app expressive without complicating setup.</p>
+          </article>
         </div>
       </div>
-      <div class="hero-mockups">
-        <div class="presence-card presence-card--music">
-          <div class="presence-art presence-art--music">🎵</div>
-          <div class="presence-meta">
-            <div class="presence-app">Listening to</div>
-            <div class="presence-title">Night Dancer</div>
-            <div class="presence-state">imase · Vivivi</div>
-            <div class="presence-via">via Smiley</div>
-          </div>
+    </section>
+
+    <section class="section" id="showcase">
+      <div class="wrap">
+        <div class="section-header">
+          <span class="section-label">Preview</span>
+          <h2>A landing page tuned for clarity, contrast, and mood.</h2>
+          <p>The redesign shifts from bright orange-heavy styling to a deeper luxury palette with gold, lilac, and graphite tones while keeping the interaction model lightweight.</p>
         </div>
-        <div class="presence-card presence-card--gaming">
-          <div class="presence-art presence-art--gaming">🗺️
-            <div class="presence-badge">J</div>
+        <div class="showcase-layout">
+          <div class="showcase-copy">
+            <div class="story-card">
+              <strong>Ultra-premium color system</strong>
+              <p>Warm gold accents, soft violet highlights, and darker graphite panels create a more expensive look while preserving readable contrast.</p>
+            </div>
+            <div class="story-card">
+              <strong>Performance guardrails</strong>
+              <p>No blur-heavy overlays or expensive looping effects. Motion stays on transform and opacity only for a cleaner, faster feel.</p>
+            </div>
+            <div class="story-card">
+              <strong>Interactive category preview</strong>
+              <p>The hero now behaves like a small live selector, making it obvious that Smiley supports more than just gaming, music, and coding.</p>
+            </div>
           </div>
-          <div class="presence-meta">
-            <div class="presence-app">Playing a game</div>
-            <div class="presence-title">Ascent</div>
-            <div class="presence-state">Jett · 9-5 · 3-Stack · Immortal 2 · 142 RR</div>
-            <div class="presence-elapsed">4:32 elapsed</div>
-            <div class="presence-via">via Smiley</div>
-          </div>
-        </div>
-        <div class="presence-card presence-card--coding">
-          <div class="presence-art presence-art--coding">💻</div>
-          <div class="presence-meta">
-            <div class="presence-app">Coding</div>
-            <div class="presence-title">Cursor</div>
-            <div class="presence-state">Editing xyz.py · Project Smiley</div>
-            <div class="presence-via">via Smiley</div>
+          <div class="showcase-stack">
+            <div class="mini-presence">
+              <div class="mini-icon">🎵</div>
+              <div>
+                <h3>Music stays polished</h3>
+                <p>Album, artist, and listening presence still read clearly in the new visual system.</p>
+              </div>
+            </div>
+            <div class="mini-presence">
+              <div class="mini-icon">🍱</div>
+              <div>
+                <h3>Food and chill states belong</h3>
+                <p>The grid now covers relaxed and everyday activities so the hero better reflects the app’s full personality.</p>
+              </div>
+            </div>
+            <div class="mini-presence">
+              <div class="mini-icon">✨</div>
+              <div>
+                <h3>Anime still has space</h3>
+                <p>Anime is now one of the visible first-class categories instead of being implied only in text lower on the page.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="section-header">
+          <span class="section-label">How it works</span>
+          <h2>Three steps. Still zero config.</h2>
+          <p>Install Smiley, open Discord desktop, choose any activity category that matches what you are actually doing.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3>Download</h3>
+            <p>Pick the installer or package for Windows, macOS, or Linux from the release section below.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3>Launch Discord desktop</h3>
+            <p>Rich Presence works in the desktop app, so Smiley can publish your selected status cleanly.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3>Switch activities instantly</h3>
+            <p>Gaming, coding, music, eating, chilling, anime, or studying can become your live identity in seconds.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="download">
+      <div class="wrap">
+        <div class="section-header">
+          <span class="section-label">Download</span>
+          <h2>Smiley v7.9.4</h2>
+          <p>Premium landing page, same trusted release links. <strong style="color: var(--gold-2);">v8</strong> remains the planned final release.</p>
+        </div>
+        <div class="download-grid">
+          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-Setup-7.9.4.exe" target="_blank" rel="noopener">
+            <strong>Windows</strong>
+            <span>Smiley-Setup-7.9.4.exe</span>
+          </a>
+          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-arm64.dmg" target="_blank" rel="noopener">
+            <strong>macOS Apple Silicon</strong>
+            <span>Smiley-7.9.4-arm64.dmg</span>
+          </a>
+          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-x64.dmg" target="_blank" rel="noopener">
+            <strong>macOS Intel</strong>
+            <span>Smiley-7.9.4-x64.dmg</span>
+          </a>
+          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4.AppImage" target="_blank" rel="noopener">
+            <strong>Linux AppImage</strong>
+            <span>Smiley-7.9.4.AppImage</span>
+          </a>
+          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4.deb" target="_blank" rel="noopener">
+            <strong>Linux .deb</strong>
+            <span>Smiley-7.9.4.deb</span>
+          </a>
+          <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
+            <strong>All releases</strong>
+            <span>github.com/1tsRajuWu/Smiley</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <footer>
+        <p>Made by <a href="https://github.com/1tsRajuWu">Raj (1tsRajuWu)</a> · MIT License · <a href="https://paypal.me/1tsRaj">Support</a></p>
+        <p style="margin-top: 0.5rem;"><a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">A note on Smiley's future (v8 final)</a></p>
+      </footer>
+    </div>
   </div>
 
-  <section class="section" id="features">
-    <div class="wrap">
-      <div class="section-header">
-        <span class="section-label">Features</span>
-        <h2>Everything your Discord profile needs</h2>
-        <p>Original Smiley design — polished cards, local-only game data, no ads, no tracking.</p>
-      </div>
-      <div class="feature-grid">
-        <article class="feature-card feature-card--music">
-          <div class="feature-icon">🎵</div>
-          <h3>Music sync</h3>
-          <p>Spotify, Apple Music, YouTube Music — track, artist, album art on Discord while you listen.</p>
-        </article>
-        <article class="feature-card feature-card--gaming">
-          <div class="feature-icon">🎮</div>
-          <h3>Gaming Rich Presence</h3>
-          <p>Map, agent, score, rank, and party — live from your local game client.</p>
-        </article>
-        <article class="feature-card feature-card--coding">
-          <div class="feature-icon">💻</div>
-          <h3>Coding sync</h3>
-          <p>Cursor, VS Code, Claude, ChatGPT, Ollama — shows your editor, file, project, or idle state live.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon">🎬</div>
-          <h3>Anime GIFs</h3>
-          <p>32+ activities with animated status art. Custom activities and GIF picker built in.</p>
-        </article>
-      </div>
-    </div>
-  </section>
+  <script>
+    const activityData = {
+      gaming: {
+        icon: "🎮",
+        label: "Playing now",
+        title: "Valorant",
+        state: "Ascent · Jett · Competitive 3-stack",
+        chipOne: "Activity: Gaming",
+        chipTwo: "via Smiley",
+        chipThree: "Discord synced",
+        category: "Gaming",
+        tone: "Competitive"
+      },
+      coding: {
+        icon: "💻",
+        label: "Building now",
+        title: "Cursor",
+        state: "Editing landing-page-redesign.html · Project Smiley",
+        chipOne: "Activity: Coding",
+        chipTwo: "AI tools supported",
+        chipThree: "File + project shown",
+        category: "Coding",
+        tone: "Focused"
+      },
+      music: {
+        icon: "🎵",
+        label: "Listening now",
+        title: "Night Dancer",
+        state: "imase · replaying favorites late at night",
+        chipOne: "Activity: Music",
+        chipTwo: "Album-aware",
+        chipThree: "Discord synced",
+        category: "Music",
+        tone: "Replay mode"
+      },
+      eating: {
+        icon: "🍜",
+        label: "Eating now",
+        title: "Ramen break",
+        state: "Warm bowl, no notifications, perfect timing",
+        chipOne: "Activity: Food",
+        chipTwo: "Custom status ready",
+        chipThree: "Discord synced",
+        category: "Eating / Food",
+        tone: "Comfort"
+      },
+      chilling: {
+        icon: "🛋️",
+        label: "Unwinding now",
+        title: "Late-night chill",
+        state: "Lights low · playlist on · zero pressure",
+        chipOne: "Activity: Chilling",
+        chipTwo: "Mood-friendly",
+        chipThree: "Discord synced",
+        category: "Chilling",
+        tone: "Relaxed"
+      },
+      anime: {
+        icon: "✨",
+        label: "Watching now",
+        title: "Anime session",
+        state: "Episode queue open · favorite arc rewatch",
+        chipOne: "Activity: Anime",
+        chipTwo: "GIF-ready",
+        chipThree: "Discord synced",
+        category: "Anime",
+        tone: "Immersed"
+      },
+      studying: {
+        icon: "📚",
+        label: "Studying now",
+        title: "Deep focus block",
+        state: "Notes open · timer on · distractions muted",
+        chipOne: "Activity: Studying",
+        chipTwo: "Focus state",
+        chipThree: "Discord synced",
+        category: "Studying",
+        tone: "Locked in"
+      }
+    };
 
-  <section class="section" id="showcase" style="background: rgba(17,24,39,0.5);">
-    <div class="wrap">
-      <div class="section-header">
-        <span class="section-label">Live presence</span>
-        <h2>See it on Discord</h2>
-        <p>Smiley-branded mockups — not a third-party clone. Map art, agent badge, rank overlay.</p>
-      </div>
-      <div class="showcase">
-        <div class="showcase-panel">
-          <h3><span class="dot dot--music"></span> Now playing</h3>
-          <div class="presence-card presence-card--music" style="box-shadow:none;">
-            <div class="presence-art presence-art--music">🎵</div>
-            <div class="presence-meta">
-              <div class="presence-app">Listening to</div>
-              <div class="presence-title">Levitating</div>
-              <div class="presence-state">Dua Lipa · Future Nostalgia</div>
-            </div>
-          </div>
-          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:1rem;">Album artwork replaces the anime GIF while music plays. Progress bar in the app preview.</p>
-        </div>
-        <div class="showcase-panel">
-          <h3><span class="dot dot--gaming"></span> Gaming states</h3>
-          <div class="presence-card presence-card--gaming" style="box-shadow:none;margin-bottom:0.75rem;">
-            <div class="presence-art presence-art--gaming">⚔️</div>
-            <div class="presence-meta">
-              <div class="presence-title">Ranked match</div>
-              <div class="presence-state">Ranked · Solo · In lobby</div>
-            </div>
-          </div>
-          <div class="presence-card presence-card--gaming" style="box-shadow:none;">
-            <div class="presence-art presence-art--gaming">🗺️<div class="presence-badge">✦</div></div>
-            <div class="presence-meta">
-              <div class="presence-title">Lotus</div>
-              <div class="presence-state">Competitive · Agent Select · 3-Stack</div>
-            </div>
-          </div>
-          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:1rem;">Customize every field in Settings → Gaming Rich Presence. Optional API key for rank.</p>
-        </div>
-        <div class="showcase-panel">
-          <h3><span class="dot dot--coding"></span> Coding states</h3>
-          <div class="presence-card presence-card--coding" style="box-shadow:none;margin-bottom:0.75rem;">
-            <div class="presence-art presence-art--coding">⌨️</div>
-            <div class="presence-meta">
-              <div class="presence-title">Cursor</div>
-              <div class="presence-state">Editing renderer.js · Project Smiley</div>
-            </div>
-          </div>
-          <div class="presence-card presence-card--coding" style="box-shadow:none;margin-bottom:0.75rem;">
-            <div class="presence-art presence-art--coding">📝</div>
-            <div class="presence-meta">
-              <div class="presence-title">VS Code</div>
-              <div class="presence-state">Idle · Smiley</div>
-            </div>
-          </div>
-          <div class="presence-card presence-card--coding" style="box-shadow:none;">
-            <div class="presence-art presence-art--coding">🤖</div>
-            <div class="presence-meta">
-              <div class="presence-title">Claude</div>
-              <div class="presence-state">Refactoring auth module</div>
-            </div>
-          </div>
-          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:1rem;">Pick the Coding activity — Smiley reads your foreground editor or AI tool and updates Discord with file, project, or idle state.</p>
-        </div>
-      </div>
-    </div>
-  </section>
+    const heroPresenceIcon = document.getElementById("heroPresenceIcon");
+    const heroPresenceLabel = document.getElementById("heroPresenceLabel");
+    const heroPresenceTitle = document.getElementById("heroPresenceTitle");
+    const heroPresenceState = document.getElementById("heroPresenceState");
+    const heroPresenceChipOne = document.getElementById("heroPresenceChipOne");
+    const heroPresenceChipTwo = document.getElementById("heroPresenceChipTwo");
+    const heroPresenceChipThree = document.getElementById("heroPresenceChipThree");
+    const heroMetricCategory = document.getElementById("heroMetricCategory");
+    const heroMetricTone = document.getElementById("heroMetricTone");
+    const selectedActivityText = document.getElementById("selectedActivityText");
+    const activityCards = document.querySelectorAll(".activity-card");
 
-  <section class="section" id="how">
-    <div class="wrap">
-      <div class="section-header">
-        <span class="section-label">How it works</span>
-        <h2>Three steps. Zero config.</h2>
-      </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <h3>Download</h3>
-          <p>Installer for Windows, .dmg for Mac, AppImage or .deb for Linux.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h3>Open Discord</h3>
-          <p>Desktop app required — browser Discord won't show Rich Presence.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <h3>Pick an activity</h3>
-          <p>Gaming, listening, or chilling — your profile updates instantly.</p>
-        </div>
-      </div>
-    </div>
-  </section>
+    function updateHeroActivity(key) {
+      const next = activityData[key];
+      if (!next) return;
 
-  <section class="section" id="download">
-    <div class="wrap">
-      <div class="section-header">
-        <span class="section-label">Download</span>
-        <h2>Smiley v7.9.4</h2>
-        <p>Aurora dashboard UI — control panel, live preview dock, music &amp; gaming upfront. <strong style="color:var(--orange)">v8</strong> will be the final release.</p>
-      </div>
-      <div class="download-grid">
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-Setup-7.9.4.exe" target="_blank" rel="noopener">
-          <strong>Windows</strong><span>Smiley-Setup-7.9.4.exe</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-arm64.dmg" target="_blank" rel="noopener">
-          <strong>macOS Apple Silicon</strong><span>Smiley-7.9.4-arm64.dmg</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-x64.dmg" target="_blank" rel="noopener">
-          <strong>macOS Intel</strong><span>Smiley-7.9.4-x64.dmg</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4.AppImage" target="_blank" rel="noopener">
-          <strong>Linux AppImage</strong><span>Smiley-7.9.4.AppImage</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4.deb" target="_blank" rel="noopener">
-          <strong>Linux .deb</strong><span>Smiley-7.9.4.deb</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
-          <strong>All releases</strong><span>github.com/1tsRajuWu/Smiley</span>
-        </a>
-      </div>
-    </div>
-  </section>
+      heroPresenceIcon.textContent = next.icon;
+      heroPresenceLabel.textContent = next.label;
+      heroPresenceTitle.textContent = next.title;
+      heroPresenceState.textContent = next.state;
+      heroPresenceChipOne.textContent = next.chipOne;
+      heroPresenceChipTwo.textContent = next.chipTwo;
+      heroPresenceChipThree.textContent = next.chipThree;
+      heroMetricCategory.textContent = next.category;
+      heroMetricTone.textContent = next.tone;
+      selectedActivityText.textContent = "Selected: " + next.category;
 
-  <div class="wrap">
-    <footer>
-      <p>Made by <a href="https://github.com/1tsRajuWu">Raj (1tsRajuWu)</a> · MIT License · <a href="https://paypal.me/1tsRaj">Support</a></p>
-      <p style="margin-top:0.5rem;"><a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">A note on Smiley's future (v8 final)</a></p>
-    </footer>
-  </div>
+      activityCards.forEach((card) => {
+        const selected = card.dataset.key === key;
+        card.classList.toggle("is-selected", selected);
+        card.setAttribute("aria-pressed", selected ? "true" : "false");
+      });
+    }
+
+    activityCards.forEach((card) => {
+      card.setAttribute("aria-pressed", card.classList.contains("is-selected") ? "true" : "false");
+      card.addEventListener("click", () => updateHeroActivity(card.dataset.key));
+    });
+  </script>
 </body>
 </html>
