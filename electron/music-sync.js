@@ -46,6 +46,7 @@ function createMusicSync({
   getConfig,
   applyMusicPresence,
   sendToRenderer,
+  onTrackObserved,
   isPaused,
 }) {
   let service = null;
@@ -187,6 +188,7 @@ function createMusicSync({
     const metaSig = trackMetaSignature(track);
     const metaChanged = metaSig !== lastMetaSignature;
     if (metaChanged) lastMetaSignature = metaSig;
+    if (metaChanged) onTrackObserved?.(track || null);
 
     const config = getConfig();
     const artworkUrl = track?.artworkUrl || getCachedArtwork(track);

@@ -14,7 +14,7 @@ function isEnabled(cfg) {
   return cfg?.gamingNowPlaying !== false;
 }
 
-function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused }) {
+function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessionObserved, isPaused }) {
   let fgService = null;
   let liveTimer = null;
   let template = null;
@@ -151,6 +151,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
         session = { ...session, matchStartAt };
       }
       lastResolvedSession = session;
+      onSessionObserved?.(session);
       let meta = null;
       await pushPresence(session, meta, { force: force || session.inMatch });
     } finally {

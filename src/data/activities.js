@@ -244,6 +244,15 @@ export const ACTIVITY_CATEGORIES = [
     fallbackGif: 'https://nekos.best/api/v2/pat/269cbfec-e1da-44f5-9817-a80b4a89a0ac.gif',
     activities: [
       {
+        id: 'coding',
+        details: 'Coding',
+        state: 'Building something cool',
+        emoji: '💻',
+        nekosEndpoint: 'bored',
+        largeImageKey: 'coding',
+        largeImageText: 'Coding',
+      },
+      {
         id: 'studying',
         details: 'Studying',
         state: 'Brain gains 📖',

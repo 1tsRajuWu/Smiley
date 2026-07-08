@@ -21,8 +21,25 @@ Track **installed and active Smiley users**. Disclosed in [PRIVACY.md](../PRIVAC
 | `country_code`, `country_name`, `region`, `region_name`, `city`, `isp`, `geo_timezone` | geo fields | IP geolocation + edge headers |
 | `launch_count` | `12` | **Server** (increments each heartbeat) |
 | `first_seen_at`, `last_seen_at` | UTC timestamps | Server |
+| `last_activity_section`, `last_activity_source`, `active_sections`, `section_overview` | section summary | Device + Server |
 
 **Not stored:** Discord username/token, email, name, hostname, serial number, or user files.
+
+## Sectioned telemetry tables
+
+The schema now includes two additive rollup tables linked to `installs`:
+
+- `install_sections`: one row per install + feature area such as `app`, `activity`, `music_sync`, `game_sync`, and `coding_sync`
+- `install_section_sources`: one row per install + section + source, such as a music player app, coding editor, game provider, or selected activity preset
+
+These rows store counters and latest sanitized metadata like:
+
+- launches/seen counts by section
+- latest source label seen in a section
+- latest track/game/editor/activity label
+- lightweight metadata such as album presence, coding status, game mode/map, or activity category
+
+This is intended to answer dashboard questions like install overview, usage by sync type, latest source seen, and top sources by section without storing Discord tokens, Riot lockfile secrets, passwords, or message content.
 
 ## User notice
 

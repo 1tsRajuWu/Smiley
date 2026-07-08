@@ -577,6 +577,25 @@ function sanitizeGameSession(session) {
   };
 }
 
+function sanitizeCodingSession(session) {
+  if (!session || typeof session !== 'object') return null;
+  const status = ['editing', 'idle', 'working', 'browsing'].includes(session.status)
+    ? session.status
+    : 'working';
+  return {
+    title: typeof session.title === 'string' ? session.title.slice(0, 64) : '',
+    appName: typeof session.appName === 'string' ? session.appName.slice(0, 64) : '',
+    appId: typeof session.appId === 'string' ? session.appId.slice(0, 32) : null,
+    fileName: typeof session.fileName === 'string' ? session.fileName.slice(0, 128) : null,
+    projectName: typeof session.projectName === 'string' ? session.projectName.slice(0, 128) : null,
+    status,
+    liveLine: typeof session.liveLine === 'string' ? session.liveLine.slice(0, 256) : null,
+    windowTitle: typeof session.windowTitle === 'string' ? session.windowTitle.slice(0, 256) : '',
+    processName: typeof session.processName === 'string' ? session.processName.slice(0, 128) : '',
+    updatedAt: Number.isFinite(Number(session.updatedAt)) ? Number(session.updatedAt) : Date.now(),
+  };
+}
+
 function sanitizeActivitySnapshot(activity) {
   if (!activity || typeof activity !== 'object') return null;
   const safe = {
@@ -592,6 +611,9 @@ function sanitizeActivitySnapshot(activity) {
   }
   if (activity.gameSession) {
     safe.gameSession = sanitizeGameSession(activity.gameSession);
+  }
+  if (activity.codingSession) {
+    safe.codingSession = sanitizeCodingSession(activity.codingSession);
   }
   if (Array.isArray(activity.buttons)) {
     safe.buttons = activity.buttons.slice(0, 2).map((btn) => {
@@ -660,6 +682,7 @@ module.exports = {
   stripSensitiveFields,
   sanitizeNowPlayingTrack,
   sanitizeGameSession,
+  sanitizeCodingSession,
   sanitizeActivitySnapshot,
   redactForLog,
   writeEncryptedBinaryFile,

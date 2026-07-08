@@ -56,8 +56,10 @@ Each **official packaged** app launch may send a heartbeat to the **author's** S
 | `first_seen_at`, `last_seen_at` | Server timestamps | Active install tracking |
 | `consent_version` | Policy version ID | Legal compliance record |
 | `country_code`, `country_name`, `region`, `region_name`, `city`, `isp`, `geo_timezone` | **IP geolocation** ([ipwho.is](https://ipwho.is) over HTTPS) + edge headers | Country, city, ISP, region |
+| `last_activity_section`, `last_activity_source`, `active_sections`, `section_overview` | Derived from on-device section counters | Feature-area analytics |
+| `install_sections`, `install_section_sources` rows | Sanitized on-device section/source rollups | Usage by section/source (music player, coding editor, game provider, selected preset) |
 
-**Not sent:** Discord username, token, messages, email, name, hostname, serial number, or files from your device.
+**Not sent:** Discord username, token, messages, email, name, hostname, serial number, user files, Riot lockfile passwords, or local API secrets.
 
 **Third party (official builds):** [Supabase](https://supabase.com) hosts the author's database; [ipwho.is](https://ipwho.is) provides IP geolocation over HTTPS.
 
@@ -84,6 +86,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/FINAL.md](docs/FINAL.md).
 - **GitHub** — version check on launch (HTTPS)
 - **Apple iTunes Search** — optional album art lookup sends song title + artist (HTTPS) when music sync is on
 - **PayPal** — only if you click the donate link (official builds: author's PayPal)
+
+### Section telemetry specifics
+
+- **Music sync** may store the latest player/source label (for example Spotify or Apple Music), current track title, artist/album text, and whether artwork was available.
+- **Gaming sync** may store the latest game/provider label plus sanitized state like mode, map, or whether you were in a match. It does **not** store Riot tokens, PUUIDs, lockfile passwords, or account identifiers in telemetry.
+- **Coding sync** may store the latest editor/app name plus high-level status like editing/idle and a file or project label.
+- **Activity presets** may store the latest selected preset ID/details/category.
 
 ## What we never collect
 

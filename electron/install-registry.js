@@ -14,6 +14,12 @@ const {
   migratePlaintextFile,
   isTlsUrl,
 } = require('./security');
+const {
+  normalizeTelemetry,
+  summarizeForInstall,
+  buildSectionRows,
+  buildSourceRows,
+} = require('./install-telemetry');
 
 const INSTALL_ID_FILE = 'install-id';
 const INSTALL_ID_SECURE = 'install-id.secure';
@@ -164,8 +170,9 @@ async function enrichInstallGeo(registry, installId, headers) {
 }
 
 function buildInstallRow({
-  installId, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
+  installId, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel, telemetry,
 }) {
+  const summary = telemetry ? summarizeForInstall(telemetry) : {};
   return {
     install_id: installId,
     platform: ['darwin', 'win32', 'linux'].includes(platform) ? platform : 'linux',
@@ -178,6 +185,7 @@ function buildInstallRow({
     channel: typeof channel === 'string' ? channel.slice(0, 32) : 'release',
     user_agent: buildUserAgent({ appVersion, platform, osRelease, arch, electronVersion }),
     consent_version: CONSENT_VERSION,
+    ...summary,
   };
 }
 
@@ -193,8 +201,53 @@ async function upsertInstallRow(endpoint, headers, installId, row) {
   }
 }
 
+async function upsertRows(endpoint, headers, rows, conflictColumns) {
+  if (!Array.isArray(rows) || rows.length === 0) return;
+  const url = `${endpoint}?on_conflict=${encodeURIComponent(conflictColumns.join(','))}`;
+  await postJson(url, {
+    ...headers,
+    Prefer: 'resolution=merge-duplicates,return=minimal',
+  }, rows);
+}
+
+async function syncInstallTelemetry({
+  rootDir,
+  userDataDir,
+  telemetry,
+}) {
+  const registry = loadRegistryConfig(rootDir);
+  if (!registry) return { skipped: true, reason: 'no-registry-config' };
+
+  const installId = getOrCreateInstallId(userDataDir);
+  if (!installId) return { skipped: true, reason: 'no-install-id' };
+
+  const normalized = normalizeTelemetry(telemetry);
+  const sectionRows = buildSectionRows(normalized, installId);
+  const sourceRows = buildSourceRows(normalized, installId);
+  const headers = buildSupabaseHeaders(registry.supabaseAnonKey);
+  const base = registry.supabaseUrl;
+
+  try {
+    await upsertRows(
+      `${base}/rest/v1/install_sections`,
+      headers,
+      sectionRows,
+      ['install_id', 'section_key'],
+    );
+    await upsertRows(
+      `${base}/rest/v1/install_section_sources`,
+      headers,
+      sourceRows,
+      ['install_id', 'section_key', 'source_key'],
+    );
+    return { success: true, installId };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 async function registerInstall({
-  rootDir, userDataDir, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
+  rootDir, userDataDir, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel, telemetry,
 }) {
   if (registrationPromise) return registrationPromise;
 
@@ -206,7 +259,7 @@ async function registerInstall({
     if (!installId) return { skipped: true, reason: 'no-install-id' };
 
     const row = buildInstallRow({
-      installId, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel,
+      installId, appVersion, platform, arch, osRelease, electronVersion, locale, timezone, channel, telemetry,
     });
 
     const endpoint = `${registry.supabaseUrl}/rest/v1/installs`;
@@ -214,6 +267,13 @@ async function registerInstall({
     try {
       await upsertInstallRow(endpoint, headers, installId, row);
       await enrichInstallGeo(registry, installId, headers);
+      if (telemetry) {
+        await syncInstallTelemetry({
+          rootDir,
+          userDataDir,
+          telemetry,
+        });
+      }
       return { success: true, installId };
     } catch (err) {
       return { success: false, error: err.message };
@@ -231,6 +291,7 @@ module.exports = {
   CONSENT_VERSION,
   loadRegistryConfig,
   registerInstall,
+  syncInstallTelemetry,
   getOrCreateInstallId,
   buildUserAgent,
   buildInstallRow,

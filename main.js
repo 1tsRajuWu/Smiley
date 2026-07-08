@@ -21,9 +21,20 @@ const pkg = require('./package.json');
 const {
   loadRegistryConfig,
   registerInstall,
+  syncInstallTelemetry,
 } = require('./electron/install-registry');
+const {
+  createEmptyTelemetry,
+  normalizeTelemetry,
+  recordLaunch: recordInstallTelemetryLaunch,
+  recordActivity: recordInstallTelemetryActivity,
+  recordMusic: recordInstallTelemetryMusic,
+  recordGame: recordInstallTelemetryGame,
+  recordCoding: recordInstallTelemetryCoding,
+} = require('./electron/install-telemetry');
 const { createMusicSync } = require('./electron/music-sync');
 const { createGameSync } = require('./electron/game-sync');
+const { createCodingSync } = require('./electron/coding-sync');
 const { getRiotApiKey, fetchValorantRank } = require('./electron/riot-rank');
 const { DEFAULT_GAMING_PRESENCE_OPTIONS } = require('./electron/presence-builder');
 const {
@@ -40,6 +51,7 @@ const {
   stripSensitiveFields,
   sanitizeNowPlayingTrack,
   sanitizeGameSession,
+  sanitizeCodingSession,
   sanitizeActivitySnapshot,
   redactForLog,
   initSecurity,
@@ -523,6 +535,7 @@ const CONFIG_PATCH_KEYS = new Set([
   'migrationNoticeShown', 'installWarningShown', 'installConsentShown',
   'musicNowPlaying', 'musicNowPlayingAlbumArt',
   'gamingNowPlaying', 'gamingNowPlayingCoverArt',
+  'codingNowPlaying',
   'gamingPresenceOptions',
 ]);
 const MAX_ACTIVITY_PROFILES = 8;
@@ -560,12 +573,14 @@ const DEFAULT_CONFIG = {
   activityProfiles: [],
   rotateFavorites: { enabled: false, intervalMinutes: 15 },
   sessionStats: {},
+  installTelemetry: createEmptyTelemetry(),
   migrationNoticeShown: false,
   installWarningShown: false,
   musicNowPlaying: true,
   musicNowPlayingAlbumArt: true,
   gamingNowPlaying: true,
   gamingNowPlayingCoverArt: true,
+  codingNowPlaying: true,
   gamingPresenceOptions: { ...DEFAULT_GAMING_PRESENCE_OPTIONS },
   riotRankKeyEnc: null,
 };
@@ -643,6 +658,7 @@ function applyLoadedConfig(raw, { recovered = false } = {}) {
   const normalized = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...raw }));
   delete normalized.clientId;
   normalized.gamingPresenceOptions = normalizeGamingPresenceOptions(normalized.gamingPresenceOptions);
+  normalized.installTelemetry = normalizeTelemetry(normalized.installTelemetry);
   normalized.fetchValorantRank = getValorantRankFetcher();
   config = normalized;
   if (recovered) configLoadRecovered = true;
@@ -956,6 +972,7 @@ function sanitizeConfigPatch(data) {
       case 'musicNowPlayingAlbumArt':
       case 'gamingNowPlaying':
       case 'gamingNowPlayingCoverArt':
+      case 'codingNowPlaying':
         out[key] = val === true;
         break;
       case 'gamingPresenceOptions':
@@ -1096,6 +1113,9 @@ function sanitizeIncomingActivity(activity) {
   if (activity.gameSession) {
     safe.gameSession = sanitizeGameSession(activity.gameSession);
   }
+  if (activity.codingSession) {
+    safe.codingSession = sanitizeCodingSession(activity.codingSession);
+  }
   return stripSensitiveFields(safe);
 }
 
@@ -1111,11 +1131,15 @@ let currentTrayIcon = 'default';
 let pausedPresenceSnapshot = null;
 let musicSync = null;
 let gameSync = null;
+let codingSync = null;
 let trayMenuRefreshTimer = null;
 let windowStateSaveTimer = null;
 let pendingWindowState = null;
 let sessionStatsSaveTimer = null;
 let sessionStatsDirty = false;
+let installTelemetrySyncTimer = null;
+let installLaunchRecorded = false;
+let installRegistered = false;
 let mainWindowVisible = true;
 
 function isMainWindowVisible() {
@@ -1149,6 +1173,11 @@ function getMusicSync() {
         if (safe && artworkUrl) safe.artworkUrl = artworkUrl;
         sendToWindow('now-playing-update', safe);
       },
+      onTrackObserved: (track) => {
+        const safe = sanitizeNowPlayingTrack(track);
+        if (!safe?.title) return;
+        updateInstallTelemetry((telemetry) => recordInstallTelemetryMusic(telemetry, safe));
+      },
       isPaused: isPresencePaused,
     });
   }
@@ -1163,10 +1192,34 @@ function getGameSync() {
       sendToRenderer: (session) => {
         sendToWindow('gaming-update', sanitizeGameSession(session));
       },
+      onSessionObserved: (session) => {
+        const safe = sanitizeGameSession(session);
+        if (!safe?.title) return;
+        updateInstallTelemetry((telemetry) => recordInstallTelemetryGame(telemetry, safe));
+      },
       isPaused: isPresencePaused,
     });
   }
   return gameSync;
+}
+
+function getCodingSync() {
+  if (!codingSync) {
+    codingSync = createCodingSync({
+      getConfig: () => config,
+      applyCodingPresence,
+      sendToRenderer: (session) => {
+        sendToWindow('coding-update', sanitizeCodingSession(session));
+      },
+      onSessionObserved: (session) => {
+        const safe = sanitizeCodingSession(session);
+        if (!safe?.appName) return;
+        updateInstallTelemetry((telemetry) => recordInstallTelemetryCoding(telemetry, safe));
+      },
+      isPaused: isPresencePaused,
+    });
+  }
+  return codingSync;
 }
 
 function scheduleSessionStatsSave() {
@@ -1200,6 +1253,37 @@ function recordSessionStatsForActivity(activityId, startedAt) {
   scheduleSessionStatsSave();
 }
 
+async function pushInstallTelemetry() {
+  if (!canRegisterInstall() || !installRegistered) return;
+  try {
+    const result = await syncInstallTelemetry({
+      rootDir: __dirname,
+      userDataDir: app.getPath('userData'),
+      telemetry: normalizeTelemetry(config.installTelemetry),
+    });
+    if (!result?.success && result?.error) {
+      console.warn('[registry telemetry]', result.error);
+    }
+  } catch (err) {
+    console.warn('[registry telemetry]', err.message);
+  }
+}
+
+function scheduleInstallTelemetrySync() {
+  if (!canRegisterInstall() || !installRegistered || installTelemetrySyncTimer) return;
+  installTelemetrySyncTimer = setTimeout(() => {
+    installTelemetrySyncTimer = null;
+    pushInstallTelemetry().catch(() => {});
+  }, 2500);
+}
+
+function updateInstallTelemetry(updater) {
+  const next = updater(normalizeTelemetry(config.installTelemetry));
+  config = { ...config, installTelemetry: normalizeTelemetry(next) };
+  scheduleSessionStatsSave();
+  scheduleInstallTelemetrySync();
+}
+
 async function pausePresence() {
   if (!currentActivity) {
     return { success: false, error: 'No active presence to pause' };
@@ -1222,6 +1306,7 @@ async function pausePresence() {
   }
   getMusicSync().stop();
   getGameSync().stop();
+  getCodingSync().stop();
   broadcastStatus(true);
   return { success: true };
 }
@@ -1246,6 +1331,13 @@ async function resumePresence() {
       ...activity,
       category: 'gaming',
       details: 'Gaming',
+    });
+  }
+  if (result?.success && activity?.id === 'coding' && config.codingNowPlaying !== false) {
+    getCodingSync().start({
+      ...activity,
+      id: 'coding',
+      details: 'Coding',
     });
   }
   return result;
@@ -1447,6 +1539,10 @@ function saveWindowState() {
 function flushPendingDiskWrites() {
   flushWindowStateSave();
   flushSessionStatsSave();
+  if (installTelemetrySyncTimer) {
+    clearTimeout(installTelemetrySyncTimer);
+    installTelemetrySyncTimer = null;
+  }
 }
 
 // ─── Tray Icons ──────────────────────────────────────────────────────
@@ -2059,16 +2155,56 @@ async function applyGamePresence(activity) {
   }
 }
 
+/** Lightweight path for live coding metadata — avoids disk writes & tray rebuild spam. */
+let lastCodingPresenceSig = '';
+let lastCodingPresenceAt = 0;
+const CODING_PRESENCE_DEDUP_MS = 2000;
+
+async function applyCodingPresence(activity) {
+  if (!rpcClient) {
+    const result = await connectRPC();
+    if (!result.connected) return result;
+  }
+  try {
+    const session = activity?.codingSession;
+    const sig = session?.appName
+      ? [
+        session.appName, session.status, session.fileName, session.projectName,
+        session.liveLine, activity.discordImageUrl || activity.largeImageUrl || '',
+      ].join('\0')
+      : `${activity.details}\0${activity.state}`;
+    const now = Date.now();
+    if (sig === lastCodingPresenceSig && now - lastCodingPresenceAt < CODING_PRESENCE_DEDUP_MS) {
+      return { success: true, skipped: true };
+    }
+    lastCodingPresenceSig = sig;
+    lastCodingPresenceAt = now;
+    pausedPresenceSnapshot = null;
+    const payload = await buildActivityPayload(activity);
+    await rpcClient.setActivity(payload);
+    currentActivity = activity;
+    scheduleTrayMenuRefresh();
+    return { success: true };
+  } catch (err) {
+    rpcClient = null;
+    return { success: false, error: err.message || 'Failed to set presence' };
+  }
+}
+
 async function schedulePresenceUpdate(activity, isNewSession) {
   const safeActivity = sanitizeIncomingActivity(activity);
   if (!safeActivity) return { success: false, error: 'Invalid activity' };
 
+  updateInstallTelemetry((telemetry) => recordInstallTelemetryActivity(telemetry, safeActivity));
+
   handleMusicSyncForActivity(safeActivity);
   handleGameSyncForActivity(safeActivity);
+  handleCodingSyncForActivity(safeActivity);
 
   const isListeningLive = safeActivity.id === 'listening' && config.musicNowPlaying !== false;
   const isGamingLive = safeActivity.category === 'gaming' && config.gamingNowPlaying !== false;
-  if (isListeningLive || isGamingLive) {
+  const isCodingLive = safeActivity.id === 'coding' && config.codingNowPlaying !== false;
+  if (isListeningLive || isGamingLive || isCodingLive) {
     if (isNewSession) sessionStart = isListeningLive ? null : Date.now();
     pendingUpdate = null;
     if (updateTimer) {
@@ -2125,6 +2261,18 @@ function handleGameSyncForActivity(safeActivity) {
   }
 }
 
+function handleCodingSyncForActivity(safeActivity) {
+  if (safeActivity.id === 'coding' && config.codingNowPlaying !== false) {
+    getCodingSync().start({
+      ...safeActivity,
+      id: 'coding',
+      details: 'Coding',
+    });
+  } else {
+    getCodingSync().stop();
+  }
+}
+
 function pushNowPlayingToRenderer() {
   const track = getMusicSync().getCurrentTrack?.();
   if (!track?.title) return;
@@ -2144,6 +2292,7 @@ async function clearPresence() {
   sessionStart = null;
   getMusicSync().stop();
   getGameSync().stop();
+  getCodingSync().stop();
   updateTrayIcon('default');
   updateTrayMenu();
   if (rpcClient) {
@@ -2176,6 +2325,7 @@ function broadcastStatus(immediate = false) {
         musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
         gamingNowPlaying: config.gamingNowPlaying !== false,
         gamingNowPlayingCoverArt: config.gamingNowPlayingCoverArt !== false,
+        codingNowPlaying: config.codingNowPlaying !== false,
         donationUrl: DONATION_URL,
       },
       version: APP_VERSION,
@@ -2205,6 +2355,22 @@ function canRegisterInstall() {
 
 async function maybeRegisterInstall() {
   if (!canRegisterInstall()) return;
+  if (!installLaunchRecorded) {
+    installLaunchRecorded = true;
+    config = {
+      ...config,
+      installTelemetry: recordInstallTelemetryLaunch(normalizeTelemetry(config.installTelemetry), {
+        appVersion: APP_VERSION,
+        platform: process.platform,
+        arch: process.arch,
+        channel: isPortableBuild() ? 'portable' : 'release',
+        musicEnabled: config.musicNowPlaying !== false,
+        gameEnabled: config.gamingNowPlaying !== false,
+        codingEnabled: config.codingNowPlaying !== false,
+      }),
+    };
+    scheduleSessionStatsSave();
+  }
   try {
     const result = await registerInstall({
       rootDir: __dirname,
@@ -2217,8 +2383,12 @@ async function maybeRegisterInstall() {
       locale: app.getLocale(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
       channel: isPortableBuild() ? 'portable' : 'release',
+      telemetry: normalizeTelemetry(config.installTelemetry),
     });
-    if (result.success) console.log('[registry] install heartbeat recorded');
+    if (result.success) {
+      installRegistered = true;
+      console.log('[registry] install heartbeat recorded');
+    }
     else if (result.error) console.warn('[registry]', result.error);
   } catch (err) {
     console.warn('[registry]', err.message);
@@ -3972,6 +4142,7 @@ function setupIPC() {
     musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
     gamingNowPlaying: config.gamingNowPlaying !== false,
     gamingNowPlayingCoverArt: config.gamingNowPlayingCoverArt !== false,
+    codingNowPlaying: config.codingNowPlaying !== false,
     gamingPresenceOptions: normalizeGamingPresenceOptions(config.gamingPresenceOptions),
     hasRiotApiKey: !!getRiotApiKey(config, getUserDataRoot()),
     presencePaused: isPresencePaused(),
@@ -4016,11 +4187,13 @@ function setupIPC() {
   ipcMain.handle('save-config', async (_, data) => {
     const prevMusicSync = config.musicNowPlaying !== false;
     const prevGameSync = config.gamingNowPlaying !== false;
+    const prevCodingSync = config.codingNowPlaying !== false;
     const prevGameCoverArt = config.gamingNowPlayingCoverArt !== false;
     const prevPresenceOpts = JSON.stringify(normalizeGamingPresenceOptions(config.gamingPresenceOptions));
     saveConfig(data);
     const nextMusicSync = config.musicNowPlaying !== false;
     const nextGameSync = config.gamingNowPlaying !== false;
+    const nextCodingSync = config.codingNowPlaying !== false;
     const nextGameCoverArt = config.gamingNowPlayingCoverArt !== false;
     const nextPresenceOpts = JSON.stringify(normalizeGamingPresenceOptions(config.gamingPresenceOptions));
     if (prevMusicSync !== nextMusicSync) {
@@ -4031,11 +4204,15 @@ function setupIPC() {
     } else if (nextGameSync && (prevGameCoverArt !== nextGameCoverArt || prevPresenceOpts !== nextPresenceOpts)) {
       getGameSync().forceRefresh();
     }
+    if (prevCodingSync !== nextCodingSync) {
+      getCodingSync().handleConfigChange(nextCodingSync);
+    }
     broadcastConfigChanged({
       musicNowPlaying: nextMusicSync,
       musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
       gamingNowPlaying: nextGameSync,
       gamingNowPlayingCoverArt: nextGameCoverArt,
+      codingNowPlaying: nextCodingSync,
       gamingPresenceOptions: normalizeGamingPresenceOptions(config.gamingPresenceOptions),
     });
     applyLaunchAtLogin();
@@ -4580,6 +4757,7 @@ app.on('before-quit', async () => {
   }
   if (musicSync) await musicSync.stop();
   await persistAllUserData();
+  await pushInstallTelemetry();
   if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
 });
 

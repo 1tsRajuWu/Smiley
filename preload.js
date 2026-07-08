@@ -97,4 +97,8 @@ contextBridge.exposeInMainWorld('smiley', {
     ipcRenderer.removeAllListeners('gaming-update');
     ipcRenderer.on('gaming-update', (_, session) => callback(session));
   },
+  onCodingUpdate: (callback) => {
+    ipcRenderer.removeAllListeners('coding-update');
+    ipcRenderer.on('coding-update', (_, session) => callback(session));
+  },
 });

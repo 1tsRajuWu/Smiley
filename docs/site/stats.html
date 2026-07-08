@@ -445,9 +445,58 @@
         </div>
       </div>
 
+      <div class="charts">
+        <div class="card" style="margin-top:0">
+          <h2>By telemetry section</h2>
+          <div id="sectionChart"></div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <h2>Top sync sources</h2>
+          <div id="sourceChart"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Section source rollups</h2>
+        <p class="subtitle" id="sourceTableMeta" style="margin-bottom:0.75rem;"></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Source</th>
+                <th>Group</th>
+                <th>Installs</th>
+                <th>Seen count</th>
+                <th>Launch count</th>
+                <th>Latest title</th>
+                <th>Last seen</th>
+              </tr>
+            </thead>
+            <tbody id="sourceTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card" id="detailPanel" hidden>
         <h2>Install details</h2>
         <dl class="detail-grid" id="detailGrid"></dl>
+        <div class="table-wrap" style="margin-top:1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Latest source</th>
+                <th>Seen</th>
+                <th>Launches</th>
+                <th>Last title</th>
+                <th>Last state</th>
+                <th>Last seen</th>
+              </tr>
+            </thead>
+            <tbody id="detailSectionsBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card">
@@ -499,6 +548,8 @@
     const STORAGE_GATE = 'smiley_stats_gate_v1';
 
     let rows = [];
+    let sectionRows = [];
+    let sourceRows = [];
     let sortKey = 'last_seen_at';
     let sortDir = 'desc';
     let selectedId = null;
@@ -651,7 +702,7 @@
       return headers;
     }
 
-    async function fetchInstalls(url, key) {
+    async function fetchDashboardData(url, key) {
       const trimmed = key.trim();
       const keyType = classifyKey(trimmed);
       if (keyType === 'publishable' || keyType === 'anon') {
@@ -660,18 +711,25 @@
         );
       }
       const base = url.replace(/\/$/, '');
-      const endpoint = `${base}/rest/v1/installs?select=*&order=last_seen_at.desc`;
-      const res = await fetch(endpoint, { headers: buildSupabaseHeaders(trimmed) });
-      if (!res.ok) {
+      const headers = buildSupabaseHeaders(trimmed);
+      const requestJson = async (endpoint, fallback = []) => {
+        const res = await fetch(endpoint, { headers });
+        if (res.ok) return res.json();
         const text = await res.text();
         if (res.status === 401) {
           throw new Error(
             'Key rejected (401). Use Secret keys → sb_secret_… (full key), or Legacy API Keys → service_role — not anon/publishable.'
           );
         }
+        if (res.status === 404 || /relation .* does not exist/i.test(text)) return fallback;
         throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
-      }
-      return res.json();
+      };
+      const [installs, sections, sources] = await Promise.all([
+        requestJson(`${base}/rest/v1/installs?select=*&order=last_seen_at.desc`),
+        requestJson(`${base}/rest/v1/install_sections?select=*&order=last_seen_at.desc`, []),
+        requestJson(`${base}/rest/v1/install_section_sources?select=*&order=last_seen_at.desc`, []),
+      ]);
+      return { installs, sections, sources };
     }
 
     function daysAgo(iso, days) {
@@ -727,12 +785,56 @@
       return hasData ? entries.slice(0, 12) : [['(no geo yet)', rows.length]];
     }
 
+    function sectionLabel(key) {
+      return ({
+        app: 'App',
+        activity: 'Activity',
+        music_sync: 'Music Sync',
+        game_sync: 'Game Sync',
+        coding_sync: 'Coding Sync',
+      })[key] || key || '—';
+    }
+
+    function getInstallSections(installId) {
+      return sectionRows.filter((row) => row.install_id === installId);
+    }
+
+    function buildSourceSummary() {
+      const map = new Map();
+      for (const row of sourceRows) {
+        const key = `${row.section_key}::${row.source_key}`;
+        const current = map.get(key) || {
+          section_key: row.section_key,
+          source_key: row.source_key,
+          source_label: row.source_label,
+          source_group: row.source_group,
+          install_count: 0,
+          seen_count: 0,
+          launch_count: 0,
+          last_title: row.last_title,
+          last_seen_at: row.last_seen_at,
+        };
+        current.install_count += 1;
+        current.seen_count += Number(row.seen_count) || 0;
+        current.launch_count += Number(row.launch_count) || 0;
+        if (String(row.last_seen_at || '') > String(current.last_seen_at || '')) {
+          current.last_seen_at = row.last_seen_at;
+          current.last_title = row.last_title;
+        }
+        map.set(key, current);
+      }
+      return [...map.values()].sort((a, b) => b.seen_count - a.seen_count);
+    }
+
     function renderSummary(data) {
       const total = data.length;
       const active7 = data.filter((r) => daysAgo(r.last_seen_at, 7)).length;
       const active30 = data.filter((r) => daysAgo(r.last_seen_at, 30)).length;
       const totalLaunches = data.reduce((n, r) => n + (Number(r.launch_count) || 1), 0);
       const countries = new Set(data.map((r) => r.country_code).filter(Boolean)).size;
+      const activeSections = new Set(sectionRows.map((r) => r.section_key).filter(Boolean)).size;
+      const latestSection = [...sectionRows]
+        .sort((a, b) => String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || '')))[0];
 
       $('summaryStats').innerHTML = [
         ['Total installs', total],
@@ -740,6 +842,8 @@
         ['Active (30d)', active30],
         ['Total launches', totalLaunches],
         ['Countries', countries || '—'],
+        ['Sections seen', activeSections || '—'],
+        ['Latest section', latestSection ? sectionLabel(latestSection.section_key) : '—'],
       ].map(([label, value]) => `
         <div class="stat">
           <div class="stat-value">${value}</div>
@@ -755,7 +859,8 @@
         list = list.filter((r) =>
           [r.install_id, r.platform, r.arch, r.app_version, r.os_version, r.electron_version,
             r.locale, r.timezone, r.geo_timezone, r.channel, r.ip_address,
-            r.country_code, r.country_name, r.region, r.region_name, r.city, r.isp, r.user_agent]
+            r.country_code, r.country_name, r.region, r.region_name, r.city, r.isp, r.user_agent,
+            r.last_activity_section, r.last_activity_source]
             .some((v) => String(v || '').toLowerCase().includes(q))
         );
       }
@@ -777,9 +882,11 @@
     function renderDetail(row) {
       const panel = $('detailPanel');
       const grid = $('detailGrid');
+      const sectionBody = $('detailSectionsBody');
       if (!row) {
         panel.hidden = true;
         grid.innerHTML = '';
+        sectionBody.innerHTML = '';
         return;
       }
       panel.hidden = false;
@@ -800,6 +907,9 @@
         ['ISP', row.isp],
         ['IP timezone', row.geo_timezone],
         ['Launch count', row.launch_count ?? 1],
+        ['Latest section', sectionLabel(row.last_activity_section)],
+        ['Latest source', row.last_activity_source],
+        ['Section count', row.active_sections ?? 0],
         ['Consent version', row.consent_version],
         ['First seen', formatDate(row.first_seen_at)],
         ['Last seen', formatDate(row.last_seen_at)],
@@ -808,6 +918,19 @@
       grid.innerHTML = fields.map(([k, v]) => `
         <div><dt>${k}</dt><dd class="${k === 'Install ID' || k === 'User agent' ? 'mono' : ''}">${v ?? '—'}</dd></div>
       `).join('');
+      const installSections = getInstallSections(row.install_id)
+        .sort((a, b) => String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || '')));
+      sectionBody.innerHTML = installSections.map((section) => `
+        <tr>
+          <td>${sectionLabel(section.section_key)}</td>
+          <td>${section.last_source_label || section.last_source_key || '—'}</td>
+          <td>${section.seen_count ?? 0}</td>
+          <td>${section.launch_count ?? 0}</td>
+          <td title="${section.last_title || ''}">${(section.last_title || '—').slice(0, 28)}</td>
+          <td title="${section.last_state || ''}">${(section.last_state || '—').slice(0, 28)}</td>
+          <td>${formatDate(section.last_seen_at)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="7" class="muted">No section telemetry yet.</td></tr>';
     }
 
     function renderTable() {
@@ -848,7 +971,8 @@
         'install_id', 'platform', 'arch', 'os_version', 'app_version', 'electron_version',
         'locale', 'timezone', 'geo_timezone', 'channel', 'ip_address',
         'country_code', 'country_name', 'region', 'region_name', 'city', 'isp',
-        'launch_count', 'user_agent', 'consent_version', 'first_seen_at', 'last_seen_at',
+        'launch_count', 'last_activity_section', 'last_activity_source', 'active_sections',
+        'user_agent', 'consent_version', 'first_seen_at', 'last_seen_at',
       ];
       const escape = (v) => {
         const s = String(v ?? '');
@@ -863,6 +987,44 @@
       URL.revokeObjectURL(a.href);
     }
 
+    function renderSectionBreakdown() {
+      const sectionSummary = [...sectionRows].reduce((map, row) => {
+        const key = row.section_key || 'unknown';
+        const current = map.get(key) || { installs: 0, launches: 0, seen: 0 };
+        current.installs += 1;
+        current.launches += Number(row.launch_count) || 0;
+        current.seen += Number(row.seen_count) || 0;
+        map.set(key, current);
+        return map;
+      }, new Map());
+      const entries = [...sectionSummary.entries()]
+        .sort((a, b) => b[1].seen - a[1].seen)
+        .map(([key, value]) => [sectionLabel(key), value.seen || value.launches || value.installs]);
+      renderBarChart($('sectionChart'), entries);
+    }
+
+    function renderSourceBreakdown() {
+      const summary = buildSourceSummary();
+      const topEntries = summary.slice(0, 12).map((row) => [
+        `${sectionLabel(row.section_key)} · ${row.source_label || row.source_key}`,
+        row.seen_count || row.install_count,
+      ]);
+      renderBarChart($('sourceChart'), topEntries);
+      $('sourceTableMeta').textContent = `${summary.length} source rollups across ${sectionRows.length} section rows`;
+      $('sourceTableBody').innerHTML = summary.slice(0, 40).map((row) => `
+        <tr>
+          <td>${sectionLabel(row.section_key)}</td>
+          <td title="${row.source_key || ''}">${row.source_label || row.source_key || '—'}</td>
+          <td>${row.source_group || '—'}</td>
+          <td>${row.install_count}</td>
+          <td>${row.seen_count}</td>
+          <td>${row.launch_count}</td>
+          <td title="${row.last_title || ''}">${(row.last_title || '—').slice(0, 28)}</td>
+          <td>${formatDate(row.last_seen_at)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="8" class="muted">No section source telemetry yet.</td></tr>';
+    }
+
     async function loadDashboard() {
       const creds = loadCredentials();
       if (!creds) return;
@@ -873,7 +1035,10 @@
       showLoginError('');
 
       try {
-        rows = await fetchInstalls(creds.url, creds.key);
+        const data = await fetchDashboardData(creds.url, creds.key);
+        rows = Array.isArray(data.installs) ? data.installs : [];
+        sectionRows = Array.isArray(data.sections) ? data.sections : [];
+        sourceRows = Array.isArray(data.sources) ? data.sources : [];
         const warn = $('keyWarning');
         if (rows.length === 0) {
           warn.textContent = 'Connected, but no installs yet. Add GitHub secrets (SUPABASE_URL + SUPABASE_ANON_KEY), ship a release, then open Smiley. Or check Table Editor → installs in Supabase.';
@@ -887,6 +1052,8 @@
         renderBarChart($('archChart'), countBy(rows, 'arch'));
         renderBarChart($('countryChart'), geoChartEntries(rows, 'country_code'));
         renderBarChart($('cityChart'), geoChartEntries(rows, 'city'));
+        renderSectionBreakdown();
+        renderSourceBreakdown();
         selectedId = null;
         renderDetail(null);
         renderTable();
@@ -920,6 +1087,8 @@
     $('disconnectBtn').addEventListener('click', () => {
       clearCredentials();
       rows = [];
+      sectionRows = [];
+      sourceRows = [];
       $('dashboardSection').classList.add('hidden');
       $('loginSection').classList.remove('hidden');
       showLoginError('');
