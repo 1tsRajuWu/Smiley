@@ -24,6 +24,8 @@ const {
 } = require('./electron/install-registry');
 const { createMusicSync } = require('./electron/music-sync');
 const { createGameSync } = require('./electron/game-sync');
+const { getRiotApiKey, fetchValorantRank } = require('./electron/riot-rank');
+const { DEFAULT_GAMING_PRESENCE_OPTIONS } = require('./electron/presence-builder');
 const {
   encryptJson,
   decryptJson,
@@ -32,6 +34,8 @@ const {
   migratePlaintextFile,
   encryptExport,
   decryptExport,
+  encryptSecret,
+  decryptSecret,
   secureUnlink,
   stripSensitiveFields,
   sanitizeNowPlayingTrack,
@@ -519,6 +523,7 @@ const CONFIG_PATCH_KEYS = new Set([
   'migrationNoticeShown', 'installWarningShown', 'installConsentShown',
   'musicNowPlaying', 'musicNowPlayingAlbumArt',
   'gamingNowPlaying', 'gamingNowPlayingCoverArt',
+  'gamingPresenceOptions',
 ]);
 const MAX_ACTIVITY_PROFILES = 8;
 const MAX_PROFILE_ACTIVITIES = 10;
@@ -561,6 +566,8 @@ const DEFAULT_CONFIG = {
   musicNowPlayingAlbumArt: true,
   gamingNowPlaying: true,
   gamingNowPlayingCoverArt: true,
+  gamingPresenceOptions: { ...DEFAULT_GAMING_PRESENCE_OPTIONS },
+  riotRankKeyEnc: null,
 };
 let config = { ...DEFAULT_CONFIG };
 let configMigrationNotice = null;
@@ -619,9 +626,24 @@ function mergeCustomActivitiesFromBackup(loaded, backup) {
   return { ...loaded, customActivities: saved };
 }
 
+function normalizeGamingPresenceOptions(raw) {
+  const base = { ...DEFAULT_GAMING_PRESENCE_OPTIONS, ...(raw || {}) };
+  return Object.fromEntries(
+    Object.keys(DEFAULT_GAMING_PRESENCE_OPTIONS).map((k) => [k, base[k] !== false]),
+  );
+}
+
+function getValorantRankFetcher() {
+  const apiKey = getRiotApiKey(config, getUserDataRoot());
+  if (!apiKey || config.gamingPresenceOptions?.showRank === false) return null;
+  return (puuid) => fetchValorantRank(puuid, 'na', apiKey);
+}
+
 function applyLoadedConfig(raw, { recovered = false } = {}) {
   const normalized = normalizeInstallTrackingConfig(stripSensitiveFields({ ...DEFAULT_CONFIG, ...raw }));
   delete normalized.clientId;
+  normalized.gamingPresenceOptions = normalizeGamingPresenceOptions(normalized.gamingPresenceOptions);
+  normalized.fetchValorantRank = getValorantRankFetcher();
   config = normalized;
   if (recovered) configLoadRecovered = true;
 }
@@ -883,6 +905,8 @@ function saveConfig(data) {
   const { clientId: _c, donationUrl: _d, ...safeData } = stripSensitiveFields(data || {});
   const patch = sanitizeConfigPatch(safeData);
   config = { ...config, ...patch, donationUrl: DONATION_URL };
+  config.gamingPresenceOptions = normalizeGamingPresenceOptions(config.gamingPresenceOptions);
+  config.fetchValorantRank = getValorantRankFetcher();
   if (!flushConfigToDisk()) {
     console.error('[saveConfig] config updated in memory but not persisted to disk');
   }
@@ -933,6 +957,11 @@ function sanitizeConfigPatch(data) {
       case 'gamingNowPlaying':
       case 'gamingNowPlayingCoverArt':
         out[key] = val === true;
+        break;
+      case 'gamingPresenceOptions':
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          out.gamingPresenceOptions = normalizeGamingPresenceOptions(val);
+        }
         break;
       case 'uiVersion':
         out.uiVersion = val === 'v1' ? 'v1' : val === 'v2' ? 'v2' : 'v3';
@@ -1883,8 +1912,14 @@ async function buildActivityPayload(activity) {
 
   // Discord shows a green elapsed timer when timestamps are present — never for music/listening.
   const isListening = activity.id === 'listening' || activity.musicTrack;
+  const isGamingMatch = activity.category === 'gaming' && activity.matchStartAt
+    && config.gamingPresenceOptions?.showElapsed !== false;
   if (!isListening) {
-    payload.startTimestamp = sessionStart || Date.now();
+    if (isGamingMatch) {
+      payload.startTimestamp = activity.matchStartAt;
+    } else {
+      payload.startTimestamp = sessionStart || Date.now();
+    }
   }
 
   // Discord shows the app/bot logo when the image key is missing or invalid.
@@ -1915,7 +1950,12 @@ async function buildActivityPayload(activity) {
     console.warn('[RPC] no image URL for activity', activity.id || activity.details);
   }
 
-  // No small_image — invalid asset keys show the bot logo as an overlay
+  const smallUrl = activity.smallImageUrl;
+  if (smallUrl && /^https:\/\//i.test(smallUrl)) {
+    payload.smallImageKey = smallUrl;
+    payload.smallImageText = activity.smallImageText || activity.gameSession?.agent || activity.gameSession?.rank || undefined;
+  }
+
   payload.buttons = activity.buttons?.length
     ? activity.buttons.slice(0, 2)
     : DEFAULT_RPC_BUTTONS;
@@ -3932,6 +3972,8 @@ function setupIPC() {
     musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
     gamingNowPlaying: config.gamingNowPlaying !== false,
     gamingNowPlayingCoverArt: config.gamingNowPlayingCoverArt !== false,
+    gamingPresenceOptions: normalizeGamingPresenceOptions(config.gamingPresenceOptions),
+    hasRiotApiKey: !!getRiotApiKey(config, getUserDataRoot()),
     presencePaused: isPresencePaused(),
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
@@ -3961,20 +4003,32 @@ function setupIPC() {
     }
   });
 
+  ipcMain.handle('save-riot-api-key', async (_, key) => {
+    const trimmed = typeof key === 'string' ? key.trim() : '';
+    if (trimmed && trimmed.length < 8) return { success: false, error: 'Invalid API key' };
+    config.riotRankKeyEnc = trimmed ? encryptSecret(trimmed, getUserDataRoot()) : null;
+    config.fetchValorantRank = getValorantRankFetcher();
+    flushConfigToDisk();
+    getGameSync().forceRefresh();
+    return { success: true, hasRiotApiKey: !!trimmed };
+  });
+
   ipcMain.handle('save-config', async (_, data) => {
     const prevMusicSync = config.musicNowPlaying !== false;
     const prevGameSync = config.gamingNowPlaying !== false;
     const prevGameCoverArt = config.gamingNowPlayingCoverArt !== false;
+    const prevPresenceOpts = JSON.stringify(normalizeGamingPresenceOptions(config.gamingPresenceOptions));
     saveConfig(data);
     const nextMusicSync = config.musicNowPlaying !== false;
     const nextGameSync = config.gamingNowPlaying !== false;
     const nextGameCoverArt = config.gamingNowPlayingCoverArt !== false;
+    const nextPresenceOpts = JSON.stringify(normalizeGamingPresenceOptions(config.gamingPresenceOptions));
     if (prevMusicSync !== nextMusicSync) {
       getMusicSync().handleConfigChange(nextMusicSync);
     }
     if (prevGameSync !== nextGameSync) {
       getGameSync().handleConfigChange(nextGameSync);
-    } else if (nextGameSync && prevGameCoverArt !== nextGameCoverArt) {
+    } else if (nextGameSync && (prevGameCoverArt !== nextGameCoverArt || prevPresenceOpts !== nextPresenceOpts)) {
       getGameSync().forceRefresh();
     }
     broadcastConfigChanged({
@@ -3982,6 +4036,7 @@ function setupIPC() {
       musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
       gamingNowPlaying: nextGameSync,
       gamingNowPlayingCoverArt: nextGameCoverArt,
+      gamingPresenceOptions: normalizeGamingPresenceOptions(config.gamingPresenceOptions),
     });
     applyLaunchAtLogin();
     registerGlobalHotkey();

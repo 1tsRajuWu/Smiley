@@ -30,6 +30,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
   let pendingResolve = false;
   let lastArtworkKey = '';
   let lastResolvedSession = null;
+  let matchStartAt = null;
 
   function sendRenderer(session) {
     const now = Date.now();
@@ -39,8 +40,16 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
   }
 
   function buildActivity(session, meta) {
-    const useCover = getConfig()?.gamingNowPlayingCoverArt !== false;
-    const activity = buildPresenceFromSession(session, template, { alwaysUseArtwork: true });
+    const cfg = getConfig() || {};
+    const useCover = cfg.gamingNowPlayingCoverArt !== false;
+    const presenceOpts = cfg.gamingPresenceOptions;
+    if (session?.inMatch && !session.matchStartAt && matchStartAt) {
+      session = { ...session, matchStartAt };
+    }
+    const activity = buildPresenceFromSession(session, template, {
+      alwaysUseArtwork: true,
+      gamingPresenceOptions: presenceOpts,
+    });
     if (!activity) return null;
 
     if (activity.gameSession && meta) {
@@ -117,11 +126,16 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
     if (resolveInFlight) { pendingResolve = true; return; }
     resolveInFlight = true;
     try {
-      const { session, steamKey } = await resolveLiveGameSession(foreground, { lastSteamKey });
+      const { session, steamKey } = await resolveLiveGameSession(foreground, {
+        lastSteamKey,
+        getConfig,
+        fetchRank: getConfig()?.fetchValorantRank,
+      });
       if (steamKey) lastSteamKey = steamKey;
       const sig = sessionSignature(session);
       if (!force && sig === lastSig) return;
       if (!session?.title) {
+        matchStartAt = null;
         sendRenderer(null);
         lastResolvedSession = null;
         if (lastSig) {
@@ -130,6 +144,11 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
         }
         scheduleLivePoll(null);
         return;
+      }
+      if (session.inMatch && !matchStartAt) matchStartAt = Date.now();
+      if (!session.inMatch) matchStartAt = null;
+      if (session.inMatch && matchStartAt) {
+        session = { ...session, matchStartAt };
       }
       lastResolvedSession = session;
       let meta = null;
@@ -196,6 +215,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
     lastSig = '';
     lastSteamKey = '';
     lastArtworkKey = '';
+    matchStartAt = null;
     foreground = null;
     if (reset) template = null;
     sendRenderer(null);

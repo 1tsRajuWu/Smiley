@@ -560,6 +560,16 @@ function sanitizeGameSession(session) {
     server: typeof session.server === 'string' ? session.server.slice(0, 128) : null,
     liveLine: typeof session.liveLine === 'string' ? session.liveLine.slice(0, 256) : null,
     inMatch: session.inMatch === true,
+    inPregame: session.inPregame === true,
+    inLobby: session.inLobby === true,
+    inQueue: session.inQueue === true,
+    rankTier: typeof session.rankTier === 'string' ? session.rankTier.slice(0, 48) : null,
+    rankRR: Number.isFinite(Number(session.rankRR)) ? Number(session.rankRR) : null,
+    partySize: Number.isFinite(Number(session.partySize)) ? Number(session.partySize) : null,
+    smallImageUrl: typeof session.smallImageUrl === 'string' && /^https:\/\//i.test(session.smallImageUrl)
+      ? session.smallImageUrl.slice(0, 2048)
+      : null,
+    matchStartAt: Number.isFinite(Number(session.matchStartAt)) ? Number(session.matchStartAt) : null,
     updatedAt: Number.isFinite(Number(session.updatedAt)) ? Number(session.updatedAt) : Date.now(),
     artworkUrl: typeof session.artworkUrl === 'string' && /^https:\/\//i.test(session.artworkUrl)
       ? session.artworkUrl.slice(0, 2048)

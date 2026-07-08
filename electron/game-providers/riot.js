@@ -42,7 +42,7 @@ function lolQueueName(id) {
   return LOL_QUEUE_NAMES[n] || (Number.isFinite(n) ? `Queue ${n}` : null);
 }
 
-function parseParty(privateData) {
+function parsePartySize(privateData) {
   if (!privateData) return null;
   let size = Number(privateData.partySize);
   if (!Number.isFinite(size) || size < 1) {
@@ -52,19 +52,35 @@ function parseParty(privateData) {
     const members = privateData.partyMembers || privateData.partyMemberUUIDs;
     if (Array.isArray(members) && members.length) size = members.length;
   }
-  return partyLabel(size);
+  return Number.isFinite(size) && size >= 1 ? size : null;
+}
+
+function parseParty(privateData) {
+  const size = parsePartySize(privateData);
+  return size ? partyLabel(size) : null;
 }
 
 function parseValorant(privateData) {
   if (!privateData) return null;
   const loop = String(privateData.sessionLoopState || privateData.partyOwnerSessionLoopState || '').toUpperCase();
+  const provisioning = String(
+    privateData.provisioningFlow || privateData.partyOwnerProvisioningFlow || '',
+  ).toUpperCase();
   const inMatch = loop === 'INGAME';
   const inPregame = loop === 'PREGAME';
-  const inLobby = loop === 'MENUS' || loop === 'FRONTEND' || (!inMatch && !inPregame);
+  const inQueue = !inMatch && !inPregame && (
+    provisioning === 'MATCHMAKING'
+    || provisioning === 'MATCHMAKINGREADYCHK'
+    || loop === 'MATCHMAKING'
+  );
+  const inLobby = !inMatch && !inPregame && !inQueue && (
+    loop === 'MENUS' || loop === 'FRONTEND' || loop === ''
+  );
   const queueId = String(privateData.queueId || privateData.partyOwnerQueueId || '').trim();
   const map = mapPathToName(privateData.partyOwnerMatchMap || privateData.matchMap);
   const mode = queueName(queueId);
-  const party = parseParty(privateData);
+  const partySize = parsePartySize(privateData);
+  const party = partySize ? partyLabel(partySize) : null;
   const ally = Number(privateData.partyOwnerMatchScoreAllyTeam ?? privateData.partyOwnerMatchCurrentTeamRoundScore);
   const enemy = Number(privateData.partyOwnerMatchScoreEnemyTeam);
   const scoreHint = inMatch && Number.isFinite(ally) && Number.isFinite(enemy) ? `${ally}-${enemy}` : null;
@@ -78,10 +94,12 @@ function parseValorant(privateData) {
     queueId,
     scoreHint,
     party,
-    inGame: inMatch || inPregame,
+    partySize,
+    inGame: inMatch || inPregame || inQueue,
     inMatch,
     inPregame,
     inLobby,
+    inQueue,
     launcher: 'Riot Games',
     updatedAt: Date.now(),
   };
@@ -122,7 +140,7 @@ async function lolLiveStats() {
   return { champ, kda, gameTime, inMatch: true };
 }
 
-async function getRiotLiveSession() {
+async function getRiotLiveSession({ fetchRank } = {}) {
   const lockfile = readLockfile();
   if (!lockfile) return null;
 
@@ -150,6 +168,12 @@ async function getRiotLiveSession() {
           inMatch: extras.inMatch ?? session.inMatch,
         };
       }
+    }
+    if (fetchRank && self.puuid) {
+      try {
+        const rankData = await fetchRank(self.puuid);
+        if (rankData) session = { ...session, ...rankData };
+      } catch (_) {}
     }
     return session;
   }

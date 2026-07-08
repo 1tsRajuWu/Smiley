@@ -1,6 +1,6 @@
 // Game providers — merge Riot local API + foreground window detection
 const { lookupSteamMetadata } = require('../game-api');
-const { resolveGameArtwork } = require('../game-assets');
+const { resolveGameArtwork, resolveSmallImage } = require('../game-assets');
 const { buildPresenceLines } = require('../presence-builder');
 const { getRiotLiveSession, isRiotGameProcess } = require('./riot');
 const { enrichMinecraft } = require('./minecraft');
@@ -19,11 +19,13 @@ function sessionSignature(session) {
   return [
     session.title, session.provider, session.details, session.state,
     session.liveLine, session.scoreHint, session.map, session.mode,
-    session.kda, session.agent, session.champ, session.party,
+    session.kda, session.agent, session.champ, session.party, session.rank,
     session.inMatch ? '1' : '0',
     session.inPregame ? '1' : '0',
     session.inLobby ? '1' : '0',
+    session.inQueue ? '1' : '0',
     resolveGameArtwork(session),
+    resolveSmallImage(session),
   ].join('\0');
 }
 
@@ -59,12 +61,13 @@ function mergeForegroundWithSession(session, foreground) {
   return session || fg;
 }
 
-async function resolveLiveGameSession(foreground, { lastSteamKey = '' } = {}) {
+async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig, fetchRank } = {}) {
   let session = null;
+  const presenceOpts = getConfig?.()?.gamingPresenceOptions;
 
   if (isLockfileAvailable()) {
     try {
-      const riot = await getRiotLiveSession();
+      const riot = await getRiotLiveSession({ fetchRank });
       if (riot?.inMatch) {
         session = riot;
       } else if (riot && (riot.inGame || isRiotGameProcess(foreground?.processName) || !foreground?.title)) {
@@ -92,11 +95,12 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '' } = {}) {
     }
   }
 
-  const lines = buildPresenceLines(session);
+  const lines = buildPresenceLines(session, 'In the zone', presenceOpts);
   session.details = lines.details;
   session.state = lines.state;
   session.liveLine = lines.state;
-  session.artworkUrl = resolveGameArtwork(session);
+  session.artworkUrl = resolveGameArtwork(session, presenceOpts);
+  session.smallImageUrl = resolveSmallImage(session, presenceOpts);
   return { session, steamKey };
 }
 

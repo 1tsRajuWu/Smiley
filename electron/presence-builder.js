@@ -1,7 +1,27 @@
 // Unified Discord Rich Presence from live game sessions
-const { resolveGameArtwork, resolveLargeImageText } = require('./game-assets');
+const {
+  resolveGameArtwork, resolveSmallImage, resolveLargeImageText,
+} = require('./game-assets');
 
 const DISCORD_TEXT_LIMIT = 128;
+
+const DEFAULT_GAMING_PRESENCE_OPTIONS = {
+  showMode: true,
+  showParty: true,
+  showAgent: true,
+  showScore: true,
+  showRank: true,
+  showMapArt: true,
+  showElapsed: true,
+  showKda: true,
+};
+
+function normalizeGamingPresenceOptions(opts) {
+  const base = { ...DEFAULT_GAMING_PRESENCE_OPTIONS, ...(opts || {}) };
+  return Object.fromEntries(
+    Object.keys(DEFAULT_GAMING_PRESENCE_OPTIONS).map((k) => [k, base[k] !== false]),
+  );
+}
 
 function truncate(t, max = DISCORD_TEXT_LIMIT) {
   const v = String(t || '').trim();
@@ -12,16 +32,72 @@ function joinParts(parts) {
   return parts.filter(Boolean).join(' · ');
 }
 
+function partyDisplay(party, partySize) {
+  const n = Number(partySize);
+  if (Number.isFinite(n) && n >= 2) return `${n}-Stack`;
+  const p = String(party || '').trim();
+  if (!p) return null;
+  if (/^\d+-stack$/i.test(p)) return p;
+  const stackMap = { Duo: '2-Stack', Trio: '3-Stack', Quad: '4-Stack', 'Full stack': '5-Stack' };
+  return stackMap[p] || p;
+}
+
+function buildValorantPresence(session, opts, fallbackState) {
+  const o = normalizeGamingPresenceOptions(opts);
+  const mode = o.showMode ? session.mode : null;
+  const party = o.showParty ? partyDisplay(session.party, session.partySize) : null;
+  const rank = o.showRank ? session.rank : null;
+
+  if (session.inQueue) {
+    return {
+      details: truncate(session.title || 'Valorant'),
+      state: truncate(joinParts(['Queuing', mode, party]) || fallbackState),
+    };
+  }
+
+  if (session.inLobby) {
+    return {
+      details: truncate(session.title || 'Valorant'),
+      state: truncate(joinParts([mode, party, 'In lobby']) || fallbackState),
+    };
+  }
+
+  if (session.inPregame) {
+    const map = o.showMapArt !== false ? session.map : null;
+    return {
+      details: truncate(map || session.title || 'Valorant'),
+      state: truncate(joinParts([
+        mode,
+        map,
+        'Agent Select',
+        party,
+      ]) || fallbackState),
+    };
+  }
+
+  const map = o.showMapArt !== false ? session.map : null;
+  const ingameParts = [
+    o.showAgent && session.agent,
+    o.showScore && session.scoreHint,
+    party,
+    o.showKda && session.kda,
+    rank,
+  ];
+  return {
+    details: truncate(map || session.title || 'Valorant'),
+    state: truncate(joinParts(ingameParts) || session.liveLine || fallbackState),
+  };
+}
+
 /**
  * Build details (primary line) and state (live stats) from session.
- * details = identity (map, champ, experience) — never mode-only concatenations.
  */
-function buildPresenceLines(session, fallbackState = 'In the zone') {
+function buildPresenceLines(session, fallbackState = 'In the zone', options = {}) {
   if (!session) {
     return { details: 'Gaming', state: fallbackState };
   }
 
-  if (session.details && session.state) {
+  if (session.details && session.state && !session.provider) {
     return {
       details: truncate(session.details),
       state: truncate(session.state),
@@ -31,58 +107,41 @@ function buildPresenceLines(session, fallbackState = 'In the zone') {
   const provider = session.provider || 'window';
 
   if (provider === 'riot-valorant') {
-    if (session.inLobby) {
-      return {
-        details: truncate('Valorant'),
-        state: truncate(joinParts([session.mode, session.party, 'In lobby']) || fallbackState),
-      };
-    }
-    if (session.inPregame) {
-      return {
-        details: truncate(session.map || 'Valorant'),
-        state: truncate(joinParts([session.mode, session.party, 'Agent select']) || fallbackState),
-      };
-    }
-    const details = truncate(session.map || 'Valorant');
-    const state = truncate(joinParts([
-      session.agent,
-      session.scoreHint,
-      session.mode,
-      session.party,
-      session.kda,
-    ]) || session.liveLine || fallbackState);
-    return { details, state };
+    return buildValorantPresence(session, options, fallbackState);
   }
 
   if (provider === 'riot-lol') {
+    const o = normalizeGamingPresenceOptions(options);
     const details = truncate(session.champ || 'League of Legends');
     const state = truncate(joinParts([
-      session.kda,
+      o.showKda && session.kda,
       session.gameTime,
-      session.mode,
+      o.showMode && session.mode,
       session.inMatch ? 'In game' : null,
     ]) || session.liveLine || fallbackState);
     return { details, state };
   }
 
   if (provider === 'fortnite') {
+    const o = normalizeGamingPresenceOptions(options);
     return {
       details: truncate('Fortnite'),
       state: truncate(joinParts([
-        session.mode,
-        session.party,
+        o.showMode && session.mode,
+        o.showParty && session.party,
         session.placement && `#${session.placement}`,
       ]) || session.liveLine || 'Playing'),
     };
   }
 
   if (provider === 'overwatch') {
+    const o = normalizeGamingPresenceOptions(options);
     return {
       details: truncate(session.map || 'Overwatch 2'),
       state: truncate(joinParts([
-        session.mode,
-        session.scoreHint,
-        session.party,
+        o.showMode && session.mode,
+        o.showScore && session.scoreHint,
+        o.showParty && session.party,
       ]) || session.liveLine || 'Playing'),
     };
   }
@@ -107,12 +166,12 @@ function buildPresenceLines(session, fallbackState = 'In the zone') {
     };
   }
 
-  // Steam / generic window
+  const o = normalizeGamingPresenceOptions(options);
   const details = truncate(session.title || 'Gaming');
   const state = truncate(joinParts([
-    session.scoreHint && `Score ${session.scoreHint}`,
+    o.showScore && session.scoreHint && `Score ${session.scoreHint}`,
     session.launcher,
-    session.mode,
+    o.showMode && session.mode,
   ]) || session.liveLine || fallbackState);
   return { details, state };
 }
@@ -130,15 +189,23 @@ function buildGameSessionPayload(session, lines) {
     champ: session.champ,
     kda: session.kda,
     rank: session.rank,
+    rankTier: session.rankTier,
+    rankRR: session.rankRR,
     gameTime: session.gameTime,
     party: session.party,
+    partySize: session.partySize,
     server: session.server,
     experience: session.experience,
     playMode: session.playMode,
     liveLine: lines.state,
     provider: session.provider,
     inMatch: session.inMatch === true,
+    inPregame: session.inPregame === true,
+    inLobby: session.inLobby === true,
+    inQueue: session.inQueue === true,
+    matchStartAt: session.matchStartAt || null,
     artworkUrl: session.artworkUrl || null,
+    smallImageUrl: session.smallImageUrl || null,
     tags: session.tags || [],
     metascore: session.metascore || null,
     steamAppId: session.steamAppId || null,
@@ -149,8 +216,13 @@ function buildGameSessionPayload(session, lines) {
 /**
  * Build full Discord activity from template + live session.
  */
-function buildPresenceFromSession(session, template, { alwaysUseArtwork = true } = {}) {
+function buildPresenceFromSession(session, template, {
+  alwaysUseArtwork = true,
+  gamingPresenceOptions = null,
+} = {}) {
   if (!template) return null;
+
+  const opts = gamingPresenceOptions || DEFAULT_GAMING_PRESENCE_OPTIONS;
 
   if (!session?.title) {
     return {
@@ -161,8 +233,9 @@ function buildPresenceFromSession(session, template, { alwaysUseArtwork = true }
     };
   }
 
-  const lines = buildPresenceLines(session, template.state || 'In the zone');
-  const artworkUrl = resolveGameArtwork(session);
+  const lines = buildPresenceLines(session, template.state || 'In the zone', opts);
+  const artworkUrl = resolveGameArtwork(session, opts);
+  const smallImageUrl = resolveSmallImage(session, opts);
   const largeImageText = truncate(resolveLargeImageText(session) || lines.details);
 
   const activity = {
@@ -170,12 +243,23 @@ function buildPresenceFromSession(session, template, { alwaysUseArtwork = true }
     details: lines.details,
     state: lines.state,
     largeImageText,
-    gameSession: buildGameSessionPayload(session, lines),
+    smallImageText: session.agent || session.rankTier || session.rank || undefined,
+    gameSession: buildGameSessionPayload({
+      ...session,
+      artworkUrl,
+      smallImageUrl,
+    }, lines),
   };
 
   if (alwaysUseArtwork && artworkUrl) {
     activity.discordImageUrl = artworkUrl;
     activity.largeImageUrl = artworkUrl;
+  }
+  if (smallImageUrl) {
+    activity.smallImageUrl = smallImageUrl;
+  }
+  if (session.matchStartAt && opts.showElapsed !== false && session.inMatch) {
+    activity.matchStartAt = session.matchStartAt;
   }
 
   return activity;
@@ -183,7 +267,11 @@ function buildPresenceFromSession(session, template, { alwaysUseArtwork = true }
 
 module.exports = {
   DISCORD_TEXT_LIMIT,
+  DEFAULT_GAMING_PRESENCE_OPTIONS,
+  normalizeGamingPresenceOptions,
   truncate,
+  joinParts,
+  partyDisplay,
   buildPresenceLines,
   buildPresenceFromSession,
   buildGameSessionPayload,

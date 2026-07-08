@@ -9,6 +9,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('smiley', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   saveConfig: (data) => ipcRenderer.invoke('save-config', data),
+  saveRiotApiKey: (key) => ipcRenderer.invoke('save-riot-api-key', key),
   flushConfig: () => ipcRenderer.invoke('flush-config'),
   connectRpc: () => ipcRenderer.invoke('connect-rpc'),
   setActivity: (activity, isNewSession) => ipcRenderer.invoke('set-activity', activity, isNewSession),

@@ -28,25 +28,35 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 
 ---
 
+## Project status
+
+> **Smiley v8.0.0 will be the final planned release.** After v8, expect only occasional bug fixes — a major update is possible but unlikely. The community is **free to fork, modify, and advance** the code. Thank you for being part of this journey.
+>
+> Read the full note from Raj: **[docs/FINAL.md](docs/FINAL.md)**
+
+**v7.9.0** (current) adds Gaming Rich Presence settings, a Discord preview card, and a redesigned website. **v8** will wrap up the project.
+
+---
+
 <details>
 <summary><strong>Direct downloads</strong></summary>
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-Setup-7.8.3.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-Setup-7.9.0.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-7.8.3.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-Setup-7.8.3.exe) |
-| macOS Apple Silicon | [Smiley-7.8.3-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-arm64.dmg) |
-| macOS Intel | [Smiley-7.8.3-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3-x64.dmg) |
-| Linux (AppImage) | [Smiley-7.8.3.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.AppImage) |
-| Linux (.deb) | [Smiley-7.8.3.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.3/Smiley-7.8.3.deb) |
+| Windows | [Smiley-Setup-7.9.0.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-Setup-7.9.0.exe) |
+| macOS Apple Silicon | [Smiley-7.9.0-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0-arm64.dmg) |
+| macOS Intel | [Smiley-7.9.0-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0-x64.dmg) |
+| Linux (AppImage) | [Smiley-7.9.0.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0.AppImage) |
+| Linux (.deb) | [Smiley-7.9.0.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.0/Smiley-7.9.0.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
@@ -57,6 +67,24 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 1. **Download** from [the website](https://1tsrajuwu.github.io/Smiley/) or links above.
 2. **Open Discord** desktop (browser won't work).
 3. **Pick an activity** — your profile updates with the same GIF.
+
+</details>
+
+<details>
+<summary><strong>About v7.9.0 — Gaming Rich Presence UI (July 8, 2026)</strong></summary>
+
+**v7.9.0** adds a full Gaming Rich Presence settings panel, Discord preview card, per-field toggles, optional Riot API rank, and a redesigned website.
+
+- **Gaming Rich Presence** — customize mode, party, agent, score, rank, map art, elapsed time, K/D on Discord
+- **Discord preview** — state pills + live session preview in Settings
+- **v8 announced** — final planned release; community forks welcome ([docs/FINAL.md](docs/FINAL.md))
+
+| | |
+|---|---|
+| **Release notes** | [docs/releases/v7.9.0.md](docs/releases/v7.9.0.md) |
+| **Changelog** | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
+| **Code** | Fork & PR — [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Support** | [paypal.me/1tsRaj](https://paypal.me/1tsRaj) |
 
 </details>
 

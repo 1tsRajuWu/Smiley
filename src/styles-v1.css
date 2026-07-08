@@ -601,6 +601,121 @@ body.has-window-controls .app-header {
   margin-top: 1px;
 }
 
+/* Gaming Rich Presence settings + Discord preview */
+.settings-subsection {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  overflow: hidden;
+}
+.settings-subsection-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  -webkit-app-region: no-drag;
+}
+.settings-subsection-toggle[aria-expanded="true"] .settings-subsection-chevron { transform: rotate(180deg); }
+.settings-subsection-chevron { transition: transform 0.2s ease; opacity: 0.6; }
+.settings-subsection-body { padding: 0 14px 14px; }
+.gaming-presence-toggles { display: grid; gap: 8px; }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+.toggle.sm { transform: scale(0.85); transform-origin: right center; }
+.riot-key-row { display: flex; gap: 8px; align-items: center; }
+.riot-key-row .text-input { flex: 1; min-width: 0; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.gaming-discord-preview {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, #7aa2f7 35%, var(--border));
+  background: linear-gradient(145deg, color-mix(in srgb, #7aa2f7 8%, var(--bg-card)), var(--bg-elevated));
+  box-shadow: 0 0 24px -8px color-mix(in srgb, #7aa2f7 40%, transparent);
+}
+.gaming-discord-preview__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gaming-state-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.gaming-state-pill {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: var(--transition);
+}
+.gaming-state-pill:hover { border-color: #7aa2f7; color: var(--text); }
+.gaming-state-pill.active {
+  background: color-mix(in srgb, #7aa2f7 18%, var(--bg-card));
+  border-color: #7aa2f7;
+  color: #c0d4ff;
+}
+.gaming-discord-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 10px;
+  background: #1e1f22;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.gaming-discord-card__art-wrap { position: relative; flex-shrink: 0; width: 64px; height: 64px; }
+.gaming-discord-card__art {
+  width: 64px; height: 64px; border-radius: 8px; object-fit: cover;
+  background: #2b2d31;
+}
+.gaming-discord-card__badge {
+  position: absolute;
+  right: -4px; bottom: -4px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #2b2d31;
+  border: 2px solid #1e1f22;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #c0d4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.gaming-discord-card__badge img { width: 100%; height: 100%; object-fit: cover; }
+.gaming-discord-card__meta { min-width: 0; flex: 1; }
+.gaming-discord-card__app { font-size: 0.68rem; color: #949ba4; margin-bottom: 2px; }
+.gaming-discord-card__title { font-size: 0.88rem; font-weight: 600; color: #f2f3f5; }
+.gaming-discord-card__state { font-size: 0.76rem; color: #b5bac1; margin-top: 2px; line-height: 1.35; }
+.gaming-discord-card__elapsed { font-size: 0.7rem; color: #3ba55d; margin-top: 4px; }
+.gaming-preview-live-hint { margin-top: 8px; color: #7aa2f7; font-style: italic; }
+
 .preview-actions { display: flex; align-items: center; gap: var(--gap-sm); width: 100%; margin-top: 4px; }
 .preview-actions .btn { flex: 1; min-width: 0; }
 .preview-actions .btn-copy { flex: 0 0 auto; font-size: 0.82rem; padding: 10px 12px; }

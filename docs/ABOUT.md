@@ -83,9 +83,9 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 
 ---
 
-## License — open source (final release)
+## License — open source (v8 will be final)
 
-**v6.x is the final major version line.** Smiley is **open source** (MIT). Fork, contribute, and build on it — see [CONTRIBUTING.md](../CONTRIBUTING.md) and [FINAL.md](FINAL.md).
+**Smiley v8.0.0 will be the final planned release.** After v8, expect only occasional bug fixes. The community is free to fork, modify, and advance the code. Smiley is **open source** (MIT) — see [CONTRIBUTING.md](../CONTRIBUTING.md) and [FINAL.md](FINAL.md).
 
 | ✅ Open | 🚫 Author's infrastructure (off-limits) |
 |--------|----------------------------------------|
