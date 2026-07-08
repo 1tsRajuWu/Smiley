@@ -17,718 +17,781 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #07080c;
-      --bg-elevated: #0c0e14;
-      --surface: #12151d;
-      --surface-2: #181c27;
-      --surface-3: #1e2431;
-      --hairline: rgba(255, 248, 236, 0.08);
-      --hairline-strong: rgba(255, 248, 236, 0.14);
-      --text: #f4f0e8;
-      --text-secondary: #b9b1a4;
-      --text-tertiary: #847c70;
-      --champagne: #d4b883;
-      --champagne-bright: #ead7b2;
-      --champagne-deep: #a88b52;
-      --lilac: #b5a6d8;
-      --lilac-soft: rgba(181, 166, 216, 0.16);
-      --champagne-soft: rgba(212, 184, 131, 0.14);
-      --ink-on-gold: #1a140c;
-      --success: #7dba9a;
-      --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
-      --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 18px 48px rgba(0, 0, 0, 0.38);
-      --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 32px 80px rgba(0, 0, 0, 0.48);
-      --radius-xs: 8px;
-      --radius-sm: 12px;
-      --radius-md: 16px;
-      --radius-lg: 22px;
-      --radius-xl: 28px;
-      --radius-pill: 999px;
-      --space-1: 0.25rem;
-      --space-2: 0.5rem;
-      --space-3: 0.75rem;
-      --space-4: 1rem;
-      --space-5: 1.5rem;
-      --space-6: 2rem;
-      --space-7: 3rem;
-      --space-8: 4.5rem;
-      --space-9: 7rem;
-      --text-xs: 0.72rem;
-      --text-sm: 0.85rem;
-      --text-md: 0.95rem;
-      --text-lg: 1.05rem;
-      --text-xl: clamp(1.75rem, 3vw, 2.35rem);
-      --text-display: clamp(2.75rem, 6.2vw, 4.75rem);
+      --ink: #04060a;
+      --ink-2: #080c12;
+      --ink-3: #0e141c;
+      --ink-4: #151d28;
+      --silver: #c8d0dc;
+      --silver-bright: #e8edf4;
+      --silver-dim: #7a8494;
+      --silver-faint: #4a5566;
+      --mint: #3dffc0;
+      --mint-deep: #1bc995;
+      --mint-soft: rgba(61, 255, 192, 0.12);
+      --mint-glow: rgba(61, 255, 192, 0.28);
+      --line: rgba(200, 208, 220, 0.1);
+      --line-strong: rgba(200, 208, 220, 0.18);
+      --warn: #f0c674;
       --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-      --max: 1120px;
-      --nav-h: 4.5rem;
+      --rail: 1.25rem;
     }
 
-    html[data-theme="bright"] {
-      --bg: #f3efe6;
-      --bg-elevated: #faf7f0;
-      --surface: #ffffff;
-      --surface-2: #f7f2e8;
-      --surface-3: #efe8da;
-      --hairline: rgba(28, 24, 18, 0.1);
-      --hairline-strong: rgba(28, 24, 18, 0.16);
-      --text: #17140f;
-      --text-secondary: #5c554b;
-      --text-tertiary: #8a8174;
-      --champagne: #9a7540;
-      --champagne-bright: #b2894d;
-      --champagne-deep: #7a5a2e;
-      --lilac: #6f5f96;
-      --lilac-soft: rgba(111, 95, 150, 0.12);
-      --champagne-soft: rgba(154, 117, 64, 0.12);
-      --ink-on-gold: #fffaf0;
-      --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 24px rgba(40, 30, 10, 0.08);
-      --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 18px 48px rgba(40, 30, 10, 0.1);
-      --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 28px 64px rgba(40, 30, 10, 0.14);
+    html[data-theme="paper"] {
+      --ink: #f4f6f8;
+      --ink-2: #ebf0f4;
+      --ink-3: #ffffff;
+      --ink-4: #e2e8ef;
+      --silver: #1a222e;
+      --silver-bright: #0a0e14;
+      --silver-dim: #4a5566;
+      --silver-faint: #8a94a4;
+      --mint: #0a9e72;
+      --mint-deep: #087a58;
+      --mint-soft: rgba(10, 158, 114, 0.1);
+      --mint-glow: rgba(10, 158, 114, 0.2);
+      --line: rgba(10, 14, 20, 0.1);
+      --line-strong: rgba(10, 14, 20, 0.18);
     }
 
     html { scroll-behavior: smooth; }
     body {
       font-family: var(--font);
-      background:
-        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(181, 166, 216, 0.11), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 92% 8%, rgba(212, 184, 131, 0.1), transparent 50%),
-        linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg) 42%, var(--bg) 100%);
-      color: var(--text);
-      line-height: 1.55;
+      background: var(--ink);
+      color: var(--silver-bright);
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
       overflow-x: hidden;
     }
-    html[data-theme="bright"] body {
-      background:
-        radial-gradient(ellipse 70% 45% at 8% -5%, rgba(181, 166, 216, 0.18), transparent 55%),
-        radial-gradient(ellipse 55% 35% at 95% 5%, rgba(212, 184, 131, 0.22), transparent 50%),
-        linear-gradient(180deg, #faf7f0 0%, #f3efe6 100%);
-    }
-
     img { display: block; max-width: 100%; }
     a { color: inherit; }
-    button { font: inherit; }
+    button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
     :focus-visible {
-      outline: 2px solid var(--champagne);
+      outline: 2px solid var(--mint);
       outline-offset: 3px;
     }
 
-    .wrap {
-      width: min(var(--max), calc(100% - 2.5rem));
-      margin-inline: auto;
-    }
-
-    /* —— Nav —— */
-    .nav-shell {
+    /* —— Top bar (minimal, not pill-nav) —— */
+    .topbar {
       position: sticky;
       top: 0;
-      z-index: 50;
-      padding: var(--space-4) 0 0;
-    }
-    .nav {
+      z-index: 60;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: var(--space-4);
-      min-height: 3.35rem;
-      padding: 0.45rem 0.45rem 0.45rem 0.9rem;
-      border: 1px solid var(--hairline);
-      border-radius: var(--radius-pill);
-      background: color-mix(in srgb, var(--surface) 92%, transparent);
-      box-shadow: var(--shadow-sm);
+      gap: 1rem;
+      padding: 0.85rem var(--rail);
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--ink) 94%, transparent);
     }
-    .brand {
+    .topbar-brand {
       display: inline-flex;
       align-items: center;
-      gap: 0.7rem;
+      gap: 0.65rem;
       text-decoration: none;
-    }
-    .brand img {
-      width: 30px;
-      height: 30px;
-      border-radius: 9px;
-      border: 1px solid var(--hairline);
-    }
-    .brand-name {
-      font-size: var(--text-md);
       font-weight: 650;
-      letter-spacing: -0.035em;
+      letter-spacing: -0.04em;
+      font-size: 0.95rem;
     }
-    .nav-links {
+    .topbar-brand img {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+    }
+    .topbar-links {
       display: flex;
       align-items: center;
-      gap: 0.15rem;
+      gap: 0.25rem;
     }
-    .nav-links a:not(.btn) {
+    .topbar-links a {
       text-decoration: none;
-      color: var(--text-secondary);
-      font-size: var(--text-sm);
+      color: var(--silver-dim);
+      font-size: 0.82rem;
       font-weight: 500;
-      padding: 0.5rem 0.8rem;
-      border-radius: var(--radius-pill);
-      transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+      padding: 0.4rem 0.7rem;
+      transition: color 0.2s var(--ease);
     }
-    .nav-links a:not(.btn):hover { color: var(--text); }
-
-    .nav-actions {
+    .topbar-links a:hover { color: var(--silver-bright); }
+    .topbar-actions {
       display: flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.5rem;
     }
-    .theme-toggle {
-      display: inline-grid;
+    .icon-btn {
+      width: 2.2rem;
+      height: 2.2rem;
+      display: grid;
       place-items: center;
-      width: 2.35rem;
-      height: 2.35rem;
-      border-radius: var(--radius-pill);
-      border: 1px solid var(--hairline);
-      background: transparent;
-      color: var(--text-secondary);
-      cursor: pointer;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--silver-dim);
       transition: color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
     }
-    .theme-toggle:hover {
-      color: var(--text);
-      border-color: var(--hairline-strong);
+    .icon-btn:hover {
+      color: var(--mint);
+      border-color: var(--line-strong);
       transform: translateY(-1px);
     }
-    .theme-toggle svg { width: 1rem; height: 1rem; }
+    .icon-btn svg { width: 0.95rem; height: 0.95rem; }
 
-    /* —— Buttons —— */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
+      gap: 0.4rem;
       text-decoration: none;
-      border-radius: var(--radius-pill);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      border-radius: 8px;
       border: 1px solid transparent;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      cursor: pointer;
-      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.25s var(--ease), background 0.25s var(--ease), color 0.25s var(--ease);
+      transition: transform 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), opacity 0.2s var(--ease);
     }
-    .btn:hover { transform: translateY(-1.5px); }
+    .btn:hover { transform: translateY(-1px); }
     .btn:active { transform: translateY(0); }
-    .btn-primary {
-      padding: 0.65rem 1.15rem;
-      background: linear-gradient(165deg, var(--champagne-bright), var(--champagne) 55%, var(--champagne-deep));
-      color: var(--ink-on-gold);
-      box-shadow: 0 10px 28px rgba(168, 139, 82, 0.22);
+    .btn-mint {
+      padding: 0.55rem 1rem;
+      background: var(--mint);
+      color: #04110c;
+      font-size: 0.85rem;
     }
-    .btn-primary:hover { box-shadow: 0 14px 34px rgba(168, 139, 82, 0.3); }
-    .btn-secondary {
-      padding: 0.65rem 1.15rem;
-      border-color: var(--hairline);
-      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-      color: var(--text);
+    .btn-mint:hover { background: var(--mint-deep); color: #fff; }
+    .btn-ghost {
+      padding: 0.55rem 1rem;
+      border-color: var(--line-strong);
+      color: var(--silver);
+      font-size: 0.85rem;
     }
-    .btn-secondary:hover { border-color: var(--hairline-strong); }
-    .btn-lg { padding: 0.9rem 1.45rem; font-size: var(--text-md); }
-
-    /* —— Notice —— */
-    .notice {
-      margin-top: var(--space-4);
-      padding: 0.85rem 1.1rem;
-      border: 1px solid color-mix(in srgb, var(--champagne) 28%, var(--hairline));
-      border-radius: var(--radius-md);
-      background:
-        linear-gradient(135deg, var(--champagne-soft), transparent 55%),
-        var(--surface);
-      box-shadow: var(--shadow-sm);
-    }
-    .notice strong {
-      display: block;
-      font-size: var(--text-sm);
-      font-weight: 650;
-      letter-spacing: -0.02em;
-      color: var(--champagne-bright);
-    }
-    .notice p {
-      margin-top: 0.28rem;
-      color: var(--text-secondary);
-      font-size: var(--text-sm);
-    }
-    .notice a {
-      color: var(--lilac);
-      text-decoration: none;
-      border-bottom: 1px solid color-mix(in srgb, var(--lilac) 40%, transparent);
+    .btn-ghost:hover { border-color: var(--mint); color: var(--mint); }
+    .btn-xl {
+      padding: 0.95rem 1.6rem;
+      font-size: 1rem;
+      border-radius: 10px;
     }
 
-    /* —— Hero —— */
+    /* —— Full-bleed vertical hero —— */
     .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-      gap: clamp(2rem, 5vw, 4rem);
-      align-items: center;
-      padding: clamp(3.25rem, 7vw, 5.5rem) 0 clamp(4rem, 8vw, 6.5rem);
-    }
-    .hero-brand {
-      font-size: clamp(1.15rem, 2vw, 1.35rem);
-      font-weight: 650;
-      letter-spacing: -0.04em;
-      color: var(--champagne-bright);
-      margin-bottom: var(--space-4);
-    }
-    .hero h1 {
-      font-size: var(--text-display);
-      line-height: 0.98;
-      letter-spacing: -0.055em;
-      font-weight: 700;
-      max-width: 11.5ch;
-    }
-    .hero h1 em {
-      font-style: normal;
-      background: linear-gradient(120deg, var(--champagne-bright) 0%, #f0e4c8 42%, var(--lilac) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .hero-lede {
-      margin-top: 1.25rem;
-      max-width: 32rem;
-      color: var(--text-secondary);
-      font-size: var(--text-lg);
-      line-height: 1.6;
-    }
-    .hero-meta {
+      position: relative;
+      min-height: min(100svh, 920px);
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.75rem 1.25rem;
-      margin-top: 1.35rem;
-      color: var(--text-tertiary);
-      font-size: var(--text-sm);
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 3rem var(--rail) 0;
+      overflow: hidden;
+      isolation: isolate;
     }
-    .meta-pill {
+
+    /* Ambient product stage — edge-to-edge behind copy */
+    .hero-stage {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, var(--ink) 0%, transparent 18%, transparent 55%, var(--ink) 100%),
+        linear-gradient(90deg, var(--ink) 0%, transparent 30%, transparent 70%, var(--ink) 100%),
+        radial-gradient(ellipse 70% 55% at 70% 40%, var(--mint-soft), transparent 60%),
+        var(--ink-2);
+    }
+    .hero-stage-grid {
+      position: absolute;
+      inset: 12% 8% 22% 35%;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background:
+        linear-gradient(165deg, var(--ink-4) 0%, var(--ink-3) 100%);
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55);
+      transform: rotate(-2.5deg) translateY(4%);
+      opacity: 0.85;
+    }
+    .hero-stage-card {
+      position: absolute;
+      right: 10%;
+      top: 22%;
+      width: min(340px, 38vw);
+      padding: 1.25rem;
+      border-radius: 16px;
+      border: 1px solid var(--line-strong);
+      background: var(--ink-3);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      transform: rotate(1.5deg);
+    }
+    .stage-kicker {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 0.65rem;
+    }
+    .stage-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+    }
+    .stage-state {
+      margin-top: 0.35rem;
+      color: var(--silver-dim);
+      font-size: 0.85rem;
+    }
+    .stage-live {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      color: var(--champagne-bright);
-      font-weight: 550;
+      gap: 0.4rem;
+      margin-top: 1rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--mint);
     }
-    .meta-dot {
-      width: 0.42rem;
-      height: 0.42rem;
+    .stage-dot {
+      width: 0.4rem;
+      height: 0.4rem;
       border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
-      animation: livePulse 2.2s var(--ease) infinite;
+      background: var(--mint);
+      box-shadow: 0 0 0 3px var(--mint-glow);
+      animation: pulse 2s var(--ease) infinite;
     }
-    .hero-meta-sep {
-      width: 1px;
-      height: 0.9rem;
-      background: var(--hairline-strong);
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      max-width: 52rem;
+      padding-bottom: 2.5rem;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mint);
+    }
+    .hero-eyebrow::before {
+      content: "";
+      width: 1.5rem;
+      height: 1px;
+      background: var(--mint);
+    }
+    .wordmark {
+      font-size: clamp(4.5rem, 18vw, 11rem);
+      font-weight: 800;
+      letter-spacing: -0.07em;
+      line-height: 0.85;
+      color: var(--silver-bright);
+      margin-bottom: 1.5rem;
+    }
+    .wordmark span {
+      display: block;
+      color: var(--mint);
+    }
+    .hero-lede {
+      max-width: 28rem;
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      color: var(--silver);
+      line-height: 1.55;
+      margin-bottom: 1.75rem;
     }
     .hero-cta {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
-      margin-top: 1.75rem;
+      margin-bottom: 1.5rem;
     }
-
-    /* —— Product mockup —— */
-    .mockup {
-      position: relative;
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--hairline);
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--surface-3) 65%, transparent), transparent 28%),
-        var(--surface);
-      box-shadow: var(--shadow-lg);
-      overflow: hidden;
-    }
-    .mockup::before {
-      content: "";
-      position: absolute;
-      inset: 0 0 auto 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--champagne) 45%, transparent), color-mix(in srgb, var(--lilac) 35%, transparent), transparent);
-      opacity: 0.7;
-      pointer-events: none;
-    }
-    .mockup-chrome {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid var(--hairline);
-      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
-    }
-    .traffic {
-      display: flex;
-      gap: 0.4rem;
-    }
-    .traffic i {
-      width: 0.55rem;
-      height: 0.55rem;
-      border-radius: 50%;
-      background: var(--hairline-strong);
-      display: block;
-    }
-    .mockup-title {
-      font-size: var(--text-xs);
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-tertiary);
-    }
-    .mockup-body { padding: 1rem; }
-
-    .presence-preview {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 1rem;
-      align-items: center;
-      padding: 1rem;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--hairline);
-      background:
-        linear-gradient(145deg, var(--champagne-soft), transparent 40%),
-        var(--surface-2);
-      box-shadow: var(--shadow-sm);
-    }
-    .presence-mark {
-      display: grid;
-      place-items: center;
-      width: 4.25rem;
-      height: 4.25rem;
-      border-radius: 18px;
-      border: 1px solid var(--hairline);
-      background: linear-gradient(160deg, var(--surface-3), var(--surface));
-      color: var(--champagne-bright);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    }
-    .presence-mark svg { width: 1.65rem; height: 1.65rem; }
-    .presence-kicker {
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--champagne-bright);
-    }
-    .presence-title {
-      margin-top: 0.2rem;
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-    }
-    .presence-state {
-      margin-top: 0.2rem;
-      color: var(--text-secondary);
-      font-size: var(--text-sm);
-    }
-    .presence-tags {
+    .hero-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.75rem;
+      gap: 0.75rem 1.5rem;
+      font-size: 0.8rem;
+      color: var(--silver-faint);
+      font-family: var(--mono);
     }
-    .tag {
-      padding: 0.28rem 0.55rem;
-      border-radius: var(--radius-pill);
-      border: 1px solid var(--hairline);
-      background: color-mix(in srgb, var(--surface) 70%, transparent);
-      color: var(--text-tertiary);
-      font-size: 0.7rem;
-      font-weight: 550;
+    .hero-meta strong {
+      color: var(--silver);
+      font-weight: 600;
     }
 
-    .activity-panel { margin-top: 1rem; }
-    .activity-panel-head {
+    /* —— Status ribbon —— */
+    .ribbon {
+      position: relative;
+      z-index: 2;
       display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: var(--space-3);
-      margin-bottom: 0.75rem;
-      padding-inline: 0.15rem;
-    }
-    .activity-panel-head h2 {
-      font-size: var(--text-sm);
-      font-weight: 650;
-      letter-spacing: -0.02em;
-    }
-    .activity-panel-head p {
-      color: var(--text-tertiary);
-      font-size: var(--text-xs);
-      font-variant-numeric: tabular-nums;
-    }
-    .activity-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.5rem;
-    }
-    .activity-card {
-      display: flex;
-      flex-direction: column;
       align-items: flex-start;
-      gap: 0.55rem;
-      padding: 0.8rem 0.7rem;
-      text-align: left;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--hairline);
-      background: var(--surface-2);
-      color: var(--text);
-      cursor: pointer;
-      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease);
+      gap: 1rem;
+      padding: 1rem var(--rail);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--ink-2);
     }
-    .activity-card:hover {
-      transform: translateY(-2px);
-      border-color: color-mix(in srgb, var(--champagne) 35%, var(--hairline));
-    }
-    .activity-card.is-selected {
-      border-color: color-mix(in srgb, var(--champagne) 55%, var(--hairline));
-      background: linear-gradient(180deg, var(--champagne-soft), var(--surface-2));
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--champagne) 18%, transparent);
-    }
-    .activity-monogram {
-      display: grid;
-      place-items: center;
-      width: 1.85rem;
-      height: 1.85rem;
-      border-radius: 9px;
-      border: 1px solid var(--hairline);
-      background: var(--surface-3);
-      color: var(--lilac);
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-    .activity-card.is-selected .activity-monogram {
-      color: var(--ink-on-gold);
-      border-color: transparent;
-      background: linear-gradient(160deg, var(--champagne-bright), var(--champagne));
-    }
-    .activity-card strong {
+    .ribbon strong {
+      flex-shrink: 0;
       font-size: 0.8rem;
       font-weight: 650;
       letter-spacing: -0.02em;
-      line-height: 1.2;
+      color: var(--warn);
     }
-    .activity-card span {
-      color: var(--text-tertiary);
-      font-size: 0.68rem;
-      line-height: 1.35;
+    .ribbon p {
+      font-size: 0.85rem;
+      color: var(--silver-dim);
+    }
+    .ribbon a {
+      color: var(--mint);
+      text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, var(--mint) 40%, transparent);
     }
 
-    /* —— Sections —— */
-    .section {
-      padding: var(--space-8) 0;
-      border-top: 1px solid var(--hairline);
+    /* —— Activity filmstrip (horizontal scroll) —— */
+    .filmstrip-section {
+      padding: 4rem 0 3.5rem;
       content-visibility: auto;
-      contain-intrinsic-size: 1px 720px;
+      contain-intrinsic-size: 1px 420px;
     }
-    .section-label {
-      display: block;
-      margin-bottom: 0.7rem;
-      color: var(--champagne-bright);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
+    .filmstrip-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 0 var(--rail) 1.5rem;
     }
-    .section-header {
-      max-width: 36rem;
-      margin-bottom: 2.25rem;
-    }
-    .section-header h2 {
-      font-size: var(--text-xl);
-      line-height: 1.08;
+    .filmstrip-head h2 {
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      font-weight: 750;
       letter-spacing: -0.045em;
-      font-weight: 700;
+      line-height: 1.1;
     }
-    .section-header p {
-      margin-top: 0.75rem;
-      color: var(--text-secondary);
-      font-size: var(--text-md);
+    .filmstrip-head p {
+      max-width: 22rem;
+      color: var(--silver-dim);
+      font-size: 0.9rem;
+      text-align: right;
     }
+    .filmstrip {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 0.25rem var(--rail) 1.25rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--mint-deep) var(--ink-3);
+    }
+    .filmstrip::-webkit-scrollbar { height: 4px; }
+    .filmstrip::-webkit-scrollbar-track { background: var(--ink-3); }
+    .filmstrip::-webkit-scrollbar-thumb { background: var(--mint-deep); border-radius: 2px; }
 
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.85rem;
+    .film-card {
+      flex: 0 0 auto;
+      width: min(220px, 72vw);
+      scroll-snap-align: start;
+      padding: 1.35rem 1.2rem 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--ink-3);
+      text-align: left;
+      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), background 0.25s var(--ease);
     }
-    .feature-card {
-      padding: 1.35rem 1.25rem;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--hairline);
-      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 90%, transparent), var(--surface));
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease);
-    }
-    .feature-card:hover {
+    .film-card:hover {
       transform: translateY(-3px);
-      border-color: color-mix(in srgb, var(--champagne) 30%, var(--hairline));
+      border-color: var(--line-strong);
     }
-    .feature-icon {
+    .film-card.is-selected {
+      border-color: color-mix(in srgb, var(--mint) 55%, var(--line));
+      background: linear-gradient(180deg, var(--mint-soft), var(--ink-3));
+    }
+    .film-num {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: var(--silver-faint);
+      margin-bottom: 1.5rem;
+    }
+    .film-card.is-selected .film-num { color: var(--mint); }
+    .film-icon {
       display: grid;
       place-items: center;
       width: 2.5rem;
       height: 2.5rem;
       margin-bottom: 1rem;
-      border-radius: 12px;
-      border: 1px solid var(--hairline);
-      background: var(--surface-2);
-      color: var(--champagne-bright);
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--ink-4);
+      color: var(--silver);
     }
-    .feature-icon svg { width: 1.15rem; height: 1.15rem; }
-    .feature-card h3 {
-      font-size: 1rem;
-      font-weight: 650;
-      letter-spacing: -0.025em;
+    .film-card.is-selected .film-icon {
+      border-color: transparent;
+      background: var(--mint);
+      color: #04110c;
     }
-    .feature-card p {
-      margin-top: 0.4rem;
-      color: var(--text-secondary);
-      font-size: var(--text-sm);
-      line-height: 1.55;
-    }
-
-    /* —— How it works —— */
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1.25rem;
-    }
-    .step {
-      position: relative;
-      padding: 1.6rem 1.35rem 1.5rem;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--hairline);
-      background: var(--surface);
-      box-shadow: var(--shadow-sm);
-    }
-    .step-num {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      color: var(--champagne-bright);
-      margin-bottom: 1.15rem;
-    }
-    .step h3 {
+    .film-icon svg { width: 1.15rem; height: 1.15rem; }
+    .film-card strong {
+      display: block;
       font-size: 1.05rem;
-      font-weight: 650;
+      font-weight: 700;
       letter-spacing: -0.03em;
+      margin-bottom: 0.3rem;
     }
-    .step p {
-      margin-top: 0.45rem;
-      color: var(--text-secondary);
-      font-size: var(--text-sm);
-      line-height: 1.55;
+    .film-card span {
+      display: block;
+      color: var(--silver-dim);
+      font-size: 0.8rem;
+      line-height: 1.4;
     }
 
-    /* —— Download —— */
-    #download { scroll-margin-top: 5.5rem; }
-    .download-grid {
+    /* Live presence readout under filmstrip */
+    .presence-readout {
+      margin: 0 var(--rail);
+      padding: 1.5rem 1.5rem 1.4rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--ink-2);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.25rem;
+      align-items: center;
+    }
+    .presence-mark {
+      display: grid;
+      place-items: center;
+      width: 3.75rem;
+      height: 3.75rem;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--ink-4);
+      color: var(--mint);
+    }
+    .presence-mark svg { width: 1.5rem; height: 1.5rem; }
+    .presence-kicker {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mint);
+    }
+    .presence-title {
+      margin-top: 0.2rem;
+      font-size: 1.35rem;
+      font-weight: 750;
+      letter-spacing: -0.035em;
+    }
+    .presence-state {
+      margin-top: 0.15rem;
+      color: var(--silver-dim);
+      font-size: 0.88rem;
+    }
+    .presence-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: flex-end;
+    }
+    .chip {
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 0.7rem;
+      font-weight: 550;
+      color: var(--silver-dim);
+      background: var(--ink-3);
+    }
+    .chip--mint {
+      border-color: color-mix(in srgb, var(--mint) 40%, var(--line));
+      color: var(--mint);
+      background: var(--mint-soft);
+    }
+
+    /* —— Manifesto / features as numbered columns —— */
+    .manifesto {
+      padding: 5rem var(--rail);
+      border-top: 1px solid var(--line);
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 640px;
+    }
+    .manifesto-intro {
+      max-width: 36rem;
+      margin-bottom: 3rem;
+    }
+    .manifesto-intro .label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 0.85rem;
+    }
+    .manifesto-intro h2 {
+      font-size: clamp(1.85rem, 4vw, 2.75rem);
+      font-weight: 750;
+      letter-spacing: -0.05em;
+      line-height: 1.05;
+    }
+    .feature-rail {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.75rem;
+      gap: 0;
+      border-top: 1px solid var(--line);
     }
-    .download-card {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      padding: 1.15rem 1.1rem;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--hairline);
-      background: var(--surface);
-      text-decoration: none;
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    .feature-item {
+      padding: 2rem 1.5rem 2rem 0;
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
     }
-    .download-card:hover {
-      transform: translateY(-2px);
-      border-color: color-mix(in srgb, var(--champagne) 35%, var(--hairline));
-      box-shadow: var(--shadow-md);
+    .feature-item:nth-child(3n) { border-right: none; padding-right: 0; }
+    .feature-item:nth-child(n+4) { padding-top: 2rem; }
+    .feature-item:nth-child(-n+3) { padding-left: 1.5rem; }
+    .feature-item:nth-child(3n+1) { padding-left: 0; }
+    .feature-idx {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--mint);
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
     }
-    .download-card .plat {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
+    .feature-item h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.45rem;
     }
-    .download-card strong {
+    .feature-item p {
+      color: var(--silver-dim);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      max-width: 28ch;
+    }
+
+    /* —— How: tall stacked timeline —— */
+    .how {
+      padding: 5rem var(--rail);
+      border-top: 1px solid var(--line);
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 480px;
+    }
+    .how-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+    .how .label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 0.85rem;
+    }
+    .how h2 {
+      font-size: clamp(1.85rem, 4vw, 2.6rem);
+      font-weight: 750;
+      letter-spacing: -0.05em;
+      line-height: 1.05;
+      margin-bottom: 0.85rem;
+    }
+    .how > .how-grid > div:first-child p {
+      color: var(--silver-dim);
       font-size: 0.95rem;
-      font-weight: 650;
-      letter-spacing: -0.02em;
+      max-width: 28ch;
     }
-    .download-card .arrow {
-      color: var(--champagne);
+    .timeline {
+      list-style: none;
+      border-left: 1px solid var(--line-strong);
+      padding-left: 1.75rem;
+    }
+    .timeline li {
+      position: relative;
+      padding-bottom: 2.25rem;
+    }
+    .timeline li:last-child { padding-bottom: 0; }
+    .timeline li::before {
+      content: "";
+      position: absolute;
+      left: -1.95rem;
+      top: 0.35rem;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 0 4px var(--ink), 0 0 0 5px var(--line-strong);
+    }
+    .timeline .t-num {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--mint);
+      margin-bottom: 0.4rem;
+    }
+    .timeline h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.35rem;
+    }
+    .timeline p {
+      color: var(--silver-dim);
       font-size: 0.9rem;
-      opacity: 0.7;
-      transition: transform 0.25s var(--ease), opacity 0.25s var(--ease);
+      line-height: 1.5;
     }
-    .download-card:hover .arrow {
-      opacity: 1;
-      transform: translateX(2px);
+
+    /* —— Download: platform table, not cards —— */
+    #download { scroll-margin-top: 4rem; }
+    .download {
+      padding: 5rem var(--rail) 4rem;
+      border-top: 1px solid var(--line);
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 520px;
     }
-    .download-card span {
-      color: var(--text-tertiary);
-      font-size: 0.75rem;
-      font-family: var(--font-mono);
+    .download-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
     }
-    .download-note {
-      margin-top: 1.25rem;
-      color: var(--text-tertiary);
-      font-size: var(--text-sm);
+    .download-head .label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 0.85rem;
     }
-    .download-note a {
-      color: var(--lilac);
+    .download-head h2 {
+      font-size: clamp(1.85rem, 4vw, 2.6rem);
+      font-weight: 750;
+      letter-spacing: -0.05em;
+      line-height: 1.05;
+    }
+    .download-head p {
+      max-width: 24rem;
+      color: var(--silver-dim);
+      font-size: 0.9rem;
+      text-align: right;
+    }
+    .download-head p em {
+      font-style: normal;
+      color: var(--mint);
+      font-weight: 650;
+    }
+
+    .dl-table {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--ink-2);
+    }
+    .dl-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+      gap: 1rem;
+      align-items: center;
+      padding: 1.1rem 1.35rem;
       text-decoration: none;
-      border-bottom: 1px solid color-mix(in srgb, var(--lilac) 35%, transparent);
+      border-bottom: 1px solid var(--line);
+      transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+    }
+    .dl-row:last-child { border-bottom: none; }
+    .dl-row:hover {
+      background: var(--mint-soft);
+    }
+    .dl-row:hover .dl-cta {
+      color: var(--mint);
+      transform: translateX(3px);
+    }
+    .dl-plat {
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      font-size: 0.95rem;
+    }
+    .dl-file {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--silver-faint);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dl-cta {
+      font-size: 0.8rem;
+      font-weight: 650;
+      color: var(--silver);
+      transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+      white-space: nowrap;
+    }
+    .dl-note {
+      margin-top: 1.25rem;
+      font-size: 0.82rem;
+      color: var(--silver-faint);
+    }
+    .dl-note a {
+      color: var(--mint);
+      text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, var(--mint) 35%, transparent);
     }
 
     /* —— Footer —— */
     footer {
-      padding: 2.5rem 0 2.25rem;
-      border-top: 1px solid var(--hairline);
-      text-align: center;
-      color: var(--text-tertiary);
-      font-size: var(--text-sm);
+      padding: 2.5rem var(--rail) 3rem;
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.82rem;
+      color: var(--silver-faint);
     }
     footer a {
-      color: var(--lilac);
+      color: var(--mint);
       text-decoration: none;
     }
-    footer p + p { margin-top: 0.45rem; }
 
-    @keyframes livePulse {
+    @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.55; transform: scale(0.85); }
+      50% { opacity: 0.5; transform: scale(0.82); }
     }
 
-    @media (max-width: 980px) {
-      .hero { grid-template-columns: 1fr; }
-      .hero h1 { max-width: none; }
-      .activity-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .feature-grid,
-      .steps { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) {
+      .hero-stage-grid { inset: 8% 5% 38% 5%; opacity: 0.55; }
+      .hero-stage-card { display: none; }
+      .feature-rail { grid-template-columns: 1fr 1fr; }
+      .feature-item:nth-child(3n) { border-right: 1px solid var(--line); padding-right: 1.5rem; }
+      .feature-item:nth-child(2n) { border-right: none; padding-right: 0; }
+      .feature-item:nth-child(n) { padding-left: 1.5rem; }
+      .feature-item:nth-child(2n+1) { padding-left: 0; }
+      .how-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .filmstrip-head { flex-direction: column; align-items: flex-start; }
+      .filmstrip-head p { text-align: left; }
+      .download-head { flex-direction: column; align-items: flex-start; }
+      .download-head p { text-align: left; }
+      .presence-readout { grid-template-columns: auto 1fr; }
+      .presence-chips { grid-column: 1 / -1; justify-content: flex-start; }
     }
-    @media (max-width: 780px) {
-      .nav-links a:not(.btn) { display: none; }
-      .activity-grid,
-      .download-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 560px) {
-      .wrap { width: min(100% - 1.35rem, var(--max)); }
-      .nav { border-radius: 20px; padding-left: 0.7rem; }
-      .feature-grid,
-      .steps,
-      .download-grid,
-      .activity-grid { grid-template-columns: 1fr; }
-      .presence-preview { grid-template-columns: 1fr; }
+    @media (max-width: 720px) {
+      .topbar-links { display: none; }
+      :root { --rail: 1rem; }
+      .wordmark { font-size: clamp(3.8rem, 22vw, 6rem); }
+      .feature-rail { grid-template-columns: 1fr; }
+      .feature-item,
+      .feature-item:nth-child(3n),
+      .feature-item:nth-child(2n) {
+        border-right: none;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .dl-row {
+        grid-template-columns: 1fr auto;
+        gap: 0.35rem 1rem;
+      }
+      .dl-file { grid-column: 1 / -1; order: 3; }
       .hero-cta { flex-direction: column; align-items: stretch; }
       .btn { width: 100%; }
-      .hero-meta { flex-direction: column; align-items: flex-start; }
-      .hero-meta-sep { display: none; }
+      footer { flex-direction: column; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -743,265 +806,238 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="nav-shell">
-      <nav class="nav" aria-label="Primary">
-        <a class="brand" href="#">
-          <img src="icon.png" alt="Smiley app icon" width="30" height="30">
-          <span class="brand-name">Smiley</span>
-        </a>
-        <div class="nav-links">
-          <a href="#features">Features</a>
-          <a href="#how">How it works</a>
-          <a href="#download">Download</a>
-        </div>
-        <div class="nav-actions">
-          <button class="theme-toggle" type="button" id="themeToggle" aria-label="Toggle surface theme" title="Toggle theme">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-              <path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-              <circle cx="12" cy="12" r="3.5"/>
-            </svg>
-          </button>
-          <a class="btn btn-primary" href="#download">Get v7.9.22</a>
-        </div>
-      </nav>
+  <header class="topbar">
+    <a class="topbar-brand" href="#">
+      <img src="icon.png" alt="" width="28" height="28">
+      Smiley
+    </a>
+    <nav class="topbar-links" aria-label="Primary">
+      <a href="#modes">Modes</a>
+      <a href="#features">Craft</a>
+      <a href="#how">Flow</a>
+      <a href="#download">Install</a>
+    </nav>
+    <div class="topbar-actions">
+      <button class="icon-btn" type="button" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>
+        </svg>
+      </button>
+      <a class="btn btn-mint" href="#download">Get v7.9.19</a>
+    </div>
+  </header>
 
-      <aside class="notice" aria-label="Product status">
-        <strong>v8.0.0 will be the final planned release.</strong>
-        <p>After v8, Smiley receives occasional bug fixes only. You’re welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue the project</a>. — Raj</p>
-      </aside>
-    </header>
+  <section class="hero" aria-labelledby="hero-mark">
+    <div class="hero-stage" aria-hidden="true">
+      <div class="hero-stage-grid"></div>
+      <div class="hero-stage-card">
+        <div class="stage-kicker" id="stageKicker">Playing now</div>
+        <div class="stage-title" id="stageTitle">Valorant</div>
+        <div class="stage-state" id="stageState">Ascent · Jett · Competitive 3-stack</div>
+        <div class="stage-live"><span class="stage-dot"></span> Live on Discord</div>
+      </div>
+    </div>
 
-    <main>
-      <section class="hero" aria-labelledby="hero-heading">
-        <div>
-          <p class="hero-brand">Smiley</p>
-          <h1 id="hero-heading">Presence that feels <em>considered.</em></h1>
-          <p class="hero-lede">A free desktop app that turns Discord Rich Presence into a polished live card — for gaming, coding, music, food, chilling, anime, and studying. No portal. No config files.</p>
-          <div class="hero-meta">
-            <span class="meta-pill"><span class="meta-dot" aria-hidden="true"></span> v7.9.22 live</span>
-            <span class="hero-meta-sep" aria-hidden="true"></span>
-            <span>Windows · macOS · Linux</span>
-          </div>
-          <div class="hero-cta">
-            <a class="btn btn-primary btn-lg" href="#download">Download free</a>
-            <a class="btn btn-secondary btn-lg" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">View on GitHub</a>
-          </div>
-        </div>
-
-        <div class="mockup" aria-label="Interactive Smiley app preview">
-          <div class="mockup-chrome">
-            <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
-            <div class="mockup-title">Smiley.app</div>
-            <div aria-hidden="true" style="width: 2.8rem;"></div>
-          </div>
-          <div class="mockup-body">
-            <div class="presence-preview">
-              <div class="presence-mark" id="heroPresenceIcon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="6" width="18" height="12" rx="2"/>
-                  <path d="M8 18v2M16 18v2M12 6V4"/>
-                  <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/>
-                  <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>
-                </svg>
-              </div>
-              <div>
-                <div class="presence-kicker" id="heroPresenceLabel">Playing now</div>
-                <div class="presence-title" id="heroPresenceTitle">Valorant</div>
-                <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
-                <div class="presence-tags">
-                  <span class="tag" id="heroPresenceChipOne">Gaming</span>
-                  <span class="tag" id="heroPresenceChipTwo">via Smiley</span>
-                  <span class="tag" id="heroPresenceChipThree">Synced</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="activity-panel">
-              <div class="activity-panel-head">
-                <h2>Activity</h2>
-                <p id="selectedActivityText">Selected · Gaming</p>
-              </div>
-              <div class="activity-grid" id="activityGrid" role="group" aria-label="Activity categories">
-                <button class="activity-card is-selected" type="button" data-key="gaming" aria-pressed="true">
-                  <span class="activity-monogram" aria-hidden="true">GM</span>
-                  <strong>Gaming</strong>
-                  <span>Maps, ranks, squads</span>
-                </button>
-                <button class="activity-card" type="button" data-key="coding" aria-pressed="false">
-                  <span class="activity-monogram" aria-hidden="true">CD</span>
-                  <strong>Coding</strong>
-                  <span>Editors &amp; files</span>
-                </button>
-                <button class="activity-card" type="button" data-key="music" aria-pressed="false">
-                  <span class="activity-monogram" aria-hidden="true">MU</span>
-                  <strong>Music</strong>
-                  <span>Tracks &amp; artists</span>
-                </button>
-                <button class="activity-card" type="button" data-key="eating" aria-pressed="false">
-                  <span class="activity-monogram" aria-hidden="true">FD</span>
-                  <strong>Food</strong>
-                  <span>Meals &amp; breaks</span>
-                </button>
-                <button class="activity-card" type="button" data-key="chilling" aria-pressed="false">
-                  <span class="activity-monogram" aria-hidden="true">CH</span>
-                  <strong>Chilling</strong>
-                  <span>Late-night calm</span>
-                </button>
-                <button class="activity-card" type="button" data-key="anime" aria-pressed="false">
-                  <span class="activity-monogram" aria-hidden="true">AN</span>
-                  <strong>Anime</strong>
-                  <span>Episodes &amp; arcs</span>
-                </button>
-                <button class="activity-card" type="button" data-key="studying" aria-pressed="false">
-                  <span class="activity-monogram" aria-hidden="true">ST</span>
-                  <strong>Studying</strong>
-                  <span>Focus sessions</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <section class="section" id="features">
-    <div class="wrap">
-      <header class="section-header">
-        <span class="section-label">Features</span>
-        <h2>Quiet power. Clear presence.</h2>
-        <p>Everything you need to show what you’re actually doing — without turning Discord into a project.</p>
-      </header>
-      <div class="feature-grid">
-        <article class="feature-card">
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 18v2M16 18v2"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <h3>Seven first-class modes</h3>
-          <p>Gaming, coding, music, food, chilling, anime, and studying — each with room for detail, not just a vague status.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 4-6"/>
-            </svg>
-          </div>
-          <h3>Local, instant updates</h3>
-          <p>Switch activities from the desktop app. Your profile updates without developer portals or hand-written JSON.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/>
-            </svg>
-          </div>
-          <h3>Cross-platform by default</h3>
-          <p>Native-feeling installs for Windows, Apple Silicon, Intel Mac, and Linux — same product, same polish.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/>
-            </svg>
-          </div>
-          <h3>Designed for all-day use</h3>
-          <p>Not a gamer-only overlay. Carry one presence language from deep work through lunch, anime, and late-night chill.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3l2.2 4.6L19 9l-3.5 3.3.9 5.2L12 15.2 7.6 17.5l.9-5.2L5 9l4.8-1.4L12 3z"/>
-            </svg>
-          </div>
-          <h3>Expressive when you want it</h3>
-          <p>Custom activities and animated flair stay optional. The default experience stays calm and intentional.</p>
-        </article>
-        <article class="feature-card">
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="5" y="11" width="14" height="10" rx="2"/>
-            </svg>
-          </div>
-          <h3>Free and open</h3>
-          <p>MIT-licensed. Fork-friendly. Built for people who care how their profile looks — without a subscription.</p>
-        </article>
+    <div class="hero-copy">
+      <p class="hero-eyebrow">Discord Rich Presence · Desktop</p>
+      <h1 class="wordmark" id="hero-mark">SMILEY<span>STATUS.</span></h1>
+      <p class="hero-lede">Presence that looks intentional. Free desktop app for gaming, coding, music, food, chilling, anime, and studying — no portal, no JSON.</p>
+      <div class="hero-cta">
+        <a class="btn btn-mint btn-xl" href="#download">Download free</a>
+        <a class="btn btn-ghost btn-xl" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div class="hero-meta">
+        <span><strong>v7.9.19</strong> current</span>
+        <span>Windows · macOS · Linux</span>
+        <span>MIT · Open source</span>
       </div>
     </div>
   </section>
 
-  <section class="section" id="how">
-    <div class="wrap">
-      <header class="section-header">
-        <span class="section-label">How it works</span>
-        <h2>Three steps. Zero config.</h2>
-        <p>Install once, keep Discord desktop open, switch activities as your day changes.</p>
-      </header>
-      <div class="steps">
-        <article class="step">
-          <div class="step-num">01</div>
-          <h3>Download</h3>
-          <p>Grab the build for your platform from the release section below.</p>
-        </article>
-        <article class="step">
-          <div class="step-num">02</div>
+  <aside class="ribbon" aria-label="Product status">
+    <strong>v8.0.0 final</strong>
+    <p>v8.0.0 will be the final planned release. After that, occasional bug fixes only. You’re welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue</a>. — Raj</p>
+  </aside>
+
+  <section class="filmstrip-section" id="modes">
+    <div class="filmstrip-head">
+      <h2>Seven modes.<br>One live card.</h2>
+      <p>Scroll the strip. Tap a mode. Watch the presence update — same language all day.</p>
+    </div>
+    <div class="filmstrip" id="activityStrip" role="group" aria-label="Activity categories">
+      <button class="film-card is-selected" type="button" data-key="gaming" aria-pressed="true">
+        <div class="film-num">01</div>
+        <div class="film-icon" aria-hidden="true" data-icon="gaming"></div>
+        <strong>Gaming</strong>
+        <span>Maps, ranks, squads</span>
+      </button>
+      <button class="film-card" type="button" data-key="coding" aria-pressed="false">
+        <div class="film-num">02</div>
+        <div class="film-icon" aria-hidden="true" data-icon="coding"></div>
+        <strong>Coding</strong>
+        <span>Editors &amp; open files</span>
+      </button>
+      <button class="film-card" type="button" data-key="music" aria-pressed="false">
+        <div class="film-num">03</div>
+        <div class="film-icon" aria-hidden="true" data-icon="music"></div>
+        <strong>Music</strong>
+        <span>Tracks &amp; artists</span>
+      </button>
+      <button class="film-card" type="button" data-key="eating" aria-pressed="false">
+        <div class="film-num">04</div>
+        <div class="film-icon" aria-hidden="true" data-icon="eating"></div>
+        <strong>Food / Eating</strong>
+        <span>Meals &amp; breaks</span>
+      </button>
+      <button class="film-card" type="button" data-key="chilling" aria-pressed="false">
+        <div class="film-num">05</div>
+        <div class="film-icon" aria-hidden="true" data-icon="chilling"></div>
+        <strong>Chilling</strong>
+        <span>Late-night calm</span>
+      </button>
+      <button class="film-card" type="button" data-key="anime" aria-pressed="false">
+        <div class="film-num">06</div>
+        <div class="film-icon" aria-hidden="true" data-icon="anime"></div>
+        <strong>Anime</strong>
+        <span>Episodes &amp; arcs</span>
+      </button>
+      <button class="film-card" type="button" data-key="studying" aria-pressed="false">
+        <div class="film-num">07</div>
+        <div class="film-icon" aria-hidden="true" data-icon="studying"></div>
+        <strong>Studying</strong>
+        <span>Focus sessions</span>
+      </button>
+    </div>
+
+    <div class="presence-readout" aria-live="polite">
+      <div class="presence-mark" id="heroPresenceIcon" aria-hidden="true"></div>
+      <div>
+        <div class="presence-kicker" id="heroPresenceLabel">Playing now</div>
+        <div class="presence-title" id="heroPresenceTitle">Valorant</div>
+        <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
+      </div>
+      <div class="presence-chips">
+        <span class="chip chip--mint" id="heroPresenceChipOne">Gaming</span>
+        <span class="chip" id="heroPresenceChipTwo">via Smiley</span>
+        <span class="chip" id="heroPresenceChipThree">Synced</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="manifesto" id="features">
+    <div class="manifesto-intro">
+      <span class="label">Craft</span>
+      <h2>Built for profiles that don’t look like defaults.</h2>
+    </div>
+    <div class="feature-rail">
+      <article class="feature-item">
+        <div class="feature-idx">01</div>
+        <h3>Seven first-class modes</h3>
+        <p>Gaming, coding, music, food, chilling, anime, studying — detail that actually reads on a profile.</p>
+      </article>
+      <article class="feature-item">
+        <div class="feature-idx">02</div>
+        <h3>Local, instant switches</h3>
+        <p>Change activities in the desktop app. No developer portal. No hand-written config.</p>
+      </article>
+      <article class="feature-item">
+        <div class="feature-idx">03</div>
+        <h3>Cross-platform installs</h3>
+        <p>Windows, Apple Silicon, Intel Mac, and Linux — same product, same polish.</p>
+      </article>
+      <article class="feature-item">
+        <div class="feature-idx">04</div>
+        <h3>All-day language</h3>
+        <p>Not a gamer-only overlay. Carry one presence voice from focus to lunch to late night.</p>
+      </article>
+      <article class="feature-item">
+        <div class="feature-idx">05</div>
+        <h3>Optional flair</h3>
+        <p>Custom activities and animation stay opt-in. Defaults stay calm and deliberate.</p>
+      </article>
+      <article class="feature-item">
+        <div class="feature-idx">06</div>
+        <h3>Free and open</h3>
+        <p>MIT-licensed. Fork-friendly. No subscription between you and a better status.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="how-grid">
+      <div>
+        <span class="label">Flow</span>
+        <h2>Three beats. Zero config.</h2>
+        <p>Install once. Keep Discord desktop open. Switch as your day changes.</p>
+      </div>
+      <ol class="timeline">
+        <li>
+          <div class="t-num">01 — DOWNLOAD</div>
+          <h3>Grab your build</h3>
+          <p>Installers for every major desktop platform are in the section below.</p>
+        </li>
+        <li>
+          <div class="t-num">02 — DISCORD</div>
           <h3>Open Discord desktop</h3>
-          <p>Rich Presence publishes through the desktop client — keep it running alongside Smiley.</p>
-        </article>
-        <article class="step">
-          <div class="step-num">03</div>
+          <p>Rich Presence publishes through the desktop client — leave it running with Smiley.</p>
+        </li>
+        <li>
+          <div class="t-num">03 — SELECT</div>
           <h3>Pick an activity</h3>
-          <p>Gaming, coding, music, food, chilling, anime, or studying — select, refine, done.</p>
-        </article>
-      </div>
+          <p>Gaming, coding, music, food, chilling, anime, or studying — refine, done.</p>
+        </li>
+      </ol>
     </div>
   </section>
 
-  <section class="section" id="download">
-    <div class="wrap">
-      <header class="section-header">
-        <span class="section-label">Download</span>
-        <h2>Smiley v7.9.22</h2>
-        <p>Same trusted release artifacts. <strong style="color: var(--champagne-bright); font-weight: 650;">v8</strong> remains the planned final major release.</p>
-      </header>
-      <div class="download-grid">
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.22/Smiley-Setup-7.9.22.exe" target="_blank" rel="noopener">
-          <div class="plat"><strong>Windows</strong><span class="arrow" aria-hidden="true">→</span></div>
-          <span>Smiley-Setup-7.9.22.exe</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.22/Smiley-7.9.22-arm64.dmg" target="_blank" rel="noopener">
-          <div class="plat"><strong>macOS Apple Silicon</strong><span class="arrow" aria-hidden="true">→</span></div>
-          <span>Smiley-7.9.22-arm64.dmg</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.22/Smiley-7.9.22-x64.dmg" target="_blank" rel="noopener">
-          <div class="plat"><strong>macOS Intel</strong><span class="arrow" aria-hidden="true">→</span></div>
-          <span>Smiley-7.9.22-x64.dmg</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.22/Smiley-7.9.22.AppImage" target="_blank" rel="noopener">
-          <div class="plat"><strong>Linux AppImage</strong><span class="arrow" aria-hidden="true">→</span></div>
-          <span>Smiley-7.9.22.AppImage</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.22/Smiley-7.9.22.deb" target="_blank" rel="noopener">
-          <div class="plat"><strong>Linux .deb</strong><span class="arrow" aria-hidden="true">→</span></div>
-          <span>Smiley-7.9.22.deb</span>
-        </a>
-        <a class="download-card" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
-          <div class="plat"><strong>All releases</strong><span class="arrow" aria-hidden="true">→</span></div>
-          <span>github.com/1tsRajuWu/Smiley</span>
-        </a>
+  <section class="download" id="download">
+    <div class="download-head">
+      <div>
+        <span class="label">Install</span>
+        <h2>Smiley v7.9.19</h2>
       </div>
-      <p class="download-note">Looking for the download section specifically? You’re here — or jump via <a href="#download">#download</a>. Direct link: <a href="download.html">download.html</a>.</p>
+      <p>Direct artifacts from the latest release. <em>v8</em> remains the planned final major.</p>
     </div>
+    <div class="dl-table">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-Setup-7.9.19.exe" target="_blank" rel="noopener">
+        <span class="dl-plat">Windows</span>
+        <span class="dl-file">Smiley-Setup-7.9.19.exe</span>
+        <span class="dl-cta">Download →</span>
+      </a>
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19-arm64.dmg" target="_blank" rel="noopener">
+        <span class="dl-plat">macOS Apple Silicon</span>
+        <span class="dl-file">Smiley-7.9.19-arm64.dmg</span>
+        <span class="dl-cta">Download →</span>
+      </a>
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19-x64.dmg" target="_blank" rel="noopener">
+        <span class="dl-plat">macOS Intel</span>
+        <span class="dl-file">Smiley-7.9.19-x64.dmg</span>
+        <span class="dl-cta">Download →</span>
+      </a>
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19.AppImage" target="_blank" rel="noopener">
+        <span class="dl-plat">Linux AppImage</span>
+        <span class="dl-file">Smiley-7.9.19.AppImage</span>
+        <span class="dl-cta">Download →</span>
+      </a>
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.19/Smiley-7.9.19.deb" target="_blank" rel="noopener">
+        <span class="dl-plat">Linux .deb</span>
+        <span class="dl-file">Smiley-7.9.19.deb</span>
+        <span class="dl-cta">Download →</span>
+      </a>
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/latest" target="_blank" rel="noopener">
+        <span class="dl-plat">All releases</span>
+        <span class="dl-file">github.com/1tsRajuWu/Smiley</span>
+        <span class="dl-cta">Browse →</span>
+      </a>
+    </div>
+    <p class="dl-note">Shortcut: <a href="#download">#download</a> · Mirror page: <a href="download.html">download.html</a></p>
   </section>
 
-  <div class="wrap">
-    <footer>
-      <p>Made by <a href="https://github.com/1tsRajuWu">Raj (1tsRajuWu)</a> · MIT License · <a href="https://paypal.me/1tsRaj">Support</a></p>
-      <p><a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">A note on Smiley’s future (v8 final)</a></p>
-    </footer>
-  </div>
+  <footer>
+    <p>Made by <a href="https://github.com/1tsRajuWu">Raj (1tsRajuWu)</a> · MIT · <a href="https://paypal.me/1tsRaj">Support</a></p>
+    <p><a href="https://github.com/1tsRajuWu/Smiley/blob/main/docs/FINAL.md">A note on Smiley’s future (v8 final)</a></p>
+  </footer>
 
   <script>
     const icons = {
@@ -1021,8 +1057,7 @@
         state: "Ascent · Jett · Competitive 3-stack",
         chipOne: "Gaming",
         chipTwo: "via Smiley",
-        chipThree: "Synced",
-        category: "Gaming"
+        chipThree: "Synced"
       },
       coding: {
         label: "Building now",
@@ -1030,8 +1065,7 @@
         state: "Editing presence-panel.tsx · Project Smiley",
         chipOne: "Coding",
         chipTwo: "File-aware",
-        chipThree: "Synced",
-        category: "Coding"
+        chipThree: "Synced"
       },
       music: {
         label: "Listening now",
@@ -1039,8 +1073,7 @@
         state: "imase · late replay",
         chipOne: "Music",
         chipTwo: "Album-aware",
-        chipThree: "Synced",
-        category: "Music"
+        chipThree: "Synced"
       },
       eating: {
         label: "Eating now",
@@ -1048,8 +1081,7 @@
         state: "Warm bowl · notifications off",
         chipOne: "Food",
         chipTwo: "Custom status",
-        chipThree: "Synced",
-        category: "Eating / Food"
+        chipThree: "Synced"
       },
       chilling: {
         label: "Unwinding now",
@@ -1057,8 +1089,7 @@
         state: "Lights low · playlist on",
         chipOne: "Chilling",
         chipTwo: "Mood-first",
-        chipThree: "Synced",
-        category: "Chilling"
+        chipThree: "Synced"
       },
       anime: {
         label: "Watching now",
@@ -1066,8 +1097,7 @@
         state: "Favorite arc · episode queue",
         chipOne: "Anime",
         chipTwo: "GIF-ready",
-        chipThree: "Synced",
-        category: "Anime"
+        chipThree: "Synced"
       },
       studying: {
         label: "Studying now",
@@ -1075,10 +1105,14 @@
         state: "Notes open · timer on",
         chipOne: "Studying",
         chipTwo: "Focus state",
-        chipThree: "Synced",
-        category: "Studying"
+        chipThree: "Synced"
       }
     };
+
+    document.querySelectorAll("[data-icon]").forEach((el) => {
+      const key = el.getAttribute("data-icon");
+      el.innerHTML = icons[key] || icons.gaming;
+    });
 
     const heroPresenceIcon = document.getElementById("heroPresenceIcon");
     const heroPresenceLabel = document.getElementById("heroPresenceLabel");
@@ -1087,10 +1121,12 @@
     const heroPresenceChipOne = document.getElementById("heroPresenceChipOne");
     const heroPresenceChipTwo = document.getElementById("heroPresenceChipTwo");
     const heroPresenceChipThree = document.getElementById("heroPresenceChipThree");
-    const selectedActivityText = document.getElementById("selectedActivityText");
-    const activityCards = document.querySelectorAll(".activity-card");
+    const stageKicker = document.getElementById("stageKicker");
+    const stageTitle = document.getElementById("stageTitle");
+    const stageState = document.getElementById("stageState");
+    const filmCards = document.querySelectorAll(".film-card");
 
-    function updateHeroActivity(key) {
+    function updateActivity(key) {
       const next = activityData[key];
       if (!next) return;
 
@@ -1101,32 +1137,39 @@
       heroPresenceChipOne.textContent = next.chipOne;
       heroPresenceChipTwo.textContent = next.chipTwo;
       heroPresenceChipThree.textContent = next.chipThree;
-      selectedActivityText.textContent = "Selected · " + next.category;
 
-      activityCards.forEach((card) => {
+      if (stageKicker) stageKicker.textContent = next.label;
+      if (stageTitle) stageTitle.textContent = next.title;
+      if (stageState) stageState.textContent = next.state;
+
+      filmCards.forEach((card) => {
         const selected = card.dataset.key === key;
         card.classList.toggle("is-selected", selected);
         card.setAttribute("aria-pressed", selected ? "true" : "false");
       });
     }
 
-    activityCards.forEach((card) => {
-      card.addEventListener("click", () => updateHeroActivity(card.dataset.key));
+    updateActivity("gaming");
+
+    filmCards.forEach((card) => {
+      card.addEventListener("click", () => updateActivity(card.dataset.key));
     });
 
     const themeToggle = document.getElementById("themeToggle");
     const root = document.documentElement;
     const storedTheme = localStorage.getItem("smiley-theme");
-    if (storedTheme === "bright") root.setAttribute("data-theme", "bright");
+    if (storedTheme === "bright" || storedTheme === "paper") {
+      root.setAttribute("data-theme", "paper");
+    }
 
     themeToggle.addEventListener("click", () => {
-      const isBright = root.getAttribute("data-theme") === "bright";
-      if (isBright) {
+      const isPaper = root.getAttribute("data-theme") === "paper";
+      if (isPaper) {
         root.removeAttribute("data-theme");
         localStorage.setItem("smiley-theme", "dark");
       } else {
-        root.setAttribute("data-theme", "bright");
-        localStorage.setItem("smiley-theme", "bright");
+        root.setAttribute("data-theme", "paper");
+        localStorage.setItem("smiley-theme", "paper");
       }
     });
   </script>
