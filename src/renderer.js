@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════
 // YOU ARE HERE: Renderer UI logic (what the user sees)
-// ─ Markup: index.html │ Styles: styles-v2.css │ Data: src/data/
+// ─ Markup: index.html │ Styles: styles-v{1,2,3,4}.css │ Data: src/data/
 // ─ Backend calls: window.smiley.* (see ../preload.js → ../main.js)
 // ─ Project map: ../PROJECT-STRUCTURE.md │ Newbie tour: ../docs/CODE-TOUR.md
 //
@@ -146,19 +146,10 @@ const settingsGamingPreviewCardTitle = $('#gamingPreviewCardTitle');
 const settingsGamingPreviewCardState = $('#gamingPreviewCardState');
 const settingsGamingPreviewElapsed = $('#gamingPreviewElapsed');
 const settingsGamingPreviewLiveHint = $('#gamingPreviewLiveHint');
-const mainGamingStatePills = $('#mainGamingStatePills');
-const mainGamingPreviewLargeArt = $('#mainGamingPreviewLargeArt');
-const mainGamingPreviewBadge = $('#mainGamingPreviewBadge');
-const mainGamingPreviewCardTitle = $('#mainGamingPreviewCardTitle');
-const mainGamingPreviewCardState = $('#mainGamingPreviewCardState');
-const mainGamingPreviewElapsed = $('#mainGamingPreviewElapsed');
-const mainGamingPreviewLiveHint = $('#mainGamingPreviewLiveHint');
 const musicNowPlayingTogglePanel = $('#musicNowPlayingTogglePanel');
 const gamingNowPlayingTogglePanel = $('#gamingNowPlayingTogglePanel');
 const previewStateChips = $('#previewStateChips');
 const livePreviewBody = $('#livePreviewBody');
-const presenceControlsPanel = $('#presenceControlsPanel');
-const mainGamingDiscordPreview = $('#mainGamingDiscordPreview');
 const privacyConsentModal = $('#privacyConsentModal');
 const privacyConsentAcceptBtn = $('#privacyConsentAcceptBtn');
 const showTimerToggle = $('#showTimerToggle');
@@ -321,8 +312,6 @@ function getGamingPresenceOptionsFromUI() {
 function syncGamingPresenceSectionVisibility() {
   const enabled = gamingNowPlayingToggle?.checked !== false;
   if (gamingPresenceSection) gamingPresenceSection.hidden = !enabled;
-  if (presenceControlsPanel) presenceControlsPanel.hidden = !enabled;
-  if (mainGamingDiscordPreview) mainGamingDiscordPreview.hidden = !enabled;
   if (gamingNowPlayingTogglePanel) gamingNowPlayingTogglePanel.checked = enabled;
 }
 
@@ -333,7 +322,8 @@ function syncMusicPanelToggle() {
 }
 
 function setLivePreviewMode(mode) {
-  livePreviewMode = mode === 'coding' ? 'coding' : 'activity';
+  const allowed = new Set(['activity', 'music', 'gaming', 'coding']);
+  livePreviewMode = allowed.has(mode) ? mode : 'activity';
   if (livePreviewBody) livePreviewBody.dataset.previewMode = livePreviewMode;
   previewStateChips?.querySelectorAll('.preview-state-chip').forEach((chip) => {
     const active = chip.dataset.preview === livePreviewMode;
@@ -341,6 +331,11 @@ function setLivePreviewMode(mode) {
     chip.setAttribute('aria-selected', active ? 'true' : 'false');
   });
   if (livePreviewMode === 'coding') updateCodingSettingsPreview();
+  if (livePreviewMode === 'music') updateMusicPreviewBar(nowPlayingTrack);
+  if (livePreviewMode === 'gaming') updateGamingPreviewBar(gamingSession);
+  if (livePreviewMode === 'activity' && selectedActivityId === 'coding') {
+    updateCodingSettingsPreview();
+  }
 }
 
 function syncCodingPanelToggle() {
@@ -490,17 +485,6 @@ function getSettingsGamingPreviewEls() {
   };
 }
 
-function getMainGamingPreviewEls() {
-  return {
-    cardTitle: mainGamingPreviewCardTitle,
-    cardState: mainGamingPreviewCardState,
-    largeArt: mainGamingPreviewLargeArt,
-    badge: mainGamingPreviewBadge,
-    elapsed: mainGamingPreviewElapsed,
-    liveHint: mainGamingPreviewLiveHint,
-  };
-}
-
 function updateGamingSettingsPreview() {
   const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
   const live = isGamingLiveEnabled() && isGamingActivity(activity) && gamingSession?.title;
@@ -516,7 +500,6 @@ function updateGamingSettingsPreview() {
     : { ...(GAMING_MOCK_PREVIEWS[gamingPreviewState] || GAMING_MOCK_PREVIEWS.lobby), live: false };
 
   renderGamingDiscordPreviewCard(getSettingsGamingPreviewEls(), payload);
-  renderGamingDiscordPreviewCard(getMainGamingPreviewEls(), payload);
 }
 
 function syncGamingPresenceTogglePair(field) {
@@ -546,10 +529,8 @@ function wireGamingPresenceToggleSync() {
 
 function setGamingPreviewState(state) {
   gamingPreviewState = state || 'lobby';
-  [settingsGamingStatePills, mainGamingStatePills].forEach((pillsEl) => {
-    pillsEl?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
-      pill.classList.toggle('active', pill.dataset.state === gamingPreviewState);
-    });
+  settingsGamingStatePills?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.dataset.state === gamingPreviewState);
   });
   updateGamingSettingsPreview();
 }
@@ -557,10 +538,8 @@ function setGamingPreviewState(state) {
 function setupGamingPresenceSettings() {
   setupDashboardUI();
   wireGamingPresenceToggleSync();
-  [settingsGamingStatePills, mainGamingStatePills].forEach((pillsEl) => {
-    pillsEl?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
-      pill.addEventListener('click', () => setGamingPreviewState(pill.dataset.state || 'lobby'));
-    });
+  settingsGamingStatePills?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
+    pill.addEventListener('click', () => setGamingPreviewState(pill.dataset.state || 'lobby'));
   });
   updateGamingSettingsPreview();
 }
@@ -870,8 +849,10 @@ function setupRenderPauseListeners() {
   void syncRenderPauseState();
 }
 
+const UI_VERSIONS = new Set(['v1', 'v2', 'v3', 'v4']);
+
 function normalizeUIVersion(version) {
-  if (version === 'v1' || version === 'v2' || version === 'v3') return version;
+  if (UI_VERSIONS.has(version)) return version;
   return 'v3';
 }
 
@@ -883,6 +864,7 @@ function getSelectedUIVersion() {
 function uiStylesheetForVersion(uiVersion) {
   if (uiVersion === 'v1') return 'styles-v1.css';
   if (uiVersion === 'v2') return 'styles-v2.css';
+  if (uiVersion === 'v4') return 'styles-v4.css';
   return 'styles-v3.css';
 }
 
@@ -2128,7 +2110,13 @@ async function selectActivity(id) {
   if (id === 'coding') {
     setLivePreviewMode('coding');
     updateCodingSettingsPreview();
-  } else setLivePreviewMode('activity');
+  } else if (id === 'listening' || activity?.category === 'music') {
+    setLivePreviewMode('music');
+  } else if (isGamingActivity(activity)) {
+    setLivePreviewMode('gaming');
+  } else {
+    setLivePreviewMode('activity');
+  }
 
   setCharacterLabel(activity);
   if (!isReselect) renderGifPicker(activity);
@@ -3392,10 +3380,6 @@ async function init() {
 
   if (settingsBtn) settingsBtn.addEventListener('click', () => openSettings('general'));
   setupGamingPresenceSettings();
-  const openGamingSettingsBtn = $('#openGamingSettingsBtn');
-  if (openGamingSettingsBtn) {
-    openGamingSettingsBtn.addEventListener('click', () => openSettings('general'));
-  }
   const saveRiotKeyBtn = $('#saveRiotKeyBtn');
   const riotApiKeyInput = $('#riotApiKeyInput');
   if (saveRiotKeyBtn && riotApiKeyInput) {
@@ -3536,12 +3520,18 @@ async function init() {
 
   uiVersionOptions.forEach((opt) => {
     opt.addEventListener('click', () => {
-      applyUIVersion(opt.dataset.uiVersion || 'v3');
+      const next = opt.dataset.uiVersion || 'v3';
+      applyUIVersion(next);
+      if (pendingSettingsRevert) pendingSettingsRevert.uiVersion = normalizeUIVersion(next);
+      window.smiley?.saveConfig?.({ uiVersion: normalizeUIVersion(next) }).catch(() => {});
     });
     const input = opt.querySelector('input[type="radio"]');
     if (input) {
       input.addEventListener('change', () => {
-        if (input.checked) applyUIVersion(input.value);
+        if (!input.checked) return;
+        applyUIVersion(input.value);
+        if (pendingSettingsRevert) pendingSettingsRevert.uiVersion = normalizeUIVersion(input.value);
+        window.smiley?.saveConfig?.({ uiVersion: normalizeUIVersion(input.value) }).catch(() => {});
       });
     }
   });

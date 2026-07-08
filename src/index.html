@@ -70,64 +70,145 @@
         </div>
       </div>
 
-      <!-- Main Content — Aurora dashboard -->
+      <!-- Main Content — Premium Aurora (2-column) -->
       <div class="content">
-        <!-- Left: feature controls -->
-        <aside class="control-panel" id="controlPanel">
-          <section class="panel-section">
-            <div class="panel-heading">Live sync</div>
-            <p class="panel-hint">Show music, games, and coding on Discord automatically.</p>
-            <div class="feature-cards">
-              <div class="feature-card feature-card--music">
-                <span class="feature-card__icon" aria-hidden="true">🎵</span>
-                <span class="feature-card__body">
-                  <span class="feature-card__title">Now playing</span>
-                  <span class="feature-card__desc">Spotify, Apple Music, YouTube Music</span>
-                </span>
-                <label class="toggle sm feature-card__toggle"><input type="checkbox" id="musicNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+        <!-- Left: Live preview dock -->
+        <aside class="live-preview preview-sidebar" id="previewDock">
+          <div class="live-preview-header">
+            <div class="live-preview-title">Live preview</div>
+            <div class="preview-state-chips" id="previewStateChips" role="tablist" aria-label="Preview mode">
+              <button type="button" class="preview-state-chip active" data-preview="activity" role="tab" aria-selected="true">Activity</button>
+              <button type="button" class="preview-state-chip" data-preview="music" role="tab" aria-selected="false">Listening</button>
+              <button type="button" class="preview-state-chip" data-preview="gaming" role="tab" aria-selected="false">Gaming</button>
+              <button type="button" class="preview-state-chip" data-preview="coding" role="tab" aria-selected="false">Coding</button>
+            </div>
+          </div>
+
+          <div class="live-preview-body" id="livePreviewBody" data-preview-mode="activity">
+            <!-- Character Stage with GIF -->
+            <div class="character-stage" id="characterStage">
+              <div class="character-container" id="characterContainer">
+                <img class="character-gif" id="characterGif" src="" alt="Character" decoding="async" />
+                <div class="character-loading" id="characterLoading" style="display:none;">
+                  <span class="loading-spinner">⏳</span>
+                  <span>Loading…</span>
+                </div>
               </div>
-              <div class="feature-card feature-card--gaming">
-                <span class="feature-card__icon" aria-hidden="true">🎮</span>
-                <span class="feature-card__body">
-                  <span class="feature-card__title">Gaming</span>
-                  <span class="feature-card__desc">Foreground game + Valorant stats</span>
-                </span>
-                <label class="toggle sm feature-card__toggle"><input type="checkbox" id="gamingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
-              </div>
-              <div class="feature-card feature-card--coding">
-                <span class="feature-card__icon" aria-hidden="true">💻</span>
-                <span class="feature-card__body">
-                  <span class="feature-card__title">Coding</span>
-                  <span class="feature-card__desc">Cursor, VS Code, and other editors</span>
-                </span>
-                <label class="toggle sm feature-card__toggle"><input type="checkbox" id="codingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              <div class="character-label" id="characterLabel">Pick an activity</div>
+              <div class="character-source" id="characterSource"></div>
+              <button type="button" class="btn btn-ghost character-retry" id="characterRetry" hidden>↻ Retry GIF</button>
+            </div>
+
+            <!-- Discord Preview Card -->
+            <div class="discord-card" id="previewCard">
+              <div class="discord-card-glow"></div>
+              <div class="discord-card-inner">
+                <div class="discord-art" id="previewArt">
+                  <img class="discord-art-gif" id="previewGif" src="" alt="" decoding="async" />
+                  <span class="discord-art-emoji" id="previewEmoji">😊</span>
+                </div>
+                <div class="discord-info">
+                  <div class="discord-details" id="previewDetails">Pick an activity</div>
+                  <div class="discord-state" id="previewState">Your status appears here</div>
+                  <div class="discord-now-playing" id="previewNowPlaying" hidden></div>
+                  <div class="discord-timer" id="previewTimer">
+                    <span class="timer-icon">⏱</span>
+                    <span id="timerText">0:00</span>
+                    <span class="session-badge" id="sessionBadge" hidden></span>
+                  </div>
+                </div>
               </div>
             </div>
-          </section>
-          <section class="panel-section presence-controls" id="presenceControlsPanel">
-            <div class="panel-heading">What to show</div>
-            <p class="panel-hint">Valorant uses local Riot client data only.</p>
-            <div class="gaming-presence-toggles">
-              <div class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowModePanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowPartyPanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgentPanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScorePanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRankPanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArtPanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsedPanel" checked /><span class="toggle-slider"></span></label></div>
-              <div class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKdaPanel" checked /><span class="toggle-slider"></span></label></div>
+
+            <div class="music-preview-bar" id="musicPreviewBar" hidden>
+              <div class="music-preview-art-wrap">
+                <img class="music-preview-art" id="musicPreviewArt" alt="" decoding="async" />
+                <span class="music-preview-art-fallback" id="musicPreviewArtFallback" aria-hidden="true">🎵</span>
+              </div>
+              <div class="music-preview-meta">
+                <div class="music-preview-title" id="musicPreviewTitle"></div>
+                <div class="music-preview-artist" id="musicPreviewArtist"></div>
+                <div class="music-preview-progress" aria-hidden="true">
+                  <div class="music-preview-progress-fill" id="musicPreviewProgressFill"></div>
+                </div>
+                <div class="music-preview-times">
+                  <span id="musicPreviewElapsed">0:00</span>
+                  <span id="musicPreviewDuration">0:00</span>
+                </div>
+              </div>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm panel-settings-link" id="openGamingSettingsBtn">Riot API key &amp; more</button>
-          </section>
+
+            <div class="music-preview-bar" id="gamingPreviewBar" hidden>
+              <div class="music-preview-art-wrap">
+                <img class="music-preview-art" id="gamingPreviewArt" alt="" decoding="async" />
+                <span class="music-preview-art-fallback" aria-hidden="true">🎮</span>
+              </div>
+              <div class="music-preview-meta">
+                <div class="music-preview-title" id="gamingPreviewTitle"></div>
+                <div class="music-preview-artist" id="gamingPreviewSub"></div>
+              </div>
+            </div>
+
+            <div class="music-preview-bar" id="codingPreviewBar" hidden>
+              <div class="music-preview-art-wrap">
+                <span class="music-preview-art-fallback coding-preview-icon" aria-hidden="true">💻</span>
+              </div>
+              <div class="music-preview-meta">
+                <div class="music-preview-title" id="codingPreviewTitle"></div>
+                <div class="music-preview-artist" id="codingPreviewSub"></div>
+              </div>
+            </div>
+
+            <section class="live-sync-dock" id="liveSyncDock" aria-label="Live sync">
+              <div class="live-sync-dock__heading">Live sync</div>
+              <div class="live-sync-pills">
+                <div class="live-sync-pill live-sync-pill--music">
+                  <span class="live-sync-pill__icon" aria-hidden="true">🎵</span>
+                  <span class="live-sync-pill__label">Music</span>
+                  <label class="toggle sm"><input type="checkbox" id="musicNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+                </div>
+                <div class="live-sync-pill live-sync-pill--gaming">
+                  <span class="live-sync-pill__icon" aria-hidden="true">🎮</span>
+                  <span class="live-sync-pill__label">Gaming</span>
+                  <label class="toggle sm"><input type="checkbox" id="gamingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+                </div>
+                <div class="live-sync-pill live-sync-pill--coding">
+                  <span class="live-sync-pill__icon" aria-hidden="true">💻</span>
+                  <span class="live-sync-pill__label">Coding</span>
+                  <label class="toggle sm"><input type="checkbox" id="codingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+                </div>
+              </div>
+            </section>
+
+            <div class="preview-actions">
+              <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
+              <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
+            </div>
+
+            <!-- Donate Banner -->
+            <div class="donate-banner" id="donateBanner" role="group" aria-label="Support the developer">
+              <span class="donate-banner-shine" aria-hidden="true"></span>
+              <span class="donate-banner-icons" aria-hidden="true">
+                <span class="donate-icon">☕</span>
+                <span class="donate-icon donate-icon-heart">❤️</span>
+                <span class="donate-icon">✨</span>
+              </span>
+              <div class="donate-banner-text">
+                <strong>Support the Developer</strong>
+                <span>Help keep Smiley free</span>
+              </div>
+              <div class="donate-banner-actions">
+                <button type="button" class="donate-banner-cta" id="donatePaypalBtn">PayPal</button>
+                <button type="button" class="donate-banner-cta donate-banner-cta-upi" id="donateUpiBtn" title="Copy UPI ID">Pay via UPI</button>
+                <button type="button" class="donate-banner-cta donate-banner-cta-qr" id="donateUpiQrBtn" title="Show UPI QR code" aria-label="Show UPI QR code">QR</button>
+              </div>
+            </div>
+          </div>
         </aside>
 
-        <!-- Center: Activity Picker -->
+        <!-- Right: Activity Picker -->
         <main class="picker-main">
           <div class="picker-header">
-            <div class="picker-intro">
-              <h2 class="picker-heading">Choose your vibe</h2>
-              <p class="picker-subheading">Moods, music, gaming, anime — set in one tap</p>
-            </div>
             <div class="category-tabs" id="categoryTabs" role="tablist"></div>
             <div class="search-wrap">
               <input type="search" id="searchInput" placeholder="Search activities…" autocomplete="off" />
@@ -147,149 +228,11 @@
             <div class="gif-picker-strip" id="gifPickerStrip" role="listbox" aria-label="Activity animation"></div>
           </section>
         </main>
-
-        <!-- Right: Live preview dock -->
-        <aside class="live-preview preview-sidebar">
-          <div class="live-preview-header">
-            <div class="live-preview-kicker">Live</div>
-            <div class="live-preview-title">Presence preview</div>
-            <p class="live-preview-subtitle">How friends see you on Discord</p>
-            <div class="preview-state-chips" id="previewStateChips" role="tablist" aria-label="Preview mode">
-              <button type="button" class="preview-state-chip active" data-preview="activity" role="tab" aria-selected="true">Activity</button>
-              <button type="button" class="preview-state-chip" data-preview="coding" role="tab" aria-selected="false">Coding</button>
-            </div>
-          </div>
-          <div class="live-preview-body" id="livePreviewBody" data-preview-mode="activity">
-          <!-- Character Stage with GIF -->
-          <div class="character-stage" id="characterStage">
-            <div class="character-container" id="characterContainer">
-              <img class="character-gif" id="characterGif" src="" alt="Character" decoding="async" />
-              <div class="character-loading" id="characterLoading" style="display:none;">
-                <span class="loading-spinner">⏳</span>
-                <span>Loading…</span>
-              </div>
-            </div>
-            <div class="character-label" id="characterLabel">Pick an activity</div>
-            <div class="character-source" id="characterSource"></div>
-            <button type="button" class="btn btn-ghost character-retry" id="characterRetry" hidden>↻ Retry GIF</button>
-          </div>
-
-          <!-- Discord Preview Card -->
-          <div class="discord-card" id="previewCard" hidden>
-            <div class="discord-card-glow"></div>
-            <div class="discord-card-inner">
-              <div class="discord-art" id="previewArt">
-                <img class="discord-art-gif" id="previewGif" src="" alt="" decoding="async" />
-                <span class="discord-art-emoji" id="previewEmoji">😊</span>
-              </div>
-              <div class="discord-info">
-                <div class="discord-details" id="previewDetails">Pick an activity</div>
-                <div class="discord-state" id="previewState">Your status appears here</div>
-                <div class="discord-now-playing" id="previewNowPlaying" hidden></div>
-                <div class="discord-timer" id="previewTimer">
-                  <span class="timer-icon">⏱</span>
-                  <span id="timerText">0:00</span>
-                  <span class="session-badge" id="sessionBadge" hidden></span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="music-preview-bar" id="musicPreviewBar" hidden>
-            <div class="music-preview-art-wrap">
-              <img class="music-preview-art" id="musicPreviewArt" alt="" decoding="async" />
-              <span class="music-preview-art-fallback" id="musicPreviewArtFallback" aria-hidden="true">🎵</span>
-            </div>
-            <div class="music-preview-meta">
-              <div class="music-preview-title" id="musicPreviewTitle"></div>
-              <div class="music-preview-artist" id="musicPreviewArtist"></div>
-              <div class="music-preview-progress" aria-hidden="true">
-                <div class="music-preview-progress-fill" id="musicPreviewProgressFill"></div>
-              </div>
-              <div class="music-preview-times">
-                <span id="musicPreviewElapsed">0:00</span>
-                <span id="musicPreviewDuration">0:00</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="music-preview-bar" id="gamingPreviewBar" hidden>
-            <div class="music-preview-art-wrap">
-              <img class="music-preview-art" id="gamingPreviewArt" alt="" decoding="async" />
-              <span class="music-preview-art-fallback" aria-hidden="true">🎮</span>
-            </div>
-            <div class="music-preview-meta">
-              <div class="music-preview-title" id="gamingPreviewTitle"></div>
-              <div class="music-preview-artist" id="gamingPreviewSub"></div>
-            </div>
-          </div>
-
-          <div class="music-preview-bar" id="codingPreviewBar" hidden>
-            <div class="music-preview-art-wrap">
-              <span class="music-preview-art-fallback" aria-hidden="true">💻</span>
-            </div>
-            <div class="music-preview-meta">
-              <div class="music-preview-title" id="codingPreviewTitle"></div>
-              <div class="music-preview-artist" id="codingPreviewSub"></div>
-            </div>
-          </div>
-
-          <div class="live-gaming-preview" id="mainGamingDiscordPreview">
-            <div class="gaming-discord-preview__header">
-              <span>Discord preview</span>
-              <div class="gaming-state-pills" id="mainGamingStatePills" role="tablist">
-                <button type="button" class="gaming-state-pill active" data-state="lobby">Lobby</button>
-                <button type="button" class="gaming-state-pill" data-state="queue">Queue</button>
-                <button type="button" class="gaming-state-pill" data-state="pregame">Agent Select</button>
-                <button type="button" class="gaming-state-pill" data-state="ingame">In Match</button>
-                <button type="button" class="gaming-state-pill" data-state="deathmatch">Deathmatch</button>
-              </div>
-            </div>
-            <div class="gaming-discord-card gaming-discord-card--preview">
-              <div class="gaming-discord-card__art-wrap">
-                <img class="gaming-discord-card__art" id="mainGamingPreviewLargeArt" alt="" decoding="async" />
-                <div class="gaming-discord-card__badge" id="mainGamingPreviewBadge" hidden></div>
-              </div>
-              <div class="gaming-discord-card__meta">
-                <div class="gaming-discord-card__app">Playing a game</div>
-                <div class="gaming-discord-card__title" id="mainGamingPreviewCardTitle">Valorant</div>
-                <div class="gaming-discord-card__state" id="mainGamingPreviewCardState">Swiftplay · Solo · In lobby</div>
-                <div class="gaming-discord-card__elapsed" id="mainGamingPreviewElapsed" hidden>0:00 elapsed</div>
-              </div>
-            </div>
-            <p class="field-hint gaming-preview-live-hint" id="mainGamingPreviewLiveHint" hidden>Showing your live session</p>
-          </div>
-
-          <div class="preview-actions">
-            <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
-            <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
-          </div>
-
-          <!-- Donate Banner -->
-          <div class="donate-banner" id="donateBanner" role="group" aria-label="Support the developer">
-            <span class="donate-banner-shine" aria-hidden="true"></span>
-            <span class="donate-banner-icons" aria-hidden="true">
-              <span class="donate-icon">☕</span>
-              <span class="donate-icon donate-icon-heart">❤️</span>
-              <span class="donate-icon">✨</span>
-            </span>
-            <div class="donate-banner-text">
-              <strong>Support the Developer</strong>
-              <span>Help keep Smiley free</span>
-            </div>
-            <div class="donate-banner-actions">
-              <button type="button" class="donate-banner-cta" id="donatePaypalBtn">PayPal</button>
-              <button type="button" class="donate-banner-cta donate-banner-cta-upi" id="donateUpiBtn" title="Copy UPI ID">Pay via UPI</button>
-              <button type="button" class="donate-banner-cta donate-banner-cta-qr" id="donateUpiQrBtn" title="Show UPI QR code" aria-label="Show UPI QR code">QR</button>
-            </div>
-          </div>
-          </div>
-        </aside>
       </div>
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.9.12</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.9.13</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -443,12 +386,17 @@
           <div class="settings-panel" data-panel="appearance">
             <div class="field">
               <span class="field-label">Interface</span>
-              <p class="field-hint" style="margin:0 0 10px;">Aurora (v3) is the default. Classic (v1) and New UI (v2) remain available.</p>
+              <p class="field-hint" style="margin:0 0 10px;">Four complete layouts — Aurora is default. Switch anytime; all controls stay the same.</p>
               <div class="ui-version-options" id="uiVersionOptions" role="radiogroup" aria-label="Interface version">
                 <label class="ui-version-option active" data-ui-version="v3">
                   <input type="radio" name="uiVersion" value="v3" checked hidden />
                   <strong>Aurora (v3)</strong>
-                  <span>Streamlined dashboard with activity picker and polished preview</span>
+                  <span>Premium cyan–violet 2-column layout with live preview</span>
+                </label>
+                <label class="ui-version-option" data-ui-version="v4">
+                  <input type="radio" name="uiVersion" value="v4" hidden />
+                  <strong>Pulse (v4)</strong>
+                  <span>Warm amber–emerald skin with bold cards and sync dock</span>
                 </label>
                 <label class="ui-version-option" data-ui-version="v2">
                   <input type="radio" name="uiVersion" value="v2" hidden />

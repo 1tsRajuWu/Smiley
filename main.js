@@ -981,7 +981,7 @@ function sanitizeConfigPatch(data) {
         }
         break;
       case 'uiVersion':
-        out.uiVersion = val === 'v1' ? 'v1' : val === 'v2' ? 'v2' : 'v3';
+        out.uiVersion = (val === 'v1' || val === 'v2' || val === 'v3' || val === 'v4') ? val : 'v3';
         break;
       case 'customAnimation':
         out.customAnimation = typeof val === 'string' ? sanitizeFilename(val).slice(0, 100) : null;
@@ -2324,7 +2324,9 @@ function broadcastStatus(immediate = false) {
       donationUrl: DONATION_URL,
       settings: {
         theme: config.theme || 'dark',
-        uiVersion: config.uiVersion === 'v1' ? 'v1' : config.uiVersion === 'v2' ? 'v2' : 'v3',
+        uiVersion: (config.uiVersion === 'v1' || config.uiVersion === 'v2' || config.uiVersion === 'v3' || config.uiVersion === 'v4')
+          ? config.uiVersion
+          : 'v3',
         showTimer: config.showTimer !== false,
         animationsEnabled: config.animationsEnabled !== false,
         customAnimation: config.customAnimation || null,
@@ -4123,7 +4125,9 @@ function setupIPC() {
     hasValidClientId: !!getClientId(),
     donationUrl: DONATION_URL,
     theme: config.theme || 'dark',
-    uiVersion: config.uiVersion === 'v1' ? 'v1' : config.uiVersion === 'v2' ? 'v2' : 'v3',
+    uiVersion: (config.uiVersion === 'v1' || config.uiVersion === 'v2' || config.uiVersion === 'v3' || config.uiVersion === 'v4')
+      ? config.uiVersion
+      : 'v3',
     showTimer: config.showTimer !== false,
     animationsEnabled: config.animationsEnabled !== false,
     customAnimation: config.customAnimation || null,

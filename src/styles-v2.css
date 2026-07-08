@@ -450,6 +450,22 @@
   border-radius: 12px;
 }
 
+[data-ui-version='v2'] .live-sync-dock {
+  border-radius: 12px;
+  background: var(--v2-surface);
+  border-color: var(--v2-border-subtle);
+  box-shadow: var(--v2-shadow-card);
+}
+
+[data-ui-version='v2'] .preview-state-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+[data-ui-version='v2'] .live-preview-header {
+  margin-bottom: 2px;
+}
+
 [data-ui-version='v2'] .ui-version-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
