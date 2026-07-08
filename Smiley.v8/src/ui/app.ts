@@ -235,6 +235,7 @@ export class AppController {
     try {
       this.snap.status = await api.status();
       this.paintStatusOnly();
+      this.paintLiveBoard();
     } catch {
       /* ignore */
     }
@@ -269,6 +270,7 @@ export class AppController {
     this.syncWallpaper();
 
     this.paintStatusOnly();
+    this.paintLiveBoard();
 
     // Optional light gaming probe — throttled, never blocks clicks
     if ((cfg.gamingProbe || cfg.liveGaming) && s.connected && !s.paused) {
@@ -400,6 +402,99 @@ export class AppController {
 
     this.paintCats();
     this.paintGrid();
+  }
+
+  private paintLiveBoard() {
+    if (!this.snap) return;
+    let board = this.$<HTMLElement>("liveBoard");
+    if (!board) {
+      board = document.createElement("div");
+      board.id = "liveBoard";
+      board.className = "live-board";
+      board.hidden = true;
+      board.innerHTML = `
+        <header class="live-head">
+          <div>
+            <p class="live-kicker" id="livePhase">Match</p>
+            <h2 id="liveTitle">VALORANT</h2>
+            <p id="liveMeta">—</p>
+          </div>
+          <div class="live-score" id="liveScore" hidden>—</div>
+        </header>
+        <div class="live-cols">
+          <section><h3>Ally</h3><div id="liveAlly" class="live-list"></div></section>
+          <section><h3>Enemy</h3><div id="liveEnemy" class="live-list"></div></section>
+        </div>`;
+      (this.root.querySelector(".skin") || this.root).appendChild(board);
+    }
+
+    const mb = this.snap.status.matchBoard;
+    const show =
+      !!mb?.active &&
+      mb.product === "valorant" &&
+      (mb.phase === "match" || mb.phase === "pregame" || (mb.players?.length ?? 0) > 0);
+
+    board.hidden = !show;
+    if (!show || !mb) return;
+
+    const phase = this.$("livePhase");
+    const title = this.$("liveTitle");
+    const meta = this.$("liveMeta");
+    const score = this.$<HTMLElement>("liveScore");
+    const ally = this.$("liveAlly");
+    const enemy = this.$("liveEnemy");
+
+    const phaseLabel =
+      mb.phase === "match"
+        ? "LIVE MATCH"
+        : mb.phase === "pregame"
+          ? "AGENT SELECT"
+          : mb.phase === "queue"
+            ? "IN QUEUE"
+            : "LOBBY";
+
+    if (phase) phase.textContent = phaseLabel;
+    if (title) title.textContent = mb.map ? `${mb.title} · ${mb.map}` : mb.title;
+    if (meta) {
+      meta.textContent = [mb.mode, mb.party, mb.selfAgent && `You: ${mb.selfAgent}`, mb.selfKda]
+        .filter(Boolean)
+        .join(" · ") || mb.state || "—";
+    }
+    if (score) {
+      if (mb.score) {
+        score.hidden = false;
+        score.textContent = mb.score;
+      } else {
+        score.hidden = true;
+      }
+    }
+
+    const row = (p: import("./types").MatchPlayer) => {
+      const icon = p.agentIcon
+        ? `<img src="${esc(p.agentIcon)}" alt="" width="36" height="36" loading="lazy" />`
+        : `<span class="live-fallback">?</span>`;
+      return `<div class="live-row${p.isSelf ? " self" : ""}">
+        ${icon}
+        <div>
+          <b>${esc(p.name)}${p.isSelf ? " · you" : ""}</b>
+          <i>${esc(p.agent || "Selecting…")}${p.kda ? ` · ${esc(p.kda)}` : ""}</i>
+        </div>
+      </div>`;
+    };
+
+    const players = mb.players || [];
+    if (ally) {
+      const list = players.filter((p) => p.seat !== "Enemy");
+      ally.innerHTML = list.length ? list.map(row).join("") : `<p class="live-empty">Waiting for parties…</p>`;
+    }
+    if (enemy) {
+      const list = players.filter((p) => p.seat === "Enemy");
+      enemy.innerHTML = list.length
+        ? list.map(row).join("")
+        : mb.phase === "pregame"
+          ? `<p class="live-empty">Enemy team after lock-in</p>`
+          : `<p class="live-empty">—</p>`;
+    }
   }
 
   private paintCats() {

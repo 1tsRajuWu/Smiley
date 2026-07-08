@@ -80,7 +80,7 @@ export function settingsMarkup(): string {
           <label class="cfg-tog"><input type="checkbox" id="cfgShowBtn" /><span>Show Download button on Discord</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgRemember" /><span>Restore last activity on connect</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Process gaming probe (optional)</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant/Riot (local lockfile — no malware)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant match board (local Riot — Valshy-style, no Tracker)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgStaticTiles" /><span>Static tiles (GIFs on hover — saves CPU)</span></label>
         </div>

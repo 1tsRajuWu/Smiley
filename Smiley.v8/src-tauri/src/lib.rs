@@ -116,6 +116,11 @@ fn probe_game(state: tauri::State<'_, Arc<App>>) -> Result<Option<gaming::GameHi
     gaming::probe_foreground_game()
 }
 
+#[tauri::command]
+fn get_match_board(state: tauri::State<'_, Arc<App>>) -> Option<riot::MatchBoard> {
+    state.get_status().match_board
+}
+
 /// Open donate URL from Rust only — webview cannot open arbitrary https.
 #[tauri::command]
 fn open_donation_url(
@@ -189,7 +194,7 @@ pub fn run() {
             {
                 let st = state.clone();
                 std::thread::spawn(move || loop {
-                    std::thread::sleep(Duration::from_secs(5));
+                    std::thread::sleep(Duration::from_secs(4));
                     let _ = st.live_tick();
                 });
             }
@@ -280,6 +285,7 @@ pub fn run() {
             add_custom,
             remove_custom,
             probe_game,
+            get_match_board,
             open_donation_url,
             append_log,
         ])

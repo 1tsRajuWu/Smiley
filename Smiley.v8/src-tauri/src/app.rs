@@ -42,6 +42,7 @@ impl App {
                 paused: false,
                 elapsed_secs: None,
                 rotate_active: false,
+                match_board: None,
             }),
             started_at: Mutex::new(None),
             rotate_index: Mutex::new(0),
@@ -504,7 +505,53 @@ impl App {
             return Ok(());
         }
 
-        // Live gaming — only when idle / already live / gaming presets selected
+        // Always refresh match board when live gaming is on (Valshy-style UI)
+        if cfg.live_gaming {
+            match crate::riot::probe_riot_presence() {
+                Ok(Some(live)) if live.product == "valorant" || live.board.active => {
+                    {
+                        let mut s = self.status.lock();
+                        s.match_board = Some(live.board.clone());
+                    }
+                    // Discord overlay only when gaming slot selected / empty / already live
+                    let activity = status.activity_id.as_deref().unwrap_or("");
+                    let gaming_slot = activity.is_empty()
+                        || activity.starts_with("live-")
+                        || matches!(
+                            activity,
+                            "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
+                        );
+                    if gaming_slot {
+                        let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
+                        let start = Some(Self::now_secs() as i64);
+                        self.discord.set(self.build_presence(
+                            &live.details,
+                            &live.state,
+                            "🎮",
+                            gif,
+                            start,
+                        ))?;
+                        {
+                            let mut s = self.status.lock();
+                            s.activity_id = Some(format!("live-{}", live.product));
+                            s.details = Some(live.details);
+                            s.state = Some(live.state);
+                            s.gif = Some(gif.into());
+                            s.message = format!("Live {}", live.title);
+                        }
+                    }
+                    return Ok(());
+                }
+                _ => {
+                    let mut s = self.status.lock();
+                    if s.match_board.is_some() {
+                        s.match_board = None;
+                    }
+                }
+            }
+        }
+
+        // Optional process probe — only when gaming slot
         let activity = status.activity_id.as_deref().unwrap_or("");
         let gaming_slot = activity.is_empty()
             || activity.starts_with("live-")
@@ -512,47 +559,23 @@ impl App {
                 activity,
                 "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
             );
-        if gaming_slot && (cfg.live_gaming || cfg.gaming_probe) {
-            if cfg.live_gaming {
-                if let Ok(Some(live)) = crate::riot::probe_riot_presence() {
-                    let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
-                    let start = Some(Self::now_secs() as i64);
-                    self.discord.set(self.build_presence(
-                        &live.details,
-                        &live.state,
-                        "🎮",
-                        gif,
-                        start,
-                    ))?;
-                    {
-                        let mut s = self.status.lock();
-                        s.activity_id = Some(format!("live-{}", live.product));
-                        s.details = Some(live.details);
-                        s.state = Some(live.state);
-                        s.gif = Some(gif.into());
-                        s.message = format!("Live {}", live.title);
-                    }
-                    return Ok(());
-                }
-            }
-            if cfg.gaming_probe {
-                if let Ok(Some(hit)) = crate::gaming::probe_foreground_game() {
-                    let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
-                    self.discord.set(self.build_presence(
-                        &hit.details,
-                        &hit.state,
-                        "🎮",
-                        gif,
-                        Some(Self::now_secs() as i64),
-                    ))?;
-                    {
-                        let mut s = self.status.lock();
-                        s.activity_id = Some(format!("live-{}", hit.id));
-                        s.details = Some(hit.details);
-                        s.state = Some(hit.state);
-                        s.gif = Some(gif.into());
-                        s.message = format!("Live {}", hit.title);
-                    }
+        if gaming_slot && cfg.gaming_probe {
+            if let Ok(Some(hit)) = crate::gaming::probe_foreground_game() {
+                let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
+                self.discord.set(self.build_presence(
+                    &hit.details,
+                    &hit.state,
+                    "🎮",
+                    gif,
+                    Some(Self::now_secs() as i64),
+                ))?;
+                {
+                    let mut s = self.status.lock();
+                    s.activity_id = Some(format!("live-{}", hit.id));
+                    s.details = Some(hit.details);
+                    s.state = Some(hit.state);
+                    s.gif = Some(gif.into());
+                    s.message = format!("Live {}", hit.title);
                 }
             }
         }

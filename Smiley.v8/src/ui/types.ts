@@ -16,6 +16,34 @@ export type Category = {
   activities: Activity[];
 };
 
+export type MatchPlayer = {
+  seat: string;
+  name: string;
+  agent?: string | null;
+  agentId?: string | null;
+  agentIcon?: string | null;
+  kda?: string | null;
+  isSelf: boolean;
+  team?: string | null;
+};
+
+export type MatchBoard = {
+  active: boolean;
+  product: string;
+  title: string;
+  details: string;
+  state: string;
+  phase: string;
+  map?: string | null;
+  mode?: string | null;
+  score?: string | null;
+  party?: string | null;
+  selfAgent?: string | null;
+  selfKda?: string | null;
+  players: MatchPlayer[];
+  updatedAt: number;
+};
+
 export type Status = {
   connected: boolean;
   message: string;
@@ -26,6 +54,7 @@ export type Status = {
   paused: boolean;
   elapsedSecs?: number | null;
   rotateActive: boolean;
+  matchBoard?: MatchBoard | null;
 };
 
 export type CustomActivity = {

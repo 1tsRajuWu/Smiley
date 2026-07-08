@@ -36,6 +36,9 @@ pub struct Status {
     pub elapsed_secs: Option<u64>,
     #[serde(default)]
     pub rotate_active: bool,
+    /// Live Valorant match board (ally/enemy seats) — local Riot only.
+    #[serde(default)]
+    pub match_board: Option<crate::riot::MatchBoard>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
