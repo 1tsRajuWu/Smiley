@@ -2,22 +2,13 @@
 const { readLockfile, getSelfPresence, localHttpsPort2999 } = require('../riot-client');
 const { fetchValorantLocalTruth } = require('../valorant-local');
 const { partyLabel } = require('../game-assets');
-
-const VALORANT_QUEUES = {
-  competitive: 'Competitive',
-  unrated: 'Unrated',
-  swiftplay: 'Swiftplay',
-  deathmatch: 'Deathmatch',
-  spikeRush: 'Spike Rush',
-  ggteam: 'Spike Rush',
-  escalation: 'Escalation',
-  replication: 'Replication',
-  snowball: 'Snowball Fight',
-  custom: 'Custom',
-  newmap: 'New Map',
-  premier: 'Premier',
-  onefa: 'Team Deathmatch',
-};
+const {
+  VALORANT_QUEUES,
+  queueDisplayName,
+  resolveMap,
+  isDeathmatchQueue,
+  isTeamDeathmatchQueue,
+} = require('../valorant-catalog');
 
 const LOL_QUEUE_NAMES = {
   420: 'Ranked Solo',
@@ -80,13 +71,11 @@ function flattenValorantPresence(privateData) {
 }
 
 function mapPathToName(p) {
-  const last = String(p || '').split('/').filter(Boolean).pop();
-  return last ? last.replace(/([a-z])([A-Z])/g, '$1 $2') : null;
+  return resolveMap(p).name;
 }
 
 function queueName(id) {
-  const k = String(id || '').trim();
-  return VALORANT_QUEUES[k] || k.replace(/([a-z])([A-Z])/g, '$1 $2') || null;
+  return queueDisplayName(id);
 }
 
 function lolQueueName(id) {
@@ -177,29 +166,60 @@ function resolveValorantPhase({ privateData, localTruth } = {}) {
   };
 }
 
+function chatTeamScore(data) {
+  const ally = Number(data?.partyOwnerMatchScoreAllyTeam ?? data?.partyOwnerMatchCurrentTeamRoundScore);
+  const enemy = Number(data?.partyOwnerMatchScoreEnemyTeam);
+  if (Number.isFinite(ally) && Number.isFinite(enemy)) return `${ally}-${enemy}`;
+  return null;
+}
+
+/**
+ * Presence score line.
+ * Deathmatch: K/D (or kills) — never chat round scores (they're meaningless in FFA).
+ * TDM / spike / standard: prefer localTruth then chat ally-enemy.
+ */
+function resolveScoreHint({ resolved, data, localTruth, queueId }) {
+  if (!resolved.inMatch) return null;
+  if (isDeathmatchQueue(queueId)) {
+    if (localTruth?.scoreHint) return localTruth.scoreHint;
+    if (localTruth?.kda) {
+      const kills = String(localTruth.kda).split('/')[0];
+      return kills ? `${kills} kills` : null;
+    }
+    return null;
+  }
+  // Local team score (TDM NumPoints / round scores) wins when present
+  if (localTruth?.scoreHint) return localTruth.scoreHint;
+  const chat = chatTeamScore(data);
+  if (chat) return chat;
+  if (isTeamDeathmatchQueue(queueId) && localTruth?.kda) return localTruth.kda;
+  return null;
+}
+
 function parseValorant(privateData, localTruth = null) {
   const data = flattenValorantPresence(privateData);
   if (!data && !localTruth) return null;
 
   const resolved = resolveValorantPhase({ privateData: data, localTruth });
-  const queueId = String(data?.queueId || data?.partyOwnerQueueId || '').trim();
-  const map = localTruth?.map || mapPathToName(data?.partyOwnerMatchMap || data?.matchMap);
-  const mode = queueName(queueId) || (localTruth?.mode ? queueName(localTruth.mode) : null) || localTruth?.mode || null;
+  const queueId = String(
+    data?.queueId || data?.partyOwnerQueueId || localTruth?.queueId || '',
+  ).trim();
+  const mapPath = data?.partyOwnerMatchMap || data?.matchMap || null;
+  const mapResolved = resolveMap(localTruth?.mapId || mapPath);
+  const map = localTruth?.map || mapResolved.name || mapPathToName(mapPath);
+  const mode = queueName(queueId)
+    || (localTruth?.mode ? queueName(localTruth.mode) || localTruth.mode : null)
+    || null;
   const partySize = parsePartySize(data);
   const party = partySize ? partyLabel(partySize) : null;
-  const ally = Number(data?.partyOwnerMatchScoreAllyTeam ?? data?.partyOwnerMatchCurrentTeamRoundScore);
-  const enemy = Number(data?.partyOwnerMatchScoreEnemyTeam);
-  const scoreHint = resolved.inMatch && (
-    localTruth?.scoreHint
-    || (Number.isFinite(ally) && Number.isFinite(enemy) ? `${ally}-${enemy}` : null)
-  );
+  const scoreHint = resolveScoreHint({ resolved, data, localTruth, queueId });
 
   return {
     provider: 'riot-valorant',
     title: 'Valorant',
     phase: resolved.phase,
     map,
-    mapId: localTruth?.mapId || null,
+    mapId: localTruth?.mapId || mapResolved.mapId || mapResolved.uuid || null,
     mode,
     modeKey: queueId,
     queueId,
@@ -316,4 +336,7 @@ module.exports = {
   parseValorant,
   flattenValorantPresence,
   resolveValorantPhase,
+  mapPathToName,
+  queueName,
+  VALORANT_QUEUES,
 };

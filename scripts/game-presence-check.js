@@ -427,5 +427,189 @@ const merged = mergeForegroundWithSession(
 ok('Riot session not overridden by window', merged?.provider === 'riot-valorant');
 ok('Riot mode preserved in lobby', merged?.mode === 'Unrated');
 
+// ── Map / mode catalog (DM, TDM, new maps, alternate queues) ──
+const catalog = require(path.join(root, 'electron/valorant-catalog'));
+const { mapName: localMapName } = require(path.join(root, 'electron/valorant-local'));
+
+ok('Map Summit via Plummet path', catalog.resolveMap('/Game/Maps/Plummet/Plummet').name === 'Summit');
+ok('Map Lotus via Jam path', catalog.resolveMap('/Game/Maps/Jam/Jam').name === 'Lotus');
+ok('Map District via HURM_Alley', catalog.resolveMap('/Game/Maps/HURM/HURM_Alley/HURM_Alley').name === 'District');
+ok('Map Kasbah via HURM_Bowl', catalog.resolveMap('/Game/Maps/HURM/HURM_Bowl/HURM_Bowl').name === 'Kasbah');
+ok('Map Glitch via HURM_HighTide', catalog.resolveMap('/Game/Maps/HURM/HURM_HighTide/HURM_HighTide').name === 'Glitch');
+ok('Map Corrode via Rook', catalog.resolveMap('/Game/Maps/Rook/Rook').name === 'Corrode');
+ok('Unknown map UUID keeps uuid mapId', (() => {
+  const u = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+  const r = catalog.resolveMap(u);
+  return r.uuid === u && r.mapId === u && r.name === null;
+})());
+ok('Unknown map path graceful fallback', (() => {
+  const r = catalog.resolveMap('/Game/Maps/FutureMap/FutureMap_V2');
+  return r.name && /Future/i.test(r.name) && !r.uuid;
+})());
+ok('local mapName matches catalog', localMapName('/Game/Maps/Plummet/Plummet') === 'Summit');
+
+ok('Queue hurm = Team Deathmatch', catalog.queueDisplayName('hurm') === 'Team Deathmatch');
+ok('Queue onefa legacy = Team Deathmatch', catalog.queueDisplayName('onefa') === 'Team Deathmatch');
+ok('Queue fortcollins = Retake', catalog.queueDisplayName('fortcollins') === 'Retake');
+ok('Queue spikerush = Spike Rush', catalog.queueDisplayName('spikerush') === 'Spike Rush');
+ok('Queue ggteam = Escalation', catalog.queueDisplayName('ggteam') === 'Escalation');
+ok('Mode icon hurm', assets.valorantModeIcon('hurm')?.includes('e086db66-47fd-e791-ca81-06a645ac7661'));
+ok('Mode icon deathmatch', assets.valorantModeIcon('deathmatch')?.includes('a8790ec5-4237-f2f0-e93b-08a8e89865b2'));
+ok('Map icon Summit UUID', assets.valorantMapIcon('summit')?.includes('756da597-416b-c0f2-f47b-afbdf28670bc'));
+ok('Map icon HURM District path', assets.valorantMapIcon('/Game/Maps/HURM/HURM_Alley/HURM_Alley')?.includes('690b3ed2'));
+
+// Deathmatch session — no fake round score, agent + map, Solo, kills scoreHint
+const dmParsed = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    partyState: 'DEFAULT',
+    queueId: 'deathmatch',
+    partySize: 1,
+    matchMap: '/Game/Maps/Ascent/Ascent',
+    partyOwnerMatchScoreAllyTeam: 2,
+    partyOwnerMatchScoreEnemyTeam: 0,
+  },
+  {
+    inMatch: true,
+    agent: 'Jett',
+    agentId: JETT_ID,
+    map: 'Ascent',
+    mapId: '7eaecc1b-4337-bbf6-6ab9-04b8f06b3319',
+    queueId: 'deathmatch',
+    kda: '14/7/2',
+    scoreHint: '14 kills',
+  },
+);
+ok('DM phase match', dmParsed.phase === 'match' && dmParsed.inMatch);
+ok('DM mode Deathmatch', dmParsed.mode === 'Deathmatch');
+ok('DM map Ascent', dmParsed.map === 'Ascent');
+ok('DM no fake round score', dmParsed.scoreHint === '14 kills' && !/^\d+-\d+$/.test(dmParsed.scoreHint));
+ok('DM Solo party', dmParsed.party === 'Solo' && dmParsed.partySize === 1);
+ok('DM agent present', dmParsed.agent === 'Jett');
+const dmLines = buildPresenceLines(dmParsed);
+ok('DM details agent+map', dmLines.details.includes('Jett') && dmLines.details.includes('Ascent'));
+ok('DM state has kills+mode', dmLines.state.includes('14 kills') && dmLines.state.includes('Deathmatch'));
+ok('DM state has Solo', dmLines.state.includes('Solo'));
+ok('DM not Queue', !dmLines.state.includes('Queue'));
+const dmArt = buildPresenceFromSession(dmParsed, { category: 'gaming', state: 'In the zone' });
+ok('DM small = agent', dmArt.smallImageUrl?.includes(`/agents/${JETT_ID}`));
+
+// Team Deathmatch session — hurm queue + HURM map
+const tdmParsed = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    partyState: 'DEFAULT',
+    queueId: 'hurm',
+    partySize: 3,
+    matchMap: '/Game/Maps/HURM/HURM_Bowl/HURM_Bowl',
+    partyOwnerMatchScoreAllyTeam: 62,
+    partyOwnerMatchScoreEnemyTeam: 48,
+  },
+  {
+    inMatch: true,
+    agent: 'Sage',
+    agentId: '569fdd95-4d10-43ab-ca70-79becc265df1',
+    map: 'Kasbah',
+    mapId: '12452a9d-48c3-0b02-e7eb-0381c3520404',
+    queueId: 'hurm',
+    scoreHint: '62-48',
+    kda: '9/5/3',
+  },
+);
+ok('TDM phase match', tdmParsed.phase === 'match');
+ok('TDM mode Team Deathmatch', tdmParsed.mode === 'Team Deathmatch');
+ok('TDM map Kasbah (not HURM_Bowl)', tdmParsed.map === 'Kasbah');
+ok('TDM team score', tdmParsed.scoreHint === '62-48');
+ok('TDM Trio', tdmParsed.party === 'Trio');
+const tdmLines = buildPresenceLines(tdmParsed);
+ok('TDM details agent+map', tdmLines.details.includes('Sage') && tdmLines.details.includes('Kasbah'));
+ok('TDM state score+mode', tdmLines.state.includes('62-48') && tdmLines.state.includes('Team Deathmatch'));
+ok('TDM not Queue / not Unknown', !tdmLines.state.includes('Queue') && !tdmLines.state.includes('Unknown'));
+
+// TDM without localTruth still resolves HURM map path from chat
+const tdmChatOnly = parseValorant({
+  sessionLoopState: 'INGAME',
+  queueId: 'hurm',
+  partySize: 1,
+  matchMap: '/Game/Maps/HURM/HURM_Alley/HURM_Alley',
+  partyOwnerMatchScoreAllyTeam: 10,
+  partyOwnerMatchScoreEnemyTeam: 8,
+});
+ok('TDM chat-only map District', tdmChatOnly.map === 'District');
+ok('TDM chat-only mode', tdmChatOnly.mode === 'Team Deathmatch');
+ok('TDM chat-only score from presence', tdmChatOnly.scoreHint === '10-8');
+
+// Spike Rush alternate mode
+const spikeParsed = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    queueId: 'spikerush',
+    partySize: 2,
+    matchMap: '/Game/Maps/Rook/Rook',
+    partyOwnerMatchScoreAllyTeam: 3,
+    partyOwnerMatchScoreEnemyTeam: 1,
+  },
+  {
+    inMatch: true,
+    agent: 'Jett',
+    agentId: JETT_ID,
+    map: 'Corrode',
+    mapId: '1c18ab1f-420d-0d8b-71d0-77ad3c439115',
+    scoreHint: '3-1',
+  },
+);
+ok('Spike Rush mode', spikeParsed.mode === 'Spike Rush');
+ok('Spike Rush map Corrode', spikeParsed.map === 'Corrode');
+const spikeLines = buildPresenceLines(spikeParsed);
+ok('Spike Rush presence', spikeLines.details.includes('Corrode') && spikeLines.state.includes('Spike Rush'));
+
+// Swiftplay still works (regression)
+ok('Swiftplay queue name', catalog.queueDisplayName('swiftplay') === 'Swiftplay');
+
+// Unknown/new map UUID during match — graceful, no crash, mode still resolves
+const unknownMapParsed = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    queueId: 'competitive',
+    partySize: 1,
+    matchMap: '/Game/Maps/BrandNew/BrandNew',
+  },
+  {
+    inMatch: true,
+    agent: 'Jett',
+    agentId: JETT_ID,
+    map: catalog.resolveMap('/Game/Maps/BrandNew/BrandNew').name,
+    mapId: '/Game/Maps/BrandNew/BrandNew',
+    scoreHint: '1-0',
+  },
+);
+ok('Unknown map keeps friendly name', unknownMapParsed.map && /Brand/i.test(unknownMapParsed.map));
+ok('Unknown map competitive mode ok', unknownMapParsed.mode === 'Competitive');
+const unknownLines = buildPresenceLines(unknownMapParsed);
+ok('Unknown map presence builds', unknownLines.details.includes('Jett') && unknownLines.state.includes('Competitive'));
+
+// Summit on Deathmatch (new competitive/DM map)
+const summitDm = parseValorant(
+  {
+    sessionLoopState: 'INGAME',
+    queueId: 'deathmatch',
+    partySize: 1,
+    matchMap: '/Game/Maps/Plummet/Plummet',
+  },
+  {
+    inMatch: true,
+    agent: 'Reyna',
+    agentId: 'a3bfb853-43b2-6972-40fc-e153f8558cab',
+    map: 'Summit',
+    mapId: '756da597-416b-c0f2-f47b-afbdf28670bc',
+    scoreHint: '8 kills',
+    queueId: 'deathmatch',
+  },
+);
+ok('Summit DM map', summitDm.map === 'Summit');
+ok('Summit DM no round score', summitDm.scoreHint === '8 kills');
+const summitArt = buildPresenceFromSession(summitDm, { category: 'gaming', state: 'In the zone' });
+ok('Summit map icon via uuid', summitArt.smallImageUrl?.includes('/agents/') || assets.valorantMapIcon(summitDm.mapId)?.includes('756da597'));
+
 console.log(`\nResult: ${pass}/${pass + fail} checks passed`);
 process.exit(fail > 0 ? 1 : 0);

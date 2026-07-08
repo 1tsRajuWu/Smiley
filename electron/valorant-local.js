@@ -1,5 +1,8 @@
 // Valorant local API — unconditional pregame / core-game truth (read-only)
 const { localHttpsRequest } = require('./riot-client');
+const {
+  mapDisplayName, resolveMap, isDeathmatchQueue, isTeamDeathmatchQueue, queueDisplayName,
+} = require('./valorant-catalog');
 
 const agentCache = { at: 0, map: new Map(), idByName: new Map() };
 
@@ -26,10 +29,34 @@ async function getAgentMap() {
 }
 
 function mapName(mapPath) {
-  const raw = String(mapPath || '').trim();
+  return mapDisplayName(mapPath);
+}
+
+/** Extract queue/mode key from core-game / pregame match payloads. */
+function matchQueueId(match) {
+  const raw = match?.QueueID
+    || match?.QueueId
+    || match?.queueId
+    || match?.ModeID
+    || match?.Mode
+    || null;
   if (!raw) return null;
-  const last = raw.split('/').filter(Boolean).pop();
-  return last ? last.replace(/([a-z])([A-Z])/g, '$1 $2') : null;
+  const s = String(raw).trim();
+  // Path-style Mode: /Game/GameModes/Deathmatch/... → deathmatch
+  const last = s.split('/').filter(Boolean).pop() || s;
+  const key = last
+    .replace(/GameMode.*$/i, '')
+    .replace(/_PrimaryAsset$/i, '')
+    .replace(/Mode$/i, '')
+    .trim();
+  if (/deathmatch/i.test(key) || /deathmatch/i.test(s)) return 'deathmatch';
+  if (/hurm|team.?death|onefa/i.test(key) || /hurm|TeamDeathmatch/i.test(s)) return 'hurm';
+  if (/swiftplay/i.test(key) || /swiftplay/i.test(s)) return 'swiftplay';
+  if (/spikerush|ggteam/i.test(key) || /SpikeRush/i.test(s)) return 'spikerush';
+  if (/bomb|standard|competitive/i.test(s) && /competitive/i.test(s)) return 'competitive';
+  // Already a short queue id
+  if (/^[a-z0-9]+$/i.test(s) && s.length < 32) return s.toLowerCase();
+  return null;
 }
 
 function findPlayer(players, puuid) {
@@ -88,8 +115,31 @@ function kda(player) {
 
 function teamScore(teams) {
   if (!Array.isArray(teams) || teams.length < 2) return null;
-  const s = teams.map((t) => Number(t?.RoundScore ?? t?.roundScore)).filter(Number.isFinite);
+  const s = teams.map((t) => Number(
+    t?.RoundScore ?? t?.roundScore ?? t?.NumPoints ?? t?.Score ?? t?.points,
+  )).filter(Number.isFinite);
   return s.length >= 2 ? `${s[0]}-${s[1]}` : null;
+}
+
+function killsOnly(player) {
+  const k = Number(player?.Stats?.Kills ?? player?.kills);
+  return Number.isFinite(k) ? `${k} kills` : null;
+}
+
+/**
+ * Score line for Discord.
+ * Deathmatch: never fake round scores — prefer kills / KDA.
+ * TDM + standard: team score when available.
+ */
+function matchScoreHint(match, self, queueId) {
+  if (isDeathmatchQueue(queueId)) {
+    return killsOnly(self) || null;
+  }
+  const teams = teamScore(match?.Teams);
+  if (teams) return teams;
+  // TDM sometimes exposes scores via presence only; leave null here
+  if (isTeamDeathmatchQueue(queueId)) return null;
+  return null;
 }
 
 async function resolveAgent(agentId) {
@@ -105,20 +155,22 @@ async function fetchCoreGame(lockfile, puuid) {
   const match = await localHttpsRequest(lockfile.port, `/core-game/v1/matches/${player.MatchID}`, lockfile.password);
   if (!match) return null;
 
-  const self = findPlayer(match.Players, puuid);
+  const self = findPlayer(match.Players, puuid)
+    || findPlayer(pregamePlayerList(match), puuid);
   const agentId = characterIdOf(self);
   const { agent } = await resolveAgent(agentId);
-  const score = teamScore(match.Teams);
-  const mapId = match.MapID || null;
-  const map = mapName(mapId);
+  const queueId = matchQueueId(match);
+  const resolved = resolveMap(match.MapID || null);
 
   return {
     agent,
     agentId,
     kda: kda(self),
-    map,
-    mapId,
-    scoreHint: score,
+    map: resolved.name,
+    mapId: resolved.mapId || match.MapID || null,
+    mode: queueId ? queueDisplayName(queueId) : null,
+    queueId: queueId || null,
+    scoreHint: matchScoreHint(match, self, queueId),
     inMatch: true,
     inPregame: false,
     coreGame: true,
@@ -138,15 +190,16 @@ async function fetchPregame(lockfile, puuid) {
     || findPlayer(match.Players, puuid);
   const agentId = characterIdOf(self);
   const { agent } = await resolveAgent(agentId);
-  const mapId = match.MapID || null;
-  const map = mapName(mapId);
+  const queueId = matchQueueId(match);
+  const resolved = resolveMap(match.MapID || null);
 
   return {
     agent,
     agentId,
-    map,
-    mapId,
-    mode: match.Mode || match.QueueID || null,
+    map: resolved.name,
+    mapId: resolved.mapId || match.MapID || null,
+    mode: queueId ? queueDisplayName(queueId) : (match.Mode || match.QueueID || null),
+    queueId: queueId || null,
     inMatch: false,
     inPregame: true,
     coreGame: false,
@@ -187,4 +240,7 @@ module.exports = {
   findPlayer,
   pregamePlayerList,
   characterIdOf,
+  mapName,
+  matchQueueId,
+  matchScoreHint,
 };

@@ -62,13 +62,17 @@ function buildValorantPresence(session, opts, fallbackState) {
     const map = o.showMapArt !== false ? session.map : null;
     const agent = o.showAgent !== false ? session.agent : null;
     // details: agent + map; state: score · party · mode · kda · rank (agent already on details)
+    // Deathmatch: avoid duplicating kills in both scoreHint and kda
+    const q = String(session.queueId || session.modeKey || '').toLowerCase();
+    const isDm = q === 'deathmatch' || /death\s*match/i.test(String(session.mode || ''));
     const detailLine = joinParts([agent, map]);
+    const showKda = o.showKda && session.kda && !(isDm && session.scoreHint);
     const ingameParts = [
       agent && !detailLine ? agent : null,
       o.showScore && session.scoreHint,
       party,
       mode,
-      o.showKda && session.kda,
+      showKda ? session.kda : null,
       rank,
     ];
     return {
