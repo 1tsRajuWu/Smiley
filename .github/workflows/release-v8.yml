@@ -17,19 +17,15 @@ jobs:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
             rust_targets: aarch64-apple-darwin
-            tauri_script: npm run desktop:mac
           - platform: macos-latest
             args: --target x86_64-apple-darwin
             rust_targets: x86_64-apple-darwin
-            tauri_script: npm run desktop:mac
           - platform: ubuntu-22.04
             args: ''
             rust_targets: ''
-            tauri_script: npm run desktop
           - platform: windows-latest
             args: ''
             rust_targets: ''
-            tauri_script: npm run desktop
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -95,5 +91,4 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Smiley v8 ${{ github.ref_name }}
           releaseBody: ${{ steps.relnotes.outputs.body }}
-          tauriScript: ${{ matrix.tauri_script }}
           args: ${{ matrix.args }}
