@@ -62,6 +62,13 @@ pub fn save(cfg: &Config) -> AppResult<()> {
 }
 
 pub fn discord_client_id() -> AppResult<String> {
+    // Release builds embed the ID at compile time (see build.rs).
+    if let Some(id) = option_env!("SMILEY_DISCORD_CLIENT_ID") {
+        if id.chars().all(|c| c.is_ascii_digit()) && id.len() >= 17 {
+            return Ok(id.to_string());
+        }
+    }
+
     let candidates = [
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("discord.app.json"),
         PathBuf::from("discord.app.json"),

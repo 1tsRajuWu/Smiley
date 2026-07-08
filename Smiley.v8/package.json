@@ -1,7 +1,7 @@
 {
   "name": "smiley-v8",
   "private": true,
-  "version": "8.0.3",
+  "version": "8.0.4",
   "productName": "Smiley v8",
   "description": "Smiley v8 — ultra-premium native Discord Rich Presence (Rust + Tauri)",
   "type": "module",

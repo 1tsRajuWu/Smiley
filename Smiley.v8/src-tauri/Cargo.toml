@@ -1,6 +1,6 @@
 [package]
 name = "smiley-v8"
-version = "8.0.3"
+version = "8.0.4"
 description = "Smiley v8 — clean native Discord Rich Presence"
 authors = ["1tsRajuWu (Raj)"]
 edition = "2021"
@@ -12,6 +12,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
