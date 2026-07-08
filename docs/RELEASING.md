@@ -1,11 +1,12 @@
 # Releasing Smiley — Push Updates to Installed Users
 
-Smiley has **two update channels**:
+Smiley has **two update channels**, and the reinstall prompt is reserved for **major** versions:
 
 | Channel | What it updates | User experience | When to use |
 |--|--|--|--|
-| **Live UI patches** (silent) | `src/` only — CSS, layout, `renderer.js`, assets | Soft window refresh — **no** “Restart to update” | UI polish after the live-patch client is installed |
-| **GitHub Releases** (`electron-updater`) | Full app — `main.js`, Discord RPC, security, native | Download + restart / install prompt | Privileged / backend / security changes |
+| **Live UI patches** (silent) | `src/` only — CSS, layout, `renderer.js`, assets | Soft window refresh — **no** reinstall | UI polish after the live-patch client is installed |
+| **GitHub Releases** patch/minor (e.g. 7.9.18 → 7.9.19) | Full app binary | Downloads silently; applies on quit — **no** banner | Privileged / backend fixes within the same major |
+| **GitHub Releases** major (e.g. 7.x → 8.0.0) | Full app binary | Banner: reinstall / restart required | Breaking changes, big platform shifts |
 
 Privacy notes for live UI: apps only **GET** a public signed zip from GitHub Pages. No config, Discord token, or identity is uploaded. Offline users keep the last good local UI.
 
@@ -74,12 +75,12 @@ Within ~15–30 minutes, CI uploads installers to [Releases](https://github.com/
 
 ### Full app update
 
-| Step | What happens |
-|------|----------------|
-| App launch | Checks GitHub Releases |
-| Update found | Downloads in background |
-| Download done | Dialog / banner: **"Restart to update"** |
-| User restarts | New version installed |
+| Version kind | What users see |
+|--|--|
+| **Patch / minor** (7.9.x → 7.9.y / 7.10.0) | Silent download; applies on quit — **no** “Restart to update” banner |
+| **Major** (7.x → 8.0.0) | Banner asks to reinstall / restart |
+
+Manual **Check for Updates** always shows status so you can confirm what’s pending.
 
 Users can also use **Settings → Check for Updates** or tray → **Check for Updates**.
 

@@ -247,6 +247,38 @@ function compareReleaseVersions(a, b) {
   return 0;
 }
 
+/** Major bumps (7.x → 8.x) get a reinstall prompt; patch/minor stay silent. */
+function isMajorVersionBump(fromVersion, toVersion) {
+  const parseMajor = (version) => {
+    const n = normalizeReleaseVersion(version);
+    if (!n) return null;
+    const major = parseInt(n.split('.')[0], 10);
+    return Number.isFinite(major) ? major : null;
+  };
+  const from = parseMajor(fromVersion);
+  const to = parseMajor(toVersion);
+  if (from == null || to == null) return false;
+  return to > from;
+}
+
+function shouldPromptReinstall(toVersion, { manual = false } = {}) {
+  if (manual) return true;
+  return isMajorVersionBump(APP_VERSION, toVersion);
+}
+
+function withUpdatePromptMeta(payload, version, { manual = false } = {}) {
+  const ver = normalizeReleaseVersion(version) || version || null;
+  const major = isMajorVersionBump(APP_VERSION, ver);
+  const promptReinstall = shouldPromptReinstall(ver, { manual });
+  return {
+    ...payload,
+    version: ver || payload.version,
+    major,
+    promptReinstall,
+    silent: payload.silent === true || !promptReinstall,
+  };
+}
+
 function extractVersionFromZipPath(zipPath) {
   if (!zipPath) return '';
   const base = path.basename(zipPath, '.zip');
@@ -395,14 +427,14 @@ async function checkMacUpdateViaGithubApi() {
     lastDownloadPercent = 100;
     const payload = buildMacUpdateReadyPayload(ver);
     sendUpdateStatus(payload);
-    return { ok: true, status: 'downloaded', version: ver };
+    return { ok: true, status: 'downloaded', version: ver, ...payload };
   }
-  sendUpdateStatus({
+  sendUpdateStatus(withUpdatePromptMeta({
     status: 'available',
     version: ver,
     percent: 0,
     macInApp: true,
-  });
+  }, ver, { manual: lastUpdateCheckWasManual }));
   const download = await downloadMacUpdateZip(ver);
   if (download.success) {
     return { ok: true, status: 'downloaded', version: ver };
@@ -2501,6 +2533,8 @@ let lastDownloadPercent = 0;
 let downloadStallTimer = null;
 let updaterListenersAttached = false;
 let silentUpdateCheck = false;
+/** True when user clicked Check for Updates — always show banner. */
+let lastUpdateCheckWasManual = false;
 let isCheckingUpdate = false;
 let macDmgDownloadInProgress = false;
 let macDmgDownloadedPath = null;
@@ -2514,11 +2548,13 @@ function applyUpdaterSettings() {
   if (!isPackaged) return;
   try {
     const autoUpdater = getAutoUpdater();
-    // macOS: download zip to cache; custom installer replaces ShipIt (ad-hoc safe)
+    // Always download in background. Install prompts only for major bumps
+    // (see shouldPromptReinstall); patch/minor apply silently on quit.
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.autoRunAppAfterInstall = false;
     if (process.platform !== 'darwin') {
+      // Non-major: install on quit without a banner. Major: user confirms first.
       autoUpdater.autoInstallOnAppQuit = config.autoInstallUpdates !== false;
     }
   } catch (_) {}
@@ -2607,7 +2643,7 @@ function isMacAdHocUpdater() {
 
 function buildMacUpdateAvailablePayload(version = pendingUpdateVersion) {
   const ver = normalizeReleaseVersion(version) || null;
-  return {
+  return withUpdatePromptMeta({
     ok: true,
     status: 'update-available-mac',
     message: ver ? `Update v${ver} available` : 'Update available',
@@ -2616,7 +2652,7 @@ function buildMacUpdateAvailablePayload(version = pendingUpdateVersion) {
     dmgUrl: ver ? buildMacDmgDownloadUrl(ver) : null,
     releasesUrl: GITHUB_RELEASES_URL,
     expected: true,
-  };
+  }, ver, { manual: lastUpdateCheckWasManual });
 }
 
 function buildManualInstallPayload(version = pendingUpdateVersion) {
@@ -3138,15 +3174,17 @@ function installMacUpdate() {
 function buildMacUpdateReadyPayload(version = pendingUpdateVersion) {
   const ver = resolveUpdateVersion(version);
   if (!ver) return null;
-  return {
+  return withUpdatePromptMeta({
     ok: true,
     status: 'downloaded',
-    message: 'Smiley will restart with the new version.',
+    message: isMajorVersionBump(APP_VERSION, ver)
+      ? 'Major update ready — reinstall / restart to apply.'
+      : 'Update ready — will apply on quit (no prompt).',
     version: ver,
     percent: 100,
     macInApp: true,
     expected: true,
-  };
+  }, ver, { manual: lastUpdateCheckWasManual });
 }
 
 function isUpdateSignatureError(msg) {
@@ -3287,6 +3325,7 @@ async function checkForUpdates(manual = false, silent = false) {
 
   isCheckingUpdate = true;
   silentUpdateCheck = silent;
+  lastUpdateCheckWasManual = !!manual;
 
   if (manual) {
     const waitPromise = waitForManualUpdateCheck().finally(finishUpdateCheck);
@@ -3413,50 +3452,60 @@ function setupAutoUpdater() {
 
     getAutoUpdater().on('update-available', (info) => {
       finishUpdateCheck();
+      const wasManual = lastUpdateCheckWasManual;
       silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
       updateDownloaded = false;
       lastDownloadPercent = 0;
       clearDownloadStallTimer();
       if (isMacInAppUpdater()) {
-        const payload = {
+        const payload = withUpdatePromptMeta({
           status: 'available',
           version: info.version,
           percent: 0,
           macInApp: true,
-        };
+        }, info.version, { manual: wasManual });
         sendUpdateStatus(payload);
-        resolveManualUpdate({ ok: true, status: 'available', version: info.version });
+        resolveManualUpdate({ ok: true, status: 'available', version: info.version, ...payload });
         ensureMacUpdateDownloaded(info.version).then((result) => {
           if (!result.success) {
-            sendUpdateStatus({
+            sendUpdateStatus(withUpdatePromptMeta({
               ok: false,
               status: 'error',
               error: result.error || formatUpdateDownloadError(),
               version: info.version,
               expected: true,
-            });
+            }, info.version, { manual: wasManual }));
           }
         }).catch((err) => {
           appendUpdaterLog(`ensureMacUpdateDownloaded failed: ${err.message}`);
-          sendUpdateStatus({
+          sendUpdateStatus(withUpdatePromptMeta({
             ok: false,
             status: 'error',
             error: formatUpdateDownloadError(err),
             version: info.version,
             expected: true,
-          });
+          }, info.version, { manual: wasManual }));
         });
         return;
       }
       if (updateDownloaded && pendingUpdateVersion === info.version) {
-        sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
-        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        const payload = withUpdatePromptMeta({
+          status: 'downloaded',
+          version: info.version,
+          percent: 100,
+        }, info.version, { manual: wasManual });
+        sendUpdateStatus(payload);
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version, ...payload });
         return;
       }
-      const payload = { status: 'available', version: info.version, percent: 0 };
+      const payload = withUpdatePromptMeta({
+        status: 'available',
+        version: info.version,
+        percent: 0,
+      }, info.version, { manual: wasManual });
       sendUpdateStatus(payload);
-      resolveManualUpdate({ ok: true, status: 'available', version: info.version });
+      resolveManualUpdate({ ok: true, status: 'available', version: info.version, ...payload });
     });
 
     getAutoUpdater().on('update-not-available', (info) => {
@@ -3480,12 +3529,12 @@ function setupAutoUpdater() {
       try {
         lastDownloadPercent = downloadProgressPercent(progress);
         resetDownloadStallTimer();
-        sendUpdateStatus({
+        sendUpdateStatus(withUpdatePromptMeta({
           status: 'downloading',
           percent: lastDownloadPercent,
           version: pendingUpdateVersion,
           macInApp: isMacInAppUpdater() || undefined,
-        });
+        }, pendingUpdateVersion, { manual: lastUpdateCheckWasManual }));
       } catch (err) {
         appendUpdaterLog(`download-progress handler failed: ${err.message}`);
       }
@@ -3493,6 +3542,7 @@ function setupAutoUpdater() {
 
     getAutoUpdater().on('update-downloaded', (info) => {
       clearDownloadStallTimer();
+      const wasManual = lastUpdateCheckWasManual;
       silentUpdateCheck = false;
       pendingUpdateVersion = info.version;
       updateDownloaded = true;
@@ -3501,11 +3551,20 @@ function setupAutoUpdater() {
         const payload = buildMacUpdateReadyPayload(info.version);
         if (payload) {
           sendUpdateStatus(payload);
-          resolveManualUpdate({ ok: true, status: 'downloaded', version: payload.version });
+          resolveManualUpdate({ ok: true, status: 'downloaded', version: payload.version, ...payload });
+          // Non-major mac updates: apply on next quit without banner interaction
+          if (!payload.promptReinstall && config.autoInstallUpdates !== false) {
+            appendUpdaterLog(`Silent non-major mac update ${payload.version} ready — will install on quit`);
+          }
         }
       } else {
-        sendUpdateStatus({ status: 'downloaded', version: info.version, percent: 100 });
-        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version });
+        const payload = withUpdatePromptMeta({
+          status: 'downloaded',
+          version: info.version,
+          percent: 100,
+        }, info.version, { manual: wasManual });
+        sendUpdateStatus(payload);
+        resolveManualUpdate({ ok: true, status: 'downloaded', version: info.version, ...payload });
       }
     });
 
@@ -4865,6 +4924,23 @@ app.on('before-quit', async () => {
   await persistAllUserData();
   await pushInstallTelemetry();
   if (rpcClient) { try { await rpcClient.destroy(); } catch (_) {} }
+
+  // Silent non-major Mac update: apply on quit without a Restart banner.
+  if (
+    isPackaged
+    && isMacInAppUpdater()
+    && config.autoInstallUpdates !== false
+    && isUpdateReadyToInstall()
+    && pendingUpdateVersion
+    && !isMajorVersionBump(APP_VERSION, pendingUpdateVersion)
+  ) {
+    try {
+      appendUpdaterLog(`Applying silent non-major update ${pendingUpdateVersion} on quit`);
+      installMacUpdate();
+    } catch (err) {
+      appendUpdaterLog(`Silent mac install on quit failed: ${err.message}`);
+    }
+  }
 });
 
 // Security: block navigation and new windows

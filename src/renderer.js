@@ -3155,6 +3155,24 @@ async function triggerMacUpdateDownload() {
 }
 
 function handleUpdateStatus(data) {
+  if (!data || typeof data !== 'object') return;
+
+  // Non-major binary updates stay silent (download + apply on quit).
+  // Only major bumps — or a manual Check for Updates — show the reinstall banner.
+  const shouldShowUpdateUi = data.promptReinstall === true || data.silent === false;
+  const isPipelineStatus = ['available', 'downloading', 'downloaded', 'update-available-mac', 'unsigned-update', 'manual-install-required', 'dmg-downloading', 'dmg-ready'].includes(data.status);
+  if (isPipelineStatus && data.silent && !shouldShowUpdateUi) {
+    if (data.status === 'downloaded' || data.status === 'available') {
+      updateState.version = data.version || updateState.version;
+      updateState.downloaded = data.status === 'downloaded';
+      updateState.percent = data.percent ?? updateState.percent;
+    }
+    hideUpdateBanner();
+    setUpdateBannerProgress(0, false);
+    syncUpdateBannerButtons();
+    return;
+  }
+
   switch (data.status) {
     case 'checking':
       if (data.silent) break;
@@ -3257,19 +3275,26 @@ function handleUpdateStatus(data) {
       updateState.dmgReady = false;
       setUpdateBannerProgress(100, false);
       syncUpdateBannerButtons();
-      if (updateBannerText) {
+      {
         const ver = formatUpdateVersion(data.version);
-        updateBannerText.textContent = macInAppUpdates
-          ? `${ver} ready — Smiley will restart with the new version`
-          : `${ver} ready — restart to apply`;
+        const major = data.major === true || data.promptReinstall === true;
+        if (updateBannerText) {
+          updateBannerText.textContent = major
+            ? `${ver} major update ready — reinstall required`
+            : macInAppUpdates
+              ? `${ver} ready — Smiley will restart with the new version`
+              : `${ver} ready — restart to apply`;
+        }
+        updateBanner?.classList.add('visible');
+        showToast(
+          major
+            ? `${ver} is a major update — install / restart to apply.`
+            : macInAppUpdates
+              ? `${ver} ready! Click Install update.`
+              : `${ver} ready! Restart to apply.`,
+          'success',
+        );
       }
-      updateBanner?.classList.add('visible');
-      showToast(
-        macInAppUpdates
-          ? `${formatUpdateVersion(data.version)} ready! Click Install update.`
-          : `${formatUpdateVersion(data.version)} ready! Restart to apply.`,
-        'success',
-      );
       break;
     case 'download-stalled':
       updateCheckingToastShown = false;
