@@ -44,6 +44,8 @@ patchFile(path.join(ROOT, 'docs/site/index.html'), (html) =>
   html
     .replace(/(Get v)[\d.]+/g, `$1${version}`)
     .replace(/(badge badge(?:--live|-live)"><span class="pulse"><\/span>v)[\d.]+/g, `$1${version}`)
+    .replace(/(meta-pill"><span class="meta-dot"[^>]*><\/span>\s*v)[\d.]+/g, `$1${version}`)
+    .replace(/(<strong>v)[\d.]+(<\/strong>\s*current)/g, `$1${version}$2`)
     .replace(/(<h2>Smiley v)[\d.]+(<\/h2>)/g, `$1${version}$2`)
     .replace(/(releases\/download\/v)[\d.]+/g, `$1${version}`)
     .replace(/(Smiley-Setup-)[\d.]+(\.exe)/g, `$1${version}$2`)
