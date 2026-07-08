@@ -172,7 +172,7 @@
     /* —— Full-bleed vertical hero —— */
     .hero {
       position: relative;
-      min-height: min(100svh, 920px);
+      min-height: min(100svh, 1080px);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -180,40 +180,52 @@
       overflow: hidden;
       isolation: isolate;
     }
+    #modes { scroll-margin-top: 4rem; }
 
-    /* Ambient product stage — edge-to-edge behind copy */
+    /* Ambient product stage — light, layered, no opaque void */
     .hero-stage {
       position: absolute;
       inset: 0;
       z-index: 0;
       pointer-events: none;
       background:
-        linear-gradient(180deg, var(--ink) 0%, transparent 18%, transparent 55%, var(--ink) 100%),
-        linear-gradient(90deg, var(--ink) 0%, transparent 30%, transparent 70%, var(--ink) 100%),
-        radial-gradient(ellipse 70% 55% at 70% 40%, var(--mint-soft), transparent 60%),
-        var(--ink-2);
+        radial-gradient(ellipse 90% 70% at 75% 25%, var(--mint-soft), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 20% 80%, color-mix(in srgb, var(--mint) 4%, transparent), transparent 50%),
+        linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--ink) 40%, transparent) 100%);
     }
     .hero-stage-grid {
       position: absolute;
-      inset: 12% 8% 22% 35%;
-      border: 1px solid var(--line);
-      border-radius: 20px;
+      inset: 10% 6% 28% 32%;
+      border-radius: 22px;
+      border: 1px solid color-mix(in srgb, var(--silver) 14%, transparent);
       background:
-        linear-gradient(165deg, var(--ink-4) 0%, var(--ink-3) 100%);
-      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55);
-      transform: rotate(-2.5deg) translateY(4%);
-      opacity: 0.85;
+        linear-gradient(145deg, color-mix(in srgb, var(--ink-4) 35%, transparent) 0%, transparent 42%),
+        linear-gradient(320deg, color-mix(in srgb, var(--mint) 6%, transparent) 0%, transparent 38%),
+        linear-gradient(180deg, color-mix(in srgb, var(--ink-3) 18%, transparent), transparent 70%);
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 10%, transparent),
+        inset 0 -1px 0 color-mix(in srgb, var(--ink) 30%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mint) 6%, transparent),
+        0 28px 80px color-mix(in srgb, var(--ink) 55%, transparent),
+        0 0 120px color-mix(in srgb, var(--mint) 5%, transparent);
+      transform: rotate(-2deg) translateY(3%);
+      opacity: 0.72;
     }
     .hero-stage-card {
       position: absolute;
-      right: 10%;
-      top: 22%;
+      right: 9%;
+      top: 20%;
       width: min(340px, 38vw);
       padding: 1.25rem;
       border-radius: 16px;
-      border: 1px solid var(--line-strong);
-      background: var(--ink-3);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      border: 1px solid color-mix(in srgb, var(--silver) 16%, transparent);
+      background:
+        linear-gradient(165deg, color-mix(in srgb, var(--ink-3) 55%, transparent), color-mix(in srgb, var(--ink-4) 25%, transparent));
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 12%, transparent),
+        inset 0 -0.5px 0 color-mix(in srgb, var(--ink) 25%, transparent),
+        0 16px 48px color-mix(in srgb, var(--ink) 40%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mint) 8%, transparent);
       transform: rotate(1.5deg);
     }
     .stage-kicker {
@@ -257,7 +269,35 @@
       position: relative;
       z-index: 2;
       max-width: 52rem;
+      padding-bottom: 1.5rem;
+    }
+
+    /* Activity strip — integrated into hero, floating surfaces */
+    .hero-activities {
+      position: relative;
+      z-index: 2;
+      margin-top: auto;
       padding-bottom: 2.5rem;
+    }
+    .hero-activities-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding-bottom: 1.25rem;
+    }
+    .hero-activities-head h2 {
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      line-height: 1.12;
+    }
+    .hero-activities-head p {
+      max-width: 20rem;
+      color: var(--silver-dim);
+      font-size: 0.82rem;
+      text-align: right;
+      line-height: 1.45;
     }
     .hero-eyebrow {
       display: inline-flex;
@@ -344,62 +384,55 @@
     }
 
     /* —— Activity filmstrip (horizontal scroll) —— */
-    .filmstrip-section {
-      padding: 4rem 0 3.5rem;
-      content-visibility: auto;
-      contain-intrinsic-size: 1px 420px;
-    }
-    .filmstrip-head {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 1.5rem;
-      padding: 0 var(--rail) 1.5rem;
-    }
-    .filmstrip-head h2 {
-      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
-      font-weight: 750;
-      letter-spacing: -0.045em;
-      line-height: 1.1;
-    }
-    .filmstrip-head p {
-      max-width: 22rem;
-      color: var(--silver-dim);
-      font-size: 0.9rem;
-      text-align: right;
-    }
     .filmstrip {
       display: flex;
-      gap: 0.75rem;
+      gap: 0.65rem;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
-      padding: 0.25rem var(--rail) 1.25rem;
+      padding: 0.35rem 0 1rem;
+      margin: 0 calc(var(--rail) * -1);
+      padding-left: var(--rail);
+      padding-right: var(--rail);
       -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
-      scrollbar-color: var(--mint-deep) var(--ink-3);
+      scrollbar-color: var(--mint-deep) transparent;
     }
-    .filmstrip::-webkit-scrollbar { height: 4px; }
-    .filmstrip::-webkit-scrollbar-track { background: var(--ink-3); }
-    .filmstrip::-webkit-scrollbar-thumb { background: var(--mint-deep); border-radius: 2px; }
+    .filmstrip::-webkit-scrollbar { height: 3px; }
+    .filmstrip::-webkit-scrollbar-track { background: transparent; }
+    .filmstrip::-webkit-scrollbar-thumb { background: var(--mint-deep); border-radius: 2px; opacity: 0.6; }
 
     .film-card {
       flex: 0 0 auto;
-      width: min(220px, 72vw);
+      width: min(200px, 68vw);
       scroll-snap-align: start;
-      padding: 1.35rem 1.2rem 1.25rem;
-      border: 1px solid var(--line);
+      padding: 1.2rem 1.1rem 1.1rem;
+      border: 1px solid color-mix(in srgb, var(--silver) 12%, transparent);
       border-radius: 14px;
-      background: var(--ink-3);
+      background:
+        linear-gradient(168deg, color-mix(in srgb, var(--ink-3) 70%, transparent), color-mix(in srgb, var(--ink-4) 35%, transparent));
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 8%, transparent),
+        0 8px 28px color-mix(in srgb, var(--ink) 35%, transparent);
       text-align: left;
-      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), background 0.25s var(--ease);
+      transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease), opacity 0.25s var(--ease);
     }
     .film-card:hover {
       transform: translateY(-3px);
-      border-color: var(--line-strong);
+      border-color: color-mix(in srgb, var(--silver) 22%, transparent);
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 12%, transparent),
+        0 14px 36px color-mix(in srgb, var(--ink) 45%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mint) 6%, transparent);
     }
     .film-card.is-selected {
-      border-color: color-mix(in srgb, var(--mint) 55%, var(--line));
-      background: linear-gradient(180deg, var(--mint-soft), var(--ink-3));
+      border-color: color-mix(in srgb, var(--mint) 45%, transparent);
+      background:
+        linear-gradient(168deg, color-mix(in srgb, var(--mint) 14%, transparent), color-mix(in srgb, var(--ink-3) 50%, transparent));
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--mint) 25%, transparent),
+        inset 0 -1px 0 color-mix(in srgb, var(--ink) 20%, transparent),
+        0 12px 40px color-mix(in srgb, var(--mint) 12%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--mint) 18%, transparent);
     }
     .film-num {
       font-family: var(--mono);
@@ -416,13 +449,15 @@
       height: 2.5rem;
       margin-bottom: 1rem;
       border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--ink-4);
+      border: 1px solid color-mix(in srgb, var(--silver) 10%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--ink-4) 80%, transparent), color-mix(in srgb, var(--ink-3) 40%, transparent));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 6%, transparent);
       color: var(--silver);
     }
     .film-card.is-selected .film-icon {
-      border-color: transparent;
-      background: var(--mint);
+      border-color: color-mix(in srgb, var(--mint) 30%, transparent);
+      background: linear-gradient(180deg, var(--mint), var(--mint-deep));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 25%, transparent);
       color: #04110c;
     }
     .film-icon svg { width: 1.15rem; height: 1.15rem; }
@@ -440,13 +475,19 @@
       line-height: 1.4;
     }
 
-    /* Live presence readout under filmstrip */
+    /* Live presence readout — glass-like surface, no opaque slab */
     .presence-readout {
-      margin: 0 var(--rail);
-      padding: 1.5rem 1.5rem 1.4rem;
-      border: 1px solid var(--line);
+      margin-top: 0.5rem;
+      padding: 1.35rem 1.4rem 1.3rem;
+      border: 1px solid color-mix(in srgb, var(--silver) 14%, transparent);
       border-radius: 16px;
-      background: var(--ink-2);
+      background:
+        linear-gradient(175deg, color-mix(in srgb, var(--ink-3) 45%, transparent), color-mix(in srgb, var(--ink-4) 20%, transparent));
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 10%, transparent),
+        inset 0 -1px 0 color-mix(in srgb, var(--ink) 15%, transparent),
+        0 12px 40px color-mix(in srgb, var(--ink) 30%, transparent),
+        0 0 80px color-mix(in srgb, var(--mint) 4%, transparent);
       display: grid;
       grid-template-columns: auto 1fr auto;
       gap: 1.25rem;
@@ -458,8 +499,9 @@
       width: 3.75rem;
       height: 3.75rem;
       border-radius: 14px;
-      border: 1px solid var(--line);
-      background: var(--ink-4);
+      border: 1px solid color-mix(in srgb, var(--mint) 20%, transparent);
+      background: linear-gradient(165deg, color-mix(in srgb, var(--ink-4) 60%, transparent), color-mix(in srgb, var(--mint) 8%, transparent));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--mint) 15%, transparent);
       color: var(--mint);
     }
     .presence-mark svg { width: 1.5rem; height: 1.5rem; }
@@ -490,16 +532,18 @@
     .chip {
       padding: 0.3rem 0.65rem;
       border-radius: 999px;
-      border: 1px solid var(--line);
+      border: 1px solid color-mix(in srgb, var(--silver) 12%, transparent);
       font-size: 0.7rem;
       font-weight: 550;
       color: var(--silver-dim);
-      background: var(--ink-3);
+      background: color-mix(in srgb, var(--ink-3) 50%, transparent);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--silver-bright) 5%, transparent);
     }
     .chip--mint {
-      border-color: color-mix(in srgb, var(--mint) 40%, var(--line));
+      border-color: color-mix(in srgb, var(--mint) 35%, transparent);
       color: var(--mint);
-      background: var(--mint-soft);
+      background: color-mix(in srgb, var(--mint) 10%, transparent);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--mint) 20%, transparent);
     }
 
     /* —— Manifesto / features as numbered columns —— */
@@ -757,7 +801,7 @@
     }
 
     @media (max-width: 900px) {
-      .hero-stage-grid { inset: 8% 5% 38% 5%; opacity: 0.55; }
+      .hero-stage-grid { inset: 6% 4% 42% 4%; opacity: 0.45; }
       .hero-stage-card { display: none; }
       .feature-rail { grid-template-columns: 1fr 1fr; }
       .feature-item:nth-child(3n) { border-right: 1px solid var(--line); padding-right: 1.5rem; }
@@ -765,8 +809,8 @@
       .feature-item:nth-child(n) { padding-left: 1.5rem; }
       .feature-item:nth-child(2n+1) { padding-left: 0; }
       .how-grid { grid-template-columns: 1fr; gap: 2rem; }
-      .filmstrip-head { flex-direction: column; align-items: flex-start; }
-      .filmstrip-head p { text-align: left; }
+      .hero-activities-head { flex-direction: column; align-items: flex-start; }
+      .hero-activities-head p { text-align: left; }
       .download-head { flex-direction: column; align-items: flex-start; }
       .download-head p { text-align: left; }
       .presence-readout { grid-template-columns: auto 1fr; }
@@ -824,7 +868,7 @@
           <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>
         </svg>
       </button>
-      <a class="btn btn-mint" href="#download-v8">Get v8.0.7</a>
+      <a class="btn btn-mint" href="#download-v8">Get v8.0.6</a>
     </div>
   </header>
 
@@ -844,14 +888,79 @@
       <h1 class="wordmark" id="hero-mark">SMILEY<span>STATUS.</span></h1>
       <p class="hero-lede">Presence that looks intentional. Free desktop app for gaming, coding, music, food, chilling, anime, and studying — no portal, no JSON.</p>
       <div class="hero-cta">
-        <a class="btn btn-mint btn-xl" href="#download-v8">Download v8.0.7</a>
+        <a class="btn btn-mint btn-xl" href="#download-v8">Download v8.0.6</a>
         <a class="btn btn-ghost btn-xl" href="#download">v7.9.28 legacy</a>
         <a class="btn btn-ghost btn-xl" href="https://github.com/1tsRajuWu/Smiley" target="_blank" rel="noopener">GitHub</a>
       </div>
       <div class="hero-meta">
-        <span><strong>v8.0.7</strong> native · <em>v7.9.28 Electron legacy</em></span>
+        <span><strong>v8.0.6</strong> native · <em>v7.9.28 Electron legacy</em></span>
         <span>Windows · macOS · Linux</span>
         <span>MIT · Open source</span>
+      </div>
+    </div>
+
+    <div class="hero-activities" id="modes">
+      <div class="hero-activities-head">
+        <h2>Seven modes.<br>One live card.</h2>
+        <p>Scroll the strip. Tap a mode. Watch the presence update — same language all day.</p>
+      </div>
+      <div class="filmstrip" id="activityStrip" role="group" aria-label="Activity categories">
+        <button class="film-card is-selected" type="button" data-key="gaming" aria-pressed="true">
+          <div class="film-num">01</div>
+          <div class="film-icon" aria-hidden="true" data-icon="gaming"></div>
+          <strong>Gaming</strong>
+          <span>Maps, ranks, squads</span>
+        </button>
+        <button class="film-card" type="button" data-key="coding" aria-pressed="false">
+          <div class="film-num">02</div>
+          <div class="film-icon" aria-hidden="true" data-icon="coding"></div>
+          <strong>Coding</strong>
+          <span>Editors &amp; open files</span>
+        </button>
+        <button class="film-card" type="button" data-key="music" aria-pressed="false">
+          <div class="film-num">03</div>
+          <div class="film-icon" aria-hidden="true" data-icon="music"></div>
+          <strong>Music</strong>
+          <span>Tracks &amp; artists</span>
+        </button>
+        <button class="film-card" type="button" data-key="eating" aria-pressed="false">
+          <div class="film-num">04</div>
+          <div class="film-icon" aria-hidden="true" data-icon="eating"></div>
+          <strong>Food / Eating</strong>
+          <span>Meals &amp; breaks</span>
+        </button>
+        <button class="film-card" type="button" data-key="chilling" aria-pressed="false">
+          <div class="film-num">05</div>
+          <div class="film-icon" aria-hidden="true" data-icon="chilling"></div>
+          <strong>Chilling</strong>
+          <span>Late-night calm</span>
+        </button>
+        <button class="film-card" type="button" data-key="anime" aria-pressed="false">
+          <div class="film-num">06</div>
+          <div class="film-icon" aria-hidden="true" data-icon="anime"></div>
+          <strong>Anime</strong>
+          <span>Episodes &amp; arcs</span>
+        </button>
+        <button class="film-card" type="button" data-key="studying" aria-pressed="false">
+          <div class="film-num">07</div>
+          <div class="film-icon" aria-hidden="true" data-icon="studying"></div>
+          <strong>Studying</strong>
+          <span>Focus sessions</span>
+        </button>
+      </div>
+
+      <div class="presence-readout" aria-live="polite">
+        <div class="presence-mark" id="heroPresenceIcon" aria-hidden="true"></div>
+        <div>
+          <div class="presence-kicker" id="heroPresenceLabel">Playing now</div>
+          <div class="presence-title" id="heroPresenceTitle">Valorant</div>
+          <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
+        </div>
+        <div class="presence-chips">
+          <span class="chip chip--mint" id="heroPresenceChipOne">Gaming</span>
+          <span class="chip" id="heroPresenceChipTwo">via Smiley</span>
+          <span class="chip" id="heroPresenceChipThree">Synced</span>
+        </div>
       </div>
     </div>
   </section>
@@ -862,74 +971,9 @@
   </aside>
 
   <aside class="ribbon" aria-label="Product status">
-    <strong>v8.0.7 final</strong>
-    <p>v8.0.7 will be the final planned release. After that, occasional bug fixes only. You’re welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue</a>. — Raj</p>
+    <strong>v8.0.6 latest</strong>
+    <p>v8.0.6 is the current release. After v8.0.7, only occasional bug fixes are planned. You're welcome to <a href="https://github.com/1tsRajuWu/Smiley">fork and continue</a>. — Raj</p>
   </aside>
-
-  <section class="filmstrip-section" id="modes">
-    <div class="filmstrip-head">
-      <h2>Seven modes.<br>One live card.</h2>
-      <p>Scroll the strip. Tap a mode. Watch the presence update — same language all day.</p>
-    </div>
-    <div class="filmstrip" id="activityStrip" role="group" aria-label="Activity categories">
-      <button class="film-card is-selected" type="button" data-key="gaming" aria-pressed="true">
-        <div class="film-num">01</div>
-        <div class="film-icon" aria-hidden="true" data-icon="gaming"></div>
-        <strong>Gaming</strong>
-        <span>Maps, ranks, squads</span>
-      </button>
-      <button class="film-card" type="button" data-key="coding" aria-pressed="false">
-        <div class="film-num">02</div>
-        <div class="film-icon" aria-hidden="true" data-icon="coding"></div>
-        <strong>Coding</strong>
-        <span>Editors &amp; open files</span>
-      </button>
-      <button class="film-card" type="button" data-key="music" aria-pressed="false">
-        <div class="film-num">03</div>
-        <div class="film-icon" aria-hidden="true" data-icon="music"></div>
-        <strong>Music</strong>
-        <span>Tracks &amp; artists</span>
-      </button>
-      <button class="film-card" type="button" data-key="eating" aria-pressed="false">
-        <div class="film-num">04</div>
-        <div class="film-icon" aria-hidden="true" data-icon="eating"></div>
-        <strong>Food / Eating</strong>
-        <span>Meals &amp; breaks</span>
-      </button>
-      <button class="film-card" type="button" data-key="chilling" aria-pressed="false">
-        <div class="film-num">05</div>
-        <div class="film-icon" aria-hidden="true" data-icon="chilling"></div>
-        <strong>Chilling</strong>
-        <span>Late-night calm</span>
-      </button>
-      <button class="film-card" type="button" data-key="anime" aria-pressed="false">
-        <div class="film-num">06</div>
-        <div class="film-icon" aria-hidden="true" data-icon="anime"></div>
-        <strong>Anime</strong>
-        <span>Episodes &amp; arcs</span>
-      </button>
-      <button class="film-card" type="button" data-key="studying" aria-pressed="false">
-        <div class="film-num">07</div>
-        <div class="film-icon" aria-hidden="true" data-icon="studying"></div>
-        <strong>Studying</strong>
-        <span>Focus sessions</span>
-      </button>
-    </div>
-
-    <div class="presence-readout" aria-live="polite">
-      <div class="presence-mark" id="heroPresenceIcon" aria-hidden="true"></div>
-      <div>
-        <div class="presence-kicker" id="heroPresenceLabel">Playing now</div>
-        <div class="presence-title" id="heroPresenceTitle">Valorant</div>
-        <div class="presence-state" id="heroPresenceState">Ascent · Jett · Competitive 3-stack</div>
-      </div>
-      <div class="presence-chips">
-        <span class="chip chip--mint" id="heroPresenceChipOne">Gaming</span>
-        <span class="chip" id="heroPresenceChipTwo">via Smiley</span>
-        <span class="chip" id="heroPresenceChipThree">Synced</span>
-      </div>
-    </div>
-  </section>
 
   <section class="manifesto" id="features">
     <div class="manifesto-intro">
@@ -1001,37 +1045,37 @@
     <div class="download-head">
       <div>
         <span class="label">Install · Recommended</span>
-        <h2>Smiley v8.0.7</h2>
+        <h2>Smiley v8.0.6</h2>
       </div>
       <p>Native Tauri build — Valorant live board, music sync, privacy controls. <a href="https://github.com/1tsRajuWu/Smiley/blob/main/Smiley.v8/docs/PRIVACY-SECURITY.md">Privacy</a></p>
     </div>
     <div class="dl-table">
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.7/Smiley.v8_8.0.7_x64-setup.exe" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64-setup.exe" target="_blank" rel="noopener">
         <span class="dl-plat">Windows</span>
-        <span class="dl-file">Smiley.v8_8.0.7_x64-setup.exe</span>
+        <span class="dl-file">Smiley.v8_8.0.6_x64-setup.exe</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.7/Smiley.v8_8.0.7_aarch64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_aarch64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Apple Silicon</span>
-        <span class="dl-file">Smiley.v8_8.0.7_aarch64.dmg</span>
+        <span class="dl-file">Smiley.v8_8.0.6_aarch64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.7/Smiley.v8_8.0.7_x64.dmg" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_x64.dmg" target="_blank" rel="noopener">
         <span class="dl-plat">macOS Intel</span>
-        <span class="dl-file">Smiley.v8_8.0.7_x64.dmg</span>
+        <span class="dl-file">Smiley.v8_8.0.6_x64.dmg</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.7/Smiley.v8_8.0.7_amd64.AppImage" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.AppImage" target="_blank" rel="noopener">
         <span class="dl-plat">Linux AppImage</span>
-        <span class="dl-file">Smiley.v8_8.0.7_amd64.AppImage</span>
+        <span class="dl-file">Smiley.v8_8.0.6_amd64.AppImage</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.7/Smiley.v8_8.0.7_amd64.deb" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.6/Smiley.v8_8.0.6_amd64.deb" target="_blank" rel="noopener">
         <span class="dl-plat">Linux .deb</span>
-        <span class="dl-file">Smiley.v8_8.0.7_amd64.deb</span>
+        <span class="dl-file">Smiley.v8_8.0.6_amd64.deb</span>
         <span class="dl-cta">Download →</span>
       </a>
-      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/tag/v8.0.7" target="_blank" rel="noopener">
+      <a class="dl-row" href="https://github.com/1tsRajuWu/Smiley/releases/tag/v8.0.6" target="_blank" rel="noopener">
         <span class="dl-plat">All v8 assets</span>
         <span class="dl-file">GitHub Releases</span>
         <span class="dl-cta">Browse →</span>
