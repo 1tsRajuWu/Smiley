@@ -7,6 +7,7 @@ const { promisify } = require('util');
 const execFileAsync = promisify(execFile);
 const MAC_JXA = path.join(__dirname, 'now-gaming-mac.jxa.js');
 const POLL_MS = process.platform === 'darwin' ? 8000 : 5000;
+const BACKGROUND_POLL_MS = process.platform === 'darwin' ? 20000 : 12000;
 const MAC_TIMEOUT_MS = 3500;
 const MAC_BACKOFF_MAX_MS = 60000;
 
@@ -115,34 +116,84 @@ name=$(ps -p "$pid" -o comm= 2>/dev/null); printf '%s|%s' "$name" "$title"`;
   } catch { return null; }
 }
 
+/** Fast mac frontmost app — no Accessibility TCC required. */
+async function pollMacLsAppInfo() {
+  try {
+    const { stdout: asnOut } = await execFileAsync('lsappinfo', ['front'], { timeout: 1500 });
+    const asn = String(asnOut || '').trim();
+    if (!asn) return null;
+    const { stdout: infoOut } = await execFileAsync(
+      'lsappinfo',
+      ['info', '-only', 'name,bundleid', asn],
+      { timeout: 1500 },
+    );
+    const info = String(infoOut || '');
+    const nameMatch = info.match(/"?LSDisplayName"?\s*=\s*"([^"]*)"/i);
+    const bundleMatch = info.match(/"?CFBundleIdentifier"?\s*=\s*"([^"]*)"/i);
+    const processName = (nameMatch?.[1] || '').trim();
+    const bundleId = (bundleMatch?.[1] || '').trim();
+    if (!processName && !bundleId) return null;
+    return { processName: processName || bundleId, bundleId, windowTitle: '' };
+  } catch {
+    return null;
+  }
+}
+
+async function pollMacJxaRaw() {
+  if (!fs.existsSync(MAC_JXA)) return null;
+  if (macInFlight) return undefined;
+  macInFlight = true;
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      macInFlight = false;
+      if (macChild) macChild = null;
+      resolve(v);
+    };
+    const child = spawn('osascript', ['-l', 'JavaScript', MAC_JXA], { stdio: ['ignore', 'pipe', 'ignore'] });
+    macChild = child;
+    let out = '';
+    child.stdout.on('data', (c) => { out += c; if (out.length > 65536) { killMacChild(); finish(null); } });
+    child.on('error', () => { macFailures++; macBackoff = Math.min(MAC_BACKOFF_MAX_MS, macFailures * 5000); finish(null); });
+    child.on('close', () => {
+      macFailures = 0;
+      macBackoff = 0;
+      const line = out.trim();
+      if (!line) { finish(null); return; }
+      try { finish(JSON.parse(line)); } catch { finish(null); }
+    });
+    setTimeout(() => { killMacChild(); macFailures++; macBackoff = Math.min(MAC_BACKOFF_MAX_MS, macFailures * 5000); finish(null); }, MAC_TIMEOUT_MS);
+  });
+}
+
 async function pollRawForeground() {
   if (process.platform === 'darwin') {
-    if (!fs.existsSync(MAC_JXA)) return null;
-    if (macInFlight) return undefined;
-    macInFlight = true;
-    return new Promise((resolve) => {
-      let done = false;
-      const finish = (v) => {
-        if (done) return;
-        done = true;
-        macInFlight = false;
-        if (macChild) macChild = null;
-        resolve(v);
-      };
-      const child = spawn('osascript', ['-l', 'JavaScript', MAC_JXA], { stdio: ['ignore', 'pipe', 'ignore'] });
-      macChild = child;
-      let out = '';
-      child.stdout.on('data', (c) => { out += c; if (out.length > 65536) { killMacChild(); finish(null); } });
-      child.on('error', () => { macFailures++; macBackoff = Math.min(MAC_BACKOFF_MAX_MS, macFailures * 5000); finish(null); });
-      child.on('close', () => {
-        macFailures = 0;
-        macBackoff = 0;
-        const line = out.trim();
-        if (!line) { finish(null); return; }
-        try { finish(JSON.parse(line)); } catch { finish(null); }
-      });
-      setTimeout(() => { killMacChild(); macFailures++; macBackoff = Math.min(MAC_BACKOFF_MAX_MS, macFailures * 5000); finish(null); }, MAC_TIMEOUT_MS);
-    });
+    // Prefer lsappinfo (works without Accessibility). Enrich with JXA title when possible.
+    const ls = await pollMacLsAppInfo();
+    if (ls?.processName) {
+      const jxa = await pollMacJxaRaw();
+      if (jxa && jxa !== undefined) {
+        const sameApp = (!jxa.bundleId || !ls.bundleId || jxa.bundleId === ls.bundleId)
+          || (jxa.processName && ls.processName
+            && String(jxa.processName).toLowerCase() === String(ls.processName).toLowerCase());
+        if (sameApp && jxa.windowTitle) {
+          return {
+            ...ls,
+            windowTitle: jxa.windowTitle,
+            processName: jxa.processName || ls.processName,
+          };
+        }
+        if (/^(smiley|electron)$/i.test(ls.processName)
+          && jxa.processName
+          && !/^(smiley|electron)$/i.test(jxa.processName)) {
+          return jxa;
+        }
+      }
+      return ls;
+    }
+    return pollMacJxaRaw();
   }
   if (process.platform === 'win32') {
     const ps = `
@@ -187,12 +238,16 @@ async function pollForeground() {
 
 function createNowGamingService({ onUpdate } = {}) {
   if (process.env.SMILEY_DISABLE_NOW_GAMING === '1') {
-    return { async start() {}, async stop() {} };
+    return { async start() {}, async stop() {}, setBackgroundMode() {} };
   }
 
   let timer = null;
   let running = false;
   let lastSig = '';
+  let backgroundMode = false;
+
+  const pollDelay = () =>
+    (backgroundMode ? BACKGROUND_POLL_MS : POLL_MS) + (process.platform === 'darwin' ? macBackoff : 0);
 
   const emit = (game) => {
     const sig = gameSig(game);
@@ -207,8 +262,7 @@ function createNowGamingService({ onUpdate } = {}) {
       const game = await pollForeground();
       if (game !== undefined) emit(game);
     } catch (_) {}
-    const delay = POLL_MS + (process.platform === 'darwin' ? macBackoff : 0);
-    timer = setTimeout(tick, delay);
+    timer = setTimeout(tick, pollDelay());
   };
 
   return {
@@ -218,7 +272,7 @@ function createNowGamingService({ onUpdate } = {}) {
       lastSig = '';
       const game = await pollForeground();
       if (game !== undefined) emit(game);
-      timer = setTimeout(tick, POLL_MS);
+      timer = setTimeout(tick, pollDelay());
     },
     async stop() {
       running = false;
@@ -227,6 +281,9 @@ function createNowGamingService({ onUpdate } = {}) {
       macFailures = 0;
       macBackoff = 0;
       lastSig = '';
+    },
+    setBackgroundMode(background) {
+      backgroundMode = background === true;
     },
   };
 }

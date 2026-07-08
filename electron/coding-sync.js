@@ -58,7 +58,8 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
     const now = Date.now();
     const wait = force ? 0 : Math.max(0, PRESENCE_MIN_MS - (now - lastPresenceAt));
     const run = async (nextSession, nextSig) => {
-      if (!fgService || !template || isPaused?.()) return;
+      // Do not gate on fgService — presence must apply immediately on activity select.
+      if (!template || isPaused?.()) return;
       const built = buildPresenceFromSession(nextSession, template);
       const activity = {
         ...template,
@@ -103,7 +104,7 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
       // Drop outdated/stale scheduled writes (e.g. user switched activity/cleared).
       if (token !== presenceTimerToken) return;
       // If sync is no longer active, avoid pushing stale presence.
-      if (!fgService || !template || !isEnabled(getConfig()) || isPaused?.()) return;
+      if (!template || !isEnabled(getConfig()) || isPaused?.()) return;
       const next = pendingPresence;
       pendingPresence = null;
       if (!next) return;

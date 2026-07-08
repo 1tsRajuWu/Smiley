@@ -2,6 +2,7 @@
 const { pollRawForeground } = require('./now-gaming');
 
 const POLL_MS = process.platform === 'darwin' ? 3000 : 2500;
+const BACKGROUND_POLL_MS = process.platform === 'darwin' ? 12000 : 8000;
 
 const CODING_APPS = [
   { id: 'cursor', name: 'Cursor', processes: ['cursor'], bundles: ['com.todesktop.230313mzl4w4u92'] },
@@ -93,6 +94,25 @@ function parseCodingContext(windowTitle, appName) {
     return { status: 'working', label: left };
   }
 
+  // Two-part titles: "file.py — Project" or "Project — Cursor"
+  const duo = title.match(/^(.+?)\s*[—–|]\s*(.+)$/);
+  if (duo) {
+    const left = duo[1].trim();
+    const right = duo[2].trim();
+    if (IDE_SUFFIX.test(right)) {
+      if (IDLE_TITLES.test(left)) return { status: 'idle' };
+      if (/\.[a-z0-9]{1,8}$/i.test(left)) return { status: 'editing', fileName: left };
+      return { status: 'working', label: left, projectName: left };
+    }
+    if (/\.[a-z0-9]{1,8}$/i.test(left)) {
+      return { status: 'editing', fileName: left, projectName: right };
+    }
+    if (/\.[a-z0-9]{1,8}$/i.test(right)) {
+      return { status: 'editing', fileName: right, projectName: left };
+    }
+    return { status: 'working', label: left, projectName: right };
+  }
+
   if (/\.[a-z0-9]{1,8}$/i.test(title)) {
     return { status: 'editing', fileName: title };
   }
@@ -157,12 +177,15 @@ function codingSig(session) {
 
 function createNowCodingService({ onUpdate } = {}) {
   if (process.env.SMILEY_DISABLE_NOW_CODING === '1') {
-    return { async start() {}, async stop() {} };
+    return { async start() {}, async stop() {}, setBackgroundMode() {} };
   }
 
   let timer = null;
   let running = false;
   let lastSig = '';
+  let backgroundMode = false;
+
+  const pollDelay = () => (backgroundMode ? BACKGROUND_POLL_MS : POLL_MS);
 
   const emit = (session) => {
     const sig = codingSig(session);
@@ -179,7 +202,7 @@ function createNowCodingService({ onUpdate } = {}) {
       // In that case we should keep the loop alive (don't early-return and don't skip scheduling the next timer).
       if (raw !== undefined) emit(raw ? normalizeCoding(raw) : null);
     } catch (_) {}
-    timer = setTimeout(tick, POLL_MS);
+    timer = setTimeout(tick, pollDelay());
   };
 
   return {
@@ -189,12 +212,15 @@ function createNowCodingService({ onUpdate } = {}) {
       lastSig = '';
       const raw = await pollRawForeground();
       if (raw !== undefined) emit(raw ? normalizeCoding(raw) : null);
-      timer = setTimeout(tick, POLL_MS);
+      timer = setTimeout(tick, pollDelay());
     },
     async stop() {
       running = false;
       if (timer) { clearTimeout(timer); timer = null; }
       lastSig = '';
+    },
+    setBackgroundMode(background) {
+      backgroundMode = background === true;
     },
   };
 }

@@ -1146,13 +1146,21 @@ function isMainWindowVisible() {
   return !!(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized());
 }
 
-function syncMusicSyncVisibility() {
+function syncLiveSyncVisibility() {
   const visible = isMainWindowVisible();
   mainWindowVisible = visible;
-  const sync = musicSync;
-  if (!sync) return;
-  sync.setUiActive(visible);
-  sync.setBackgroundMode(!visible);
+  const background = !visible;
+  if (musicSync) {
+    musicSync.setUiActive(visible);
+    musicSync.setBackgroundMode(background);
+  }
+  gameSync?.setBackgroundMode?.(background);
+  codingSync?.setBackgroundMode?.(background);
+}
+
+/** @deprecated use syncLiveSyncVisibility — kept name alias for older call sites */
+function syncMusicSyncVisibility() {
+  syncLiveSyncVisibility();
 }
 
 function scheduleTrayMenuRefresh() {
@@ -2206,6 +2214,14 @@ async function schedulePresenceUpdate(activity, isNewSession) {
   const isCodingLive = safeActivity.id === 'coding' && config.codingNowPlaying !== false;
   if (isListeningLive || isGamingLive || isCodingLive) {
     if (isNewSession) sessionStart = isListeningLive ? null : Date.now();
+    // Coding sync polls async — apply host activity immediately so Discord isn't blank.
+    if (isCodingLive) {
+      applyCodingPresence({
+        ...safeActivity,
+        details: safeActivity.details || 'Coding',
+        state: safeActivity.state || 'Building something cool',
+      }).catch(() => {});
+    }
     pendingUpdate = null;
     if (updateTimer) {
       clearTimeout(updateTimer);
