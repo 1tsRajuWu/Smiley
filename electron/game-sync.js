@@ -126,12 +126,13 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
     if (resolveInFlight) { pendingResolve = true; return; }
     resolveInFlight = true;
     try {
-      const { session, steamKey } = await resolveLiveGameSession(foreground, {
+      const resolved = await resolveLiveGameSession(foreground, {
         lastSteamKey,
         getConfig,
         fetchRank: getConfig()?.fetchValorantRank,
       });
-      if (steamKey) lastSteamKey = steamKey;
+      let session = resolved.session;
+      if (resolved.steamKey) lastSteamKey = resolved.steamKey;
       const sig = sessionSignature(session);
       if (!force && sig === lastSig) return;
       if (!session?.title) {
@@ -200,6 +201,8 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
     lastSteamKey = '';
     lastArtworkKey = '';
     foreground = null;
+    // Static gaming template immediately so Discord isn't blank while waiting for a game.
+    pushPresence(null, null, { force: true }).catch(() => {});
     ensureRunning().catch(() => {});
   }
 

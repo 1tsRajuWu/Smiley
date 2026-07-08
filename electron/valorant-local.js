@@ -1,4 +1,4 @@
-// Valorant local API — pregame / core-game match data (read-only)
+// Valorant local API — unconditional pregame / core-game truth (read-only)
 const { localHttpsRequest } = require('./riot-client');
 
 const agentCache = { at: 0, map: new Map(), idByName: new Map() };
@@ -71,7 +71,9 @@ async function fetchCoreGame(lockfile, puuid) {
     mapId,
     scoreHint: score,
     inMatch: true,
-    inGame: true,
+    inPregame: false,
+    coreGame: true,
+    pregame: false,
   };
 }
 
@@ -96,17 +98,39 @@ async function fetchPregame(lockfile, puuid) {
     mapId,
     mode: match.Mode || match.QueueID || null,
     inMatch: false,
-    inGame: true,
+    inPregame: true,
+    coreGame: false,
+    pregame: true,
   };
 }
 
-async function fetchValorantLocalExtras(lockfile, puuid, { inGame, inPregame }) {
+/**
+ * Probe local APIs unconditionally. Core-game wins over pregame.
+ * Returns null only when neither endpoint has an active match.
+ */
+async function fetchValorantLocalTruth(lockfile, puuid) {
+  if (!lockfile || !puuid) return null;
+  const [core, pre] = await Promise.all([
+    fetchCoreGame(lockfile, puuid),
+    fetchPregame(lockfile, puuid),
+  ]);
+  if (core) return core;
+  if (pre) return pre;
+  return null;
+}
+
+/** @deprecated use fetchValorantLocalTruth — kept for any external callers */
+async function fetchValorantLocalExtras(lockfile, puuid, { inGame, inPregame } = {}) {
   if (inGame) {
     const core = await fetchCoreGame(lockfile, puuid);
     if (core) return core;
   }
   if (inPregame) return fetchPregame(lockfile, puuid);
-  return null;
+  // Even without chat flags, still probe — avoids one-phase lag.
+  return fetchValorantLocalTruth(lockfile, puuid);
 }
 
-module.exports = { fetchValorantLocalExtras };
+module.exports = {
+  fetchValorantLocalTruth,
+  fetchValorantLocalExtras,
+};
