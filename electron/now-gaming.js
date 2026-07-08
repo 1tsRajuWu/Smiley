@@ -29,7 +29,7 @@ const IGNORED = new Set([
  * `title` is the Discord details fallback; Steam AppID aliases live in game-api.
  */
 const KNOWN_GAMES = [
-  { id: 'cs2', title: 'Counter-Strike 2', match: /^(cs2|csgo)$/i },
+  { id: 'cs2', title: 'Counter-Strike 2', match: /^(cs2|csgo|counter-strike\s*2?)$/i },
   { id: 'valorant', title: 'Valorant', match: /^valorant(-win64-shipping)?$/i },
   { id: 'lol', title: 'League of Legends', match: /^(league of legends|leagueclient|leagueclientux)$/i },
   { id: 'fortnite', title: 'Fortnite', match: /^fortnite(client-win64-shipping)?$/i },

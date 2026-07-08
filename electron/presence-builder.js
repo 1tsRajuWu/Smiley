@@ -2,6 +2,7 @@
 const {
   resolveGameArtwork, resolveSmallImage, resolveLargeImageText,
 } = require('./game-assets');
+const { agentDisplayName } = require('./valorant-catalog');
 
 const DISCORD_TEXT_LIMIT = 128;
 
@@ -42,6 +43,13 @@ function partyDisplay(party, partySize) {
   return stackMap[p] || p;
 }
 
+function valorantAgentLabel(session, opts) {
+  if (opts.showAgent === false) return null;
+  if (session.agent) return session.agent;
+  if (session.agentId) return agentDisplayName(session.agentId);
+  return null;
+}
+
 /**
  * Valorant Discord/UI lines — phase flags are mutually exclusive from resolveValorantPhase.
  * Priority: match > agent select > queue > lobby (never show Queue while match/pregame).
@@ -60,7 +68,7 @@ function buildValorantPresence(session, opts, fallbackState) {
 
   if (phase === 'match' || session.inMatch) {
     const map = o.showMapArt !== false ? session.map : null;
-    const agent = o.showAgent !== false ? session.agent : null;
+    const agent = valorantAgentLabel(session, o);
     // details: agent + map; state: score · party · mode · kda · rank (agent already on details)
     // Deathmatch FFA only — "Team Deathmatch" must still show team score + KDA
     const q = String(session.queueId || session.modeKey || '').toLowerCase();
@@ -85,7 +93,7 @@ function buildValorantPresence(session, opts, fallbackState) {
 
   if (phase === 'pregame' || session.inPregame) {
     const map = o.showMapArt !== false ? session.map : null;
-    const agent = o.showAgent !== false ? session.agent : null;
+    const agent = valorantAgentLabel(session, o);
     // e.g. details "Jett · Agent Select" / state "Competitive · Lotus · Solo"
     // or details "Agent Select" when agent not locked yet
     return {
@@ -371,6 +379,7 @@ module.exports = {
   truncate,
   joinParts,
   partyDisplay,
+  valorantAgentLabel,
   parseWindowHints,
   steamPhaseLabel,
   buildPresenceLines,

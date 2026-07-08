@@ -2,6 +2,7 @@
 const { localHttpsRequest } = require('./riot-client');
 const {
   mapDisplayName, resolveMap, isDeathmatchQueue, isTeamDeathmatchQueue, queueDisplayName,
+  agentDisplayName,
 } = require('./valorant-catalog');
 
 const agentCache = { at: 0, map: new Map(), idByName: new Map() };
@@ -67,11 +68,22 @@ function matchQueueId(match) {
   return null;
 }
 
+/** Players may be an array or a puuid-keyed object in some live builds. */
+function playersArray(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== 'object') return [];
+  const vals = Object.values(raw);
+  if (!vals.length) return [];
+  if (vals.every((v) => v && typeof v === 'object')) return vals;
+  return [];
+}
+
 function findPlayer(players, puuid) {
-  if (!Array.isArray(players) || !puuid) return null;
+  const list = playersArray(players);
+  if (!list.length || !puuid) return null;
   const want = String(puuid).toLowerCase();
-  return players.find((p) => {
-    const sub = p?.Subject || p?.subject || p?.PlayerIdentity?.Subject || p?.sub;
+  return list.find((p) => {
+    const sub = p?.Subject || p?.subject || p?.PlayerIdentity?.Subject || p?.sub || p?.puuid;
     return sub && String(sub).toLowerCase() === want;
   }) || null;
 }
@@ -84,33 +96,62 @@ function findPlayer(players, puuid) {
  *   Teams: [{ Players }]          ← fallback
  */
 function pregamePlayerList(match) {
+  const flat = [];
+  const push = (list) => {
+    if (Array.isArray(list)) flat.push(...list);
+  };
   const ally = match?.AllyTeam;
-  if (Array.isArray(ally?.Players)) return ally.Players;
-  if (Array.isArray(ally?.Characters)) return ally.Characters;
-  if (Array.isArray(ally)) return ally;
-  if (Array.isArray(match?.Players)) return match.Players;
+  push(ally?.Players);
+  push(ally?.Characters);
+  if (Array.isArray(ally) && !ally?.Players) push(ally);
+  push(match?.EnemyTeam?.Players);
+  push(playersArray(match?.Players));
   if (Array.isArray(match?.Teams)) {
-    const flat = [];
     for (const t of match.Teams) {
-      if (Array.isArray(t?.Players)) flat.push(...t.Players);
-      else if (t && (t.Subject || t.CharacterID)) flat.push(t);
+      push(t?.Players);
+      if (t && (t.Subject || t.CharacterID || t.AgentID)) flat.push(t);
     }
-    if (flat.length) return flat;
   }
+  if (flat.length) return flat;
   return [];
+}
+
+/** Core-game match Players[] — also fall back to pregame-shaped team lists. */
+function coreGamePlayerList(match) {
+  const players = playersArray(match?.Players);
+  if (players.length) return players;
+  return pregamePlayerList(match);
 }
 
 function characterIdOf(player) {
   if (!player || typeof player !== 'object') return null;
+  const pi = player.PlayerIdentity;
   const raw = player.CharacterID
     || player.CharacterId
     || player.characterID
+    || player.AgentID
+    || player.AgentId
+    || player.agentID
+    || player.SelectedCharacterID
+    || player.selectedCharacterID
+    || pi?.CharacterID
+    || pi?.CharacterId
+    || pi?.AgentID
     || player.Character?.ID
     || player.Character?.id
+    || (typeof player.Character === 'string' ? player.Character : null)
     || null;
   const id = raw ? String(raw).trim() : '';
   if (!id || id === '00000000-0000-0000-0000-000000000000') return null;
   return id;
+}
+
+function pickAgentId(...candidates) {
+  for (const row of candidates) {
+    const id = characterIdOf(row);
+    if (id) return id;
+  }
+  return null;
 }
 
 function kda(player) {
@@ -209,9 +250,22 @@ function matchScoreHint(match, self, queueId) {
 
 async function resolveAgent(agentId) {
   if (!agentId) return { agent: null, agentId: null };
+  const key = String(agentId).toLowerCase();
   const agents = await getAgentMap();
-  const agent = agents.get(String(agentId).toLowerCase()) || null;
+  const agent = agents.get(key) || agentDisplayName(key) || null;
   return { agent, agentId };
+}
+
+function mergeAgentFields(primary, secondary) {
+  if (!primary) return secondary || null;
+  if (!secondary) return primary;
+  if (primary.agentId || primary.agent) return primary;
+  if (!secondary.agentId && !secondary.agent) return primary;
+  return {
+    ...primary,
+    agentId: secondary.agentId || primary.agentId || null,
+    agent: secondary.agent || primary.agent || null,
+  };
 }
 
 async function fetchCoreGame(lockfile, puuid) {
@@ -220,9 +274,9 @@ async function fetchCoreGame(lockfile, puuid) {
   const match = await localHttpsRequest(lockfile.port, `/core-game/v1/matches/${player.MatchID}`, lockfile.password);
   if (!match) return null;
 
-  const self = findPlayer(match.Players, puuid)
-    || findPlayer(pregamePlayerList(match), puuid);
-  const agentId = characterIdOf(self);
+  const list = coreGamePlayerList(match);
+  const self = findPlayer(list, puuid);
+  const agentId = pickAgentId(self, player);
   const { agent } = await resolveAgent(agentId);
   const queueId = matchQueueId(match);
   const resolved = resolveMap(match.MapID || null);
@@ -251,9 +305,8 @@ async function fetchPregame(lockfile, puuid) {
 
   const list = pregamePlayerList(match);
   const self = findPlayer(list, puuid)
-    || findPlayer(match.AllyTeam?.Characters, puuid)
-    || findPlayer(match.Players, puuid);
-  const agentId = characterIdOf(self);
+    || findPlayer(match.AllyTeam?.Characters, puuid);
+  const agentId = pickAgentId(self, player);
   const { agent } = await resolveAgent(agentId);
   const queueId = matchQueueId(match);
   const resolved = resolveMap(match.MapID || null);
@@ -282,6 +335,7 @@ async function fetchValorantLocalTruth(lockfile, puuid) {
     fetchCoreGame(lockfile, puuid),
     fetchPregame(lockfile, puuid),
   ]);
+  if (core && pre) return mergeAgentFields(core, pre);
   if (core) return core;
   if (pre) return pre;
   return null;
@@ -303,8 +357,13 @@ module.exports = {
   fetchValorantLocalExtras,
   // exported for presence-check fixtures
   findPlayer,
+  playersArray,
   pregamePlayerList,
+  coreGamePlayerList,
   characterIdOf,
+  pickAgentId,
+  mergeAgentFields,
+  resolveAgent,
   mapName,
   matchQueueId,
   matchScoreHint,

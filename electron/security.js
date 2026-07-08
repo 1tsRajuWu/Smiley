@@ -550,6 +550,9 @@ function sanitizeGameSession(session) {
     mode: typeof session.mode === 'string' ? session.mode.slice(0, 64) : null,
     champ: typeof session.champ === 'string' ? session.champ.slice(0, 48) : null,
     agent: typeof session.agent === 'string' ? session.agent.slice(0, 48) : null,
+    agentId: typeof session.agentId === 'string' && /^[0-9a-f-]{36}$/i.test(session.agentId)
+      ? session.agentId.toLowerCase()
+      : null,
     kda: typeof session.kda === 'string' ? session.kda.slice(0, 24) : null,
     rank: typeof session.rank === 'string' ? session.rank.slice(0, 48) : null,
     party: typeof session.party === 'string' ? session.party.slice(0, 24) : null,

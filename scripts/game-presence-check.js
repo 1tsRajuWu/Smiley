@@ -12,7 +12,7 @@ const {
 const {
   parseParty, parseValorant, flattenValorantPresence, resolveValorantPhase,
 } = require(path.join(root, 'electron/game-providers/riot'));
-const { mergeForegroundWithSession } = require(path.join(root, 'electron/game-providers'));
+const { mergeForegroundWithSession, shouldPreferForegroundOverRiot, sessionSignature } = require(path.join(root, 'electron/game-providers'));
 const { sanitizeGameSession } = require(path.join(root, 'electron/security'));
 
 let pass = 0;
@@ -50,7 +50,11 @@ ok('partySizeMax not used as current size', parseParty({ partySizeMax: 5 }) === 
 ok('partyDisplay 2-Stack', partyDisplay('Duo', 2) === '2-Stack');
 
 // AllyTeam.Players CharacterID extraction (user bug: agent missing)
-const { findPlayer, pregamePlayerList, characterIdOf } = require(path.join(root, 'electron/valorant-local'));
+const {
+  findPlayer, pregamePlayerList, coreGamePlayerList, characterIdOf, pickAgentId,
+  playersArray, mergeAgentFields, resolveAgent,
+} = require(path.join(root, 'electron/valorant-local'));
+const { agentDisplayName } = require(path.join(root, 'electron/valorant-catalog'));
 const pregameMatchShape = {
   MapID: '/Game/Maps/Lotus/Lotus',
   AllyTeam: {
@@ -64,6 +68,64 @@ ok('Pregame AllyTeam.Players flattened', pregamePlayerList(pregameMatchShape).le
 ok('Pregame findPlayer by Subject', findPlayer(pregamePlayerList(pregameMatchShape), 'puuid-me')?.CharacterID === JETT_ID);
 ok('characterIdOf ignores empty UUID', characterIdOf({ CharacterID: '00000000-0000-0000-0000-000000000000' }) === null);
 ok('characterIdOf reads CharacterID', characterIdOf({ CharacterID: JETT_ID }) === JETT_ID);
+ok('characterIdOf reads AgentID', characterIdOf({ AgentID: JETT_ID }) === JETT_ID);
+ok('characterIdOf reads PlayerIdentity.CharacterID', characterIdOf({
+  PlayerIdentity: { Subject: 'x', CharacterID: JETT_ID },
+}) === JETT_ID);
+ok('characterIdOf reads Character string UUID', characterIdOf({ Character: JETT_ID }) === JETT_ID);
+ok('playersArray from puuid-keyed object', playersArray({
+  'puuid-me': { Subject: 'puuid-me', CharacterID: JETT_ID },
+}).length === 1);
+ok('findPlayer in object-shaped Players', findPlayer({
+  'puuid-me': { Subject: 'puuid-me', CharacterID: JETT_ID },
+}, 'puuid-me')?.CharacterID === JETT_ID);
+ok('coreGamePlayerList uses Players object map', coreGamePlayerList({
+  Players: { me: { Subject: 'me', CharacterID: JETT_ID } },
+}).length === 1);
+ok('pregame Teams[] fallback', pregamePlayerList({
+  Teams: [{ Players: [{ Subject: 'puuid-me', CharacterID: JETT_ID }] }],
+}).length === 1);
+ok('pregame EnemyTeam.Players', pregamePlayerList({
+  EnemyTeam: { Players: [{ Subject: 'puuid-me', CharacterID: JETT_ID }] },
+}).length === 1);
+ok('pickAgentId prefers match row then player endpoint', pickAgentId(
+  { CharacterID: '00000000-0000-0000-0000-000000000000' },
+  { CharacterID: JETT_ID },
+) === JETT_ID);
+ok('mergeAgentFields fills core from pregame', (() => {
+  const merged = mergeAgentFields(
+    { inMatch: true, agent: null, agentId: null, map: 'Ascent' },
+    { inPregame: true, agent: 'Jett', agentId: JETT_ID },
+  );
+  return merged.agent === 'Jett' && merged.agentId === JETT_ID && merged.map === 'Ascent';
+})());
+ok('mergeAgentFields keeps core agent when present', mergeAgentFields(
+  { agent: 'Reyna', agentId: 'a3bfb853-43b2-7238-a4f1-ad90e9e46bcc' },
+  { agent: 'Jett', agentId: JETT_ID },
+).agent === 'Reyna');
+ok('Offline agentDisplayName Jett', agentDisplayName(JETT_ID) === 'Jett');
+ok('Agent label from agentId only', (() => {
+  const { valorantAgentLabel } = require(path.join(root, 'electron/presence-builder'));
+  return valorantAgentLabel({ agentId: JETT_ID }, { showAgent: true }) === 'Jett';
+})());
+ok('showAgent false hides agent label', (() => {
+  const { valorantAgentLabel } = require(path.join(root, 'electron/presence-builder'));
+  return valorantAgentLabel({ agent: 'Jett', agentId: JETT_ID }, { showAgent: false }) === null;
+})());
+ok('normalizeGamingPresenceOptions showAgent default on', normalizeGamingPresenceOptions({}).showAgent === true);
+ok('In-match details from agentId only', (() => {
+  const lines = buildPresenceLines({
+    provider: 'riot-valorant',
+    title: 'Valorant',
+    inMatch: true,
+    phase: 'match',
+    agentId: JETT_ID,
+    map: 'Ascent',
+    mode: 'Competitive',
+    queueId: 'competitive',
+  });
+  return lines.details.includes('Jett') && lines.details.includes('Ascent');
+})());
 
 // ── Nested presence flattening (2025+ Riot shape) ──
 const nested = flattenValorantPresence({
@@ -508,6 +570,7 @@ const sanitized = sanitizeGameSession({
   party: 'Duo',
   puuid: 'secret-should-not-appear',
   agent: 'Jett',
+  agentId: JETT_ID,
   token: 'leak',
   phase: 'queue',
   inQueue: true,
@@ -516,6 +579,8 @@ const sanitized = sanitizeGameSession({
 ok('Sanitize strips puuid', !('puuid' in sanitized));
 ok('Sanitize keeps inQueue', sanitized.inQueue === true);
 ok('Sanitize keeps phase', sanitized.phase === 'queue');
+ok('Sanitize keeps agent', sanitized.agent === 'Jett');
+ok('Sanitize keeps agentId', sanitized.agentId === JETT_ID.toLowerCase());
 ok('Sanitize keeps smallImageUrl', sanitized.smallImageUrl?.includes('valorant-api'));
 
 const riotLobby = {
@@ -531,6 +596,43 @@ const merged = mergeForegroundWithSession(
 );
 ok('Riot session not overridden by window', merged?.provider === 'riot-valorant');
 ok('Riot mode preserved in lobby', merged?.mode === 'Unrated');
+
+// CS2 foreground must beat stale Valorant lobby (user bug: playing CS but not updating)
+const cs2Foreground = {
+  title: 'Counter-Strike 2',
+  processName: 'cs2',
+  knownGameId: 'cs2',
+  steamAppId: 730,
+  steamArtworkUrl: assets.steamCapsule(730),
+  launcher: 'Steam',
+  focused: true,
+};
+ok('CS2 beats Valorant lobby merge', mergeForegroundWithSession(riotLobby, cs2Foreground)?.title === 'Counter-Strike 2');
+ok('CS2 merge provider window', mergeForegroundWithSession(riotLobby, cs2Foreground)?.provider === 'window');
+ok('CS2 merge keeps AppID 730', mergeForegroundWithSession(riotLobby, cs2Foreground)?.steamAppId === 730);
+ok('Sticky CS2 beats Valorant queue', mergeForegroundWithSession(
+  { ...riotLobby, inQueue: true, phase: 'queue', inLobby: false },
+  { ...cs2Foreground, focused: false, sticky: true },
+)?.title === 'Counter-Strike 2');
+ok('Valorant in-match kept when alt-tabbed', mergeForegroundWithSession(
+  { provider: 'riot-valorant', title: 'Valorant', inMatch: true, phase: 'match', map: 'Ascent' },
+  { title: 'Discord', processName: 'Discord', focused: false },
+)?.provider === 'riot-valorant');
+ok('shouldPreferForeground CS2 over lobby', shouldPreferForegroundOverRiot(riotLobby, cs2Foreground) === true);
+ok('shouldPreferForeground not for Valorant proc', shouldPreferForegroundOverRiot(riotLobby, {
+  title: 'VALORANT', processName: 'VALORANT', focused: true,
+}) === false);
+
+const cs2Session = mergeForegroundWithSession(riotLobby, cs2Foreground);
+const cs2Sig = sessionSignature(cs2Session);
+const valSig = sessionSignature(riotLobby);
+ok('CS2 session sig differs from Valorant lobby', cs2Sig !== valSig && cs2Sig.includes('Counter-Strike 2'));
+ok('macOS Counter-Strike 2 process name', matchKnownGame('Counter-Strike 2')?.id === 'cs2');
+ok('macOS normalize Counter-Strike 2', normalizeGame({ processName: 'Counter-Strike 2', windowTitle: '' })?.knownGameId === 'cs2');
+
+// Dota 2 / other Steam games share the same foreground-over-riot path
+const dotaFg = { title: 'Dota 2', processName: 'dota2', knownGameId: 'dota2', focused: true };
+ok('Dota 2 beats Valorant lobby', mergeForegroundWithSession(riotLobby, dotaFg)?.title === 'Dota 2');
 
 // ── Map / mode catalog (DM, TDM, new maps, alternate queues) ──
 const catalog = require(path.join(root, 'electron/valorant-catalog'));

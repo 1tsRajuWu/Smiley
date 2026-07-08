@@ -31,6 +31,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
   let pendingResolve = false;
   let lastArtworkKey = '';
   let lastResolvedSession = null;
+  let lastForegroundSig = '';
   let matchStartAt = null;
   let backgroundMode = false;
 
@@ -181,8 +182,12 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
   }
 
   function onForeground(game) {
+    const fgSig = game ? [game.title, game.processName, game.knownGameId || ''].join('\0') : '';
+    const switched = fgSig !== lastForegroundSig;
+    lastForegroundSig = fgSig;
     foreground = game;
-    refresh().then(() => scheduleLivePoll(lastResolvedSession)).catch(() => scheduleLivePoll(lastResolvedSession));
+    if (switched) lastSig = '';
+    refresh({ force: switched }).then(() => scheduleLivePoll(lastResolvedSession)).catch(() => scheduleLivePoll(lastResolvedSession));
   }
 
   async function ensureRunning() {
@@ -205,6 +210,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
     lastSig = '';
     lastSteamKey = '';
     lastArtworkKey = '';
+    lastForegroundSig = '';
     foreground = null;
     // Static gaming template immediately so Discord isn't blank while waiting for a game.
     pushPresence(null, null, { force: true }).catch(() => {});
@@ -224,6 +230,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
     lastSig = '';
     lastSteamKey = '';
     lastArtworkKey = '';
+    lastForegroundSig = '';
     matchStartAt = null;
     foreground = null;
     if (reset) template = null;

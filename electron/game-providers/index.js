@@ -33,6 +33,15 @@ function sessionSignature(session) {
   ].join('\0');
 }
 
+/** Sticky or focused non-Riot game (e.g. CS2) beats a stale Valorant/LoL lobby session. */
+function shouldPreferForegroundOverRiot(session, foreground) {
+  if (!foreground?.title) return false;
+  if (isRiotGameProcess(foreground.processName)) return false;
+  if (!session?.provider?.startsWith('riot-')) return false;
+  if (session.inMatch) return false;
+  return true;
+}
+
 function enrichForeground(foreground) {
   if (!foreground?.title) return null;
   for (const fn of FOREGROUND_ENRICHERS) {
@@ -45,6 +54,9 @@ function enrichForeground(foreground) {
     processName: foreground.processName,
     windowTitle: foreground.windowTitle,
     knownGameId: foreground.knownGameId || null,
+    steamAppId: foreground.steamAppId || null,
+    steamArtworkUrl: foreground.steamArtworkUrl || null,
+    launcher: foreground.launcher || null,
     updatedAt: foreground.updatedAt || Date.now(),
   };
   return attachSteamAlias(base);
@@ -83,6 +95,7 @@ function mergeForegroundWithSession(session, foreground) {
   if (!fg) return session;
   const riotSession = session?.provider?.startsWith('riot-');
   if (riotSession) {
+    if (shouldPreferForegroundOverRiot(session, foreground)) return fg;
     if (fg.provider !== 'window') {
       return { ...session, ...fg, title: fg.title || session.title, provider: session.provider };
     }
@@ -98,7 +111,9 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '', getConfig
   let session = null;
   const presenceOpts = getConfig?.()?.gamingPresenceOptions;
 
-  if (isLockfileAvailable()) {
+  const skipRiotForForeground = foreground?.title && !isRiotGameProcess(foreground?.processName);
+
+  if (isLockfileAvailable() && !skipRiotForForeground) {
     try {
       const riot = await getRiotLiveSession({ fetchRank });
       if (riot?.inMatch) {
@@ -180,6 +195,7 @@ function getRiotPollMs(session) {
 module.exports = {
   resolveLiveGameSession,
   mergeForegroundWithSession,
+  shouldPreferForegroundOverRiot,
   attachSteamAlias,
   sessionSignature,
   getRiotPollMs,
