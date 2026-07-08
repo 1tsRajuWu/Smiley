@@ -43,8 +43,8 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 
 <!-- HERO_DOWNLOADS_START -->
 [![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-Setup-7.9.2.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2-x64.dmg)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-x64.dmg)
 [![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2.AppImage)
 [![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2.deb)
 <!-- HERO_DOWNLOADS_END -->
@@ -53,8 +53,8 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 | Platform | File |
 |----------|------|
 | Windows | [Smiley-Setup-7.9.2.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-Setup-7.9.2.exe) |
-| macOS Apple Silicon | [Smiley-7.9.2-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2-arm64.dmg) |
-| macOS Intel | [Smiley-7.9.2-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2-x64.dmg) |
+| macOS Apple Silicon | [Smiley-7.9.4-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-arm64.dmg) |
+| macOS Intel | [Smiley-7.9.4-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.4/Smiley-7.9.4-x64.dmg) |
 | Linux (AppImage) | [Smiley-7.9.2.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2.AppImage) |
 | Linux (.deb) | [Smiley-7.9.2.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.2/Smiley-7.9.2.deb) |
 <!-- DOWNLOADS_END -->
