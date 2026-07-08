@@ -649,9 +649,9 @@ function normalizeGamingPresenceOptions(raw) {
 }
 
 function getValorantRankFetcher() {
-  const apiKey = getRiotApiKey(config, getUserDataRoot());
-  if (!apiKey || config.gamingPresenceOptions?.showRank === false) return null;
-  return (puuid) => fetchValorantRank(puuid, 'na', apiKey);
+  // Rank comes from the local Riot client when available.
+  // Cloud Riot Developer API keys are not used or shown in the UI.
+  return null;
 }
 
 function applyLoadedConfig(raw, { recovered = false } = {}) {

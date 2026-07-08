@@ -45,7 +45,7 @@
         <div class="header-actions">
           <div class="connection-pill" id="connectionPill">
             <span class="connection-dot"></span>
-            <span id="connectionText">Connecting…</span>
+            <span id="connectionText">Starting…</span>
           </div>
           <div class="window-controls" id="windowControls" hidden>
             <button type="button" class="btn btn-ghost window-control-btn" id="minimizeBtn" title="Minimize" aria-label="Minimize window">─</button>
@@ -232,7 +232,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.9.13</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.9.14</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -316,34 +316,24 @@
             <div class="settings-subsection gaming-presence-section" id="gamingPresenceSection">
               <div class="field">
                 <span class="field-label">Gaming presence details</span>
-                <p class="field-hint" style="margin:0 0 12px;">Customize what appears on Discord while gaming. Valorant uses local Riot client data only.</p>
+                <p class="field-hint" style="margin:0 0 12px;">Choose what Smiley shows on Discord for any live game session. Extra details appear when the game provides them (for example map, party, or score).</p>
                 <div class="gaming-presence-toggles">
-                  <div class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowMode" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Game / mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowMode" checked /><span class="toggle-slider"></span></label></div>
                   <div class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowParty" checked /><span class="toggle-slider"></span></label></div>
-                  <div class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgent" checked /><span class="toggle-slider"></span></label></div>
-                  <div class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScore" checked /><span class="toggle-slider"></span></label></div>
-                  <div class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRank" checked /><span class="toggle-slider"></span></label></div>
-                  <div class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArt" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Map / cover art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArt" checked /><span class="toggle-slider"></span></label></div>
                   <div class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsed" checked /><span class="toggle-slider"></span></label></div>
-                  <div class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKda" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Score / KDA</span><label class="toggle sm"><input type="checkbox" id="gamingShowScore" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Rank (when available)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRank" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Character / agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgent" checked /><span class="toggle-slider"></span></label></div>
+                  <div class="toggle-row"><span>Detailed K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKda" checked /><span class="toggle-slider"></span></label></div>
                 </div>
               </div>
               <div class="field">
-                <span class="field-label">Riot API key (optional)</span>
-                <p class="field-hint">Used only for Valorant rank. Stored encrypted on this device.</p>
-                <div class="settings-actions-row">
-                  <input type="password" class="text-input" id="riotApiKeyInput" placeholder="RGAPI-…" autocomplete="off" />
-                  <button type="button" class="btn btn-secondary btn-sm" id="saveRiotKeyBtn">Save key</button>
-                </div>
-              </div>
-              <div class="field">
-                <span class="field-label">Preview states</span>
+                <span class="field-label">Preview</span>
+                <p class="field-hint" style="margin:0 0 10px;">Live sessions override this mock. Smiley reads game data from your PC only.</p>
                 <div class="gaming-state-pills" id="gamingStatePills" role="tablist">
-                  <button type="button" class="gaming-state-pill active" data-state="lobby">Lobby</button>
-                  <button type="button" class="gaming-state-pill" data-state="queue">Queue</button>
-                  <button type="button" class="gaming-state-pill" data-state="pregame">Agent Select</button>
-                  <button type="button" class="gaming-state-pill" data-state="ingame">In Match</button>
-                  <button type="button" class="gaming-state-pill" data-state="deathmatch">Deathmatch</button>
+                  <button type="button" class="gaming-state-pill active" data-state="playing">In game</button>
+                  <button type="button" class="gaming-state-pill" data-state="lobby">Lobby</button>
                 </div>
                 <div class="gaming-discord-card gaming-discord-card--preview" style="margin-top:12px;">
                   <div class="gaming-discord-card__art-wrap">
@@ -352,8 +342,8 @@
                   </div>
                   <div class="gaming-discord-card__meta">
                     <div class="gaming-discord-card__app">Playing a game</div>
-                    <div class="gaming-discord-card__title" id="gamingPreviewCardTitle">Valorant</div>
-                    <div class="gaming-discord-card__state" id="gamingPreviewCardState">Swiftplay · Solo · In lobby</div>
+                    <div class="gaming-discord-card__title" id="gamingPreviewCardTitle">Playing a game</div>
+                    <div class="gaming-discord-card__state" id="gamingPreviewCardState">In a session</div>
                     <div class="gaming-discord-card__elapsed" id="gamingPreviewElapsed" hidden>0:00 elapsed</div>
                   </div>
                 </div>
@@ -533,6 +523,7 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelSettingsBtn">Cancel</button>
           <button type="button" class="btn btn-secondary" id="checkUpdateBtn">Check for Updates</button>
           <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save &amp; Connect</button>
         </div>

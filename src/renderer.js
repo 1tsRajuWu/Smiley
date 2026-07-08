@@ -274,25 +274,34 @@ const CODING_MOCK_PREVIEWS = {
 
 let codingPreviewState = 'editing';
 let livePreviewMode = 'activity';
+let gamingPreviewState = 'playing';
 
 const GAMING_MOCK_PREVIEWS = {
+  playing: {
+    title: 'Playing a game',
+    state: 'In a session',
+    largeArt: null,
+    badge: null,
+    elapsed: true,
+  },
   lobby: {
-    title: 'Game Night',
-    state: 'Party up and jump in',
+    title: 'Playing a game',
+    state: 'In lobby',
     largeArt: null,
     badge: null,
     elapsed: false,
   },
 };
 
+/** Generic gaming presence toggles (used by any live game session). */
 const GAMING_PRESENCE_FIELDS = {
   showMode: 'Mode',
   showParty: 'Party',
-  showAgent: 'Agent',
-  showScore: 'Score',
-  showRank: 'Rank',
   showMapArt: 'MapArt',
   showElapsed: 'Elapsed',
+  showScore: 'Score',
+  showRank: 'Rank',
+  showAgent: 'Agent',
   showKda: 'Kda',
 };
 
@@ -528,7 +537,7 @@ function wireGamingPresenceToggleSync() {
 }
 
 function setGamingPreviewState(state) {
-  gamingPreviewState = state || 'lobby';
+  gamingPreviewState = state || 'playing';
   settingsGamingStatePills?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
     pill.classList.toggle('active', pill.dataset.state === gamingPreviewState);
   });
@@ -536,12 +545,16 @@ function setGamingPreviewState(state) {
 }
 
 function setupGamingPresenceSettings() {
-  setupDashboardUI();
-  wireGamingPresenceToggleSync();
-  settingsGamingStatePills?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
-    pill.addEventListener('click', () => setGamingPreviewState(pill.dataset.state || 'lobby'));
-  });
-  updateGamingSettingsPreview();
+  try {
+    setupDashboardUI();
+    wireGamingPresenceToggleSync();
+    settingsGamingStatePills?.querySelectorAll('.gaming-state-pill').forEach((pill) => {
+      pill.addEventListener('click', () => setGamingPreviewState(pill.dataset.state || 'playing'));
+    });
+    updateGamingSettingsPreview();
+  } catch (err) {
+    console.error('[Smiley] setupGamingPresenceSettings failed:', err);
+  }
 }
 
 let musicProgressTimer = null;
@@ -994,6 +1007,7 @@ function showUpdateActionToast(message, { label = 'Download from GitHub', url = 
 }
 
 function syncConnectionPill() {
+  if (!connectionPill || !connectionText) return;
   connectionPill.classList.remove('connected', 'error', 'paused');
   if (presencePaused) {
     connectionPill.classList.add('paused');
@@ -3379,25 +3393,8 @@ async function init() {
   });
 
   if (settingsBtn) settingsBtn.addEventListener('click', () => openSettings('general'));
-  setupGamingPresenceSettings();
-  const saveRiotKeyBtn = $('#saveRiotKeyBtn');
-  const riotApiKeyInput = $('#riotApiKeyInput');
-  if (saveRiotKeyBtn && riotApiKeyInput) {
-    saveRiotKeyBtn.addEventListener('click', async () => {
-      const key = riotApiKeyInput.value.trim();
-      try {
-        const result = await window.smiley.saveRiotApiKey(key);
-        if (result?.success === false) {
-          showToast(result.error || 'Failed to save Riot API key', 'error');
-          return;
-        }
-        riotApiKeyInput.value = '';
-        showToast(key ? 'Riot API key saved' : 'Riot API key cleared');
-      } catch (_) {
-        showToast('Failed to save Riot API key', 'error');
-      }
-    });
-  }
+  // Wire core controls before optional gaming UI so a presence-settings error
+  // cannot leave Settings tabs / Save / connection status dead.
   if (minimizeBtn) minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
   if (maximizeBtn) {
     maximizeBtn.addEventListener('click', async () => {
@@ -3441,6 +3438,12 @@ async function init() {
     tab.addEventListener('click', () => setGifSourceTab(tab.dataset.source));
   });
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
+  const cancelSettingsBtn = $('#cancelSettingsBtn');
+  if (cancelSettingsBtn) {
+    cancelSettingsBtn.addEventListener('click', () => {
+      if (settingsModal?.open) settingsModal.close();
+    });
+  }
   if (clearBtn) clearBtn.addEventListener('click', handleClear);
   if (copyBtn) copyBtn.addEventListener('click', handleCopy);
 
@@ -3508,6 +3511,8 @@ async function init() {
   settingsTabs.forEach((tab) => {
     tab.addEventListener('click', () => switchSettingsTab(tab.dataset.tab));
   });
+
+  setupGamingPresenceSettings();
 
   themeOptions.forEach((opt) => {
     opt.addEventListener('click', () => {
@@ -3928,6 +3933,9 @@ async function init() {
   });
 
   window.smiley.onStatus((data) => {
+    if (typeof data?.connected === 'boolean') {
+      setConnectionStatus(data.connected, data.error || null);
+    }
     if (data.settings) {
       currentSettings = { ...currentSettings, ...data.settings };
       applyTheme(data.settings.theme);
@@ -3936,7 +3944,7 @@ async function init() {
       if (timerEl) updatePreviewTimerVisibility(data.activity?.id);
     }
     if (data.version) {
-      footerVersion.textContent = `Smiley v${data.version}`;
+      if (footerVersion) footerVersion.textContent = `Smiley v${data.version}`;
       if (aboutVersion) aboutVersion.textContent = `Smiley v${data.version}`;
     }
     if (data.activity) {
@@ -3955,8 +3963,8 @@ async function init() {
   });
 
   window.smiley.onInitialConnect((result) => {
-    if (result.connected) setConnectionStatus(true);
-    else setConnectionStatus(false, result.error);
+    if (result?.connected) setConnectionStatus(true);
+    else setConnectionStatus(false, result?.error || null);
   });
 
   window.smiley.onOpenSettings(() => openSettings('general'));
@@ -3974,7 +3982,6 @@ async function init() {
   recentActivities = cfg.recentActivities || [];
   favoriteIds = cfg.favoriteActivities || [];
   applyLiveSyncTogglesFromConfig(cfg);
-  syncConnectionPill();
   setupRotateFavorites();
   applyPlatformUI(cfg);
   applyUIVersion(cfg.uiVersion || 'v3');
@@ -3996,7 +4003,7 @@ async function init() {
     await applyWallpaper(wallpaperSettings);
   }
   if (cfg.version) {
-    footerVersion.textContent = `Smiley v${cfg.version}`;
+    if (footerVersion) footerVersion.textContent = `Smiley v${cfg.version}`;
     if (aboutVersion) aboutVersion.textContent = `Smiley v${cfg.version}`;
   }
 
@@ -4009,9 +4016,16 @@ async function init() {
     privacyConsentModal.showModal();
   }
 
-  // Restore previous activity
+  // Restore previous activity + hydrate connection from main
   const status = await statusPromise;
-  if (status.activity) {
+  if (typeof status?.connected === 'boolean') {
+    setConnectionStatus(status.connected, status.error || null);
+  } else if (!cfg.hasValidClientId) {
+    /* already set above */
+  } else {
+    syncConnectionPill();
+  }
+  if (status?.activity) {
     const match = findActivity(status.activity.id) || getAllActivitiesMerged().find(
       (a) => a.details === status.activity.details && a.state === status.activity.state
     );
@@ -4024,7 +4038,7 @@ async function init() {
     else if (status.activity?.id === 'listening') startTimer(null);
   }
 
-  updatePreviewTimerVisibility(status.activity?.id);
+  updatePreviewTimerVisibility(status?.activity?.id);
 
   updateBrandIcon();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateBrandIcon);
