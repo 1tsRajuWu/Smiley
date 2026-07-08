@@ -2214,14 +2214,7 @@ async function schedulePresenceUpdate(activity, isNewSession) {
   const isCodingLive = safeActivity.id === 'coding' && config.codingNowPlaying !== false;
   if (isListeningLive || isGamingLive || isCodingLive) {
     if (isNewSession) sessionStart = isListeningLive ? null : Date.now();
-    // Coding sync polls async — apply host activity immediately so Discord isn't blank.
-    if (isCodingLive) {
-      applyCodingPresence({
-        ...safeActivity,
-        details: safeActivity.details || 'Coding',
-        state: safeActivity.state || 'Building something cool',
-      }).catch(() => {});
-    }
+    // Live sync modules apply presence themselves (static template immediately, then live updates).
     pendingUpdate = null;
     if (updateTimer) {
       clearTimeout(updateTimer);

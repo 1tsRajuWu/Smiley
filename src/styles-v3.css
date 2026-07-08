@@ -5,6 +5,7 @@
 
 :root,
 [data-ui-version='v3'] {
+  --v3-control-width: 220px;
   --v3-preview-width: 360px;
   --v3-radius: 20px;
   --v3-radius-sm: 12px;
@@ -37,8 +38,8 @@
 
 [data-ui-version='v3'] .content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--v3-preview-width);
-  grid-template-areas: 'picker preview';
+  grid-template-columns: var(--v3-control-width, 220px) minmax(0, 1fr) var(--v3-preview-width);
+  grid-template-areas: 'controls picker preview';
   gap: 0;
   padding: 0;
   min-height: 0;
@@ -285,13 +286,14 @@
 [data-ui-version='v3'].animations-off .activity-card { animation: none; }
 
 @media (max-width: 1100px) {
-  [data-ui-version='v3'] .content { grid-template-columns: minmax(0, 1fr) 300px; }
+  [data-ui-version='v3'] .content { grid-template-columns: 200px minmax(0, 1fr) 300px; }
 }
 @media (max-width: 900px) {
   [data-ui-version='v3'] .content {
     grid-template-columns: 1fr;
-    grid-template-areas: 'preview' 'picker';
+    grid-template-areas: 'preview' 'controls' 'picker';
   }
+  [data-ui-version='v3'] .control-panel { border-right: none; border-bottom: 1px solid var(--v3-border); }
   [data-ui-version='v3'] .live-preview { border-left: none; border-bottom: 1px solid var(--v3-border); }
   [data-ui-version='v3'] .ui-version-options { grid-template-columns: 1fr; }
 }

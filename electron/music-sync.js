@@ -255,6 +255,8 @@ function createMusicSync({
     };
     if (!templateOnlyUpdate) {
       lastMetaSignature = '';
+      // Static template immediately so Discord isn't blank while waiting for a track.
+      pushPresence(null, null);
     } else if (lastTrack?.title) {
       pushPresence(lastTrack, getCachedArtwork(lastTrack) || lastTrack.artworkUrl || null);
     }

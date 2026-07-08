@@ -129,7 +129,10 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
     if (fgService) return;
     fgService = createNowCodingService({ onUpdate: onForeground });
     await fgService.start();
-    await pushPresence(foreground, { force: true });
+    // start() already applied the static template; only re-apply if a live editor was found.
+    if (foreground?.appName) {
+      await pushPresence(foreground, { force: true });
+    }
   }
 
   function start(act) {
@@ -172,6 +175,9 @@ function createCodingSync({ getConfig, applyCodingPresence, sendToRenderer, onSe
     start,
     stop,
     getTemplate: () => template,
+    setBackgroundMode(background) {
+      fgService?.setBackgroundMode?.(background === true);
+    },
     handleConfigChange(enabled) {
       if (!template) return;
       if (enabled) ensureRunning().catch(() => {});

@@ -72,6 +72,55 @@
 
       <!-- Main Content — Aurora dashboard -->
       <div class="content">
+        <!-- Left: feature controls -->
+        <aside class="control-panel" id="controlPanel">
+          <section class="panel-section">
+            <div class="panel-heading">Live sync</div>
+            <p class="panel-hint">Show music, games, and coding on Discord automatically.</p>
+            <div class="feature-cards">
+              <label class="feature-card feature-card--music">
+                <span class="feature-card__icon" aria-hidden="true">🎵</span>
+                <span class="feature-card__body">
+                  <span class="feature-card__title">Now playing</span>
+                  <span class="feature-card__desc">Spotify, Apple Music, YouTube Music</span>
+                </span>
+                <label class="toggle sm"><input type="checkbox" id="musicNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </label>
+              <label class="feature-card feature-card--gaming">
+                <span class="feature-card__icon" aria-hidden="true">🎮</span>
+                <span class="feature-card__body">
+                  <span class="feature-card__title">Gaming</span>
+                  <span class="feature-card__desc">Foreground game + Valorant stats</span>
+                </span>
+                <label class="toggle sm"><input type="checkbox" id="gamingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </label>
+              <label class="feature-card feature-card--coding">
+                <span class="feature-card__icon" aria-hidden="true">💻</span>
+                <span class="feature-card__body">
+                  <span class="feature-card__title">Coding</span>
+                  <span class="feature-card__desc">Cursor, VS Code, and other editors</span>
+                </span>
+                <label class="toggle sm"><input type="checkbox" id="codingNowPlayingTogglePanel" checked /><span class="toggle-slider"></span></label>
+              </label>
+            </div>
+          </section>
+          <section class="panel-section presence-controls" id="presenceControlsPanel">
+            <div class="panel-heading">What to show</div>
+            <p class="panel-hint">Valorant uses local Riot client data only.</p>
+            <div class="gaming-presence-toggles">
+              <label class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowModePanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowPartyPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgentPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScorePanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRankPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArtPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsedPanel" checked /><span class="toggle-slider"></span></label></label>
+              <label class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKdaPanel" checked /><span class="toggle-slider"></span></label></label>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm panel-settings-link" id="openGamingSettingsBtn">Riot API key &amp; more</button>
+          </section>
+        </aside>
+
         <!-- Center: Activity Picker -->
         <main class="picker-main">
           <div class="picker-header">
@@ -105,8 +154,12 @@
             <div class="live-preview-kicker">Live</div>
             <div class="live-preview-title">Presence preview</div>
             <p class="live-preview-subtitle">How friends see you on Discord</p>
+            <div class="preview-state-chips" id="previewStateChips" role="tablist" aria-label="Preview mode">
+              <button type="button" class="preview-state-chip active" data-preview="activity" role="tab" aria-selected="true">Activity</button>
+              <button type="button" class="preview-state-chip" data-preview="coding" role="tab" aria-selected="false">Coding</button>
+            </div>
           </div>
-          <div class="live-preview-body" id="livePreviewBody">
+          <div class="live-preview-body" id="livePreviewBody" data-preview-mode="activity">
           <!-- Character Stage with GIF -->
           <div class="character-stage" id="characterStage">
             <div class="character-container" id="characterContainer">
@@ -142,6 +195,71 @@
             </div>
           </div>
 
+          <div class="music-preview-bar" id="musicPreviewBar" hidden>
+            <div class="music-preview-art-wrap">
+              <img class="music-preview-art" id="musicPreviewArt" alt="" decoding="async" />
+              <span class="music-preview-art-fallback" id="musicPreviewArtFallback" aria-hidden="true">🎵</span>
+            </div>
+            <div class="music-preview-meta">
+              <div class="music-preview-title" id="musicPreviewTitle"></div>
+              <div class="music-preview-artist" id="musicPreviewArtist"></div>
+              <div class="music-preview-progress" aria-hidden="true">
+                <div class="music-preview-progress-fill" id="musicPreviewProgressFill"></div>
+              </div>
+              <div class="music-preview-times">
+                <span id="musicPreviewElapsed">0:00</span>
+                <span id="musicPreviewDuration">0:00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="music-preview-bar" id="gamingPreviewBar" hidden>
+            <div class="music-preview-art-wrap">
+              <img class="music-preview-art" id="gamingPreviewArt" alt="" decoding="async" />
+              <span class="music-preview-art-fallback" aria-hidden="true">🎮</span>
+            </div>
+            <div class="music-preview-meta">
+              <div class="music-preview-title" id="gamingPreviewTitle"></div>
+              <div class="music-preview-artist" id="gamingPreviewSub"></div>
+            </div>
+          </div>
+
+          <div class="music-preview-bar" id="codingPreviewBar" hidden>
+            <div class="music-preview-art-wrap">
+              <span class="music-preview-art-fallback" aria-hidden="true">💻</span>
+            </div>
+            <div class="music-preview-meta">
+              <div class="music-preview-title" id="codingPreviewTitle"></div>
+              <div class="music-preview-artist" id="codingPreviewSub"></div>
+            </div>
+          </div>
+
+          <div class="live-gaming-preview" id="mainGamingDiscordPreview">
+            <div class="gaming-discord-preview__header">
+              <span>Discord preview</span>
+              <div class="gaming-state-pills" id="mainGamingStatePills" role="tablist">
+                <button type="button" class="gaming-state-pill active" data-state="lobby">Lobby</button>
+                <button type="button" class="gaming-state-pill" data-state="queue">Queue</button>
+                <button type="button" class="gaming-state-pill" data-state="pregame">Agent Select</button>
+                <button type="button" class="gaming-state-pill" data-state="ingame">In Match</button>
+                <button type="button" class="gaming-state-pill" data-state="deathmatch">Deathmatch</button>
+              </div>
+            </div>
+            <div class="gaming-discord-card gaming-discord-card--preview">
+              <div class="gaming-discord-card__art-wrap">
+                <img class="gaming-discord-card__art" id="mainGamingPreviewLargeArt" alt="" decoding="async" />
+                <div class="gaming-discord-card__badge" id="mainGamingPreviewBadge" hidden></div>
+              </div>
+              <div class="gaming-discord-card__meta">
+                <div class="gaming-discord-card__app">Playing a game</div>
+                <div class="gaming-discord-card__title" id="mainGamingPreviewCardTitle">Valorant</div>
+                <div class="gaming-discord-card__state" id="mainGamingPreviewCardState">Swiftplay · Solo · In lobby</div>
+                <div class="gaming-discord-card__elapsed" id="mainGamingPreviewElapsed" hidden>0:00 elapsed</div>
+              </div>
+            </div>
+            <p class="field-hint gaming-preview-live-hint" id="mainGamingPreviewLiveHint" hidden>Showing your live session</p>
+          </div>
+
           <div class="preview-actions">
             <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
             <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
@@ -171,7 +289,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.9.10</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.9.11</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -250,6 +368,54 @@
                 <p class="field-hint" style="margin:4px 0 0;">Replaces the anime GIF with Steam cover art when available.</p>
               </div>
               <label class="toggle"><input type="checkbox" id="gamingNowPlayingCoverArtToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+
+            <div class="settings-subsection gaming-presence-section" id="gamingPresenceSection">
+              <div class="field">
+                <span class="field-label">Gaming presence details</span>
+                <p class="field-hint" style="margin:0 0 12px;">Customize what appears on Discord while gaming. Valorant uses local Riot client data only.</p>
+                <div class="gaming-presence-toggles">
+                  <label class="toggle-row"><span>Game mode</span><label class="toggle sm"><input type="checkbox" id="gamingShowMode" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>Party size</span><label class="toggle sm"><input type="checkbox" id="gamingShowParty" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>Agent</span><label class="toggle sm"><input type="checkbox" id="gamingShowAgent" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>Round score</span><label class="toggle sm"><input type="checkbox" id="gamingShowScore" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>Rank (Riot API)</span><label class="toggle sm"><input type="checkbox" id="gamingShowRank" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>Map / mode art</span><label class="toggle sm"><input type="checkbox" id="gamingShowMapArt" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>Elapsed time</span><label class="toggle sm"><input type="checkbox" id="gamingShowElapsed" checked /><span class="toggle-slider"></span></label></label>
+                  <label class="toggle-row"><span>K/D/A</span><label class="toggle sm"><input type="checkbox" id="gamingShowKda" checked /><span class="toggle-slider"></span></label></label>
+                </div>
+              </div>
+              <div class="field">
+                <span class="field-label">Riot API key (optional)</span>
+                <p class="field-hint">Used only for Valorant rank. Stored encrypted on this device.</p>
+                <div class="settings-actions-row">
+                  <input type="password" class="text-input" id="riotApiKeyInput" placeholder="RGAPI-…" autocomplete="off" />
+                  <button type="button" class="btn btn-secondary btn-sm" id="saveRiotKeyBtn">Save key</button>
+                </div>
+              </div>
+              <div class="field">
+                <span class="field-label">Preview states</span>
+                <div class="gaming-state-pills" id="gamingStatePills" role="tablist">
+                  <button type="button" class="gaming-state-pill active" data-state="lobby">Lobby</button>
+                  <button type="button" class="gaming-state-pill" data-state="queue">Queue</button>
+                  <button type="button" class="gaming-state-pill" data-state="pregame">Agent Select</button>
+                  <button type="button" class="gaming-state-pill" data-state="ingame">In Match</button>
+                  <button type="button" class="gaming-state-pill" data-state="deathmatch">Deathmatch</button>
+                </div>
+                <div class="gaming-discord-card gaming-discord-card--preview" style="margin-top:12px;">
+                  <div class="gaming-discord-card__art-wrap">
+                    <img class="gaming-discord-card__art" id="gamingPreviewLargeArt" alt="" decoding="async" />
+                    <div class="gaming-discord-card__badge" id="gamingPreviewBadge" hidden></div>
+                  </div>
+                  <div class="gaming-discord-card__meta">
+                    <div class="gaming-discord-card__app">Playing a game</div>
+                    <div class="gaming-discord-card__title" id="gamingPreviewCardTitle">Valorant</div>
+                    <div class="gaming-discord-card__state" id="gamingPreviewCardState">Swiftplay · Solo · In lobby</div>
+                    <div class="gaming-discord-card__elapsed" id="gamingPreviewElapsed" hidden>0:00 elapsed</div>
+                  </div>
+                </div>
+                <p class="field-hint gaming-preview-live-hint" id="gamingPreviewLiveHint" hidden>Showing your live session</p>
+              </div>
             </div>
             <div class="field toggle-field">
               <div>

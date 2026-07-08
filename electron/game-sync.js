@@ -231,6 +231,9 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, onSessio
     start,
     stop,
     getTemplate: () => template,
+    setBackgroundMode(background) {
+      fgService?.setBackgroundMode?.(background === true);
+    },
     handleConfigChange(enabled) {
       if (!template) return;
       if (enabled) ensureRunning().catch(() => {});

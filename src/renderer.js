@@ -1887,6 +1887,17 @@ function renderCategoryTabs() {
       renderCategoryTabs();
       preloadActiveCategoryGifs();
       renderActivityGrid();
+      // Category tab → presence: apply primary live activity for music/gaming/coding.
+      const primaryByCategory = {
+        chill: 'listening',
+        gaming: 'gaming',
+        work: 'coding',
+      };
+      const primaryId = primaryByCategory[activeCategory];
+      if (primaryId) {
+        void selectActivity(primaryId);
+        return;
+      }
       const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
       if (activity) renderGifPicker(activity);
     });
@@ -3345,6 +3356,28 @@ async function init() {
 
   settingsBtn.addEventListener('click', () => openSettings('general'));
   setupGamingPresenceSettings();
+  const openGamingSettingsBtn = $('#openGamingSettingsBtn');
+  if (openGamingSettingsBtn) {
+    openGamingSettingsBtn.addEventListener('click', () => openSettings('general'));
+  }
+  const saveRiotKeyBtn = $('#saveRiotKeyBtn');
+  const riotApiKeyInput = $('#riotApiKeyInput');
+  if (saveRiotKeyBtn && riotApiKeyInput) {
+    saveRiotKeyBtn.addEventListener('click', async () => {
+      const key = riotApiKeyInput.value.trim();
+      try {
+        const result = await window.smiley.saveRiotApiKey(key);
+        if (result?.success === false) {
+          showToast(result.error || 'Failed to save Riot API key', 'error');
+          return;
+        }
+        riotApiKeyInput.value = '';
+        showToast(key ? 'Riot API key saved' : 'Riot API key cleared');
+      } catch (_) {
+        showToast('Failed to save Riot API key', 'error');
+      }
+    });
+  }
   if (minimizeBtn) minimizeBtn.addEventListener('click', () => window.smiley.minimizeWindow());
   if (maximizeBtn) {
     maximizeBtn.addEventListener('click', async () => {
@@ -3388,7 +3421,7 @@ async function init() {
     tab.addEventListener('click', () => setGifSourceTab(tab.dataset.source));
   });
   if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', handleSaveSettings);
-  clearBtn.addEventListener('click', handleClear);
+  if (clearBtn) clearBtn.addEventListener('click', handleClear);
   if (copyBtn) copyBtn.addEventListener('click', handleCopy);
 
   document.addEventListener('keydown', (e) => {
@@ -3416,6 +3449,13 @@ async function init() {
         renderCategoryTabs();
         preloadActiveCategoryGifs();
         renderActivityGrid();
+        const primaryByCategory = {
+          chill: 'listening',
+          gaming: 'gaming',
+          work: 'coding',
+        };
+        const primaryId = primaryByCategory[activeCategory];
+        if (primaryId) void selectActivity(primaryId);
       }
       return;
     }
