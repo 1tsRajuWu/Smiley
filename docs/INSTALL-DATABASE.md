@@ -49,9 +49,9 @@ This is intended to answer dashboard questions like install overview, usage by s
 ## Setup (developer)
 
 1. Create a Supabase project and run [scripts/install-database-schema.sql](../scripts/install-database-schema.sql) in SQL Editor.
-2. Set GitHub secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, optionally `SUPABASE_DB_URL`.
-   - For **schema migrations** (GitHub Actions → *Apply Supabase schema*): add **`SUPABASE_DB_URL`** *or* **`SUPABASE_ACCESS_TOKEN`** (Supabase dashboard → Account → Access Tokens). Without one of these, the workflow fails instead of skipping.
-   - **`SUPABASE_DB_URL` must be the full URI**, e.g. `postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-[region].pooler.supabase.com:5432/postgres` (Session mode). Do **not** paste host, password, or JDBC string alone. URL-encode special characters in the password (`@` → `%40`, `#` → `%23`). No surrounding quotes.
+2. Set GitHub secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, and **`SUPABASE_ACCESS_TOKEN`** (Supabase dashboard → Account → Access Tokens).
+   - For **schema migrations** (GitHub Actions → *Apply Supabase schema*), the workflow **prefers `SUPABASE_ACCESS_TOKEN`** (no database password needed).
+   - Optional fallback: **`SUPABASE_DB_URL`** as the full Session pooler URI, e.g. `postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-[region].pooler.supabase.com:5432/postgres`. Do **not** paste host, password, or JDBC string alone. URL-encode special characters in the password (`@` → `%40`, `#` → `%23`). No surrounding quotes. Without a valid token or URI, the workflow fails instead of skipping.
 3. Trigger [`.github/workflows/supabase-schema.yml`](../.github/workflows/supabase-schema.yml) to apply schema and backfill geo.
 
 **Backfill existing rows:**

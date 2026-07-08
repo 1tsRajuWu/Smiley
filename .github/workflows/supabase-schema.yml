@@ -24,29 +24,33 @@ jobs:
           set -euo pipefail
           applied=0
 
-          # Normalize secret (common mistake: quotes, newlines, or host-only paste).
-          DB_URL="${SUPABASE_DB_URL:-}"
-          DB_URL="$(printf '%s' "$DB_URL" | tr -d '\r\n' | sed -e 's/^["'\'']*//' -e 's/["'\'']*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-
-          if [ -n "$DB_URL" ] && ! printf '%s' "$DB_URL" | grep -qE '^postgres(ql)?://'; then
-            echo "::warning::SUPABASE_DB_URL must be a full URI starting with postgresql:// (not host/password only)."
-            echo "Copy: Supabase → Project Settings → Database → Connection string → URI → Session mode"
-            DB_URL=""
-          fi
-
-          if [ -n "$DB_URL" ]; then
-            sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
-            psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/install-database-schema.sql
-            psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/migrate-v8-columns.sql
-            echo "Schema + v8 columns applied via psql."
-            applied=1
-          elif [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+          # Prefer Management API (works with personal access token; no DB password needed).
+          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
             node scripts/apply-install-schema-management-api.js
+            echo "Schema + v8 columns applied via Management API."
             applied=1
+          else
+            # Optional fallback: full postgresql:// URI (Session mode from Supabase → Connect).
+            DB_URL="${SUPABASE_DB_URL:-}"
+            DB_URL="$(printf '%s' "$DB_URL" | tr -d '\r\n' | sed -e 's/^["'\'']*//' -e 's/["'\'']*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+            if [ -n "$DB_URL" ] && ! printf '%s' "$DB_URL" | grep -qE '^postgres(ql)?://'; then
+              echo "::error::SUPABASE_DB_URL must be a full URI starting with postgresql:// (not host/password only)."
+              echo "Copy: Supabase → Connect → Session pooler URI, replace [YOUR-PASSWORD], URL-encode special chars."
+              exit 1
+            fi
+
+            if [ -n "$DB_URL" ]; then
+              sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
+              psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/install-database-schema.sql
+              psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/migrate-v8-columns.sql
+              echo "Schema + v8 columns applied via psql."
+              applied=1
+            fi
           fi
 
           if [ "$applied" != 1 ]; then
-            echo "::error::Add a valid SUPABASE_DB_URL (full postgresql://… URI, session mode) or SUPABASE_ACCESS_TOKEN to repo secrets, then re-run."
+            echo "::error::Add SUPABASE_ACCESS_TOKEN (recommended) or a valid SUPABASE_DB_URL (postgresql://… session URI) to repo secrets, then re-run."
             exit 1
           fi
 
