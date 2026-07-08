@@ -40,6 +40,23 @@ function enrichForeground(foreground) {
   };
 }
 
+function mergeForegroundWithSession(session, foreground) {
+  if (session?.inMatch || !foreground?.title) return session;
+  const fg = enrichForeground(foreground);
+  if (!fg) return session;
+  const riotSession = session?.provider?.startsWith('riot-');
+  if (riotSession) {
+    if (fg.provider !== 'window') {
+      return { ...session, ...fg, title: fg.title || session.title, provider: session.provider };
+    }
+    return session;
+  }
+  if (!session?.inGame || isRiotGameProcess(foreground.processName) || fg.provider !== 'window') {
+    return session ? { ...session, ...fg, title: fg.title || session.title } : fg;
+  }
+  return session || fg;
+}
+
 async function resolveLiveGameSession(foreground, { lastSteamKey = '' } = {}) {
   let session = null;
 
@@ -54,14 +71,7 @@ async function resolveLiveGameSession(foreground, { lastSteamKey = '' } = {}) {
     } catch (_) {}
   }
 
-  if (!session?.inMatch && foreground?.title) {
-    const fg = enrichForeground(foreground);
-    if (fg && (!session?.inGame || isRiotGameProcess(foreground.processName) || fg.provider !== 'window')) {
-      session = session ? { ...session, ...fg, title: fg.title || session.title } : fg;
-    } else if (!session) {
-      session = fg;
-    }
-  }
+  session = mergeForegroundWithSession(session, foreground);
 
   if (!session?.title) return { session: null, steamKey: lastSteamKey };
 
@@ -94,6 +104,7 @@ function getRiotPollMs(session) {
 
 module.exports = {
   resolveLiveGameSession,
+  mergeForegroundWithSession,
   sessionSignature,
   getRiotPollMs,
   RIOT_POLL_MENU_MS,

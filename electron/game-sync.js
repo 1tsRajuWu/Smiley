@@ -29,6 +29,7 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
   let resolveInFlight = false;
   let pendingResolve = false;
   let lastArtworkKey = '';
+  let lastResolvedSession = null;
 
   function sendRenderer(session) {
     const now = Date.now();
@@ -120,10 +121,17 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
       if (steamKey) lastSteamKey = steamKey;
       const sig = sessionSignature(session);
       if (!force && sig === lastSig) return;
-      if (!session) {
+      if (!session?.title) {
         sendRenderer(null);
+        lastResolvedSession = null;
+        if (lastSig) {
+          lastSig = '';
+          await pushPresence(null, null, { force: true });
+        }
+        scheduleLivePoll(null);
         return;
       }
+      lastResolvedSession = session;
       let meta = null;
       await pushPresence(session, meta, { force: force || session.inMatch });
     } finally {
@@ -142,14 +150,14 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
     liveTimer = setTimeout(() => {
       liveTimer = null;
       refresh().finally(() => {
-        if (template) scheduleLivePoll(foreground);
+        if (template) scheduleLivePoll(lastResolvedSession);
       });
     }, delay);
   }
 
   function onForeground(game) {
     foreground = game;
-    refresh().then(() => scheduleLivePoll(game)).catch(() => scheduleLivePoll(game));
+    refresh().then(() => scheduleLivePoll(lastResolvedSession)).catch(() => scheduleLivePoll(lastResolvedSession));
   }
 
   async function ensureRunning() {
@@ -203,6 +211,12 @@ function createGameSync({ getConfig, applyGamePresence, sendToRenderer, isPaused
       if (!template) return;
       if (enabled) ensureRunning().catch(() => {});
       else stop(false);
+    },
+    forceRefresh() {
+      if (!template) return;
+      lastSig = '';
+      lastArtworkKey = '';
+      refresh({ force: true }).catch(() => {});
     },
   };
 }

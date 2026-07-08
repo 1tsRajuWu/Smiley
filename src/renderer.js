@@ -1999,6 +1999,10 @@ async function handleSaveSettings(e) {
 
   const newSettings = buildSettingsPayload();
   rotateFavoritesSettings = newSettings.rotateFavorites;
+  currentSettings.musicNowPlaying = newSettings.musicNowPlaying !== false;
+  currentSettings.musicNowPlayingAlbumArt = newSettings.musicNowPlayingAlbumArt !== false;
+  currentSettings.gamingNowPlaying = newSettings.gamingNowPlaying !== false;
+  currentSettings.gamingNowPlayingCoverArt = newSettings.gamingNowPlayingCoverArt !== false;
 
   const result = await window.smiley.saveConfig(newSettings);
   await applyWallpaper(wallpaperSettings);

@@ -43,11 +43,15 @@ function lolQueueName(id) {
 }
 
 function parseParty(privateData) {
-  const size = Number(
-    privateData?.partySize
-    ?? privateData?.partyOwnerPartySize
-    ?? privateData?.partySizeMax,
-  );
+  if (!privateData) return null;
+  let size = Number(privateData.partySize);
+  if (!Number.isFinite(size) || size < 1) {
+    size = Number(privateData.partyOwnerPartySize);
+  }
+  if (!Number.isFinite(size) || size < 1) {
+    const members = privateData.partyMembers || privateData.partyMemberUUIDs;
+    if (Array.isArray(members) && members.length) size = members.length;
+  }
   return partyLabel(size);
 }
 
@@ -169,4 +173,4 @@ function isRiotGameProcess(name) {
   return n.includes('valorant') || n.includes('league') || n.includes('riot');
 }
 
-module.exports = { getRiotLiveSession, isRiotGameProcess };
+module.exports = { getRiotLiveSession, isRiotGameProcess, parseParty };

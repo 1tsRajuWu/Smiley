@@ -7,6 +7,8 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const assets = require(path.join(root, 'electron/game-assets'));
 const { buildPresenceLines, buildPresenceFromSession } = require(path.join(root, 'electron/presence-builder'));
+const { parseParty } = require(path.join(root, 'electron/game-providers/riot'));
+const { mergeForegroundWithSession } = require(path.join(root, 'electron/game-providers'));
 const { sanitizeGameSession } = require(path.join(root, 'electron/security'));
 
 let pass = 0;
@@ -29,6 +31,9 @@ ok('Valorant mode icon swiftplay', /^https:\/\//.test(assets.valorantModeIcon('s
 ok('LoL champion icon', assets.lolChampionIcon('Jinx')?.includes('Jinx'));
 ok('Steam header', assets.steamHeader(730)?.includes('730'));
 ok('Party labels', assets.partyLabel(2) === 'Duo' && assets.partyLabel(5) === 'Full stack');
+ok('Valorant partySize parsed', parseParty({ partySize: 3 }) === 'Trio');
+ok('Valorant partyMembers fallback', parseParty({ partyMembers: ['a', 'b'] }) === 'Duo');
+ok('partySizeMax not used as current size', parseParty({ partySizeMax: 5 }) === null);
 
 const valSession = {
   provider: 'riot-valorant',
@@ -86,6 +91,20 @@ ok('Sanitize strips token', !('token' in sanitized));
 ok('Sanitize strips lockfile password', !('password' in sanitizeGameSession({ password: 'riot-secret', title: 'Valorant' })));
 ok('Sanitize strips gameName/gameTag', !('gameName' in sanitizeGameSession({ gameName: 'Player', gameTag: 'NA1', title: 'Valorant' })));
 ok('Sanitize keeps party', sanitized.party === 'Duo');
+
+const riotLobby = {
+  provider: 'riot-valorant',
+  title: 'Valorant',
+  mode: 'Unrated',
+  inGame: false,
+  inMatch: false,
+};
+const merged = mergeForegroundWithSession(
+  riotLobby,
+  { title: 'VALORANT', processName: 'VALORANT', windowTitle: 'VALORANT' },
+);
+ok('Riot session not overridden by window', merged?.provider === 'riot-valorant');
+ok('Riot mode preserved in lobby', merged?.mode === 'Unrated');
 
 console.log(`\nResult: ${pass}/${pass + fail} checks passed`);
 process.exit(fail > 0 ? 1 : 0);

@@ -32,21 +32,21 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 <summary><strong>Direct downloads</strong></summary>
 
 <!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-Setup-7.8.0.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-Setup-7.8.2.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-arm64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.deb)
 <!-- HERO_DOWNLOADS_END -->
 
 <!-- DOWNLOADS_START -->
 | Platform | File |
 |----------|------|
-| Windows | [Smiley-Setup-7.8.0.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-Setup-7.8.0.exe) |
-| macOS Apple Silicon | [Smiley-7.8.0-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0-arm64.dmg) |
-| macOS Intel | [Smiley-7.8.0-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0-x64.dmg) |
-| Linux (AppImage) | [Smiley-7.8.0.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0.AppImage) |
-| Linux (.deb) | [Smiley-7.8.0.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.0/Smiley-7.8.0.deb) |
+| Windows | [Smiley-Setup-7.8.2.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-Setup-7.8.2.exe) |
+| macOS Apple Silicon | [Smiley-7.8.2-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-arm64.dmg) |
+| macOS Intel | [Smiley-7.8.2-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2-x64.dmg) |
+| Linux (AppImage) | [Smiley-7.8.2.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.AppImage) |
+| Linux (.deb) | [Smiley-7.8.2.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.8.2/Smiley-7.8.2.deb) |
 <!-- DOWNLOADS_END -->
 
 </details>
@@ -61,20 +61,18 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 </details>
 
 <details>
-<summary><strong>About v7.8.0 — live game sync (July 8, 2026)</strong></summary>
+<summary><strong>About v7.8.2 — gaming sync fixes (July 8, 2026)</strong></summary>
 
-**v7.8.0** adds live game sync — foreground game detection with Valorant and League of Legends enrichment, plus optional Steam cover art on Discord.
+**v7.8.2** fixes gaming live sync bugs (Riot session override, party size, stale presence, poll timing, settings) on top of **v7.8.1** rich Discord presence for all games.
 
-- **Foreground game detection** — macOS (8s poll), Windows, and Linux read the active window title
-- **Valorant priority** — Riot lockfile + local API for map, agent, score, and K/D in match
-- **League of Legends** — champ, K/D, and game time via live client data when in game
-- **More enrichers** — Fortnite, Overwatch, Roblox, and Minecraft window-title hints
-- **Steam cover art** — optional Discord large image from Steam Store search (6h cache)
-- **Settings** — **Show current game (Gaming)** and **Use game cover art on Discord**
+- **Riot session preserved** — lockfile data no longer replaced by foreground window titles
+- **Valorant party size** — correct Duo/Trio/Full stack from `partySize` and `partyMembers`
+- **Rich Discord presence** — HTTPS artwork for Valorant, LoL, Fortnite, Overwatch, Roblox, Minecraft
+- **Settings** — gaming toggles save and apply immediately; cover art toggle refreshes live
 
 | | |
 |---|---|
-| **Release notes** | [docs/releases/v7.8.0.md](docs/releases/v7.8.0.md) |
+| **Release notes** | [docs/releases/v7.8.2.md](docs/releases/v7.8.2.md) |
 | **Code** | Fork & PR — [CONTRIBUTING.md](CONTRIBUTING.md) |
 | **Support** | [paypal.me/1tsRaj](https://paypal.me/1tsRaj) |
 

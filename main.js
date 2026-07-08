@@ -3964,15 +3964,25 @@ function setupIPC() {
   ipcMain.handle('save-config', async (_, data) => {
     const prevMusicSync = config.musicNowPlaying !== false;
     const prevGameSync = config.gamingNowPlaying !== false;
+    const prevGameCoverArt = config.gamingNowPlayingCoverArt !== false;
     saveConfig(data);
     const nextMusicSync = config.musicNowPlaying !== false;
     const nextGameSync = config.gamingNowPlaying !== false;
+    const nextGameCoverArt = config.gamingNowPlayingCoverArt !== false;
     if (prevMusicSync !== nextMusicSync) {
       getMusicSync().handleConfigChange(nextMusicSync);
     }
     if (prevGameSync !== nextGameSync) {
       getGameSync().handleConfigChange(nextGameSync);
+    } else if (nextGameSync && prevGameCoverArt !== nextGameCoverArt) {
+      getGameSync().forceRefresh();
     }
+    broadcastConfigChanged({
+      musicNowPlaying: nextMusicSync,
+      musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
+      gamingNowPlaying: nextGameSync,
+      gamingNowPlayingCoverArt: nextGameCoverArt,
+    });
     applyLaunchAtLogin();
     registerGlobalHotkey();
     applyUpdaterSettings();
