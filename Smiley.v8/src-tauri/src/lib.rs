@@ -8,6 +8,10 @@ mod gaming;
 mod log_file;
 mod models;
 mod music;
+#[cfg(target_os = "linux")]
+mod music_linux;
+#[cfg(target_os = "macos")]
+mod music_mediaremote;
 mod privacy;
 mod riot;
 mod updates;
@@ -260,19 +264,12 @@ pub fn run() {
                 });
             }
 
-            // Music now-playing — fast poll when listening (2s), idle otherwise (8s)
+            // Music now-playing — MediaRemote stream (instant) when listening; idle sleep otherwise
             {
                 let st = state.clone();
-                std::thread::spawn(move || loop {
-                    let active = st.music_listening_active();
-                    std::thread::sleep(if active {
-                        Duration::from_secs(2)
-                    } else {
-                        Duration::from_secs(8)
-                    });
-                    if active {
-                        let _ = st.music_tick();
-                    }
+                let resource_dir = app.path().resource_dir().ok();
+                std::thread::spawn(move || {
+                    music::run_app_sync_loop(st, resource_dir);
                 });
             }
 

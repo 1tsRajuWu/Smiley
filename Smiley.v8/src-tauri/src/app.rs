@@ -556,8 +556,8 @@ impl App {
             && status.activity_id.as_deref() == Some("coding")
     }
 
-    /// Fast music overlay — always uses animated Tenor GIF for Discord large_image.
-    pub fn music_tick(&self) -> AppResult<()> {
+    /// Apply now-playing track to Discord (event-driven or polled). Shows idle listening when no track.
+    pub fn music_apply_track(&self, track: Option<crate::music::TrackHit>) -> AppResult<()> {
         let cfg = self.config.lock().clone();
         let status = self.status.lock().clone();
         if !status.connected || status.paused {
@@ -576,7 +576,7 @@ impl App {
             "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif";
         let gif = self.activity_gif("listening", status.gif.as_deref());
 
-        if let Ok(Some(track)) = crate::music::probe_now_playing() {
+        if let Some(track) = track.filter(|t| t.playing) {
             let sig = crate::music::track_signature(&track);
             if sig == *self.last_music_sig.lock() {
                 return Ok(());
@@ -627,6 +627,12 @@ impl App {
             }
         }
         Ok(())
+    }
+
+    /// One-shot music probe (manual / tests).
+    pub fn music_tick(&self) -> AppResult<()> {
+        let track = crate::music::probe_now_playing().ok().flatten();
+        self.music_apply_track(track)
     }
 
     /// Live coding overlay — foreground editor detection (macOS osascript).
