@@ -127,6 +127,17 @@
             </div>
           </div>
 
+          <div class="music-preview-bar" id="gamingPreviewBar" hidden>
+            <div class="music-preview-art-wrap">
+              <img class="music-preview-art" id="gamingPreviewArt" alt="" decoding="async" />
+              <span class="music-preview-art-fallback" aria-hidden="true">🎮</span>
+            </div>
+            <div class="music-preview-meta">
+              <div class="music-preview-title" id="gamingPreviewTitle"></div>
+              <div class="music-preview-artist" id="gamingPreviewSub"></div>
+            </div>
+          </div>
+
           <div class="preview-actions">
             <button class="btn btn-ghost btn-copy" id="copyBtn" type="button" title="Copy status text" disabled>📋 Copy</button>
             <button class="btn btn-danger btn-clear" id="clearBtn" disabled>Clear presence</button>
@@ -178,7 +189,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer-version" id="footerVersion">Smiley v7.7.7</span>
+        <span class="footer-version" id="footerVersion">Smiley v7.8.0</span>
         <span class="footer-copyright">© 2026 1tsRajuWu</span>
         <a href="#" class="footer-link" id="footerLicense">License</a>
         <a href="#" class="footer-link" id="footerTos">Terms</a>
@@ -243,6 +254,20 @@
                 <p class="field-hint" style="margin:4px 0 0;">Replaces the anime GIF with album art while a song is playing.</p>
               </div>
               <label class="toggle"><input type="checkbox" id="musicNowPlayingAlbumArtToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field toggle-field">
+              <div>
+                <span class="field-label">Show current game (Gaming)</span>
+                <p class="field-hint" style="margin:4px 0 0;">Updates Discord with the foreground game. Valorant shows map, agent, and K/D when the Riot client is running.</p>
+              </div>
+              <label class="toggle"><input type="checkbox" id="gamingNowPlayingToggle" checked /><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field toggle-field" id="gamingCoverArtField">
+              <div>
+                <span class="field-label">Use game cover art on Discord</span>
+                <p class="field-hint" style="margin:4px 0 0;">Replaces the anime GIF with Steam cover art when available.</p>
+              </div>
+              <label class="toggle"><input type="checkbox" id="gamingNowPlayingCoverArtToggle" checked /><span class="toggle-slider"></span></label>
             </div>
             <div class="field toggle-field">
               <span class="field-label">Check for updates on startup</span>

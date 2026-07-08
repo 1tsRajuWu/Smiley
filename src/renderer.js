@@ -52,6 +52,10 @@ const musicPreviewArtist = $('#musicPreviewArtist');
 const musicPreviewProgressFill = $('#musicPreviewProgressFill');
 const musicPreviewElapsed = $('#musicPreviewElapsed');
 const musicPreviewDuration = $('#musicPreviewDuration');
+const gamingPreviewBar = $('#gamingPreviewBar');
+const gamingPreviewArt = $('#gamingPreviewArt');
+const gamingPreviewTitle = $('#gamingPreviewTitle');
+const gamingPreviewSub = $('#gamingPreviewSub');
 const timerText = $('#timerText');
 const clearBtn = $('#clearBtn');
 const copyBtn = $('#copyBtn');
@@ -128,6 +132,8 @@ const autoCheckUpdatesToggle = $('#autoCheckUpdatesToggle');
 const autoInstallUpdatesToggle = $('#autoInstallUpdatesToggle');
 const musicNowPlayingToggle = $('#musicNowPlayingToggle');
 const musicNowPlayingAlbumArtToggle = $('#musicNowPlayingAlbumArtToggle');
+const gamingNowPlayingToggle = $('#gamingNowPlayingToggle');
+const gamingNowPlayingCoverArtToggle = $('#gamingNowPlayingCoverArtToggle');
 const privacyConsentModal = $('#privacyConsentModal');
 const privacyConsentAcceptBtn = $('#privacyConsentAcceptBtn');
 const showTimerToggle = $('#showTimerToggle');
@@ -232,6 +238,8 @@ let lastUpdateActionToastKey = '';
 let lastUpdateActionToastAt = 0;
 let nowPlayingTrack = null;
 let nowPlayingArtworkUrl = null;
+let gamingSession = null;
+let gamingCoverUrl = null;
 let musicProgressTimer = null;
 let musicProgressRaf = null;
 const MUSIC_PROGRESS_INTERVAL_MS = 2000;
@@ -1101,6 +1109,97 @@ function setCharacterDisplay(url, source, fallbackUrls = [], { generation, activ
   });
 }
 
+function isGamingActivity(activity) {
+  return activity?.category === 'gaming';
+}
+
+function isGamingLiveEnabled() {
+  return currentSettings.gamingNowPlaying !== false;
+}
+
+function updateGamingPreviewBar(session) {
+  if (!gamingPreviewBar) return;
+  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
+  const show = isGamingLiveEnabled() && isGamingActivity(activity) && session?.title;
+
+  if (!show) {
+    gamingPreviewBar.hidden = true;
+    if (gamingPreviewArt) {
+      gamingPreviewArt.classList.remove('loaded');
+      gamingPreviewArt.removeAttribute('src');
+    }
+    return;
+  }
+
+  gamingPreviewBar.hidden = false;
+  if (gamingPreviewTitle) gamingPreviewTitle.textContent = session.title;
+  if (gamingPreviewSub) {
+    gamingPreviewSub.textContent = session.liveLine
+      || [session.agent, session.map, session.mode, session.kda, session.champ].filter(Boolean).join(' · ')
+      || activity?.state
+      || 'In the zone';
+  }
+
+  const artUrl = session.artworkUrl && currentSettings.gamingNowPlayingCoverArt !== false
+    ? session.artworkUrl
+    : null;
+  if (gamingPreviewArt && artUrl) {
+    gamingPreviewArt.onload = () => gamingPreviewArt.classList.add('loaded');
+    gamingPreviewArt.onerror = () => {
+      gamingPreviewArt.classList.remove('loaded');
+      gamingPreviewArt.removeAttribute('src');
+    };
+    if (gamingPreviewArt.getAttribute('src') !== artUrl) gamingPreviewArt.src = artUrl;
+  } else if (gamingPreviewArt) {
+    gamingPreviewArt.classList.remove('loaded');
+    gamingPreviewArt.removeAttribute('src');
+  }
+}
+
+function applyGamingCoverArt(url) {
+  if (!url || !isGamingLiveEnabled()) return;
+  const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
+  if (!isGamingActivity(activity)) return;
+  gamingCoverUrl = url;
+  previewEmoji.style.display = 'none';
+  previewGif.classList.remove('loaded');
+  previewGif.onload = () => {
+    previewGif.classList.add('loaded');
+    previewEmoji.style.display = 'none';
+  };
+  previewGif.onerror = () => {
+    previewGif.classList.remove('loaded');
+    previewGif.removeAttribute('src');
+    previewEmoji.style.display = '';
+  };
+  previewGif.src = url;
+}
+
+function applyGamingPreview(activity, session) {
+  if (!activity || !session?.title || !isGamingLiveEnabled()) return false;
+
+  previewDetails.textContent = session.title;
+  previewState.textContent = session.liveLine || activity.state || 'In the zone';
+
+  const hintParts = [session.map, session.mode, session.agent, session.kda, session.champ, session.server]
+    .filter(Boolean);
+  if (previewNowPlaying) {
+    if (hintParts.length) {
+      previewNowPlaying.textContent = hintParts.join(' · ');
+      previewNowPlaying.hidden = false;
+    } else {
+      previewNowPlaying.textContent = '';
+      previewNowPlaying.hidden = true;
+    }
+  }
+
+  if (session.artworkUrl && currentSettings.gamingNowPlayingCoverArt !== false) {
+    applyGamingCoverArt(session.artworkUrl);
+  }
+  updateGamingPreviewBar(session);
+  return true;
+}
+
 function getLiveTrackProgress(track) {
   if (!track) return { progressMs: 0, durationMs: 0 };
   const durationMs = Math.max(0, Number(track.durationMs) || 0);
@@ -1262,6 +1361,7 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
       previewNowPlaying.hidden = true;
     }
     updateMusicPreviewBar(null);
+    updateGamingPreviewBar(null);
     clearBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
     startTimer(null);
@@ -1274,18 +1374,26 @@ function setPreviewDisplay(activity, gifUrl, fallbackUrls = [], { generation } =
   previewCard.style.setProperty('--card-glow', `${category?.color || '#7aa2f7'}33`);
 
   applyNowPlayingPreview(activity);
+  if (!isGamingActivity(activity)) updateGamingPreviewBar(null);
+  if (activity?.id !== 'listening') updateMusicPreviewBar(null);
   updatePreviewTimerVisibility(activity?.id);
   clearBtn.disabled = false;
   if (copyBtn) copyBtn.disabled = false;
 
-  const nowPlayingArt = activity?.id === 'listening'
+  const gamingLive = isGamingActivity(activity)
+    && gamingSession?.title
+    && isGamingLiveEnabled()
+    && applyGamingPreview(activity, gamingSession);
+
+  const nowPlayingArt = !gamingLive
+    && activity?.id === 'listening'
     && nowPlayingTrack?.title
     && currentSettings.musicNowPlaying !== false
     && (nowPlayingTrack.artworkUrl || nowPlayingArtworkUrl);
 
   if (nowPlayingArt) {
     applyNowPlayingArtwork(nowPlayingTrack.artworkUrl || nowPlayingArtworkUrl);
-  } else if (gifUrl && currentSettings.animationsEnabled !== false) {
+  } else if (!gamingLive && gifUrl && currentSettings.animationsEnabled !== false) {
     // Character stage already animates the GIF — avoid a second GPU decoder in the preview art.
     previewGif.classList.remove('loaded');
     previewGif.removeAttribute('src');
@@ -1663,6 +1771,8 @@ async function selectActivity(id) {
     presencePaused = false;
     if (activity.id === 'listening' && currentSettings.musicNowPlaying !== false) {
       showToast('Now playing sync on — play music in any app', 'success');
+    } else if (isGamingActivity(activity) && isGamingLiveEnabled()) {
+      showToast('Live game sync on — focus any game window', 'success');
     } else {
       showToast(`Status set: ${activity.details}`);
     }
@@ -1681,6 +1791,10 @@ async function handleCopy() {
     text = nowPlayingTrack.artist
       ? `${nowPlayingTrack.title} — ${nowPlayingTrack.artist}`
       : nowPlayingTrack.title;
+  } else if (isGamingActivity(activity) && gamingSession?.title && isGamingLiveEnabled()) {
+    text = gamingSession.liveLine
+      ? `${gamingSession.title} — ${gamingSession.liveLine}`
+      : gamingSession.title;
   } else {
     text = activity.state ? `${activity.details} — ${activity.state}` : activity.details;
   }
@@ -1695,6 +1809,8 @@ async function handleClear() {
   presencePaused = false;
   nowPlayingTrack = null;
   nowPlayingArtworkUrl = null;
+  gamingSession = null;
+  gamingCoverUrl = null;
   clearRotateTimer();
   markGridSelection(null);
   lastRenderedGridKey = '';
@@ -1715,6 +1831,10 @@ function openSettings(tab = 'general') {
     animationsToggle.checked = cfg.animationsEnabled !== false;
     if (musicNowPlayingToggle) musicNowPlayingToggle.checked = cfg.musicNowPlaying !== false;
     if (musicNowPlayingAlbumArtToggle) musicNowPlayingAlbumArtToggle.checked = cfg.musicNowPlayingAlbumArt !== false;
+    if (gamingNowPlayingToggle) gamingNowPlayingToggle.checked = cfg.gamingNowPlaying !== false;
+    if (gamingNowPlayingCoverArtToggle) {
+      gamingNowPlayingCoverArtToggle.checked = cfg.gamingNowPlayingCoverArt !== false;
+    }
     if (launchAtLoginToggle) launchAtLoginToggle.checked = cfg.launchAtLogin === true;
     if (hotkeyToggle) hotkeyToggle.checked = cfg.hotkeyEnabled !== false;
     if (hotkeyHint && cfg.hotkey) hotkeyHint.textContent = `Shortcut: ${cfg.hotkey.replace('CommandOrControl', 'Cmd/Ctrl')}`;
@@ -1831,6 +1951,8 @@ function buildSettingsPayload() {
     animationsEnabled: animationsToggle.checked,
     musicNowPlaying: musicNowPlayingToggle?.checked !== false,
     musicNowPlayingAlbumArt: musicNowPlayingAlbumArtToggle?.checked !== false,
+    gamingNowPlaying: gamingNowPlayingToggle?.checked !== false,
+    gamingNowPlayingCoverArt: gamingNowPlayingCoverArtToggle?.checked !== false,
     theme: currentSettings.theme || 'dark',
     uiVersion: settingsModal?.open ? getSelectedUIVersion() : normalizeUIVersion(currentSettings.uiVersion),
     customAnimation: activeCustomAnimation ? 'custom' : null,
@@ -3253,6 +3375,10 @@ async function init() {
     if (data?.musicNowPlayingAlbumArt !== undefined) {
       currentSettings.musicNowPlayingAlbumArt = data.musicNowPlayingAlbumArt !== false;
     }
+    if (data?.gamingNowPlaying !== undefined) currentSettings.gamingNowPlaying = data.gamingNowPlaying !== false;
+    if (data?.gamingNowPlayingCoverArt !== undefined) {
+      currentSettings.gamingNowPlayingCoverArt = data.gamingNowPlayingCoverArt !== false;
+    }
   });
 
   let lastNowPlayingMetaSig = '';
@@ -3279,6 +3405,41 @@ async function init() {
     if (metaChanged) {
       applyNowPlayingPreview(activity);
       updateMusicPreviewBar(track);
+    }
+  });
+
+  let lastGamingMetaSig = '';
+  window.smiley.onGamingUpdate((session) => {
+    const metaSig = session
+      ? [
+        session.title, session.liveLine, session.map, session.mode, session.agent,
+        session.kda, session.champ, session.inMatch ? '1' : '0',
+      ].join('\0')
+      : '';
+    const metaChanged = metaSig !== lastGamingMetaSig;
+    lastGamingMetaSig = metaSig;
+
+    gamingSession = session;
+    if (session?.artworkUrl) gamingCoverUrl = session.artworkUrl;
+    if (renderPaused) return;
+
+    const activity = selectedActivityId ? findActivity(selectedActivityId) : null;
+    if (!isGamingActivity(activity)) return;
+
+    if (session?.title) {
+      if (metaChanged) applyGamingPreview(activity, session);
+      else updateGamingPreviewBar(session);
+      return;
+    }
+
+    if (metaChanged) {
+      applyGamingPreview(activity, null);
+      updateGamingPreviewBar(null);
+      const act = findActivity(selectedActivityId);
+      if (act) {
+        previewDetails.textContent = act.details;
+        previewState.textContent = act.state || '';
+      }
     }
   });
 

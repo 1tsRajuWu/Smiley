@@ -23,6 +23,7 @@ const {
   registerInstall,
 } = require('./electron/install-registry');
 const { createMusicSync } = require('./electron/music-sync');
+const { createGameSync } = require('./electron/game-sync');
 const {
   encryptJson,
   decryptJson,
@@ -34,6 +35,7 @@ const {
   secureUnlink,
   stripSensitiveFields,
   sanitizeNowPlayingTrack,
+  sanitizeGameSession,
   sanitizeActivitySnapshot,
   redactForLog,
   initSecurity,
@@ -516,6 +518,7 @@ const CONFIG_PATCH_KEYS = new Set([
   'customActivities', 'activityGifChoice', 'activityProfiles', 'rotateFavorites', 'sessionStats',
   'migrationNoticeShown', 'installWarningShown', 'installConsentShown',
   'musicNowPlaying', 'musicNowPlayingAlbumArt',
+  'gamingNowPlaying', 'gamingNowPlayingCoverArt',
 ]);
 const MAX_ACTIVITY_PROFILES = 8;
 const MAX_PROFILE_ACTIVITIES = 10;
@@ -556,6 +559,8 @@ const DEFAULT_CONFIG = {
   installWarningShown: false,
   musicNowPlaying: true,
   musicNowPlayingAlbumArt: true,
+  gamingNowPlaying: true,
+  gamingNowPlayingCoverArt: true,
 };
 let config = { ...DEFAULT_CONFIG };
 let configMigrationNotice = null;
@@ -925,6 +930,8 @@ function sanitizeConfigPatch(data) {
       case 'installConsentShown':
       case 'musicNowPlaying':
       case 'musicNowPlayingAlbumArt':
+      case 'gamingNowPlaying':
+      case 'gamingNowPlayingCoverArt':
         out[key] = val === true;
         break;
       case 'uiVersion':
@@ -1057,6 +1064,9 @@ function sanitizeIncomingActivity(activity) {
   if (activity.musicTrack) {
     safe.musicTrack = sanitizeNowPlayingTrack(activity.musicTrack);
   }
+  if (activity.gameSession) {
+    safe.gameSession = sanitizeGameSession(activity.gameSession);
+  }
   return stripSensitiveFields(safe);
 }
 
@@ -1071,6 +1081,7 @@ let sessionStart = null;
 let currentTrayIcon = 'default';
 let pausedPresenceSnapshot = null;
 let musicSync = null;
+let gameSync = null;
 let trayMenuRefreshTimer = null;
 let windowStateSaveTimer = null;
 let pendingWindowState = null;
@@ -1113,6 +1124,20 @@ function getMusicSync() {
     });
   }
   return musicSync;
+}
+
+function getGameSync() {
+  if (!gameSync) {
+    gameSync = createGameSync({
+      getConfig: () => config,
+      applyGamePresence,
+      sendToRenderer: (session) => {
+        sendToWindow('gaming-update', sanitizeGameSession(session));
+      },
+      isPaused: isPresencePaused,
+    });
+  }
+  return gameSync;
 }
 
 function scheduleSessionStatsSave() {
@@ -1167,6 +1192,7 @@ async function pausePresence() {
     try { await rpcClient.clearActivity(); } catch (_) {}
   }
   getMusicSync().stop();
+  getGameSync().stop();
   broadcastStatus(true);
   return { success: true };
 }
@@ -1184,6 +1210,13 @@ async function resumePresence() {
       ...activity,
       id: 'listening',
       details: 'Listening to music',
+    });
+  }
+  if (result?.success && activity?.category === 'gaming' && config.gamingNowPlaying !== false) {
+    getGameSync().start({
+      ...activity,
+      category: 'gaming',
+      details: 'Gaming',
     });
   }
   return result;
@@ -1949,15 +1982,54 @@ async function applyMusicPresence(activity) {
   }
 }
 
+/** Lightweight path for live gaming metadata — avoids disk writes & tray rebuild spam. */
+let lastGamePresenceSig = '';
+let lastGamePresenceAt = 0;
+const GAME_PRESENCE_DEDUP_MS = 2000;
+
+async function applyGamePresence(activity) {
+  if (!rpcClient) {
+    const result = await connectRPC();
+    if (!result.connected) return result;
+  }
+  try {
+    const session = activity?.gameSession;
+    const sig = session?.title
+      ? [
+        session.title, session.liveLine, session.map, session.mode, session.agent,
+        session.kda, session.champ, session.inMatch ? '1' : '0',
+        activity.discordImageUrl || activity.largeImageUrl || '',
+      ].join('\0')
+      : `${activity.details}\0${activity.state}`;
+    const now = Date.now();
+    if (sig === lastGamePresenceSig && now - lastGamePresenceAt < GAME_PRESENCE_DEDUP_MS) {
+      return { success: true, skipped: true };
+    }
+    lastGamePresenceSig = sig;
+    lastGamePresenceAt = now;
+    pausedPresenceSnapshot = null;
+    const payload = await buildActivityPayload(activity);
+    await rpcClient.setActivity(payload);
+    currentActivity = activity;
+    scheduleTrayMenuRefresh();
+    return { success: true };
+  } catch (err) {
+    rpcClient = null;
+    return { success: false, error: err.message || 'Failed to set presence' };
+  }
+}
+
 async function schedulePresenceUpdate(activity, isNewSession) {
   const safeActivity = sanitizeIncomingActivity(activity);
   if (!safeActivity) return { success: false, error: 'Invalid activity' };
 
   handleMusicSyncForActivity(safeActivity);
+  handleGameSyncForActivity(safeActivity);
 
   const isListeningLive = safeActivity.id === 'listening' && config.musicNowPlaying !== false;
-  if (isListeningLive) {
-    if (isNewSession) sessionStart = null;
+  const isGamingLive = safeActivity.category === 'gaming' && config.gamingNowPlaying !== false;
+  if (isListeningLive || isGamingLive) {
+    if (isNewSession) sessionStart = isListeningLive ? null : Date.now();
     pendingUpdate = null;
     if (updateTimer) {
       clearTimeout(updateTimer);
@@ -2001,6 +2073,18 @@ function handleMusicSyncForActivity(safeActivity) {
   }
 }
 
+function handleGameSyncForActivity(safeActivity) {
+  if (safeActivity.category === 'gaming' && config.gamingNowPlaying !== false) {
+    getGameSync().start({
+      ...safeActivity,
+      category: 'gaming',
+      details: 'Gaming',
+    });
+  } else {
+    getGameSync().stop();
+  }
+}
+
 function pushNowPlayingToRenderer() {
   const track = getMusicSync().getCurrentTrack?.();
   if (!track?.title) return;
@@ -2019,6 +2103,7 @@ async function clearPresence() {
   currentActivity = null;
   sessionStart = null;
   getMusicSync().stop();
+  getGameSync().stop();
   updateTrayIcon('default');
   updateTrayMenu();
   if (rpcClient) {
@@ -2049,6 +2134,8 @@ function broadcastStatus(immediate = false) {
         autoConnect: config.autoConnect !== false,
         musicNowPlaying: config.musicNowPlaying !== false,
         musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
+        gamingNowPlaying: config.gamingNowPlaying !== false,
+        gamingNowPlayingCoverArt: config.gamingNowPlayingCoverArt !== false,
         donationUrl: DONATION_URL,
       },
       version: APP_VERSION,
@@ -3843,6 +3930,8 @@ function setupIPC() {
     sessionStats: config.sessionStats || {},
     musicNowPlaying: config.musicNowPlaying !== false,
     musicNowPlayingAlbumArt: config.musicNowPlayingAlbumArt !== false,
+    gamingNowPlaying: config.gamingNowPlaying !== false,
+    gamingNowPlayingCoverArt: config.gamingNowPlayingCoverArt !== false,
     presencePaused: isPresencePaused(),
     customWallpaper: config.customWallpaper || null,
     isMac: process.platform === 'darwin',
@@ -3874,10 +3963,15 @@ function setupIPC() {
 
   ipcMain.handle('save-config', async (_, data) => {
     const prevMusicSync = config.musicNowPlaying !== false;
+    const prevGameSync = config.gamingNowPlaying !== false;
     saveConfig(data);
     const nextMusicSync = config.musicNowPlaying !== false;
+    const nextGameSync = config.gamingNowPlaying !== false;
     if (prevMusicSync !== nextMusicSync) {
       getMusicSync().handleConfigChange(nextMusicSync);
+    }
+    if (prevGameSync !== nextGameSync) {
+      getGameSync().handleConfigChange(nextGameSync);
     }
     applyLaunchAtLogin();
     registerGlobalHotkey();
