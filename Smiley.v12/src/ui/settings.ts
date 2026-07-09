@@ -133,7 +133,12 @@ export function settingsMarkup(): string {
           <label><span>Quiet end</span><input id="cfgQuietEnd" placeholder="08:00" /></label>
           <label><span>Idle details</span><input id="cfgIdleDetails" maxlength="128" /></label>
           <label><span>Idle state</span><input id="cfgIdleState" maxlength="128" /></label>
-          <label><span>Idle GIF</span><input id="cfgIdleGif" placeholder="https://media.tenor.com/…" /></label>
+          <label><span>Idle GIF</span><input id="cfgIdleGif" placeholder="https://media.tenor.com/… or Tenor page link" /></label>
+          <p class="field-hint">Direct <code>media.tenor.com</code> URL or Tenor page link — resolved when you save settings.</p>
+          <div class="gif-sources" role="group" aria-label="Find GIFs">
+            <span class="gif-sources-label">Browse:</span>
+            <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>
+          </div>
         </div>
       </section>
 

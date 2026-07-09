@@ -195,6 +195,23 @@ fn open_release_url(app: tauri::AppHandle, url: Option<String>) -> Result<(), er
     Ok(())
 }
 
+#[tauri::command]
+fn resolve_gif_url_cmd(url: String) -> Result<String, error::AppError> {
+    models::resolve_gif_url(&url)
+}
+
+#[tauri::command]
+fn open_gif_source(app: tauri::AppHandle, url: String) -> Result<(), error::AppError> {
+    if !models::is_safe_gif_source_url(&url) {
+        return Err(error::AppError::Msg("Blocked GIF source URL".into()));
+    }
+    app.opener()
+        .open_url(url.trim(), None::<&str>)
+        .map_err(|e| error::AppError::Msg(format!("open url: {e}")))?;
+    log_file::append("ui: opened GIF source");
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     log_file::append("boot: Smiley v12 starting");
@@ -372,6 +389,8 @@ pub fn run() {
             append_log,
             check_for_updates,
             open_release_url,
+            resolve_gif_url_cmd,
+            open_gif_source,
         ])
         .build(tauri::generate_context!())
         .expect("Smiley failed to start")

@@ -145,6 +145,40 @@ html.calm .wallpaper::after {
 .tile-wrap:hover .tile-del, .row:hover .tile-del { opacity: 1; }
 .tile img.tile-still { filter: saturate(.85); }
 
+.field-hint {
+  margin: 6px 0 0;
+  font-size: .78rem;
+  opacity: .72;
+  line-height: 1.35;
+}
+.field-hint code {
+  font-size: .74rem;
+}
+.gif-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.gif-sources-label {
+  font-size: .78rem;
+  opacity: .7;
+}
+.gif-source {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: .78rem;
+  cursor: pointer;
+}
+.gif-source:hover {
+  background: rgba(255,255,255,.12);
+}
+
 /* Dialogs / settings shared */
 .dlg { border: 0; background: transparent; padding: 0; max-width: 720px; width: calc(100% - 28px); color: inherit; }
 .dlg::backdrop { background: rgba(0,0,0,.75); backdrop-filter: blur(6px); }

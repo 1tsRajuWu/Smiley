@@ -4,7 +4,7 @@ use crate::discord::{resolve_rpc_image, Discord, Presence, RpcActivityType};
 use crate::error::{AppError, AppResult};
 use crate::install_registry::{launch_info_from_config, InstallRegistry};
 use crate::install_telemetry::{ActivityHit, InstallTelemetry};
-use crate::models::{sanitize_gif_url, sanitize_gif_url_or, *};
+use crate::models::{resolve_gif_url, sanitize_gif_url, *};
 use parking_lot::Mutex;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -572,11 +572,11 @@ impl App {
 
     pub fn save_config(&self, next: Config) -> AppResult<Config> {
         let raw_idle = next.idle_gif.trim().to_string();
-        if !raw_idle.is_empty() && sanitize_gif_url(&raw_idle).is_none() {
-            return Err(AppError::Msg(
-                "Idle GIF must be a Tenor HTTPS URL (https://media.tenor.com/…)".into(),
-            ));
-        }
+        let resolved_idle = if raw_idle.is_empty() {
+            None
+        } else {
+            Some(resolve_gif_url(&raw_idle)?)
+        };
         let mut next = next.sanitize();
         // Guard: never let a partial settings write erase persisted lists.
         {
@@ -598,8 +598,8 @@ impl App {
             {
                 next.install_telemetry = live.install_telemetry.clone();
             }
-            if !raw_idle.is_empty() {
-                next.idle_gif = sanitize_gif_url(&raw_idle).unwrap_or(raw_idle);
+            if let Some(idle) = resolved_idle {
+                next.idle_gif = idle;
             } else if live.idle_gif != next.idle_gif {
                 next.idle_gif = live.idle_gif.clone();
             }
@@ -643,10 +643,12 @@ impl App {
             act.emoji = "✨".into();
         }
         if let Some(gif) = act.gif.as_ref() {
-            act.gif = Some(sanitize_gif_url_or(
-                gif,
-                "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif",
-            ));
+            let trimmed = gif.trim();
+            if trimmed.is_empty() {
+                act.gif = None;
+            } else {
+                act.gif = Some(resolve_gif_url(trimmed)?);
+            }
         }
         act.details = act
             .details
@@ -667,13 +669,19 @@ impl App {
         self.save_config(cfg)
     }
 
-    pub fn music_listening_active(&self) -> bool {
+    /// Music may drive Discord only when the Listening activity is explicitly selected.
+    fn listening_slot_active(&self) -> bool {
         let cfg = self.config.lock();
         let status = self.status.lock();
         status.connected
             && !status.paused
+            && !Self::in_quiet_hours(&cfg)
             && cfg.music_now_playing
             && status.activity_id.as_deref() == Some("listening")
+    }
+
+    pub fn music_listening_active(&self) -> bool {
+        self.listening_slot_active()
     }
 
     pub fn coding_live_active(&self) -> bool {
@@ -699,20 +707,11 @@ impl App {
 
     /// Apply now-playing track to Discord (event-driven or polled). Shows idle listening when no track.
     pub fn music_apply_track(&self, track: Option<crate::music::TrackHit>) -> AppResult<()> {
-        let cfg = self.config.lock().clone();
-        let status = self.status.lock().clone();
-        if !status.connected || status.paused {
+        let track = track.filter(|t| !t.title.trim().is_empty());
+        if !self.listening_slot_active() {
             if track.is_some() {
-                crate::log_file::append("music: track dropped — not connected or paused");
-            }
-            *self.last_music_sig.lock() = String::new();
-            return Ok(());
-        }
-        if Self::in_quiet_hours(&cfg) {
-            return Ok(());
-        }
-        if !cfg.music_now_playing || status.activity_id.as_deref() != Some("listening") {
-            if track.is_some() {
+                let cfg = self.config.lock();
+                let status = self.status.lock();
                 crate::log_file::append(&format!(
                     "music: track dropped — listening inactive (music_now_playing={}, activity={:?})",
                     cfg.music_now_playing, status.activity_id
@@ -722,11 +721,14 @@ impl App {
             return Ok(());
         }
 
+        let cfg = self.config.lock().clone();
+        let status = self.status.lock().clone();
+
         const LISTENING_GIF: &str =
             "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif";
         let gif = self.activity_gif("listening", status.gif.as_deref());
 
-        if let Some(track) = track.filter(|t| !t.title.trim().is_empty()) {
+        if let Some(track) = track {
             let sig = crate::music::track_signature(&track);
             if sig == *self.last_music_sig.lock() {
                 return Ok(());
@@ -741,6 +743,11 @@ impl App {
             } else {
                 "Paused".into()
             };
+            // Re-check slot — background music thread can race with manual activity picks.
+            if !self.listening_slot_active() {
+                *self.last_music_sig.lock() = String::new();
+                return Ok(());
+            }
             self.discord.set(self.build_presence_typed(
                 &details,
                 &state,
@@ -749,6 +756,9 @@ impl App {
                 None,
                 Some(RpcActivityType::Listening),
             ))?;
+            if !self.listening_slot_active() {
+                return Ok(());
+            }
             {
                 let mut s = self.status.lock();
                 s.details = Some(details.clone());
@@ -767,6 +777,10 @@ impl App {
                 .resolve("listening")
                 .map(|(d, st, _, _)| (d, st))
                 .unwrap_or_else(|_| ("Listening to music".into(), "Vibes on 🎵".into()));
+            if !self.listening_slot_active() {
+                *self.last_music_sig.lock() = String::new();
+                return Ok(());
+            }
             self.discord.set(self.build_presence_typed(
                 &details,
                 &state,
@@ -775,6 +789,9 @@ impl App {
                 self.started_at.lock().map(|s| s as i64),
                 Some(RpcActivityType::Listening),
             ))?;
+            if !self.listening_slot_active() {
+                return Ok(());
+            }
             {
                 let mut s = self.status.lock();
                 s.details = Some(details);
@@ -783,6 +800,7 @@ impl App {
                 s.message = "Listening".into();
             }
         }
+        let _ = cfg;
         Ok(())
     }
 

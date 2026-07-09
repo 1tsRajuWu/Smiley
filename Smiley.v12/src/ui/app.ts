@@ -211,6 +211,8 @@ export class AppController {
         syncPickers(this.$("settingsBody")!);
         return;
       }
+      case "open-gif-source":
+        return this.openGifSource(el.dataset.url || "");
       case "pick-category":
         this.activeCategory = el.dataset.category || this.activeCategory;
         this.lastGridKey = "";
@@ -873,11 +875,30 @@ export class AppController {
     }
   }
 
+  private async openGifSource(url: string) {
+    if (!url) return;
+    try {
+      await api.openGifSource(url);
+    } catch (e) {
+      this.toast(errMsg(e));
+    }
+  }
+
   private async saveCustom() {
     const details = this.$<HTMLInputElement>("caDetails")?.value.trim() ?? "";
     if (!details) {
       this.toast("Details required");
       return;
+    }
+    const rawGif = this.$<HTMLInputElement>("caGif")?.value.trim() ?? "";
+    let gif: string | null = null;
+    if (rawGif) {
+      try {
+        gif = await api.resolveGifUrl(rawGif);
+      } catch (e) {
+        this.toast(errMsg(e));
+        return;
+      }
     }
     try {
       await api.addCustom({
@@ -885,7 +906,7 @@ export class AppController {
         details,
         state: this.$<HTMLInputElement>("caState")?.value.trim() || "Custom",
         emoji: this.$<HTMLInputElement>("caEmoji")?.value.trim() || "✨",
-        gif: this.$<HTMLInputElement>("caGif")?.value.trim() || null,
+        gif,
       });
       this.snap = await api.snapshot();
       this.activeCategory = "custom";

@@ -33,6 +33,8 @@ export const api = {
   checkUpdates: () => invoke<UpdateCheck>("check_for_updates"),
   openRelease: (url?: string | null) =>
     invoke<void>("open_release_url", { url: url ?? null }),
+  resolveGifUrl: (url: string) => invoke<string>("resolve_gif_url_cmd", { url }),
+  openGifSource: (url: string) => invoke<void>("open_gif_source", { url }),
 };
 
 export function errMsg(e: unknown): string {

@@ -212,7 +212,12 @@ function dialogs(_prefix: string): string {
         <label><span>Details</span><input id="caDetails" maxlength="128" /></label>
         <label><span>State</span><input id="caState" maxlength="128" /></label>
         <label><span>Emoji</span><input id="caEmoji" maxlength="8" value="✨" /></label>
-        <label><span>GIF URL</span><input id="caGif" placeholder="https://media.tenor.com/…" /></label>
+        <label><span>GIF URL</span><input id="caGif" placeholder="https://media.tenor.com/… or Tenor page link" /></label>
+        <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or a Tenor page URL — Smiley resolves it on save.</p>
+        <div class="gif-sources" role="group" aria-label="Find GIFs">
+          <span class="gif-sources-label">Browse:</span>
+          <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>
+        </div>
       </div>
       <footer>
         <button type="button" class="primary" data-act="save-custom">Add</button>
