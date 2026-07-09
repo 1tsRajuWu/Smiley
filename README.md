@@ -157,12 +157,22 @@ Release notes: [docs/releases/v8.0.19.md](docs/releases/v8.0.19.md)
 New here? [docs/CODE-TOUR.md](docs/CODE-TOUR.md) · [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)
 
 ```bash
-git clone https://github.com/1tsRajuWu/Smiley.git && cd Smiley
+git clone https://github.com/1tsRajuWu/Smiley.git && cd Smiley/Smiley.v8
+npm install && npm run tauri dev
+```
+
+Archived Electron v7:
+
+```bash
+cd legacy/electron-v7
 cp discord.app.example.json discord.app.json
 npm install && npm start
 ```
 
+v7 release builds:
+
 ```bash
+cd legacy/electron-v7
 npm run build:mac    # .dmg
 npm run build:win    # installer
 npm run build:linux  # AppImage + .deb
