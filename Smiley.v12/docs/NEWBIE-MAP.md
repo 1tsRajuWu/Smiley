@@ -82,8 +82,9 @@ cd Smiley.v12 && npm run build
 ## What changed from v8
 
 - Product name is **Smiley** (not “Smiley v8”).
-- Version line is **12.x** — no more confusing v8.0.x patch spam.
+- Version line is **12.x** — **v12 is the final product line**; no more confusing v8.0.x patch spam.
 - Ally/enemy roster UI removed; Valorant presence is map/mode/agent/score only.
 - Clean `data-act` click bus in UI — one handler, no nested GIF click bugs.
+- **v12.0.2+** — Studio skin shows a **v12** badge, mint accent, and fixed GIF tile sizing in the activity grid.
 
 See [`V12-SCOPE.md`](V12-SCOPE.md) for the full include/cut list.

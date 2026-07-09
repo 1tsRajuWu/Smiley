@@ -526,8 +526,8 @@ export class AppController {
         const safeId = esc(a.id);
         const label = `${a.emoji} ${a.details}`.trim();
         const img = staticTiles
-          ? `<img data-src="${gif}" alt="" loading="lazy" decoding="async" class="tile-still" />`
-          : `<img src="${gif}" alt="" loading="lazy" decoding="async" />`;
+          ? `<img data-src="${gif}" alt="" loading="lazy" decoding="async" class="tile-gif tile-still" />`
+          : `<img src="${gif}" alt="" loading="lazy" decoding="async" class="tile-gif" />`;
         return `<div class="tile-wrap${on}" style="--c:${color}">
           <button type="button" class="tile${on}" data-act="pick" data-id="${safeId}" aria-label="${esc(label)}">
             ${img}

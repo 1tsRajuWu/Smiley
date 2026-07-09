@@ -10,10 +10,10 @@ export function studioMarkup(): string {
   <div class="skin studio" id="skin">
     <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
     <div class="st-hero">
-      <img id="heroGif" class="st-bg" alt="" />
+      <img id="heroGif" class="st-bg hero-gif" alt="" />
       <div class="st-veil"></div>
       <header class="st-bar">
-        <div class="st-brand"><img src="${iconLight}" width="40" height="40" alt="" /><div><b>Smiley</b><i>Studio</i></div></div>
+        <div class="st-brand"><img src="${iconLight}" width="40" height="40" alt="" /><div><b>Smiley<span class="st-v12-badge">v12</span></b><i>Studio</i></div></div>
         <div class="st-status" id="statusPill" data-state="off"><i></i><div><strong id="statusLabel">Offline</strong><em id="statusMsg">—</em></div></div>
         <div class="st-actions">
           <button type="button" data-act="idle">Idle</button>
@@ -58,7 +58,7 @@ export function arcadeMarkup(): string {
     <aside class="ar-side">
       <div class="ar-logo"><img src="${icon}" width="48" height="48" alt="" /><span>SMILEY<br/>ARCADE</span></div>
       <div class="ar-screen">
-        <img id="heroGif" alt="" />
+        <img id="heroGif" class="hero-gif" alt="" />
         <div class="ar-cap"><b id="title">INSERT COIN</b><i id="subtitle">Connect Discord</i></div>
       </div>
       <div class="ar-leds" id="statusPill" data-state="off"><i></i><i></i><i></i></div>
@@ -115,7 +115,7 @@ export function terminalMarkup(): string {
           </div>
           <nav id="cats" class="tm-dirs"></nav>
           <div class="tm-prev">
-            <img id="heroGif" alt="" />
+            <img id="heroGif" class="hero-gif" alt="" />
             <pre id="meta">no presence.bin</pre>
           </div>
         </aside>

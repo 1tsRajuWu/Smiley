@@ -143,7 +143,8 @@ export function settingsMarkup(): string {
       </section>
 
       <section class="cfg-panel" data-panel="app">
-        <p class="cfg-lede">Startup & library.</p>
+        <p class="cfg-lede"><strong>Smiley v12</strong> — the final native desktop app (Tauri + Rust). Rebuilt from v8 with a stable core and signed updates.</p>
+        <p class="cfg-hint">Startup & library.</p>
         <div class="cfg-toggles">
           <label class="cfg-tog"><input type="checkbox" id="cfgAuto" /><span>Auto-connect</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgTray" /><span>Minimize to tray</span></label>
@@ -158,7 +159,7 @@ export function settingsMarkup(): string {
           <label><span>Max recents</span><input id="cfgMaxRecents" type="number" min="3" max="20" /></label>
         </div>
         <p class="cfg-label">Updates</p>
-        <p class="cfg-version" id="cfgVersion">v12.0.0</p>
+        <p class="cfg-version" id="cfgVersion">v12.0.2</p>
         <button type="button" class="cfg-update-btn" data-act="check-updates">Check for updates</button>
         <p class="cfg-hint" id="cfgUpdateStatus" hidden></p>
       </section>

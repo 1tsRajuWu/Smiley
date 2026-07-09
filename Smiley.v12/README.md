@@ -1,6 +1,6 @@
 # Smiley v12
 
-**Smiley 12.0.1** — the final native desktop app (Tauri + Rust + TypeScript).
+**Smiley 12.0.2** — the final native desktop app (Tauri + Rust + TypeScript).
 
 ## Run locally
 
