@@ -75,7 +75,7 @@ jobs:
         run: |
           ver="${GITHUB_REF_NAME#v}"
           file="docs/releases/v${ver}.md"
-          if [ ! -f "$file" ]; then file="docs/releases/v12.0.0.md"; fi
+          if [ ! -f "$file" ]; then file="docs/releases/v12.0.1.md"; fi
           {
             echo 'body<<RELEASE_EOF'
             cat "$file"
