@@ -1,0 +1,46 @@
+[package]
+name = "smiley-v12"
+version = "12.0.0"
+description = "Smiley — final native Discord Rich Presence"
+authors = ["1tsRajuWu (Raj)"]
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "smiley_v12_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+serde_json = "1"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+parking_lot = "0.12"
+dirs = "6"
+discord-rich-presence = "0.2"
+uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+tauri-plugin-process = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 1
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+mpris = "2.1"

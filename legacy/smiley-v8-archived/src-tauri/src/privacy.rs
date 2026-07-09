@@ -1,0 +1,93 @@
+//! Privacy filters — what leaves the Rust core toward logs / Discord.
+
+use crate::models::Config;
+use crate::riot::RiotLive;
+
+/// Discord lines respecting share_valorant_stats_discord.
+pub fn valorant_discord_lines(live: &RiotLive, cfg: &Config) -> (String, String) {
+    if !cfg.share_valorant_stats_discord {
+        return (
+            live.title.clone(),
+            match live.phase.as_str() {
+                "match" => "In match".into(),
+                "pregame" => "Agent select".into(),
+                "queue" => "In queue".into(),
+                _ => "In lobby".into(),
+            },
+        );
+    }
+    (live.details.clone(), live.state.clone())
+}
+
+/// Redact secrets / identities from user-facing log lines.
+pub fn redact_log_message(message: &str) -> String {
+    let lower = message.to_ascii_lowercase();
+    if lower.contains("bearer ")
+        || lower.contains("password=")
+        || lower.contains("authorization:")
+        || lower.contains("basic ")
+    {
+        return "[redacted]".into();
+    }
+    let mut out = String::with_capacity(message.len().min(500));
+    for word in message.split_whitespace() {
+        let w = word.trim_matches(|c: char| c == ',' || c == ';' || c == '.' || c == ')' || c == '(');
+        if looks_like_puuid(w)
+            || looks_like_riot_id(w)
+            || w.contains("lockfile")
+            || looks_like_secret_token(w)
+        {
+            out.push_str("[redacted] ");
+        } else {
+            out.push_str(word);
+            out.push(' ');
+        }
+    }
+    out.trim().chars().take(500).collect()
+}
+
+fn looks_like_secret_token(s: &str) -> bool {
+    let s = s.trim_matches('"');
+    (s.len() >= 24 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-'))
+        && s.chars().filter(|c| c.is_ascii_digit()).count() > s.len() / 3
+}
+
+fn looks_like_puuid(s: &str) -> bool {
+    let s = s.trim_matches('"');
+    s.len() == 36
+        && s.chars().filter(|c| *c == '-').count() == 4
+        && s.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
+}
+
+fn looks_like_riot_id(s: &str) -> bool {
+    let s = s.trim_matches('"');
+    if let Some((name, tag)) = s.split_once('#') {
+        return !name.is_empty() && tag.len() >= 2 && tag.len() <= 6;
+    }
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn redacts_puuid() {
+        let msg = "player 550e8400-e29b-41d4-a716-446655440000 joined";
+        assert!(redact_log_message(msg).contains("[redacted]"));
+    }
+
+    #[test]
+    fn redacts_bearer_prefix() {
+        assert_eq!(
+            redact_log_message("auth Bearer abcdefghijklmnopqrstuvwxyz"),
+            "[redacted]"
+        );
+    }
+
+    #[test]
+    fn redacts_riot_id() {
+        let msg = "saw PlayerName#TAG1 in lobby";
+        assert!(redact_log_message(msg).contains("[redacted]"));
+    }
+}

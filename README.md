@@ -5,7 +5,7 @@ Author: Himanshu Raj (1tsRajuWu). Site: https://1tsrajuwu.github.io/Smiley/
 
 <div align="center">
 
-<img src="Smiley.v8/src/assets/icon.png" width="88" alt="Smiley" />
+<img src="Smiley.v12/src/assets/icon.png" width="88" alt="Smiley" />
 
 # Smiley
 
@@ -30,34 +30,32 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 
 ## Project status
 
-> **Smiley v8.0.0 will be the final planned release.** After v8, expect only occasional bug fixes — a major update is possible but unlikely. The community is **free to fork, modify, and advance** the code. Thank you for being part of this journey.
->
-> Read the full note from Raj: **[docs/FINAL.md](docs/FINAL.md)**
+> **Smiley v12.0.0 is the final shipping release** — a clean rebuild consolidating stable v7 tray/updater/music patterns with the Tauri + Rust shell from v8. v8 and v7 trees are archived.
 
-**Smiley v8.0.19** is the current desktop app — native Tauri + Rust. The previous Electron stack (v7.9.x) is archived; see [legacy/electron-v7/README.md](legacy/electron-v7/README.md).
+**Smiley v12.0.0** is the current desktop app — native Tauri + Rust. Previous stacks: [legacy/smiley-v8-archived/](legacy/smiley-v8-archived/) (v8), [legacy/electron-v7/](legacy/electron-v7/) (v7.9.x).
 
 ---
 
 <details open>
-<summary><strong>Smiley v8.0.19 — Direct downloads</strong></summary>
+<summary><strong>Smiley v12.0.0 — Direct downloads</strong></summary>
 
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_x64-setup.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_aarch64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_amd64.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_amd64.deb)
+[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_x64-setup.exe)
+[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_aarch64.dmg)
+[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_x64.dmg)
+[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_amd64.AppImage)
+[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_amd64.deb)
 
 | Platform | File |
 |----------|------|
-| Windows | [Smiley.v8_8.0.19_x64-setup.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_x64-setup.exe) |
-| macOS Apple Silicon | [Smiley.v8_8.0.19_aarch64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_aarch64.dmg) |
-| macOS Intel | [Smiley.v8_8.0.19_x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_x64.dmg) |
-| Linux (AppImage) | [Smiley.v8_8.0.19_amd64.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_amd64.AppImage) |
-| Linux (.deb) | [Smiley.v8_8.0.19_amd64.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.19/Smiley.v8_8.0.19_amd64.deb) |
+| Windows | [Smiley_12.0.0_x64-setup.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_x64-setup.exe) |
+| macOS Apple Silicon | [Smiley_12.0.0_aarch64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_aarch64.dmg) |
+| macOS Intel | [Smiley_12.0.0_x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_x64.dmg) |
+| Linux (AppImage) | [Smiley_12.0.0_amd64.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_amd64.AppImage) |
+| Linux (.deb) | [Smiley_12.0.0_amd64.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v12.0.0/Smiley_12.0.0_amd64.deb) |
 
-Release notes: [docs/releases/v8.0.19.md](docs/releases/v8.0.19.md)
+Release notes: [docs/releases/v12.0.0.md](docs/releases/v12.0.0.md)
 
-**macOS:** If Gatekeeper blocks first launch, use **System Settings → Privacy & Security → Open Anyway**, or run `xattr -cr "/Applications/Smiley v8.app"` once after install.
+**macOS:** If Gatekeeper blocks first launch, use **System Settings → Privacy & Security → Open Anyway**, or run `xattr -cr "/Applications/Smiley.app"` once after install.
 
 </details>
 
@@ -157,7 +155,7 @@ Release notes: [docs/releases/v8.0.19.md](docs/releases/v8.0.19.md)
 New here? [docs/CODE-TOUR.md](docs/CODE-TOUR.md) · [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)
 
 ```bash
-git clone https://github.com/1tsRajuWu/Smiley.git && cd Smiley/Smiley.v8
+git clone https://github.com/1tsRajuWu/Smiley.git && cd Smiley/Smiley.v12
 npm install && npm run tauri dev
 ```
 

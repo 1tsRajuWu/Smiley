@@ -1,12 +1,12 @@
 {
   "name": "smiley",
   "private": true,
-  "description": "Smiley monorepo — v8 in Smiley.v8/, archived v7 in legacy/electron-v7/",
+  "description": "Smiley monorepo — v12 in Smiley.v12/, archived v8 in legacy/smiley-v8/, v7 in legacy/electron-v7/",
   "scripts": {
-    "start": "npm start --prefix legacy/electron-v7",
-    "dev": "npm run dev --prefix legacy/electron-v7",
+    "start": "npm start --prefix Smiley.v12",
+    "dev": "npm run start --prefix Smiley.v12",
     "live-ui:publish": "npm run live-ui:publish --prefix legacy/electron-v7",
     "update-readme-downloads": "bash scripts/update-readme-downloads.sh",
-    "v8-game-presence-check": "node scripts/v8-game-presence-check.js"
+    "v12-game-presence-check": "node scripts/v8-game-presence-check.js"
   }
 }

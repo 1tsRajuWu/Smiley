@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-skin="studio" data-accent="ember">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smiley</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif&family=Press+Start+2P&family=Rajdhani:wght@600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="/src/assets/icon.png" />
+    <style>
+      html, body { height: 100%; margin: 0; background: #0a0908; }
+      body { opacity: 0; }
+      body.ready { opacity: 1; transition: opacity .15s ease; }
+      #boot {
+        height: 100%; display: grid; place-items: center;
+        color: #a89888; font: 600 .8rem system-ui, sans-serif;
+        letter-spacing: .1em; text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"><div id="boot">Loading Smiley…</div></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

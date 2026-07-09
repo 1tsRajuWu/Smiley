@@ -1,0 +1,4 @@
+{
+  "_comment": "Copy to discord.app.json (next to this file or in src-tauri/). Use YOUR Discord Application Client ID.",
+  "clientId": "YOUR_DISCORD_APPLICATION_CLIENT_ID"
+}

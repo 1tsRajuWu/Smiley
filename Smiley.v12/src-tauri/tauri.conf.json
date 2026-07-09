@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Smiley",
+  "version": "12.0.0",
+  "identifier": "com.smiley.v12",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Smiley",
+        "width": 1180,
+        "height": 780,
+        "minWidth": 920,
+        "minHeight": 620,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: https://media.tenor.com https://*.tenor.com https://media.valorant-api.com https://cmsassets.rgpub.io https://cdn.cloudflare.steamstatic.com https://cdn.steamstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src ipc: http://ipc.localhost; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "entitlements": "../../build/entitlements.mac.plist",
+      "signingIdentity": "-",
+      "hardenedRuntime": true
+    },
+    "resources": {
+      "../../legacy/electron-v7/electron/mediaremote-adapter/": "mediaremote-adapter/"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0MzdBRkI1MTg1QUFENzAKUldSd3JWb1l0YTgzaE1haUZqeG0xZ0p1QkJkdjZ1REJ6Yis4NThvWHd6ZXZkc0FjaUdsUll5dW8K",
+      "endpoints": [
+        "https://github.com/1tsRajuWu/Smiley/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}
