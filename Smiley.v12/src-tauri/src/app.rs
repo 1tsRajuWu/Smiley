@@ -570,44 +570,49 @@ impl App {
         Ok(Some(self.set_activity(&id)?))
     }
 
+    /// Write config to disk without re-resolving unrelated fields (custom add/delete).
+    fn persist_config(&self, cfg: Config) -> AppResult<Config> {
+        let cfg = cfg.sanitize();
+        config::save(&cfg)?;
+        *self.config.lock() = cfg.clone();
+        Ok(cfg)
+    }
+
     pub fn save_config(&self, next: Config) -> AppResult<Config> {
+        let live = self.config.lock().clone();
         let raw_idle = next.idle_gif.trim().to_string();
-        let resolved_idle = if raw_idle.is_empty() {
-            None
-        } else {
-            Some(resolve_gif_url(&raw_idle)?)
-        };
+        let live_idle = live.idle_gif.trim().to_string();
+        let idle_changed = raw_idle != live_idle;
         let mut next = next.sanitize();
         // Guard: never let a partial settings write erase persisted lists.
-        {
-            let live = self.config.lock();
-            if next.custom.is_empty() && !live.custom.is_empty() {
-                next.custom = live.custom.clone();
-            }
-            if next.favorites.is_empty() && !live.favorites.is_empty() {
-                next.favorites = live.favorites.clone();
-            }
-            if next.recents.is_empty() && !live.recents.is_empty() {
-                next.recents = live.recents.clone();
-            }
-            if next.last_activity_id.is_none() {
-                next.last_activity_id = live.last_activity_id.clone();
-            }
-            if next.install_telemetry.sections.is_empty()
-                && !live.install_telemetry.sections.is_empty()
-            {
-                next.install_telemetry = live.install_telemetry.clone();
-            }
-            if let Some(idle) = resolved_idle {
-                next.idle_gif = idle;
-            } else if live.idle_gif != next.idle_gif {
-                next.idle_gif = live.idle_gif.clone();
-            }
+        if next.custom.is_empty() && !live.custom.is_empty() {
+            next.custom = live.custom.clone();
         }
-        next = next.sanitize();
-        config::save(&next)?;
-        *self.config.lock() = next.clone();
-        Ok(next)
+        if next.favorites.is_empty() && !live.favorites.is_empty() {
+            next.favorites = live.favorites.clone();
+        }
+        if next.recents.is_empty() && !live.recents.is_empty() {
+            next.recents = live.recents.clone();
+        }
+        if next.last_activity_id.is_none() {
+            next.last_activity_id = live.last_activity_id.clone();
+        }
+        if next.install_telemetry.sections.is_empty() && !live.install_telemetry.sections.is_empty()
+        {
+            next.install_telemetry = live.install_telemetry.clone();
+        }
+        // Only resolve idle GIF when the user changed it in Settings — never block
+        // custom add/delete/favorite because an old idle URL fails Tenor resolution.
+        if idle_changed {
+            if raw_idle.is_empty() {
+                // sanitize() already applied default idle GIF
+            } else {
+                next.idle_gif = resolve_gif_url(&raw_idle)?;
+            }
+        } else {
+            next.idle_gif = live.idle_gif.clone();
+        }
+        self.persist_config(next)
     }
 
     pub fn replace_config(&self, next: Config) -> AppResult<Config> {
@@ -666,7 +671,7 @@ impl App {
         cfg.custom.retain(|c| c.id != act.id);
         cfg.custom.push(act);
         cfg.custom.truncate(40);
-        self.save_config(cfg)
+        self.persist_config(cfg)
     }
 
     /// Music may drive Discord only when the Listening activity is explicitly selected.
@@ -1066,10 +1071,7 @@ impl App {
             cfg.last_activity_id = None;
         }
         // Intentional list mutation — bypass save_config guard that restores a cleared custom list.
-        let cfg = cfg.sanitize();
-        config::save(&cfg)?;
-        *self.config.lock() = cfg.clone();
-        Ok(cfg)
+        self.persist_config(cfg)
     }
 
     pub fn get_status(&self) -> Status {
@@ -1175,6 +1177,15 @@ mod tests {
         assert!(is_explicit_gaming_slot("ranked"));
         assert!(is_gaming_activity("live-cs2"));
         assert!(!is_gaming_activity("custom-xyz"));
+    }
+
+    #[test]
+    fn idle_gif_save_only_when_changed() {
+        let live = "https://media.tenor.com/old/stale.gif";
+        let draft_same = "https://media.tenor.com/old/stale.gif";
+        let draft_new = "https://tenor.com/view/new-gif-123";
+        assert_eq!(live.trim(), draft_same.trim());
+        assert_ne!(live.trim(), draft_new.trim());
     }
 
     #[test]

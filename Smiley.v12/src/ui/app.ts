@@ -229,10 +229,12 @@ export class AppController {
         return this.pick(el.dataset.id || "");
       case "fav": {
         ev.stopPropagation();
+        ev.preventDefault();
         return this.toggleFav(el.dataset.id || "");
       }
       case "del-custom": {
         ev.stopPropagation();
+        ev.preventDefault();
         return this.deleteCustom(el.dataset.id || "");
       }
       case "search":
@@ -828,11 +830,12 @@ export class AppController {
     if (!id || !this.snap) return;
     if (!confirm("Delete this custom activity?")) return;
     try {
-      await api.removeCustom(id);
+      const cfg = await api.removeCustom(id);
       if (this.snap.status.activityId === id) {
         this.snap.status = await api.clear();
       }
       this.snap = await api.snapshot();
+      this.snap.config = cfg;
       this.lastGridKey = "";
       this.paint();
       this.toast("Deleted");
@@ -932,7 +935,7 @@ export class AppController {
       }
     }
     try {
-      await api.addCustom({
+      const cfg = await api.addCustom({
         id: "",
         details,
         state: this.$<HTMLInputElement>("caState")?.value.trim() || "Custom",
@@ -940,6 +943,7 @@ export class AppController {
         gif,
       });
       this.snap = await api.snapshot();
+      this.snap.config = cfg;
       this.activeCategory = "custom";
       this.lastGridKey = "";
       this.$<HTMLDialogElement>("createDlg")?.close();
