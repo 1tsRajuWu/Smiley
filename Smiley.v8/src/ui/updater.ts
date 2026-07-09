@@ -47,6 +47,14 @@ async function downloadUpdate(
   });
 }
 
+function withFallbackError(message: string, fallback: UpdateUiState): UpdateUiState {
+  return {
+    status: "error",
+    message,
+    check: fallback.status === "fallback" ? fallback.check : undefined,
+  };
+}
+
 export async function runUpdateFlow(opts: {
   silent?: boolean;
   autoDownload?: boolean;
@@ -64,16 +72,31 @@ export async function runUpdateFlow(opts: {
     let update: Update | null = null;
     try {
       update = await check();
-    } catch {
+    } catch (err) {
       const fallback = await githubFallback();
-      emit(fallback);
-      return fallback;
+      if (fallback.status === "fallback") {
+        emit(fallback);
+        return fallback;
+      }
+      const message =
+        err instanceof Error ? err.message : "Could not check for updates right now.";
+      const state = withFallbackError(message, fallback);
+      emit(state);
+      return state;
     }
 
     if (!update) {
-      const upToDate = await githubFallback();
-      emit(upToDate);
-      return upToDate;
+      const fallback = await githubFallback();
+      if (fallback.status === "fallback") {
+        const state = withFallbackError(
+          "A newer release exists, but this build could not prepare an in-app update for your platform.",
+          fallback,
+        );
+        emit(state);
+        return state;
+      }
+      emit(fallback);
+      return fallback;
     }
 
     const version = update.version;
@@ -94,11 +117,7 @@ export async function runUpdateFlow(opts: {
       const message =
         err instanceof Error ? err.message : "Could not download update. Try again or install from GitHub.";
       const fallback = await githubFallback();
-      const state: UpdateUiState = {
-        status: "error",
-        message,
-        check: fallback.status === "fallback" ? fallback.check : undefined,
-      };
+      const state = withFallbackError(message, fallback);
       emit(state);
       return state;
     }
@@ -110,11 +129,7 @@ export async function runUpdateFlow(opts: {
     const message = err instanceof Error ? err.message : String(err);
     try {
       const fallback = await githubFallback();
-      const state: UpdateUiState = {
-        status: "error",
-        message,
-        check: fallback.status === "fallback" ? fallback.check : undefined,
-      };
+      const state = withFallbackError(message, fallback);
       emit(state);
       return state;
     } catch {

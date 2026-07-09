@@ -30,6 +30,8 @@ If you rotate keys, existing installs signed with the **old** public key cannot 
 2. Uploads `.sig` files and platform updater bundles (e.g. macOS `.app.tar.gz`)
 3. Publishes `latest.json` on the GitHub release (`includeUpdaterJson` default)
 
+The workflow keeps each v8 release as a **draft** until every matrix job finishes, then publishes it. That avoids exposing a half-built `latest.json` that only contains one platform.
+
 Endpoint in the app:
 
 `https://github.com/1tsRajuWu/Smiley/releases/latest/download/latest.json`
