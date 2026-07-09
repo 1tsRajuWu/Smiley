@@ -15,9 +15,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const ROOT = path.resolve(__dirname, '..');
-const SRC = path.join(ROOT, 'src');
-const OUT = path.join(ROOT, 'docs', 'site', 'live');
+const V7_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(__dirname, '../..');
+const SRC = path.join(V7_ROOT, 'src');
+const OUT = path.join(REPO_ROOT, 'docs', 'site', 'live');
 const PUBLIC_BASE = 'https://1tsrajuwu.github.io/Smiley/live';
 
 const ALLOWED_EXT = new Set([
@@ -53,7 +54,7 @@ function loadPrivateKey() {
   if (fromEnv && fromEnv.trim()) {
     return crypto.createPrivateKey(fromEnv.trim());
   }
-  const pemPath = path.join(ROOT, 'build', 'live-patch-private.pem');
+  const pemPath = path.join(V7_ROOT, 'build', 'live-patch-private.pem');
   if (!fs.existsSync(pemPath)) {
     throw new Error(
       'Missing live-patch private key. Set SMILEY_LIVE_PATCH_PRIVATE_KEY or create build/live-patch-private.pem'
@@ -102,7 +103,7 @@ function main() {
     throw new Error('src/renderer.js is required in the live patch');
   }
 
-  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const pkg = JSON.parse(fs.readFileSync(path.join(V7_ROOT, 'package.json'), 'utf8'));
   const minAppVersion = String(process.env.MIN_APP_VERSION || pkg.version).trim();
   const now = new Date();
   const patchVersion =
@@ -143,7 +144,7 @@ function main() {
   console.log(`  files: ${files.length}`);
   console.log(`  minAppVersion: ${minAppVersion}`);
   console.log(`  sha256: ${sha256}`);
-  console.log(`  out: ${path.relative(ROOT, OUT)}`);
+  console.log(`  out: ${path.relative(REPO_ROOT, OUT)}`);
 }
 
 main();

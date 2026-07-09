@@ -5,9 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/site/**'
-      - 'src/**'
-      - 'scripts/publish-live-ui-patch.js'
-      - 'build/live-patch-public.pem'
+      - 'legacy/electron-v7/src/**'
+      - 'legacy/electron-v7/scripts/publish-live-ui-patch.js'
+      - 'legacy/electron-v7/build/live-patch-public.pem'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 

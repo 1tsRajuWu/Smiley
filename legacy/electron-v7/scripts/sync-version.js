@@ -1,28 +1,29 @@
 #!/usr/bin/env node
 /**
- * Sync app version from root package.json to every platform surface.
- * Run from repo root: npm run sync:version
+ * Sync v7 app version from legacy/electron-v7/package.json to every platform surface.
+ * Run from v7 folder: npm run sync:version
  */
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const ROOT = path.resolve(__dirname, '..');
-const version = require(path.join(ROOT, 'package.json')).version;
+const V7_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(__dirname, '../..');
+const version = require(path.join(V7_ROOT, 'package.json')).version;
 
 function patchFile(filePath, patchFn) {
   if (!fs.existsSync(filePath)) {
-    console.warn(`  skip (missing): ${path.relative(ROOT, filePath)}`);
+    console.warn(`  skip (missing): ${path.relative(REPO_ROOT, filePath)}`);
     return;
   }
   const before = fs.readFileSync(filePath, 'utf8');
   const after = patchFn(before);
   if (after === before) {
-    console.log(`  · ${path.relative(ROOT, filePath)} (already v${version})`);
+    console.log(`  · ${path.relative(REPO_ROOT, filePath)} (already v${version})`);
     return;
   }
   fs.writeFileSync(filePath, after);
-  console.log(`  ✓ ${path.relative(ROOT, filePath)} → v${version}`);
+  console.log(`  ✓ ${path.relative(REPO_ROOT, filePath)} → v${version}`);
 }
 
 function patchLockfile(filePath) {
@@ -36,11 +37,11 @@ function patchLockfile(filePath) {
 
 console.log(`Syncing all platforms to v${version}…`);
 
-patchFile(path.join(ROOT, 'src/index.html'), (html) =>
+patchFile(path.join(V7_ROOT, 'src/index.html'), (html) =>
   html.replace(/(<span class="footer-version" id="footerVersion">Smiley v)[\d.]+(<\/span>)/, `$1${version}$2`)
 );
 
-patchFile(path.join(ROOT, 'docs/site/index.html'), (html) =>
+patchFile(path.join(REPO_ROOT, 'docs/site/index.html'), (html) =>
   html
     .replace(/(Get v)[\d.]+/g, `$1${version}`)
     .replace(/(badge badge(?:--live|-live)"><span class="pulse"><\/span>v)[\d.]+/g, `$1${version}`)
@@ -54,7 +55,7 @@ patchFile(path.join(ROOT, 'docs/site/index.html'), (html) =>
     .replace(/(Smiley-)[\d.]+(\.deb)/g, `$1${version}$2`)
 );
 
-const mobilePkgPath = path.join(ROOT, 'mobile/package.json');
+const mobilePkgPath = path.join(V7_ROOT, 'mobile/package.json');
 patchFile(mobilePkgPath, (json) => {
   const pkg = JSON.parse(json);
   pkg.version = version;
@@ -62,22 +63,22 @@ patchFile(mobilePkgPath, (json) => {
   return `${JSON.stringify(pkg, null, 2)}\n`;
 });
 
-patchLockfile(path.join(ROOT, 'package-lock.json'));
-patchLockfile(path.join(ROOT, 'mobile/package-lock.json'));
+patchLockfile(path.join(V7_ROOT, 'package-lock.json'));
+patchLockfile(path.join(V7_ROOT, 'mobile/package-lock.json'));
 
 for (const doc of ['PRIVACY.md', 'ToS.md', 'SECURITY.md']) {
-  patchFile(path.join(ROOT, doc), (text) =>
+  patchFile(path.join(REPO_ROOT, doc), (text) =>
     text.replace(/(\*\*Raj \(@1tsRaj\)\*\* — last updated \d+ \w+ \d+ \(v)[\d.]+(\))/g, `$1${version}$2`)
   );
 }
 
-patchFile(path.join(ROOT, 'docs/INSTALL-DATABASE.md'), (text) =>
+patchFile(path.join(REPO_ROOT, 'docs/INSTALL-DATABASE.md'), (text) =>
   text
     .replace(/(`app_version` \| `)[\d.]+(` \| Device)/g, `$1${version}$2`)
     .replace(/(`user_agent` \| `Smiley\/)[\d.]+( Electron\/…` \| Device)/g, `$1${version}$2`)
 );
 
-execFileSync('node', ['mobile/scripts/build-www.js'], { cwd: ROOT, stdio: 'inherit' });
-execFileSync('node', ['mobile/scripts/configure-native.js'], { cwd: ROOT, stdio: 'inherit' });
+execFileSync('node', ['mobile/scripts/build-www.js'], { cwd: V7_ROOT, stdio: 'inherit' });
+execFileSync('node', ['mobile/scripts/configure-native.js'], { cwd: V7_ROOT, stdio: 'inherit' });
 
 console.log(`Done — all platforms at v${version}.`);
