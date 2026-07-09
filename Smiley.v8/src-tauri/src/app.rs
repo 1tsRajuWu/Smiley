@@ -21,6 +21,7 @@ pub struct App {
     pub config: Mutex<Config>,
     pub status: Mutex<Status>,
     pub started_at: Mutex<Option<u64>>,
+    pub started_sig: Mutex<String>,
     pub rotate_index: Mutex<usize>,
     pub last_set_at: Mutex<Option<Instant>>,
     /// Last pushed music track signature — skip Discord when unchanged.
@@ -49,6 +50,7 @@ impl App {
                 match_board: None,
             }),
             started_at: Mutex::new(None),
+            started_sig: Mutex::new(String::new()),
             rotate_index: Mutex::new(0),
             last_set_at: Mutex::new(None),
             last_music_sig: Mutex::new(String::new()),
@@ -61,6 +63,19 @@ impl App {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs()
+    }
+
+    fn start_for_session(&self, sig: &str) -> i64 {
+        let now = Self::now_secs();
+        let mut started_sig = self.started_sig.lock();
+        let mut started_at = self.started_at.lock();
+        let next = stable_started_at(started_sig.as_str(), *started_at, sig, now);
+        *started_at = Some(next);
+        if started_sig.as_str() != sig {
+            started_sig.clear();
+            started_sig.push_str(sig);
+        }
+        next as i64
     }
 
     fn parse_hhmm(s: &str) -> Option<(u32, u32)> {
@@ -353,7 +368,9 @@ impl App {
             let _ = config::save(&cfg);
         }
 
-        *self.started_at.lock() = Some(Self::now_secs());
+        let started_at = Self::now_secs();
+        *self.started_at.lock() = Some(started_at);
+        *self.started_sig.lock() = format!("manual:{id}");
         *self.last_music_sig.lock() = String::new();
         *self.last_coding_sig.lock() = String::new();
 
@@ -389,6 +406,7 @@ impl App {
     pub fn clear(&self) -> AppResult<Status> {
         let _ = self.discord.clear();
         *self.started_at.lock() = None;
+        self.started_sig.lock().clear();
         {
             let mut s = self.status.lock();
             s.activity_id = None;
@@ -785,7 +803,21 @@ impl App {
                     if push_discord {
                         let (details, state) =
                             crate::privacy::valorant_discord_lines(&live, &cfg_snap);
-                        let start = Some(Self::now_secs() as i64);
+                        let session_sig = format!(
+                            "live:{}:{}:{}:{}",
+                            live.product,
+                            live.phase,
+                            live.map_id
+                                .as_deref()
+                                .or(live.board.map_id.as_deref())
+                                .or(live.board.map.as_deref())
+                                .unwrap_or(""),
+                            live.queue_id
+                                .as_deref()
+                                .or(live.board.queue_id.as_deref())
+                                .unwrap_or("")
+                        );
+                        let start = Some(self.start_for_session(&session_sig));
                         if live.product == "valorant" {
                             self.discord.set(self.build_valorant_presence(
                                 &live,
@@ -844,12 +876,13 @@ impl App {
         if gaming_slot && cfg.gaming_probe {
             if let Ok(Some(hit)) = crate::gaming::probe_foreground_game() {
                 let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
+                let start = self.start_for_session(&format!("probe:{}:{}", hit.id, hit.title));
                 self.discord.set(self.build_presence(
                     &hit.details,
                     &hit.state,
                     "🎮",
                     gif,
-                    Some(Self::now_secs() as i64),
+                    Some(start),
                 ))?;
                 {
                     let mut s = self.status.lock();
@@ -884,4 +917,27 @@ fn local_minutes() -> u32 {
     use chrono::{Local, Timelike};
     let t = Local::now();
     t.hour() * 60 + t.minute()
+}
+
+fn stable_started_at(current_sig: &str, current_started_at: Option<u64>, next_sig: &str, now: u64) -> u64 {
+    if current_started_at.is_some() && current_sig == next_sig {
+        current_started_at.unwrap_or(now)
+    } else {
+        now
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::stable_started_at;
+
+    #[test]
+    fn stable_started_at_keeps_existing_timestamp_for_same_session() {
+        assert_eq!(stable_started_at("live:valorant:match:map:comp", Some(123), "live:valorant:match:map:comp", 999), 123);
+    }
+
+    #[test]
+    fn stable_started_at_resets_for_new_session() {
+        assert_eq!(stable_started_at("live:valorant:pregame:map:comp", Some(123), "live:valorant:match:map:comp", 999), 999);
+    }
 }
