@@ -257,11 +257,11 @@ pub fn run() {
                 });
             }
 
-            // Live gaming — off UI thread (8s)
+            // Live gaming — off UI thread, adaptive cadence for active Valorant.
             {
                 let st = state.clone();
                 std::thread::spawn(move || loop {
-                    std::thread::sleep(Duration::from_secs(8));
+                    std::thread::sleep(st.live_tick_interval());
                     let _ = st.live_tick();
                 });
             }

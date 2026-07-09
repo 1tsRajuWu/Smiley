@@ -18,7 +18,9 @@ use std::time::{Duration, Instant};
 
 const TIMEOUT: Duration = Duration::from_secs(3);
 const AGENT_TTL: Duration = Duration::from_secs(86_400);
-const PROBE_CACHE_TTL: Duration = Duration::from_millis(3500);
+const ACTIVE_PROBE_CACHE_TTL: Duration = Duration::from_millis(1200);
+const QUEUE_PROBE_CACHE_TTL: Duration = Duration::from_millis(2200);
+const IDLE_PROBE_CACHE_TTL: Duration = Duration::from_millis(5000);
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RiotProbeOptions {
@@ -28,6 +30,7 @@ pub struct RiotProbeOptions {
 
 struct CachedProbe {
     at: Instant,
+    ttl: Duration,
     live: RiotLive,
 }
 
@@ -397,12 +400,19 @@ fn party_label(private: &Value) -> Option<String> {
 
 fn map_from_path(path: &str) -> (String, Option<String>) {
     let resolved = resolve_map(path);
-    let map_id = resolved
-        .uuid
-        .clone()
-        .or_else(|| if path.len() == 36 { Some(path.to_string()) } else { None });
+    let map_id = resolved.uuid.clone().or_else(|| {
+        if path.len() == 36 {
+            Some(path.to_string())
+        } else {
+            None
+        }
+    });
     let name = if resolved.name.is_empty() {
-        path.split('/').filter(|s| !s.is_empty()).last().unwrap_or(path).to_string()
+        path.split('/')
+            .filter(|s| !s.is_empty())
+            .last()
+            .unwrap_or(path)
+            .to_string()
     } else {
         resolved.name
     };
@@ -490,7 +500,10 @@ fn team_id(p: &Value) -> Option<String> {
 
 fn kda_of(p: &Value) -> Option<String> {
     let stats = p.get("Stats").unwrap_or(p);
-    let k = stats.get("Kills").or_else(|| stats.get("kills"))?.as_i64()?;
+    let k = stats
+        .get("Kills")
+        .or_else(|| stats.get("kills"))?
+        .as_i64()?;
     let d = stats
         .get("Deaths")
         .or_else(|| stats.get("deaths"))
@@ -506,7 +519,10 @@ fn kda_of(p: &Value) -> Option<String> {
 
 fn kills_only(p: &Value) -> Option<String> {
     let stats = p.get("Stats").unwrap_or(p);
-    let k = stats.get("Kills").or_else(|| stats.get("kills"))?.as_i64()?;
+    let k = stats
+        .get("Kills")
+        .or_else(|| stats.get("kills"))?
+        .as_i64()?;
     Some(format!("{k} kills"))
 }
 
@@ -575,7 +591,9 @@ fn team_score_from_players(players: &[Value], self_team: Option<&str>) -> Option
     if let Some(want) = self_team {
         let want = want.to_lowercase();
         let ally = entries.iter().find(|(id, _)| id.to_lowercase() == want);
-        let enemy = entries.iter().find(|(id, _)| ally.is_none_or(|(aid, _)| id != aid));
+        let enemy = entries
+            .iter()
+            .find(|(id, _)| ally.is_none_or(|(aid, _)| id != aid));
         if let (Some((_, a)), Some((_, e))) = (ally, enemy) {
             return Some(format!("{a}-{e}"));
         }
@@ -593,9 +611,11 @@ fn match_score_hint(
     let self_team = self_row.and_then(team_id);
 
     if is_ffa_deathmatch_queue(q) {
-        return self_row
-            .and_then(kills_only)
-            .or_else(|| self_row.and_then(kda_of).map(|k| format!("{} kills", k.split('/').next().unwrap_or("0"))));
+        return self_row.and_then(kills_only).or_else(|| {
+            self_row
+                .and_then(kda_of)
+                .map(|k| format!("{} kills", k.split('/').next().unwrap_or("0")))
+        });
     }
 
     let from_teams = team_score_from_teams(match_json, self_team.as_deref());
@@ -661,6 +681,82 @@ fn dedupe_players(players: Vec<Value>) -> Vec<Value> {
         out.push(row);
     }
     out
+}
+
+fn is_blank_value(v: &Value) -> bool {
+    matches!(v, Value::Null)
+        || v.as_str().is_some_and(|s| s.trim().is_empty())
+        || v.as_array().is_some_and(|arr| arr.is_empty())
+}
+
+fn merge_player_rows(base: &Value, overlay: &Value) -> Value {
+    let (Some(base_obj), Some(overlay_obj)) = (base.as_object(), overlay.as_object()) else {
+        return base.clone();
+    };
+
+    let mut next = base_obj.clone();
+    for (key, value) in overlay_obj {
+        if key == "Stats" {
+            if let Some(overlay_stats) = value.as_object() {
+                let merged_stats = next
+                    .get("Stats")
+                    .and_then(|v| v.as_object())
+                    .map(|base_stats| {
+                        let mut combined = base_stats.clone();
+                        for (stats_key, stats_val) in overlay_stats {
+                            if !is_blank_value(stats_val) {
+                                combined.insert(stats_key.clone(), stats_val.clone());
+                            }
+                        }
+                        Value::Object(combined)
+                    })
+                    .unwrap_or_else(|| Value::Object(overlay_stats.clone()));
+                next.insert("Stats".into(), merged_stats);
+            } else if !is_blank_value(value) {
+                next.insert(key.clone(), value.clone());
+            }
+            continue;
+        }
+        if next.get(key).is_none_or(is_blank_value) && !is_blank_value(value) {
+            next.insert(key.clone(), value.clone());
+        }
+    }
+    Value::Object(next)
+}
+
+fn merge_players_by_subject(base: Vec<Value>, overlay: &[Value]) -> Vec<Value> {
+    let mut overlay_by_subject = HashMap::new();
+    for row in overlay {
+        if let Some(subject) = subject_of(row) {
+            overlay_by_subject.insert(subject.to_lowercase(), row.clone());
+        }
+    }
+
+    let mut seen = HashSet::new();
+    let mut merged = Vec::with_capacity(base.len().max(overlay.len()));
+    for row in base {
+        if let Some(subject) = subject_of(&row) {
+            let key = subject.to_lowercase();
+            seen.insert(key.clone());
+            if let Some(extra) = overlay_by_subject.get(&key) {
+                merged.push(merge_player_rows(&row, extra));
+                continue;
+            }
+        }
+        merged.push(row);
+    }
+
+    for row in overlay {
+        let Some(subject) = subject_of(row) else {
+            continue;
+        };
+        let key = subject.to_lowercase();
+        if seen.insert(key) {
+            merged.push(row.clone());
+        }
+    }
+
+    dedupe_players(merged)
 }
 
 fn merge_team_ids(players: Vec<Value>, team_sources: &[Value]) -> Vec<Value> {
@@ -749,12 +845,17 @@ fn resolve_names(lock: &Lockfile, puuids: &[String]) -> HashMap<String, String> 
         if sub.is_empty() {
             continue;
         }
-        let game = str_field(&row, &["GameName", "gameName", "DisplayName", "displayName"]);
+        let game = str_field(
+            &row,
+            &["GameName", "gameName", "DisplayName", "displayName"],
+        );
         let tag = str_field(&row, &["TagLine", "tagLine", "Tag"]);
         let name = match (game, tag) {
             (Some(g), Some(t)) => format!("{g}#{t}"),
             (Some(g), None) => g,
-            _ => str_field(&row, &["DisplayName", "displayName"]).unwrap_or_else(|| "Player".into()),
+            _ => {
+                str_field(&row, &["DisplayName", "displayName"]).unwrap_or_else(|| "Player".into())
+            }
         };
         out.insert(sub.to_lowercase(), name);
     }
@@ -785,10 +886,13 @@ fn build_player(
     let aid = character_id(p);
     let agent = aid.as_ref().and_then(|id| agent_name(id));
     let icon = aid.as_ref().map(|id| agent_icon(id));
-    let name = names
-        .get(&sub.to_lowercase())
-        .cloned()
-        .unwrap_or_else(|| if is_self { "You".into() } else { "Player".into() });
+    let name = names.get(&sub.to_lowercase()).cloned().unwrap_or_else(|| {
+        if is_self {
+            "You".into()
+        } else {
+            "Player".into()
+        }
+    });
     Some(MatchPlayer {
         seat: seat.into(),
         name,
@@ -814,6 +918,15 @@ fn count_seats(players: &[MatchPlayer]) -> (u32, u32) {
     (ally, enemy)
 }
 
+fn probe_cache_ttl(phase: &str, players_len: usize) -> Duration {
+    match phase {
+        "match" | "pregame" => ACTIVE_PROBE_CACHE_TTL,
+        "queue" => QUEUE_PROBE_CACHE_TTL,
+        _ if players_len > 0 => ACTIVE_PROBE_CACHE_TTL,
+        _ => IDLE_PROBE_CACHE_TTL,
+    }
+}
+
 /// Probe local Valorant truth + full match board for UI.
 pub fn probe_riot_presence() -> AppResult<Option<RiotLive>> {
     probe_riot_presence_opts(RiotProbeOptions::default())
@@ -823,7 +936,7 @@ pub fn probe_riot_presence_opts(opts: RiotProbeOptions) -> AppResult<Option<Riot
     {
         let cache = PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock();
         if let Some(c) = cache.as_ref() {
-            if c.at.elapsed() < PROBE_CACHE_TTL {
+            if c.at.elapsed() < c.ttl {
                 return Ok(Some(c.live.clone()));
             }
         }
@@ -833,6 +946,7 @@ pub fn probe_riot_presence_opts(opts: RiotProbeOptions) -> AppResult<Option<Riot
     if let Some(ref l) = live {
         *PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock() = Some(CachedProbe {
             at: Instant::now(),
+            ttl: probe_cache_ttl(&l.phase, l.board.players.len()),
             live: l.clone(),
         });
     } else {
@@ -919,11 +1033,13 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
     let phase = phase_from_chat(&private, has_core, has_pregame).to_string();
 
     let map = core.as_ref().and_then(|c| c.map.clone()).or_else(|| {
-        pre.as_ref().and_then(|p| p.map.clone()).or(if map_chat_name.is_empty() {
-            None
-        } else {
-            Some(map_chat_name.clone())
-        })
+        pre.as_ref()
+            .and_then(|p| p.map.clone())
+            .or(if map_chat_name.is_empty() {
+                None
+            } else {
+                Some(map_chat_name.clone())
+            })
     });
     let map_id = core
         .as_ref()
@@ -939,7 +1055,11 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         .as_ref()
         .and_then(|c| c.queue_id.clone())
         .or_else(|| pre.as_ref().and_then(|p| p.queue_id.clone()))
-        .or_else(|| mode_chat.as_ref().map(|m| m.to_lowercase().replace(' ', "")));
+        .or_else(|| {
+            mode_chat
+                .as_ref()
+                .map(|m| m.to_lowercase().replace(' ', ""))
+        });
     let mut score = core.as_ref().and_then(|c| c.score.clone());
     if score.is_none() && phase == "match" {
         score = chat_score.clone();
@@ -1068,12 +1188,20 @@ fn fetch_core_board(
     let player = local_get(lock, &format!("/core-game/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/core-game/v1/matches/{match_id}"))?;
-    let _scoreboard = local_get(
+    let scoreboard = local_get(
         lock,
         &format!("/core-game/v1/matches/{match_id}/scoreboard"),
     );
 
-    let players_raw = core_game_players(&match_json);
+    let scoreboard_players = scoreboard
+        .as_ref()
+        .map(core_game_players)
+        .unwrap_or_default();
+    let players_raw = if scoreboard_players.is_empty() {
+        core_game_players(&match_json)
+    } else {
+        merge_players_by_subject(core_game_players(&match_json), &scoreboard_players)
+    };
     let self_row = players_raw.iter().find(|p| {
         subject_of(p)
             .map(|s| s.eq_ignore_ascii_case(puuid))
@@ -1084,7 +1212,12 @@ fn fetch_core_board(
     let self_agent = self_agent_id.as_ref().and_then(|id| agent_name(id));
     let self_kda = self_row.and_then(|p| kda_of(p));
     let queue_id = match_queue_id(&match_json);
-    let score = match_score_hint(&match_json, self_row, queue_id.as_deref(), chat_score);
+    let score = scoreboard
+        .as_ref()
+        .and_then(|scoreboard| {
+            match_score_hint(scoreboard, self_row, queue_id.as_deref(), chat_score)
+        })
+        .or_else(|| match_score_hint(&match_json, self_row, queue_id.as_deref(), chat_score));
     let map_path = str_field(&match_json, &["MapID", "MapId", "mapId"]);
     let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
     let mode = queue_id.as_ref().map(|q| queue_label(q));
@@ -1361,6 +1494,33 @@ mod tests {
             .collect();
         assert!(built.iter().any(|p| p.is_self && p.seat == "Ally"));
         assert!(built.iter().any(|p| p.name == "Player" && p.seat == "Ally"));
-        assert!(!built.iter().any(|p| p.name == "Player" && p.seat == "Enemy"));
+        assert!(!built
+            .iter()
+            .any(|p| p.name == "Player" && p.seat == "Enemy"));
+    }
+
+    #[test]
+    fn merge_players_by_subject_keeps_match_identity_and_scoreboard_stats() {
+        let merged = merge_players_by_subject(
+            vec![json!({
+                "Subject": "me",
+                "CharacterID": JETT,
+                "TeamID": "Blue"
+            })],
+            &[json!({
+                "Subject": "me",
+                "Stats": { "Kills": 17, "Deaths": 9, "Assists": 4 }
+            })],
+        );
+        assert_eq!(merged.len(), 1);
+        assert_eq!(character_id(&merged[0]).as_deref(), Some(JETT));
+        assert_eq!(kda_of(&merged[0]).as_deref(), Some("17/9/4"));
+    }
+
+    #[test]
+    fn probe_cache_ttl_prefers_fast_match_refresh() {
+        assert_eq!(probe_cache_ttl("match", 10), ACTIVE_PROBE_CACHE_TTL);
+        assert_eq!(probe_cache_ttl("queue", 0), QUEUE_PROBE_CACHE_TTL);
+        assert_eq!(probe_cache_ttl("lobby", 0), IDLE_PROBE_CACHE_TTL);
     }
 }

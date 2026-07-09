@@ -1,6 +1,6 @@
 use crate::activities;
 use crate::config;
-use crate::discord::{Discord, Presence, RpcActivityType, resolve_rpc_image};
+use crate::discord::{resolve_rpc_image, Discord, Presence, RpcActivityType};
 use crate::error::{AppError, AppResult};
 use crate::models::{sanitize_gif_url, sanitize_gif_url_or, *};
 use parking_lot::Mutex;
@@ -238,21 +238,19 @@ impl App {
         activity_type: Option<RpcActivityType>,
     ) -> Presence {
         let cfg = self.config.lock();
-        let large_text = if cfg.large_text.trim().is_empty()
-            || cfg.large_text.eq_ignore_ascii_case("smiley")
-        {
-            emoji.to_string()
-        } else {
-            format!("{emoji} {}", cfg.large_text.trim())
-        };
+        let large_text =
+            if cfg.large_text.trim().is_empty() || cfg.large_text.eq_ignore_ascii_case("smiley") {
+                emoji.to_string()
+            } else {
+                format!("{emoji} {}", cfg.large_text.trim())
+            };
         let (button_label, button_url) = if cfg.show_button {
             (Some(cfg.button_label.clone()), Some(cfg.button_url.clone()))
         } else {
             (None, None)
         };
         let start = if cfg.show_elapsed { start } else { None };
-        let fallback =
-            "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
+        let fallback = "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
         Presence {
             details: details.into(),
             state: state.into(),
@@ -297,8 +295,7 @@ impl App {
     }
 
     fn activity_gif(&self, activity_id: &str, status_gif: Option<&str>) -> String {
-        const FALLBACK: &str =
-            "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
+        const FALLBACK: &str = "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
         if let Some(gif) = status_gif {
             if sanitize_gif_url(gif).is_some() {
                 return resolve_rpc_image(gif, FALLBACK);
@@ -580,8 +577,18 @@ impl App {
                 "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif",
             ));
         }
-        act.details = act.details.chars().filter(|c| !c.is_control()).take(128).collect();
-        act.state = act.state.chars().filter(|c| !c.is_control()).take(128).collect();
+        act.details = act
+            .details
+            .chars()
+            .filter(|c| !c.is_control())
+            .take(128)
+            .collect();
+        act.state = act
+            .state
+            .chars()
+            .filter(|c| !c.is_control())
+            .take(128)
+            .collect();
         let mut cfg = self.config.lock().clone();
         cfg.custom.retain(|c| c.id != act.id);
         cfg.custom.push(act);
@@ -702,8 +709,7 @@ impl App {
             return Ok(());
         }
 
-        const CODING_GIF: &str =
-            "https://media.tenor.com/QLh0PhunTj8AAAAM/anime-typing.gif";
+        const CODING_GIF: &str = "https://media.tenor.com/QLh0PhunTj8AAAAM/anime-typing.gif";
         let gif = self.activity_gif("coding", status.gif.as_deref());
         let fallback_state = status
             .state
@@ -724,10 +730,7 @@ impl App {
                 (details, state, sig)
             }
             None => {
-                let details = status
-                    .details
-                    .clone()
-                    .unwrap_or_else(|| "Coding".into());
+                let details = status.details.clone().unwrap_or_else(|| "Coding".into());
                 let state = fallback_state.clone();
                 (details, state, format!("static-coding\0{fallback_state}"))
             }
@@ -739,14 +742,8 @@ impl App {
         *self.last_coding_sig.lock() = sig_key;
 
         let start = self.started_at.lock().map(|s| s as i64);
-        self.discord.set(self.build_presence_typed(
-            &details,
-            &state,
-            "💻",
-            &gif,
-            start,
-            None,
-        ))?;
+        self.discord
+            .set(self.build_presence_typed(&details, &state, "💻", &gif, start, None))?;
         {
             let mut s = self.status.lock();
             s.details = Some(details);
@@ -759,6 +756,12 @@ impl App {
 
     /// Overlay live Valorant/Riot onto Discord when gaming modes are active.
     /// Safe: local lockfile / timed osascript only. Never blocks the UI (bg thread).
+    pub fn live_tick_interval(&self) -> Duration {
+        let cfg = self.config.lock().clone();
+        let status = self.status.lock().clone();
+        live_tick_interval_for(&cfg, &status)
+    }
+
     pub fn live_tick(&self) -> AppResult<()> {
         let cfg = self.config.lock().clone();
         let status = self.status.lock().clone();
@@ -819,12 +822,9 @@ impl App {
                         );
                         let start = Some(self.start_for_session(&session_sig));
                         if live.product == "valorant" {
-                            self.discord.set(self.build_valorant_presence(
-                                &live,
-                                &details,
-                                &state,
-                                start,
-                            ))?;
+                            self.discord.set(
+                                self.build_valorant_presence(&live, &details, &state, start),
+                            )?;
                         } else {
                             let gif = status
                                 .activity_id
@@ -835,13 +835,8 @@ impl App {
                                     "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif"
                                         .into()
                                 });
-                            self.discord.set(self.build_presence(
-                                &details,
-                                &state,
-                                "🎮",
-                                &gif,
-                                start,
-                            ))?;
+                            self.discord
+                                .set(self.build_presence(&details, &state, "🎮", &gif, start))?;
                         }
                         {
                             let mut s = self.status.lock();
@@ -919,7 +914,12 @@ fn local_minutes() -> u32 {
     t.hour() * 60 + t.minute()
 }
 
-fn stable_started_at(current_sig: &str, current_started_at: Option<u64>, next_sig: &str, now: u64) -> u64 {
+fn stable_started_at(
+    current_sig: &str,
+    current_started_at: Option<u64>,
+    next_sig: &str,
+    now: u64,
+) -> u64 {
     if current_started_at.is_some() && current_sig == next_sig {
         current_started_at.unwrap_or(now)
     } else {
@@ -927,17 +927,100 @@ fn stable_started_at(current_sig: &str, current_started_at: Option<u64>, next_si
     }
 }
 
+fn live_tick_interval_for(cfg: &Config, status: &Status) -> Duration {
+    if !cfg.live_gaming || !status.connected || status.paused {
+        return Duration::from_secs(8);
+    }
+    if cfg.music_now_playing && status.activity_id.as_deref() == Some("listening") {
+        return Duration::from_secs(8);
+    }
+    if cfg.coding_now_playing && status.activity_id.as_deref() == Some("coding") {
+        return Duration::from_secs(8);
+    }
+
+    let hot_valorant = status.activity_id.as_deref() == Some("live-valorant")
+        || status.match_board.as_ref().is_some_and(|board| {
+            board.product == "valorant"
+                && (board.phase == "match" || board.phase == "pregame" || !board.players.is_empty())
+        });
+    if hot_valorant {
+        Duration::from_secs(2)
+    } else {
+        Duration::from_secs(4)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::stable_started_at;
+    use super::{live_tick_interval_for, stable_started_at};
+    use crate::models::{Config, Status};
+    use std::time::Duration;
 
     #[test]
     fn stable_started_at_keeps_existing_timestamp_for_same_session() {
-        assert_eq!(stable_started_at("live:valorant:match:map:comp", Some(123), "live:valorant:match:map:comp", 999), 123);
+        assert_eq!(
+            stable_started_at(
+                "live:valorant:match:map:comp",
+                Some(123),
+                "live:valorant:match:map:comp",
+                999
+            ),
+            123
+        );
     }
 
     #[test]
     fn stable_started_at_resets_for_new_session() {
-        assert_eq!(stable_started_at("live:valorant:pregame:map:comp", Some(123), "live:valorant:match:map:comp", 999), 999);
+        assert_eq!(
+            stable_started_at(
+                "live:valorant:pregame:map:comp",
+                Some(123),
+                "live:valorant:match:map:comp",
+                999
+            ),
+            999
+        );
+    }
+
+    #[test]
+    fn live_tick_interval_accelerates_for_live_valorant() {
+        let cfg = Config::default();
+        let status = Status {
+            connected: true,
+            message: "Live".into(),
+            activity_id: Some("live-valorant".into()),
+            details: None,
+            state: None,
+            gif: None,
+            paused: false,
+            elapsed_secs: None,
+            rotate_active: false,
+            match_board: None,
+        };
+        assert_eq!(
+            live_tick_interval_for(&cfg, &status),
+            Duration::from_secs(2)
+        );
+    }
+
+    #[test]
+    fn live_tick_interval_stays_slow_for_music_slot() {
+        let cfg = Config::default();
+        let status = Status {
+            connected: true,
+            message: "Listening".into(),
+            activity_id: Some("listening".into()),
+            details: None,
+            state: None,
+            gif: None,
+            paused: false,
+            elapsed_secs: None,
+            rotate_active: false,
+            match_board: None,
+        };
+        assert_eq!(
+            live_tick_interval_for(&cfg, &status),
+            Duration::from_secs(8)
+        );
     }
 }
