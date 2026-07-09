@@ -1,16 +1,18 @@
 # A note from Raj — Smiley's final chapter
 
-**Raj (@1tsRaj / 1tsRajuWu)** — July 8, 2026 · Smiley v7.9.0+
+**Raj (@1tsRaj / 1tsRajuWu)** — July 9, 2026 · **Smiley v12**
 
 ---
 
 Smiley started as a fun personal project — something I built because I wanted Discord Rich Presence with anime GIFs, and I kept polishing it until it felt *near perfect*. That journey was a blast, and I'm grateful to everyone who used it, starred the repo, reported bugs, and shared feedback along the way.
 
-## v8 will be the last version
+## v12 is the final version
 
-**Smiley v8.0.0 will be the final planned release.** After v8 ships, I expect to offer **only occasional bug fixes** when something breaks — not a steady stream of new features. A **major update is still possible but unlikely**. Consider this a warm goodbye from active development, not from the project itself.
+**Smiley v12 is the last major release.** After v12.0.2, expect **only occasional bug fixes** (`v12.0.x`) when something breaks — not a steady stream of new features. A major v13 is **not planned**. Consider this a warm goodbye from active development, not from the project itself.
 
-The **community is completely free** to use, fork, modify, and advance the code. Smiley is MIT-licensed. If you want live gaming presence, music sync, Aurora UI, or anything else in a direction I didn't take — please fork it and make it yours.
+The **community is completely free** to use, fork, modify, and advance the code. Smiley is MIT-licensed. If you want live gaming presence, music sync, new skins, or anything else in a direction I didn't take — please fork it and make it yours.
+
+**Shipping app:** [`Smiley.v12/`](../Smiley.v12/) · **Detailed v12 note:** [`Smiley.v12/docs/FINAL-V12.md`](../Smiley.v12/docs/FINAL-V12.md)
 
 ## What stays open
 

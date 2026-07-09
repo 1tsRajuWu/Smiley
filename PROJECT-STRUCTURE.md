@@ -1,6 +1,6 @@
 # Smiley — Project structure (newbie guide)
 
-> **v8 is shipping.** For the current desktop app, start at [`STRUCTURE.md`](STRUCTURE.md) and [`Smiley.v8/docs/NEWBIE-MAP.md`](Smiley.v8/docs/NEWBIE-MAP.md).  
+> **v12 is shipping (final).** For the current desktop app, start at [`STRUCTURE.md`](STRUCTURE.md) and [`Smiley.v12/docs/NEWBIE-MAP.md`](Smiley.v12/docs/NEWBIE-MAP.md).  
 > This file documents the **archived Electron v7** tree under `legacy/electron-v7/`.
 
 **New to the repo?** Start here before opening random files.
@@ -54,12 +54,14 @@ legacy/electron-v7/            # Archived Electron v7 app (all paths below are h
 
 Project Smiley/ (repo root)
 ├── README.md                  # User-facing: download, features, quick start
-├── STRUCTURE.md               # v7 vs v8 folder map
+├── STRUCTURE.md               # v12 / legacy folder map
 ├── PROJECT-STRUCTURE.md       # ← You are here — v7 code map
-├── Smiley.v8/                 # Shipping Tauri app
+├── Smiley.v12/                # Shipping Tauri app (final)
+├── legacy/smiley-v8/          # Archived v8 Tauri tree
+├── legacy/electron-v7/        # Archived Electron v7 tree
 ├── docs/
 │   └── CODE-TOUR.md           # Beginner walkthrough (start here if new to code)
-├── scripts/                   # Repo-wide infra (README downloads, v8 checks)
+├── scripts/                   # Repo-wide infra (README downloads, v12 checks)
 ├── Smiley.Native/             # Optional native (.NET) build — README-NATIVE.md
 ├── LICENSE, ToS.md, PRIVACY.md, LEGAL.md
 └── .github/                   # CI (release, Pages, Android)
