@@ -347,8 +347,8 @@ pub fn track_signature(track: &TrackHit) -> String {
     )
 }
 
-/// Convenience wrapper for `App` state.
-pub fn run_app_sync_loop(app: Arc<crate::app::App>, resource_dir: Option<PathBuf>) {
+/// Background music → Discord sync loop wired to `App` state.
+pub fn run_music_presence_loop(app: Arc<crate::app::App>, resource_dir: Option<PathBuf>) {
     run_sync_loop(resource_dir, || app.music_listening_active(), |track| {
         let _ = app.music_apply_track(track);
     });

@@ -1,4 +1,4 @@
-//! Discord IPC on its own thread — never blocks the UI.
+//! Discord Rich Presence over local IPC — runs on a dedicated thread so the UI never blocks.
 
 use crate::error::{AppError, AppResult};
 use crate::models::{sanitize_gif_url, sanitize_rpc_image_url};

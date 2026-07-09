@@ -17,12 +17,15 @@ import { restartToUpdate, runUpdateFlow, type UpdateUiState } from "./updater";
 import { markupFor } from "../skins/markup";
 import "../skins/all.css";
 
+/** Main UI controller — one delegated click bus (`data-act`) into Rust via `api`. */
 export class AppController {
   private root: HTMLElement;
+  /** Latest snapshot from Rust (`get_snapshot`). */
   private snap: Snapshot | null = null;
-  private cat = "food";
-  private gen = 0;
-  private busy = false;
+  private activeCategory = "food";
+  /** Bumps on each activity pick so stale async responses are ignored. */
+  private pickGeneration = 0;
+  private actionInProgress = false;
   private log: string[] = [];
   private clockTimer = 0;
   private pollTimer = 0;
@@ -40,7 +43,7 @@ export class AppController {
 
   async start() {
     this.snap = await api.snapshot();
-    this.cat = this.snap.config.defaultCategory || this.snap.categories[0]?.id || "food";
+    this.activeCategory = this.snap.config.defaultCategory || this.snap.categories[0]?.id || "food";
     this.mount();
     this.pollTimer = window.setInterval(() => void this.poll(), 12_000);
     void api.log("ui: ready");
@@ -208,8 +211,8 @@ export class AppController {
         syncPickers(this.$("settingsBody")!);
         return;
       }
-      case "cat":
-        this.cat = el.dataset.cat || this.cat;
+      case "pick-category":
+        this.activeCategory = el.dataset.category || this.activeCategory;
         this.lastGridKey = "";
         this.paint();
         return;
@@ -262,7 +265,7 @@ export class AppController {
   }
 
   private async poll() {
-    if (document.hidden || !this.snap || this.busy || !this.mounted) return;
+    if (document.hidden || !this.snap || this.actionInProgress || !this.mounted) return;
     try {
       this.snap.status = await api.status();
       this.paintStatusOnly();
@@ -450,7 +453,7 @@ export class AppController {
     if (!this.snap) return "";
     const q = this.$<HTMLInputElement>("search")?.value ?? "";
     return [
-      this.cat,
+      this.activeCategory,
       q,
       this.snap.status.activityId ?? "",
       this.snap.config.favorites.join(","),
@@ -474,12 +477,12 @@ export class AppController {
     const items = [{ id: "favorites", emoji: "★", label: "Favorites" }, ...this.snap.categories];
     el.innerHTML = items
       .map((c) => {
-        const on = c.id === this.cat ? " on" : "";
+        const on = c.id === this.activeCategory ? " on" : "";
         const id = esc(c.id);
         if (skin === "terminal") {
-          return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${id}">${this.cat === c.id ? ">" : " "} ${id}/</button>`;
+          return `<button type="button" class="${on.trim()}" data-act="pick-category" data-category="${id}">${this.activeCategory === c.id ? ">" : " "} ${id}/</button>`;
         }
-        return `<button type="button" class="${on.trim()}" data-act="cat" data-cat="${id}">${esc(c.emoji)} ${esc(c.label)}</button>`;
+        return `<button type="button" class="${on.trim()}" data-act="pick-category" data-category="${id}">${esc(c.emoji)} ${esc(c.label)}</button>`;
       })
       .join("");
   }
@@ -489,7 +492,7 @@ export class AppController {
     const grid = this.$("grid");
     if (!grid) return;
     const q = this.$<HTMLInputElement>("search")?.value ?? "";
-    const list = listActivities(this.snap, this.cat, q);
+    const list = listActivities(this.snap, this.activeCategory, q);
     const favs = new Set(this.snap.config.favorites);
     const active = this.snap.status.activityId;
     const skin = normalizeSkin(this.snap.config.skin);
@@ -563,8 +566,8 @@ export class AppController {
   }
 
   private async connect() {
-    if (this.busy) return;
-    this.busy = true;
+    if (this.actionInProgress) return;
+    this.actionInProgress = true;
     try {
       const status = await api.connect();
       if (this.snap) this.snap.status = status;
@@ -575,7 +578,7 @@ export class AppController {
       this.toast(errMsg(e));
       this.pushLog(`error ${errMsg(e)}`);
     } finally {
-      this.busy = false;
+      this.actionInProgress = false;
     }
   }
 
@@ -769,11 +772,11 @@ export class AppController {
       this.toast("Connect Discord first");
       return;
     }
-    const g = ++this.gen;
-    this.busy = true;
+    const g = ++this.pickGeneration;
+    this.actionInProgress = true;
     try {
       const status = await api.setActivity(id);
-      if (g !== this.gen) return;
+      if (g !== this.pickGeneration) return;
       this.snap.status = status;
       this.snap.config.recents = [
         id,
@@ -786,7 +789,7 @@ export class AppController {
       this.toast(errMsg(e));
       this.pushLog(`error ${errMsg(e)}`);
     } finally {
-      this.busy = false;
+      this.actionInProgress = false;
     }
   }
 
@@ -882,7 +885,7 @@ export class AppController {
         gif: this.$<HTMLInputElement>("caGif")?.value.trim() || null,
       });
       this.snap = await api.snapshot();
-      this.cat = "custom";
+      this.activeCategory = "custom";
       this.$<HTMLDialogElement>("createDlg")?.close();
       this.paint();
       this.toast("Activity added");
@@ -908,7 +911,7 @@ export class AppController {
     } else if (cmd === "set" && arg) {
       await this.pick(arg);
     } else if (cmd === "cd" && arg) {
-      this.cat = arg.replace(/\/$/, "");
+      this.activeCategory = arg.replace(/\/$/, "");
       this.paint();
     } else if (cmd === "connect") {
       await this.connect();

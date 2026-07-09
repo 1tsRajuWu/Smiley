@@ -251,34 +251,34 @@ pub fn run() {
 
             // Live gaming — off UI thread, adaptive cadence for active Valorant.
             {
-                let st = state.clone();
+                let app_state = state.clone();
                 std::thread::spawn(move || loop {
-                    std::thread::sleep(st.live_tick_interval());
-                    let _ = st.live_tick();
+                    std::thread::sleep(app_state.live_presence_poll_interval());
+                    let _ = app_state.refresh_live_presence();
                 });
             }
 
             // Music now-playing — MediaRemote stream (instant) when listening; idle sleep otherwise
             {
-                let st = state.clone();
+                let app_state = state.clone();
                 let resource_dir = app.path().resource_dir().ok();
                 std::thread::spawn(move || {
-                    music::run_app_sync_loop(st, resource_dir);
+                    music::run_music_presence_loop(app_state, resource_dir);
                 });
             }
 
             // Live coding — foreground editor poll when coding activity is active (3s)
             {
-                let st = state.clone();
+                let app_state = state.clone();
                 std::thread::spawn(move || loop {
-                    let active = st.coding_live_active();
+                    let active = app_state.coding_live_active();
                     std::thread::sleep(if active {
                         Duration::from_secs(3)
                     } else {
                         Duration::from_secs(8)
                     });
                     if active {
-                        let _ = st.coding_tick();
+                        let _ = app_state.coding_tick();
                     }
                 });
             }
