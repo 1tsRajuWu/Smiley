@@ -750,13 +750,15 @@ impl App {
 
     /// Overlay live Valorant/Riot onto Discord when gaming modes are active.
     /// Safe: local lockfile / timed osascript only. Never blocks the UI (bg thread).
-    pub fn live_tick_interval(&self) -> Duration {
+    /// How long the background thread sleeps between live-presence polls.
+    pub fn live_presence_poll_interval(&self) -> Duration {
         let cfg = self.config.lock().clone();
         let status = self.status.lock().clone();
-        live_tick_interval_for(&cfg, &status)
+        live_presence_poll_interval_for(&cfg, &status)
     }
 
-    pub fn live_tick(&self) -> AppResult<()> {
+    /// Refresh Valorant / optional game probe and push to Discord (background thread).
+    pub fn refresh_live_presence(&self) -> AppResult<()> {
         let cfg = self.config.lock().clone();
         let status = self.status.lock().clone();
         if !status.connected || status.paused {
@@ -776,100 +778,120 @@ impl App {
             return Ok(());
         }
 
-        // Refresh Valorant presence when live gaming is on
+        let activity = status.activity_id.as_deref().unwrap_or("");
+        let gaming_slot = is_gaming_activity(activity);
+        let probe_games = gaming_slot && (cfg.gaming_probe || cfg.live_gaming);
+        let foreground = if probe_games {
+            crate::gaming::probe_foreground_game().ok().flatten()
+        } else {
+            None
+        };
+
         if cfg.live_gaming {
-            match crate::riot::probe_riot_presence() {
-                Ok(Some(live)) if live.product == "valorant" || live.board.active => {
+            let riot = crate::riot::probe_riot_presence().ok().flatten();
+
+            // Sticky/focused non-Riot game (e.g. CS2) beats a stale Valorant/LoL lobby session.
+            if let Some(ref hit) = foreground {
+                if riot
+                    .as_ref()
+                    .map_or(true, |live| should_prefer_foreground_over_riot(hit, live))
+                {
+                    return self.apply_probed_game(hit, &status);
+                }
+            }
+
+            if let Some(live) = riot {
+                let riot_live = live.product == "valorant"
+                    || (live.board.active && live.phase != "lobby");
+                let push_discord = gaming_slot || live.product == "valorant";
+                if riot_live && push_discord {
                     let cfg_snap = cfg.clone();
-                    let activity = status.activity_id.as_deref().unwrap_or("");
-                    let gaming_slot = activity.is_empty()
-                        || activity.starts_with("live-")
-                        || matches!(
-                            activity,
-                            "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
-                        );
-                    // Valorant live board always owns Discord when enabled — not only gaming GIF slots.
-                    let push_discord = gaming_slot || live.product == "valorant";
-                    if push_discord {
-                        let (details, state) =
-                            crate::privacy::valorant_discord_lines(&live, &cfg_snap);
-                        let session_sig = format!(
-                            "live:{}:{}:{}:{}",
-                            live.product,
-                            live.phase,
-                            live.map_id
-                                .as_deref()
-                                .or(live.board.map_id.as_deref())
-                                .or(live.board.map.as_deref())
-                                .unwrap_or(""),
-                            live.queue_id
-                                .as_deref()
-                                .or(live.board.queue_id.as_deref())
-                                .unwrap_or("")
-                        );
-                        let start = Some(self.start_for_session(&session_sig));
+                    let (details, state) =
+                        crate::privacy::valorant_discord_lines(&live, &cfg_snap);
+                    let session_sig = format!(
+                        "live:{}:{}:{}:{}",
+                        live.product,
+                        live.phase,
+                        live.map_id
+                            .as_deref()
+                            .or(live.board.map_id.as_deref())
+                            .or(live.board.map.as_deref())
+                            .unwrap_or(""),
+                        live.queue_id
+                            .as_deref()
+                            .or(live.board.queue_id.as_deref())
+                            .unwrap_or("")
+                    );
+                    let start = Some(self.start_for_session(&session_sig));
+                    if live.product == "valorant" {
+                        self.discord.set(
+                            self.build_valorant_presence(&live, &details, &state, start),
+                        )?;
+                    } else {
+                        let gif = status
+                            .activity_id
+                            .as_deref()
+                            .and_then(|id| self.resolve(id).ok())
+                            .map(|(_, _, _, g)| g)
+                            .unwrap_or_else(|| {
+                                "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif"
+                                    .into()
+                            });
+                        self.discord
+                            .set(self.build_presence(&details, &state, "🎮", &gif, start))?;
+                    }
+                    {
+                        let mut s = self.status.lock();
+                        s.activity_id = Some(format!("live-{}", live.product));
+                        s.details = Some(details);
+                        s.state = Some(state);
                         if live.product == "valorant" {
-                            self.discord.set(
-                                self.build_valorant_presence(&live, &details, &state, start),
-                            )?;
-                        } else {
-                            let gif = status
-                                .activity_id
-                                .as_deref()
-                                .and_then(|id| self.resolve(id).ok())
-                                .map(|(_, _, _, g)| g)
-                                .unwrap_or_else(|| {
-                                    "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif"
-                                        .into()
-                                });
-                            self.discord
-                                .set(self.build_presence(&details, &state, "🎮", &gif, start))?;
+                            s.gif = Some(crate::valorant_catalog::valorant_game_logo().into());
                         }
-                        {
-                            let mut s = self.status.lock();
-                            s.activity_id = Some(format!("live-{}", live.product));
-                            s.details = Some(details);
-                            s.state = Some(state);
-                            if live.product == "valorant" {
-                                s.gif = Some(crate::valorant_catalog::valorant_game_logo().into());
-                            }
-                            s.message = format!("Live {}", live.title);
-                        }
+                        s.message = format!("Live {}", live.title);
                     }
                     return Ok(());
                 }
-                _ => {}
             }
         }
 
-        // Optional process probe — only when gaming slot
-        let activity = status.activity_id.as_deref().unwrap_or("");
-        let gaming_slot = activity.is_empty()
-            || activity.starts_with("live-")
-            || matches!(
-                activity,
-                "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
-            );
-        if gaming_slot && cfg.gaming_probe {
-            if let Ok(Some(hit)) = crate::gaming::probe_foreground_game() {
-                let gif = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
-                let start = self.start_for_session(&format!("probe:{}:{}", hit.id, hit.title));
-                self.discord.set(self.build_presence(
-                    &hit.details,
-                    &hit.state,
-                    "🎮",
-                    gif,
-                    Some(start),
-                ))?;
-                {
-                    let mut s = self.status.lock();
-                    s.activity_id = Some(format!("live-{}", hit.id));
-                    s.details = Some(hit.details);
-                    s.state = Some(hit.state);
-                    s.gif = Some(gif.into());
-                    s.message = format!("Live {}", hit.title);
-                }
-            }
+        if let Some(hit) = foreground {
+            return self.apply_probed_game(&hit, &status);
+        }
+        Ok(())
+    }
+
+    fn apply_probed_game(
+        &self,
+        hit: &crate::gaming::GameHit,
+        status: &Status,
+    ) -> AppResult<()> {
+        const GAMING_GIF: &str = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
+        let slot_gif = status
+            .activity_id
+            .as_deref()
+            .and_then(|id| self.resolve(id).ok())
+            .map(|(_, _, _, g)| g);
+        let image = hit
+            .artwork_url
+            .as_deref()
+            .or(slot_gif.as_deref())
+            .unwrap_or(GAMING_GIF);
+        let start = self.start_for_session(&format!("probe:{}:{}", hit.id, hit.title));
+        self.discord.set(self.build_presence(
+            &hit.details,
+            &hit.state,
+            "🎮",
+            image,
+            Some(start),
+        ))?;
+        {
+            let mut s = self.status.lock();
+            s.activity_id = Some(format!("live-{}", hit.id));
+            s.details = Some(hit.details.clone());
+            s.state = Some(hit.state.clone());
+            s.gif = Some(resolve_rpc_image(image, GAMING_GIF));
+            s.message = format!("Live {}", hit.title);
         }
         Ok(())
     }
@@ -909,7 +931,30 @@ fn stable_started_at(
     }
 }
 
-fn live_tick_interval_for(cfg: &Config, status: &Status) -> Duration {
+fn is_gaming_activity(activity: &str) -> bool {
+    activity.is_empty()
+        || activity.starts_with("live-")
+        || matches!(
+            activity,
+            "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
+        )
+}
+
+/// Foreground non-Riot title wins over a stale Riot lobby/queue (v7 parity).
+fn should_prefer_foreground_over_riot(
+    hit: &crate::gaming::GameHit,
+    live: &crate::riot::RiotLive,
+) -> bool {
+    if crate::gaming::is_riot_game_id(&hit.id) {
+        return false;
+    }
+    if live.product == "valorant" && live.phase == "match" {
+        return false;
+    }
+    true
+}
+
+fn live_presence_poll_interval_for(cfg: &Config, status: &Status) -> Duration {
     if !cfg.live_gaming || !status.connected || status.paused {
         return Duration::from_secs(8);
     }
@@ -920,8 +965,11 @@ fn live_tick_interval_for(cfg: &Config, status: &Status) -> Duration {
         return Duration::from_secs(8);
     }
 
-    let hot_valorant = status.activity_id.as_deref() == Some("live-valorant");
-    if hot_valorant {
+    let hot_live = status
+        .activity_id
+        .as_deref()
+        .is_some_and(|id| id == "live-valorant" || id.starts_with("live-"));
+    if hot_live {
         Duration::from_secs(2)
     } else {
         Duration::from_secs(4)
@@ -930,7 +978,7 @@ fn live_tick_interval_for(cfg: &Config, status: &Status) -> Duration {
 
 #[cfg(test)]
 mod tests {
-    use super::{live_tick_interval_for, stable_started_at};
+    use super::{live_presence_poll_interval_for, stable_started_at};
     use crate::models::{Config, Status};
     use std::time::Duration;
 
@@ -961,12 +1009,12 @@ mod tests {
     }
 
     #[test]
-    fn live_tick_interval_accelerates_for_live_valorant() {
+    fn live_presence_poll_interval_accelerates_for_live_games() {
         let cfg = Config::default();
         let status = Status {
             connected: true,
             message: "Live".into(),
-            activity_id: Some("live-valorant".into()),
+            activity_id: Some("live-cs2".into()),
             details: None,
             state: None,
             gif: None,
@@ -975,13 +1023,13 @@ mod tests {
             rotate_active: false,
         };
         assert_eq!(
-            live_tick_interval_for(&cfg, &status),
+            live_presence_poll_interval_for(&cfg, &status),
             Duration::from_secs(2)
         );
     }
 
     #[test]
-    fn live_tick_interval_stays_slow_for_music_slot() {
+    fn live_presence_poll_interval_stays_slow_for_music_slot() {
         let cfg = Config::default();
         let status = Status {
             connected: true,
@@ -995,7 +1043,7 @@ mod tests {
             rotate_active: false,
         };
         assert_eq!(
-            live_tick_interval_for(&cfg, &status),
+            live_presence_poll_interval_for(&cfg, &status),
             Duration::from_secs(8)
         );
     }

@@ -1,6 +1,9 @@
 import type { Config, Snapshot } from "./types";
 import { SKINS } from "./types";
 
+/** Settings dialog markup + read/write helpers for the config form. */
+import { esc } from "./api";
+
 function isHhMm(s: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(s.trim());
 }
@@ -174,7 +177,7 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   const cat = root.querySelector("#cfgDefaultCat") as HTMLSelectElement | null;
   if (cat) {
     cat.innerHTML = snap.categories
-      .map((c) => `<option value="${c.id}">${c.emoji} ${c.label}</option>`)
+      .map((c) => `<option value="${esc(c.id)}">${esc(c.emoji)} ${esc(c.label)}</option>`)
       .join("");
     cat.value = cfg.defaultCategory;
     if (!cat.value && snap.categories[0]) cat.value = snap.categories[0].id;

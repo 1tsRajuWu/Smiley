@@ -32,12 +32,12 @@ try {
   console.error(String(e.stdout || e.stderr || e.message).slice(0, 500));
 }
 
-const catalog = require(path.join(root, 'electron/valorant-catalog'));
+const catalog = require(path.join(root, 'legacy/electron-v7/electron/valorant-catalog'));
 ok('HURM_Bowl → Kasbah (shared catalog)', catalog.resolveMap('/Game/Maps/HURM/HURM_Bowl/HURM_Bowl').name === 'Kasbah');
 ok('RangeV2 → The Range', catalog.resolveMap('/Game/Maps/PovegliaV2/RangeV2').name === 'The Range');
 ok('TDM queue hurm', catalog.queueDisplayName('hurm') === 'Team Deathmatch');
 
-const assets = require(path.join(root, 'electron/game-assets'));
+const assets = require(path.join(root, 'legacy/electron-v7/electron/game-assets'));
 const JETT = 'add6443a-41bd-e414-f6ad-e58d267f4e95';
 ok('Valorant V logo HTTPS', /^https:\/\//.test(assets.VALORANT_GAME_LOGO));
 ok('Agent icon URL', /^https:\/\/media\.valorant-api\.com/.test(assets.valorantAgentIcon(JETT)));

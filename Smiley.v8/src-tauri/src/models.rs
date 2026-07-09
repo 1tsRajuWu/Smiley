@@ -319,7 +319,7 @@ impl Config {
         } else {
             sanitize_gif_url(&prev_idle).unwrap_or(prev_idle)
         };
-        if !self.button_url.starts_with("https://") {
+        if !self.button_url.starts_with("https://") || !is_safe_button_url(&self.button_url) {
             self.button_url = default_btn_url();
         }
         if !["cozy", "comfy", "compact"].contains(&self.grid_density.as_str()) {
@@ -475,6 +475,13 @@ pub fn sanitize_gif_url_or(url: &str, fallback: &str) -> String {
 pub fn is_safe_donate_url(url: &str) -> bool {
     let u = url.trim();
     u == "https://paypal.me/1tsRaj" || u.starts_with("https://paypal.me/1tsRaj/")
+}
+
+/// Discord RPC button URL — GitHub download page only.
+pub fn is_safe_button_url(url: &str) -> bool {
+    let u = url.trim();
+    u == "https://github.com/1tsRajuWu/Smiley/releases/latest"
+        || u.starts_with("https://github.com/1tsRajuWu/Smiley/releases/")
 }
 
 #[cfg(test)]

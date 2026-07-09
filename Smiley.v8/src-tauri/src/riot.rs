@@ -1,4 +1,5 @@
-//! Local Riot Client — Valorant presence (local-only).
+//! Local Riot Client API — Valorant + LoL presence (local-only).
+//! File is named `riot.rs` because it reads the Riot Client lockfile, not memory.
 //! Lockfile + 127.0.0.1 HTTPS only. No inject, no memory reads.
 
 use crate::error::AppResult;
@@ -8,7 +9,7 @@ use crate::valorant_catalog::{
 };
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
@@ -882,7 +883,7 @@ fn probe_riot_presence_inner() -> AppResult<Option<RiotLive>> {
             state: "In client".into(),
             phase: "lobby".into(),
             board: MatchBoard {
-                active: true,
+                active: false,
                 product: "league".into(),
                 title: "League of Legends".into(),
                 details: "League of Legends".into(),

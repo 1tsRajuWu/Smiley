@@ -6,6 +6,8 @@ export type GameHit = {
   title: string;
   details: string;
   state: string;
+  artworkUrl?: string | null;
+  steamAppId?: number | null;
 };
 
 export const api = {
