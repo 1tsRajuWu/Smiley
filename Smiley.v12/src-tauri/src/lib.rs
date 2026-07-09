@@ -258,10 +258,12 @@ pub fn run() {
                 });
             }
 
+            *state.bundle_resources.lock() = app.path().resource_dir().ok();
+
             // Music now-playing — MediaRemote stream (instant) when listening; idle sleep otherwise
             {
                 let app_state = state.clone();
-                let resource_dir = app.path().resource_dir().ok();
+                let resource_dir = state.bundle_resources.lock().clone();
                 std::thread::spawn(move || {
                     music::run_music_presence_loop(app_state, resource_dir);
                 });

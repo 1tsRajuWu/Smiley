@@ -3,6 +3,7 @@
 //! Linux: MPRIS D-Bus. Windows: stub (future SMTC).
 
 use crate::error::{AppError, AppResult};
+use crate::log_file;
 use serde::Serialize;
 use std::io::Read;
 use std::path::PathBuf;
@@ -13,8 +14,8 @@ use std::time::{Duration, Instant};
 
 #[cfg(target_os = "macos")]
 use crate::music_mediaremote::{
-    resolve_adapter_paths, test_adapter, MediaRemoteStream, StreamEvent, STREAM_HEARTBEAT,
-    STREAM_RESTART_DELAY,
+    probe_once, resolve_adapter_paths, test_adapter, MediaRemoteStream, StreamEvent,
+    STREAM_HEARTBEAT, STREAM_RESTART_DELAY,
 };
 
 const OSASCRIPT_TIMEOUT: Duration = Duration::from_millis(2200);
@@ -34,11 +35,15 @@ pub struct TrackHit {
 }
 
 /// Returns the first playing track, if any (one-shot probe).
-pub fn probe_now_playing() -> AppResult<Option<TrackHit>> {
+pub fn probe_now_playing(resource_dir: Option<&std::path::Path>) -> AppResult<Option<TrackHit>> {
     #[cfg(target_os = "macos")]
     {
-        if let Some(track) = probe_mediaremote_once() {
-            return Ok(Some(track));
+        if let Some(paths) = resolve_adapter_paths(resource_dir) {
+            if test_adapter(&paths) {
+                if let Some(track) = probe_once(&paths).filter(|t| t.playing) {
+                    return Ok(Some(track));
+                }
+            }
         }
         return probe_macos_osascript();
     }
@@ -76,7 +81,7 @@ where
                 thread::sleep(IDLE_SLEEP);
                 continue;
             }
-            on_track(probe_now_playing().ok().flatten());
+            on_track(probe_now_playing(None).ok().flatten());
             thread::sleep(FALLBACK_POLL);
         }
     }
@@ -91,25 +96,44 @@ where
     let mut stream: Option<MediaRemoteStream> = None;
     let mut fallback = false;
     let mut last_fallback = Instant::now() - FALLBACK_POLL;
+    let mut was_active = false;
 
     loop {
-        if !is_active() {
-            if let Some(mut s) = stream.take() {
-                s.stop();
+        let active = is_active();
+        if !active {
+            if was_active {
+                if let Some(mut s) = stream.take() {
+                    s.stop();
+                }
+                fallback = false;
             }
-            fallback = false;
+            was_active = false;
             thread::sleep(IDLE_SLEEP);
             continue;
+        }
+
+        if !was_active {
+            was_active = true;
+            self_nudge_probe(resource_dir.as_deref(), &mut on_track);
         }
 
         if stream.is_none() && !fallback {
             if let Some(paths) = resolve_adapter_paths(resource_dir.as_deref()) {
                 if test_adapter(&paths) {
-                    match MediaRemoteStream::start(paths) {
-                        Ok(s) => stream = Some(s),
-                        Err(_) => fallback = true,
+                    match MediaRemoteStream::start(&paths) {
+                        Ok(s) => {
+                            stream = Some(s);
+                            if let Some(track) = probe_once(&paths) {
+                                on_track(Some(track));
+                            }
+                        }
+                        Err(e) => {
+                            log_file::append(&format!("music: stream start failed: {e}"));
+                            fallback = true;
+                        }
                     }
                 } else {
+                    log_file::append("music: adapter test failed — osascript fallback");
                     fallback = true;
                 }
             } else {
@@ -123,6 +147,7 @@ where
                 StreamEvent::NoChange => {}
                 StreamEvent::Timeout => {}
                 StreamEvent::Disconnected => {
+                    log_file::append("music: MediaRemote stream disconnected — restarting");
                     s.stop();
                     stream = None;
                     thread::sleep(STREAM_RESTART_DELAY);
@@ -137,6 +162,24 @@ where
             on_track(track);
         }
         thread::sleep(Duration::from_millis(300));
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn self_nudge_probe<F>(resource_dir: Option<&std::path::Path>, on_track: &mut F)
+where
+    F: FnMut(Option<TrackHit>),
+{
+    if let Some(paths) = resolve_adapter_paths(resource_dir) {
+        if test_adapter(&paths) {
+            if let Some(track) = probe_once(&paths) {
+                on_track(Some(track));
+                return;
+            }
+        }
+    }
+    if let Ok(track) = probe_macos_osascript() {
+        on_track(track);
     }
 }
 
@@ -158,87 +201,6 @@ where
         }
         thread::sleep(Duration::from_millis(250));
     }
-}
-
-#[cfg(target_os = "macos")]
-fn probe_mediaremote_once() -> Option<TrackHit> {
-    let paths = resolve_adapter_paths(None)?;
-    if !test_adapter(&paths) {
-        return None;
-    }
-    let mut child = Command::new("/usr/bin/perl")
-        .arg(&paths.script)
-        .arg(&paths.framework)
-        .args(["get", "--no-artwork"])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .ok()?;
-
-    let started = Instant::now();
-    while started.elapsed() < OSASCRIPT_TIMEOUT {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => break,
-            Ok(Some(_)) => return None,
-            Ok(None) => thread::sleep(Duration::from_millis(40)),
-            Err(_) => {
-                let _ = child.kill();
-                return None;
-            }
-        }
-    }
-    if child.try_wait().ok().flatten().is_none() {
-        let _ = child.kill();
-        let _ = child.wait();
-        return None;
-    }
-
-    let mut out = String::new();
-    if let Some(mut stdout) = child.stdout.take() {
-        let _ = stdout.read_to_string(&mut out);
-    }
-    let _ = child.wait();
-    parse_mediaremote_get(&out)
-}
-
-#[cfg(target_os = "macos")]
-fn parse_mediaremote_get(json: &str) -> Option<TrackHit> {
-    let v: serde_json::Value = serde_json::from_str(json.trim()).ok()?;
-    let obj = v.as_object()?;
-    let title = obj.get("title")?.as_str()?.trim();
-    if title.is_empty() {
-        return None;
-    }
-    let playing = obj.get("playing").and_then(|p| p.as_bool()).unwrap_or(false);
-    if !playing {
-        return None;
-    }
-    let artist = obj
-        .get("artist")
-        .and_then(|a| a.as_str())
-        .unwrap_or("")
-        .trim();
-    let album = obj
-        .get("album")
-        .and_then(|a| a.as_str())
-        .unwrap_or("")
-        .trim();
-    let bundle = obj
-        .get("bundleIdentifier")
-        .and_then(|b| b.as_str())
-        .unwrap_or("");
-    let app = crate::music_mediaremote::bundle_id_to_app_name(bundle);
-    Some(TrackHit {
-        title: title.chars().take(120).collect(),
-        artist: artist.chars().take(120).collect(),
-        album: album.chars().take(120).collect(),
-        app: if app.is_empty() {
-            "Media".into()
-        } else {
-            app
-        },
-        playing: true,
-    })
 }
 
 #[cfg(target_os = "macos")]
@@ -352,6 +314,13 @@ pub fn run_music_presence_loop(app: Arc<crate::app::App>, resource_dir: Option<P
     run_sync_loop(resource_dir, || app.music_listening_active(), |track| {
         let _ = app.music_apply_track(track);
     });
+}
+
+/// One-shot music probe for UI nudge / connect (uses bundled adapter when available).
+pub fn nudge_now_playing(
+    resource_dir: Option<&std::path::Path>,
+) -> AppResult<Option<TrackHit>> {
+    probe_now_playing(resource_dir)
 }
 
 #[cfg(test)]

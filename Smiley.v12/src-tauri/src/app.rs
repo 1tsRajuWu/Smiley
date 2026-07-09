@@ -4,6 +4,7 @@ use crate::discord::{resolve_rpc_image, Discord, Presence, RpcActivityType};
 use crate::error::{AppError, AppResult};
 use crate::models::{sanitize_gif_url, sanitize_gif_url_or, *};
 use parking_lot::Mutex;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
@@ -28,6 +29,8 @@ pub struct App {
     pub last_music_sig: Mutex<String>,
     /// Last pushed coding session signature — skip Discord when unchanged.
     pub last_coding_sig: Mutex<String>,
+    /// Tauri bundle Resources dir (mediaremote-adapter).
+    pub bundle_resources: Mutex<Option<PathBuf>>,
 }
 
 impl App {
@@ -54,6 +57,7 @@ impl App {
             last_set_at: Mutex::new(None),
             last_music_sig: Mutex::new(String::new()),
             last_coding_sig: Mutex::new(String::new()),
+            bundle_resources: Mutex::new(None),
         }))
     }
 
@@ -367,6 +371,10 @@ impl App {
         *self.last_music_sig.lock() = String::new();
         *self.last_coding_sig.lock() = String::new();
 
+        if id == "listening" {
+            self.music_nudge();
+        }
+
         {
             let mut s = self.status.lock();
             s.connected = *self.discord.connected.lock();
@@ -608,6 +616,16 @@ impl App {
             && status.activity_id.as_deref() == Some("coding")
     }
 
+    /// Immediate now-playing probe → Discord (listening slot).
+    pub fn music_nudge(&self) {
+        if !self.music_listening_active() {
+            return;
+        }
+        let dir = self.bundle_resources.lock().clone();
+        let track = crate::music::nudge_now_playing(dir.as_deref()).ok().flatten();
+        let _ = self.music_apply_track(track);
+    }
+
     /// Apply now-playing track to Discord (event-driven or polled). Shows idle listening when no track.
     pub fn music_apply_track(&self, track: Option<crate::music::TrackHit>) -> AppResult<()> {
         let cfg = self.config.lock().clone();
@@ -628,7 +646,7 @@ impl App {
             "https://media.tenor.com/dN976uhxB0kAAAAM/aimoto-rinku-listening-to-music.gif";
         let gif = self.activity_gif("listening", status.gif.as_deref());
 
-        if let Some(track) = track.filter(|t| t.playing) {
+        if let Some(track) = track.filter(|t| !t.title.trim().is_empty()) {
             let sig = crate::music::track_signature(&track);
             if sig == *self.last_music_sig.lock() {
                 return Ok(());
@@ -636,7 +654,13 @@ impl App {
             *self.last_music_sig.lock() = sig;
 
             let details = trunc(&track.title, 128);
-            let state = trunc(&format!("{} · {}", track.artist, track.app), 128);
+            let state = if track.playing {
+                trunc(&format!("{} · {}", track.artist, track.app), 128)
+            } else if !track.artist.is_empty() {
+                trunc(&format!("Paused · {}", track.artist), 128)
+            } else {
+                "Paused".into()
+            };
             self.discord.set(self.build_presence_typed(
                 &details,
                 &state,
@@ -683,7 +707,8 @@ impl App {
 
     /// One-shot music probe (manual / tests).
     pub fn music_tick(&self) -> AppResult<()> {
-        let track = crate::music::probe_now_playing().ok().flatten();
+        let dir = self.bundle_resources.lock().clone();
+        let track = crate::music::nudge_now_playing(dir.as_deref()).ok().flatten();
         self.music_apply_track(track)
     }
 

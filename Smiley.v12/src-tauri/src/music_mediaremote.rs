@@ -2,6 +2,7 @@
 //! Same technique as Music Presence / v7: `/usr/bin/perl` + entitled framework stream.
 
 use crate::error::{AppError, AppResult};
+use crate::log_file;
 use crate::music::TrackHit;
 use serde_json::Value;
 use std::io::{BufRead, BufReader, Read};
@@ -14,7 +15,9 @@ use std::time::{Duration, Instant};
 
 const PERL_BIN: &str = "/usr/bin/perl";
 const TEST_TIMEOUT: Duration = Duration::from_millis(8000);
+const GET_TIMEOUT: Duration = Duration::from_millis(2200);
 const STREAM_RESTART: Duration = Duration::from_millis(1500);
+const LEGACY_ADAPTER_DIR: &str = "../../legacy/electron-v7/electron/mediaremote-adapter";
 
 pub struct AdapterPaths {
     pub framework: PathBuf,
@@ -40,24 +43,76 @@ pub fn resolve_adapter_paths(resource_dir: Option<&Path>) -> Option<AdapterPaths
     if let Some(dir) = resource_dir {
         candidates.push(dir.join("mediaremote-adapter"));
     }
+    // Packaged macOS .app — Resources/mediaremote-adapter next to the binary.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(mac_os) = exe.parent() {
+            candidates.push(mac_os.join("../Resources/mediaremote-adapter"));
+        }
+    }
     if let Ok(env_dir) = std::env::var("SMILEY_MEDIAREMOTE_ADAPTER_DIR") {
         candidates.push(PathBuf::from(env_dir));
     }
-    candidates.push(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../electron/mediaremote-adapter"),
-    );
+    candidates.push(Path::new(env!("CARGO_MANIFEST_DIR")).join(LEGACY_ADAPTER_DIR));
 
     for dir in candidates {
         let framework = dir.join("MediaRemoteAdapter.framework");
         let script = dir.join("mediaremote-adapter.pl");
         if framework.is_dir() && script.is_file() {
+            log_file::append(&format!(
+                "music: mediaremote adapter at {}",
+                dir.display()
+            ));
             return Some(AdapterPaths {
                 framework,
                 script,
             });
         }
     }
+    log_file::append("music: mediaremote adapter not found — osascript/MPRIS fallback");
     None
+}
+
+/// One-shot now playing via `get --no-artwork` (instant probe on listen / stream start).
+pub fn probe_once(paths: &AdapterPaths) -> Option<TrackHit> {
+    let mut child = Command::new(PERL_BIN)
+        .arg(&paths.script)
+        .arg(&paths.framework)
+        .args(["get", "--no-artwork"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+
+    let started = Instant::now();
+    while started.elapsed() < GET_TIMEOUT {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => break,
+            Ok(Some(_)) => return None,
+            Ok(None) => thread::sleep(Duration::from_millis(40)),
+            Err(_) => {
+                let _ = child.kill();
+                return None;
+            }
+        }
+    }
+    if child.try_wait().ok().flatten().is_none() {
+        let _ = child.kill();
+        let _ = child.wait();
+        return None;
+    }
+
+    let mut out = String::new();
+    if let Some(mut stdout) = child.stdout.take() {
+        let _ = stdout.read_to_string(&mut out);
+    }
+    let _ = child.wait();
+    parse_get_json(&out)
+}
+
+fn parse_get_json(json: &str) -> Option<TrackHit> {
+    let v: Value = serde_json::from_str(json.trim()).ok()?;
+    let obj = v.as_object()?;
+    adapter_state_to_track(obj)
 }
 
 /// One-shot adapter health check (`get --no-artwork`).
@@ -250,9 +305,10 @@ pub struct MediaRemoteStream {
 }
 
 impl MediaRemoteStream {
-    pub fn start(paths: AdapterPaths) -> AppResult<Self> {
+    pub fn start(paths: &AdapterPaths) -> AppResult<Self> {
+        log_file::append("music: starting MediaRemote stream");
         Ok(Self {
-            reader: StreamReader::spawn(&paths)?,
+            reader: StreamReader::spawn(paths)?,
             state: serde_json::Map::new(),
             last_meta_sig: String::new(),
         })
@@ -350,6 +406,21 @@ mod tests {
     #[test]
     fn bundle_id_maps_spotify() {
         assert_eq!(bundle_id_to_app_name("com.spotify.client"), "Spotify");
+    }
+
+    #[test]
+    fn legacy_adapter_path_exists_in_dev_tree() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(LEGACY_ADAPTER_DIR);
+        assert!(
+            dir.join("mediaremote-adapter.pl").is_file(),
+            "missing {}",
+            dir.display()
+        );
+        assert!(
+            dir.join("MediaRemoteAdapter.framework").is_dir(),
+            "missing framework at {}",
+            dir.display()
+        );
     }
 
     #[test]
