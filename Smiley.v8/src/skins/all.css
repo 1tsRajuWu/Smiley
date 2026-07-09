@@ -97,92 +97,42 @@ html.calm .wallpaper::after {
 .skin > *:not(.wallpaper) { position: relative; z-index: 1; }
 
 /* Shared tiles */
+.tile-wrap {
+  position: relative;
+}
 .tile {
   position: relative; appearance: none; border: 0; padding: 0; overflow: hidden;
   border-radius: 14px; background: #1a1512; text-align: left; cursor: pointer;
   box-shadow: 0 0 0 1px rgba(255,255,255,.08);
   transition: transform .12s ease, box-shadow .12s ease;
+  width: 100%;
+  display: block;
 }
 .tile:hover { transform: translateY(-2px); }
+.tile-wrap:hover .tile { transform: translateY(-2px); }
 .tile.on { box-shadow: 0 0 0 2px var(--accent); }
 .tile img { width: 100%; aspect-ratio: 1; object-fit: cover; }
 .tile-fade {
   position: absolute; inset: auto 0 0; padding: 24px 10px 10px;
   background: linear-gradient(transparent, rgba(0,0,0,.92));
+  pointer-events: none;
 }
 .tile-fade b { display: block; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-fade i { display: block; font-style: normal; opacity: .7; font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-fav {
   position: absolute; top: 8px; right: 8px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
   display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-size: .85rem;
+  appearance: none; border: 0; padding: 0; cursor: pointer;
 }
 .tile-fav.on { color: #ffd166; }
 .tile-del {
   position: absolute; top: 8px; left: 8px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
   display: grid; place-items: center; background: rgba(0,0,0,.45); color: #ff8e8e; font-size: 1rem;
   opacity: 0; transition: opacity .12s ease;
+  appearance: none; border: 0; padding: 0; cursor: pointer;
 }
-.tile:hover .tile-del, .row:hover .tile-del { opacity: 1; }
+.tile-wrap:hover .tile-del, .row:hover .tile-del { opacity: 1; }
 .tile img.tile-still { filter: saturate(.85); }
-
-/* Live Valorant match board (local Riot only) */
-.live-board {
-  position: absolute;
-  z-index: 30;
-  right: 18px;
-  bottom: 18px;
-  width: min(420px, calc(100% - 36px));
-  max-height: min(52vh, 460px);
-  overflow: auto;
-  border-radius: 18px;
-  background: linear-gradient(160deg, rgba(18, 22, 34, .96), rgba(10, 12, 18, .98));
-  border: 1px solid rgba(255, 80, 95, .35);
-  box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
-  padding: 14px 14px 12px;
-  backdrop-filter: blur(10px);
-}
-.live-head {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-  margin-bottom: 12px;
-}
-.live-kicker {
-  margin: 0; font-size: .65rem; letter-spacing: .14em; text-transform: uppercase;
-  color: #ff6473; font-weight: 700;
-}
-.live-head h2 { margin: 4px 0 2px; font-size: 1.05rem; font-weight: 700; }
-.live-head p { margin: 0; opacity: .72; font-size: .78rem; }
-.live-score {
-  font-variant-numeric: tabular-nums; font-size: 1.55rem; font-weight: 800;
-  color: #fff; padding: 6px 12px; border-radius: 12px;
-  background: rgba(255, 80, 95, .18); border: 1px solid rgba(255, 80, 95, .35);
-}
-.live-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.live-cols h3 {
-  margin: 0 0 6px; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; opacity: .6;
-}
-.live-list { display: flex; flex-direction: column; gap: 6px; }
-.live-row {
-  display: grid; grid-template-columns: 36px 1fr; gap: 8px; align-items: center;
-  padding: 6px 8px; border-radius: 10px; background: rgba(255,255,255,.04);
-}
-.live-row.self { background: rgba(255, 100, 110, .14); box-shadow: inset 0 0 0 1px rgba(255,100,110,.35); }
-.live-row img, .live-fallback {
-  width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #1a1d28;
-}
-.live-fallback { display: grid; place-items: center; font-size: .85rem; opacity: .5; }
-.live-row b { display: block; font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.live-row i { display: block; font-style: normal; font-size: .68rem; opacity: .7; }
-.live-empty { margin: 0; font-size: .72rem; opacity: .5; }
-
-.skin.arcade .live-board { right: 16px; left: auto; }
-.skin.zen .live-board { border-radius: 8px; border-color: rgba(255,255,255,.15); }
-.skin.terminal .live-board {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  border-radius: 4px; border-color: #3dff9a55;
-}
-@media (max-width: 980px) {
-  .live-board { left: 12px; right: 12px; width: auto; bottom: 12px; }
-}
 
 /* Dialogs / settings shared */
 .dlg { border: 0; background: transparent; padding: 0; max-width: 720px; width: calc(100% - 28px); color: inherit; }

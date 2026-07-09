@@ -1,6 +1,5 @@
-//! Local Riot Client — Valorant live match board (local-only).
+//! Local Riot Client — Valorant presence (local-only).
 //! Lockfile + 127.0.0.1 HTTPS only. No inject, no memory reads.
-//! Riot IDs come from local name-service when available; PUUID never leaves to UI.
 
 use crate::error::AppResult;
 use crate::valorant_catalog::{
@@ -22,12 +21,6 @@ const ACTIVE_PROBE_CACHE_TTL: Duration = Duration::from_millis(1200);
 const QUEUE_PROBE_CACHE_TTL: Duration = Duration::from_millis(2200);
 const IDLE_PROBE_CACHE_TTL: Duration = Duration::from_millis(5000);
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct RiotProbeOptions {
-    /// Skip local name-service when false (faster + privacy default).
-    pub resolve_names: bool,
-}
-
 struct CachedProbe {
     at: Instant,
     ttl: Duration,
@@ -36,20 +29,6 @@ struct CachedProbe {
 
 static PROBE_CACHE: OnceLock<Mutex<Option<CachedProbe>>> = OnceLock::new();
 static HTTP: OnceLock<reqwest::blocking::Client> = OnceLock::new();
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct MatchPlayer {
-    pub seat: String,
-    pub name: String,
-    pub agent: Option<String>,
-    pub agent_id: Option<String>,
-    pub agent_icon: Option<String>,
-    pub kda: Option<String>,
-    pub is_self: bool,
-    #[serde(skip_serializing)]
-    pub team: Option<String>,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -69,9 +48,6 @@ pub struct MatchBoard {
     pub self_agent: Option<String>,
     pub self_agent_id: Option<String>,
     pub self_kda: Option<String>,
-    pub ally_count: Option<u32>,
-    pub enemy_count: Option<u32>,
-    pub players: Vec<MatchPlayer>,
     pub updated_at: u64,
 }
 
@@ -829,110 +805,16 @@ fn core_game_players(match_json: &Value) -> Vec<Value> {
     pregame_players(match_json)
 }
 
-fn resolve_names(lock: &Lockfile, puuids: &[String]) -> HashMap<String, String> {
-    let mut out = HashMap::new();
-    if puuids.is_empty() {
-        return out;
-    }
-    let body = Value::Array(puuids.iter().map(|p| json!(p)).collect());
-    let res = local_post_json(lock, "/name-service/v2/players", &body)
-        .or_else(|| local_post_json(lock, "/player-name-service/v2/players", &body));
-    let Some(Value::Array(arr)) = res else {
-        return out;
-    };
-    for row in arr {
-        let sub = str_field(&row, &["Subject", "subject", "puuid"]).unwrap_or_default();
-        if sub.is_empty() {
-            continue;
-        }
-        let game = str_field(
-            &row,
-            &["GameName", "gameName", "DisplayName", "displayName"],
-        );
-        let tag = str_field(&row, &["TagLine", "tagLine", "Tag"]);
-        let name = match (game, tag) {
-            (Some(g), Some(t)) => format!("{g}#{t}"),
-            (Some(g), None) => g,
-            _ => {
-                str_field(&row, &["DisplayName", "displayName"]).unwrap_or_else(|| "Player".into())
-            }
-        };
-        out.insert(sub.to_lowercase(), name);
-    }
-    out
-}
-
-fn build_player(
-    p: &Value,
-    self_puuid: &str,
-    self_team: Option<&str>,
-    names: &HashMap<String, String>,
-    with_kda: bool,
-) -> Option<MatchPlayer> {
-    let sub = subject_of(p)?;
-    let is_self = sub.eq_ignore_ascii_case(self_puuid);
-    let tid = team_id(p);
-    let seat = if let (Some(st), Some(tid)) = (self_team, tid.as_deref()) {
-        if tid.eq_ignore_ascii_case(st) {
-            "Ally"
-        } else {
-            "Enemy"
-        }
-    } else if is_self {
-        "Ally"
-    } else {
-        "Enemy"
-    };
-    let aid = character_id(p);
-    let agent = aid.as_ref().and_then(|id| agent_name(id));
-    let icon = aid.as_ref().map(|id| agent_icon(id));
-    let name = names.get(&sub.to_lowercase()).cloned().unwrap_or_else(|| {
-        if is_self {
-            "You".into()
-        } else {
-            "Player".into()
-        }
-    });
-    Some(MatchPlayer {
-        seat: seat.into(),
-        name,
-        agent,
-        agent_id: aid,
-        agent_icon: icon,
-        kda: if with_kda { kda_of(p) } else { None },
-        is_self,
-        team: tid,
-    })
-}
-
-fn count_seats(players: &[MatchPlayer]) -> (u32, u32) {
-    let mut ally = 0u32;
-    let mut enemy = 0u32;
-    for p in players {
-        if p.seat == "Enemy" {
-            enemy += 1;
-        } else {
-            ally += 1;
-        }
-    }
-    (ally, enemy)
-}
-
-fn probe_cache_ttl(phase: &str, players_len: usize) -> Duration {
+fn probe_cache_ttl(phase: &str) -> Duration {
     match phase {
         "match" | "pregame" => ACTIVE_PROBE_CACHE_TTL,
         "queue" => QUEUE_PROBE_CACHE_TTL,
-        _ if players_len > 0 => ACTIVE_PROBE_CACHE_TTL,
         _ => IDLE_PROBE_CACHE_TTL,
     }
 }
 
-/// Probe local Valorant truth + full match board for UI.
+/// Probe local Valorant presence (map, mode, self agent, score).
 pub fn probe_riot_presence() -> AppResult<Option<RiotLive>> {
-    probe_riot_presence_opts(RiotProbeOptions::default())
-}
-
-pub fn probe_riot_presence_opts(opts: RiotProbeOptions) -> AppResult<Option<RiotLive>> {
     {
         let cache = PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock();
         if let Some(c) = cache.as_ref() {
@@ -942,11 +824,11 @@ pub fn probe_riot_presence_opts(opts: RiotProbeOptions) -> AppResult<Option<Riot
         }
     }
 
-    let live = probe_riot_presence_inner(opts)?;
+    let live = probe_riot_presence_inner()?;
     if let Some(ref l) = live {
         *PROBE_CACHE.get_or_init(|| Mutex::new(None)).lock() = Some(CachedProbe {
             at: Instant::now(),
-            ttl: probe_cache_ttl(&l.phase, l.board.players.len()),
+            ttl: probe_cache_ttl(&l.phase),
             live: l.clone(),
         });
     } else {
@@ -955,7 +837,7 @@ pub fn probe_riot_presence_opts(opts: RiotProbeOptions) -> AppResult<Option<Riot
     Ok(live)
 }
 
-fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLive>> {
+fn probe_riot_presence_inner() -> AppResult<Option<RiotLive>> {
     let Some(lock) = read_lockfile() else {
         return Ok(None);
     };
@@ -1026,8 +908,8 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         .map(map_from_path)
         .unwrap_or_else(|| (String::new(), None));
 
-    let core = fetch_core_board(&lock, &puuid, opts.resolve_names, chat_score.as_deref());
-    let pre = fetch_pregame_board(&lock, &puuid, opts.resolve_names);
+    let core = fetch_core_board(&lock, &puuid, chat_score.as_deref());
+    let pre = fetch_pregame_board(&lock, &puuid);
     let has_core = core.is_some();
     let has_pregame = pre.is_some();
     let phase = phase_from_chat(&private, has_core, has_pregame).to_string();
@@ -1085,14 +967,6 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         .or_else(|| core.as_ref().and_then(|c| c.self_agent.clone()))
         .or_else(|| pre.as_ref().and_then(|p| p.self_agent.clone()));
     let self_kda = core.as_ref().and_then(|c| c.self_kda.clone());
-    let players = if has_core {
-        core.as_ref().map(|c| c.players.clone()).unwrap_or_default()
-    } else {
-        pre.as_ref().map(|p| p.players.clone()).unwrap_or_default()
-    };
-    let (ally_count, enemy_count) = count_seats(&players);
-
-    let roster = roster_hint(&players, ally_count, enemy_count);
 
     let (details, state) = match phase.as_str() {
         "match" => (
@@ -1101,7 +975,6 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
                 score.as_deref(),
                 party.as_deref(),
                 mode.as_deref(),
-                roster.as_deref(),
                 self_kda.as_deref(),
             ]),
         ),
@@ -1113,7 +986,7 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
                             .unwrap_or_else(|| "Agent Select".into())
                     }),
             ),
-            join(&[party.as_deref(), mode.as_deref(), roster.as_deref()]),
+            join(&[party.as_deref(), mode.as_deref()]),
         ),
         "queue" => (
             Some("VALORANT".into()),
@@ -1148,9 +1021,6 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         self_agent: self_agent.clone(),
         self_agent_id: self_agent_id.clone(),
         self_kda: self_kda.clone(),
-        ally_count: Some(ally_count),
-        enemy_count: Some(enemy_count),
-        players,
         updated_at: now,
     };
 
@@ -1176,13 +1046,11 @@ struct BoardBits {
     self_agent: Option<String>,
     self_agent_id: Option<String>,
     self_kda: Option<String>,
-    players: Vec<MatchPlayer>,
 }
 
 fn fetch_core_board(
     lock: &Lockfile,
     puuid: &str,
-    do_resolve_names: bool,
     chat_score: Option<&str>,
 ) -> Option<BoardBits> {
     let player = local_get(lock, &format!("/core-game/v1/players/{puuid}"))?;
@@ -1207,7 +1075,6 @@ fn fetch_core_board(
             .map(|s| s.eq_ignore_ascii_case(puuid))
             .unwrap_or(false)
     });
-    let self_team = self_row.and_then(|p| team_id(p));
     let self_agent_id = pick_agent_id(&[self_row, Some(&player)]);
     let self_agent = self_agent_id.as_ref().and_then(|id| agent_name(id));
     let self_kda = self_row.and_then(|p| kda_of(p));
@@ -1222,23 +1089,6 @@ fn fetch_core_board(
     let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
     let mode = queue_id.as_ref().map(|q| queue_label(q));
 
-    let puuids: Vec<String> = players_raw.iter().filter_map(subject_of).collect();
-    let names = if do_resolve_names {
-        resolve_names(lock, &puuids)
-    } else {
-        HashMap::new()
-    };
-    let mut players: Vec<MatchPlayer> = players_raw
-        .iter()
-        .filter_map(|p| build_player(p, puuid, self_team.as_deref(), &names, true))
-        .collect();
-    players.sort_by(|a, b| {
-        a.seat
-            .cmp(&b.seat)
-            .then(b.is_self.cmp(&a.is_self))
-            .then(a.name.cmp(&b.name))
-    });
-
     Some(BoardBits {
         map: if map.is_empty() { None } else { Some(map) },
         map_id,
@@ -1248,11 +1098,10 @@ fn fetch_core_board(
         self_agent,
         self_agent_id,
         self_kda,
-        players,
     })
 }
 
-fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Option<BoardBits> {
+fn fetch_pregame_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
     let player = local_get(lock, &format!("/pregame/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/pregame/v1/matches/{match_id}"))?;
@@ -1269,19 +1118,6 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> 
     let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
     let mode = queue_id.as_ref().map(|q| queue_label(q));
 
-    let puuids: Vec<String> = players_raw.iter().filter_map(subject_of).collect();
-    let names = if do_resolve_names {
-        resolve_names(lock, &puuids)
-    } else {
-        HashMap::new()
-    };
-    let self_team = self_row.and_then(|p| team_id(p));
-    let mut players: Vec<MatchPlayer> = players_raw
-        .iter()
-        .filter_map(|p| build_player(p, puuid, self_team.as_deref(), &names, false))
-        .collect();
-    players.sort_by(|a, b| b.is_self.cmp(&a.is_self).then(a.name.cmp(&b.name)));
-
     Some(BoardBits {
         map: if map.is_empty() { None } else { Some(map) },
         map_id,
@@ -1291,30 +1127,7 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> 
         self_agent,
         self_agent_id,
         self_kda: None,
-        players,
     })
-}
-
-fn roster_hint(players: &[MatchPlayer], ally_count: u32, enemy_count: u32) -> Option<String> {
-    let ally_agents: Vec<&str> = players
-        .iter()
-        .filter(|p| p.seat == "Ally")
-        .filter_map(|p| p.agent.as_deref())
-        .collect();
-    if ally_agents.len() >= 2 {
-        let preview: Vec<&str> = ally_agents.iter().copied().take(3).collect();
-        let mut line = preview.join(", ");
-        if ally_agents.len() > 3 {
-            line.push('…');
-        }
-        return Some(line);
-    }
-    match (ally_count, enemy_count) {
-        (a, e) if a > 0 && e > 0 => Some(format!("{a} allies · {e} enemies")),
-        (a, 0) if a > 0 => Some(format!("{a} allies")),
-        (0, e) if e > 0 => Some(format!("{e} enemies")),
-        _ => None,
-    }
 }
 
 fn join(parts: &[Option<&str>]) -> Option<String> {
@@ -1385,22 +1198,6 @@ mod tests {
             ]
         });
         assert_eq!(pregame_players(&m).len(), 2);
-    }
-
-    #[test]
-    fn pregame_enemy_team_seat() {
-        let players_raw = vec![
-            json!({ "Subject": "me", "TeamID": "Blue", "CharacterID": JETT }),
-            json!({ "Subject": "foe", "TeamID": "Red" }),
-        ];
-        let names = HashMap::new();
-        let built: Vec<MatchPlayer> = players_raw
-            .iter()
-            .filter_map(|p| build_player(p, "me", Some("Blue"), &names, false))
-            .collect();
-        assert_eq!(built.len(), 2);
-        assert!(built.iter().any(|p| p.is_self && p.seat == "Ally"));
-        assert!(built.iter().any(|p| !p.is_self && p.seat == "Enemy"));
     }
 
     #[test]
@@ -1475,31 +1272,6 @@ mod tests {
     }
 
     #[test]
-    fn build_player_keeps_missing_team_allies_out_of_enemy_column_when_inferred() {
-        let rows = pregame_players(&json!({
-            "AllyTeam": {
-                "Players": [
-                    { "Subject": "me", "CharacterID": JETT },
-                    { "Subject": "ally-2" }
-                ]
-            }
-        }));
-        let self_team = rows
-            .iter()
-            .find(|p| subject_of(p).as_deref() == Some("me"))
-            .and_then(team_id);
-        let built: Vec<MatchPlayer> = rows
-            .iter()
-            .filter_map(|p| build_player(p, "me", self_team.as_deref(), &HashMap::new(), false))
-            .collect();
-        assert!(built.iter().any(|p| p.is_self && p.seat == "Ally"));
-        assert!(built.iter().any(|p| p.name == "Player" && p.seat == "Ally"));
-        assert!(!built
-            .iter()
-            .any(|p| p.name == "Player" && p.seat == "Enemy"));
-    }
-
-    #[test]
     fn merge_players_by_subject_keeps_match_identity_and_scoreboard_stats() {
         let merged = merge_players_by_subject(
             vec![json!({
@@ -1519,8 +1291,8 @@ mod tests {
 
     #[test]
     fn probe_cache_ttl_prefers_fast_match_refresh() {
-        assert_eq!(probe_cache_ttl("match", 10), ACTIVE_PROBE_CACHE_TTL);
-        assert_eq!(probe_cache_ttl("queue", 0), QUEUE_PROBE_CACHE_TTL);
-        assert_eq!(probe_cache_ttl("lobby", 0), IDLE_PROBE_CACHE_TTL);
+        assert_eq!(probe_cache_ttl("match"), ACTIVE_PROBE_CACHE_TTL);
+        assert_eq!(probe_cache_ttl("queue"), QUEUE_PROBE_CACHE_TTL);
+        assert_eq!(probe_cache_ttl("lobby"), IDLE_PROBE_CACHE_TTL);
     }
 }

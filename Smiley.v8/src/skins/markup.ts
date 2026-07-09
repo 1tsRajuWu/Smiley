@@ -39,26 +39,6 @@ export function studioMarkup(): string {
             <em id="elapsed"></em>
           </div>
         </div>
-        <div class="live-board" id="liveBoard" hidden>
-          <header class="live-head">
-            <div>
-              <p class="live-kicker" id="livePhase">Match</p>
-              <h2 id="liveTitle">VALORANT</h2>
-              <p id="liveMeta">—</p>
-            </div>
-            <div class="live-score" id="liveScore" hidden>—</div>
-          </header>
-          <div class="live-cols">
-            <section>
-              <h3>Ally</h3>
-              <div id="liveAlly" class="live-list"></div>
-            </section>
-            <section>
-              <h3>Enemy</h3>
-              <div id="liveEnemy" class="live-list"></div>
-            </section>
-          </div>
-        </div>
       </div>
     </div>
     <div class="st-tool">

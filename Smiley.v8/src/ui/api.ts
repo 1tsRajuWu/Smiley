@@ -25,7 +25,6 @@ export const api = {
   removeCustom: (activityId: string) =>
     invoke<Config>("remove_custom", { activityId }),
   probeGame: () => invoke<GameHit | null>("probe_game"),
-  matchBoard: () => invoke<import("./types").MatchBoard | null>("get_match_board"),
   log: (message: string) => invoke<void>("append_log", { message }),
   /** Donate opens only from Rust allowlist (no arbitrary https from UI). */
   openDonate: () => invoke<void>("open_donation_url"),

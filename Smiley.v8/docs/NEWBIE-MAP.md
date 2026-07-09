@@ -31,7 +31,7 @@ Smiley.v8/
 | Feature | How | Notes |
 |--------|-----|--------|
 | Custom GIF activities | Tenor HTTPS URLs | CSS + Rust sanitize; delete with × on tile |
-| Valorant / Riot | `riot.rs` lockfile → 127.0.0.1 | Live match board — **Privacy tab** controls names/stats |
+| Valorant / Riot | `riot.rs` lockfile → 127.0.0.1 | Discord presence (map, agent, score) — **Discord tab** Full vs Minimal |
 | Music | `music.rs` | While **Listening to music** is selected |
 | Animated wallpaper | CSS | **Pauses** when tray / hidden / reduce-motion |
 | Donate | PayPal | Opens from **Rust only** (no open-URL from webview) |

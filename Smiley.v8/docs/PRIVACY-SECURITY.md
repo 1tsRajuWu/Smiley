@@ -11,20 +11,16 @@
 | Discord login token | Never read (local IPC + public Client ID only) |
 | Your config | `~/Library/Application Support/Smiley-v8/config.json` on device |
 
-## Live Valorant match board
+## Valorant Discord presence
 
-Data comes from **Riot Client on `127.0.0.1`** and optional **local name-service** (still Riot APIs only).
+Data comes from **Riot Client on `127.0.0.1`** only — map, mode, your agent, and score when available.
 
 **Defaults (privacy-first):**
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
-| Show match board | On | Ally/enemy **agents** only in-app |
-| Other players' Riot IDs | **Off** | Names shown as Ally 1 / Enemy 2 until you opt in |
-| Other players' KDA | **Off** | Only your KDA unless you opt in |
-| Share score & KDA on Discord | On | Discord can show score lines (toggle off for generic "In match") |
-
-**Tray / hidden window:** Match board is hidden when the app is in the tray or the window is not visible.
+| Valorant presence | On | Local lockfile probe for Discord rich presence |
+| Share score & KDA on Discord | On (Full) | Discord shows map, agent, score; Minimal = generic "In match" |
 
 **Logs:** `~/Library/Application Support/Smiley-v8/logs/smiley.log` redacts PUUIDs and Riot IDs.
 
@@ -43,6 +39,6 @@ No `opener` permission for the webview — arbitrary URLs cannot be opened from 
 
 ## Settings
 
-**Settings → Privacy** — match board and sharing toggles.
+**Settings → Discord** — Valorant Full vs Minimal detail.
 
 See also: [../../PRIVACY.md](../../PRIVACY.md), [../../SECURITY.md](../../SECURITY.md) (Electron v7 shipping app).

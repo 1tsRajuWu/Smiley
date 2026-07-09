@@ -1,47 +1,7 @@
-//! Privacy filters — what leaves the Rust core toward UI / logs / Discord.
+//! Privacy filters — what leaves the Rust core toward logs / Discord.
 
 use crate::models::Config;
-use crate::riot::{MatchBoard, RiotLive};
-
-/// Strip or mask match board fields based on user privacy settings.
-pub fn sanitize_board(mut board: MatchBoard, cfg: &Config) -> Option<MatchBoard> {
-    if !cfg.live_gaming || !cfg.show_match_board {
-        return None;
-    }
-
-    if !cfg.show_other_riot_ids {
-        let mut ally_n = 0u32;
-        let mut enemy_n = 0u32;
-        for p in &mut board.players {
-            if p.is_self {
-                p.name = "You".into();
-                continue;
-            }
-            if p.seat == "Enemy" {
-                enemy_n += 1;
-                p.name = format!("Enemy {enemy_n}");
-            } else {
-                ally_n += 1;
-                p.name = format!("Ally {ally_n}");
-            }
-        }
-    }
-
-    if !cfg.show_other_player_stats {
-        for p in &mut board.players {
-            if !p.is_self {
-                p.kda = None;
-            }
-        }
-    }
-
-    if !cfg.share_valorant_stats_discord {
-        board.score = None;
-        board.self_kda = None;
-    }
-
-    Some(board)
-}
+use crate::riot::RiotLive;
 
 /// Discord lines respecting share_valorant_stats_discord.
 pub fn valorant_discord_lines(live: &RiotLive, cfg: &Config) -> (String, String) {

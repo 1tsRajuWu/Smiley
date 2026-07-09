@@ -30,7 +30,6 @@ export class AppController {
   private mounted = false;
 
   private lastGridKey = "";
-  private lastBoardKey = "";
   private lastGameProbe = 0;
   private lastUpdateCheck: UpdateCheck | null = null;
   private updateUi: UpdateUiState | null = null;
@@ -267,7 +266,6 @@ export class AppController {
     try {
       this.snap.status = await api.status();
       this.paintStatusOnly();
-      this.paintLiveBoard();
     } catch {
       /* ignore */
     }
@@ -302,9 +300,8 @@ export class AppController {
     this.syncWallpaper();
 
     this.paintStatusOnly();
-    this.paintLiveBoard();
 
-    // Optional light gaming probe — throttled, never blocks clicks
+    // Optional light gaming probe
     if ((cfg.gamingProbe || cfg.liveGaming) && s.connected && !s.paused) {
       const now = Date.now();
       if (now - this.lastGameProbe > 20_000) {
@@ -392,15 +389,18 @@ export class AppController {
       if (details) details.textContent = s.details || act?.details || "—";
       if (stateLine) stateLine.textContent = s.state || act?.state || "—";
       if (kicker) {
-        const mb = s.matchBoard;
-        kicker.textContent =
-          mb?.phase === "pregame"
+        const liveVal =
+          s.activityId === "live-valorant" ||
+          (s.activityId?.startsWith("live-") && s.details?.includes("VALORANT"));
+        kicker.textContent = liveVal
+          ? s.state?.toLowerCase().includes("agent")
             ? "Agent select"
-            : mb?.phase === "match"
+            : s.state?.toLowerCase().includes("match") || s.state?.match(/\d+-\d+/)
               ? "Live match"
-              : s.rotateActive
-                ? "Auto-rotating"
-                : "Now playing";
+              : "Valorant"
+          : s.rotateActive
+            ? "Auto-rotating"
+            : "Now playing";
       }
       if (meta) {
         meta.textContent = [
@@ -466,111 +466,6 @@ export class AppController {
     this.paintGrid();
   }
 
-  private paintLiveBoard() {
-    if (!this.snap) return;
-    let board = this.$<HTMLElement>("liveBoard");
-    if (!board) {
-      board = document.createElement("div");
-      board.id = "liveBoard";
-      board.className = "live-board";
-      board.hidden = true;
-      board.innerHTML = `
-        <header class="live-head">
-          <div>
-            <p class="live-kicker" id="livePhase">Match</p>
-            <h2 id="liveTitle">VALORANT</h2>
-            <p id="liveMeta">—</p>
-          </div>
-          <div class="live-score" id="liveScore" hidden>—</div>
-        </header>
-        <div class="live-cols">
-          <section><h3>Ally</h3><div id="liveAlly" class="live-list"></div></section>
-          <section><h3>Enemy</h3><div id="liveEnemy" class="live-list"></div></section>
-        </div>`;
-      (this.root.querySelector(".skin") || this.root).appendChild(board);
-    }
-
-    const mb = this.snap.status.matchBoard;
-    const show =
-      !!mb?.active &&
-      mb.product === "valorant" &&
-      (mb.phase === "match" || mb.phase === "pregame" || (mb.players?.length ?? 0) > 0) &&
-      !document.hidden &&
-      this.snap.config.showMatchBoard !== false;
-
-    board.hidden = !show;
-    if (!show || !mb) return;
-
-    const boardKey = JSON.stringify({
-      phase: mb.phase,
-      title: mb.title,
-      map: mb.map,
-      score: mb.score,
-      players: mb.players?.map((p) => [p.seat, p.name, p.agent, p.kda]),
-    });
-    if (boardKey === this.lastBoardKey) return;
-    this.lastBoardKey = boardKey;
-
-    const phase = this.$("livePhase");
-    const title = this.$("liveTitle");
-    const meta = this.$("liveMeta");
-    const score = this.$<HTMLElement>("liveScore");
-    const ally = this.$("liveAlly");
-    const enemy = this.$("liveEnemy");
-
-    const phaseLabel =
-      mb.phase === "match"
-        ? "LIVE MATCH"
-        : mb.phase === "pregame"
-          ? "AGENT SELECT"
-          : mb.phase === "queue"
-            ? "IN QUEUE"
-            : "LOBBY";
-
-    if (phase) phase.textContent = phaseLabel;
-    if (title) title.textContent = mb.map ? `${mb.title} · ${mb.map}` : mb.title;
-    if (meta) {
-      meta.textContent = [mb.mode, mb.party, mb.selfAgent && `You: ${mb.selfAgent}`, mb.selfKda]
-        .filter(Boolean)
-        .join(" · ") || mb.state || "—";
-    }
-    if (score) {
-      if (mb.score) {
-        score.hidden = false;
-        score.textContent = mb.score;
-      } else {
-        score.hidden = true;
-      }
-    }
-
-    const row = (p: import("./types").MatchPlayer) => {
-      const icon = p.agentIcon
-        ? `<img src="${esc(p.agentIcon)}" alt="" width="36" height="36" loading="lazy" />`
-        : `<span class="live-fallback">?</span>`;
-      return `<div class="live-row${p.isSelf ? " self" : ""}">
-        ${icon}
-        <div>
-          <b>${esc(p.name)}${p.isSelf ? " · you" : ""}</b>
-          <i>${esc(p.agent || "Selecting…")}${p.kda ? ` · ${esc(p.kda)}` : ""}</i>
-        </div>
-      </div>`;
-    };
-
-    const players = mb.players || [];
-    if (ally) {
-      const list = players.filter((p) => p.seat !== "Enemy");
-      ally.innerHTML = list.length ? list.map(row).join("") : `<p class="live-empty">Waiting for parties…</p>`;
-    }
-    if (enemy) {
-      const list = players.filter((p) => p.seat === "Enemy");
-      enemy.innerHTML = list.length
-        ? list.map(row).join("")
-        : mb.phase === "pregame"
-          ? `<p class="live-empty">Enemy team after lock-in</p>`
-          : `<p class="live-empty">—</p>`;
-    }
-  }
-
   private paintCats() {
     if (!this.snap) return;
     const el = this.$("cats");
@@ -622,18 +517,31 @@ export class AppController {
         const color = /^#[0-9a-fA-F]{3,8}$/.test(a.color) ? a.color : "#888";
         const gif = esc(a.gif);
         const custom = a.category === "custom";
+        const safeId = esc(a.id);
+        const label = `${a.emoji} ${a.details}`.trim();
         const img = staticTiles
           ? `<img data-src="${gif}" alt="" loading="lazy" decoding="async" class="tile-still" />`
           : `<img src="${gif}" alt="" loading="lazy" decoding="async" />`;
-        return `<button type="button" class="tile${on}" data-act="pick" data-id="${esc(a.id)}" style="--c:${color}">
-          ${img}
-          <div class="tile-fade">
-            <b>${esc(a.emoji)} ${esc(a.details)}</b>
-            <i>${esc(a.state)}</i>
-          </div>
-          <span class="tile-fav${favOn}" data-act="fav" data-id="${esc(a.id)}" role="button">${favs.has(a.id) ? "★" : "☆"}</span>
-          ${custom ? `<span class="tile-del" data-act="del-custom" data-id="${esc(a.id)}" role="button" title="Delete">×</span>` : ""}
-        </button>`;
+        return `<div class="tile-wrap${on}" style="--c:${color}">
+          <button type="button" class="tile${on}" data-act="pick" data-id="${safeId}" aria-label="${esc(label)}">
+            ${img}
+            <div class="tile-fade">
+              <b>${esc(label)}</b>
+              <i>${esc(a.state)}</i>
+            </div>
+          </button>
+          <button
+            type="button"
+            class="tile-fav${favOn}"
+            data-act="fav"
+            data-id="${safeId}"
+            aria-label="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
+            title="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
+          >${favs.has(a.id) ? "★" : "☆"}</button>
+          ${custom
+            ? `<button type="button" class="tile-del" data-act="del-custom" data-id="${safeId}" aria-label="Delete custom activity" title="Delete custom activity">×</button>`
+            : ""}
+        </div>`;
       })
       .join("");
 

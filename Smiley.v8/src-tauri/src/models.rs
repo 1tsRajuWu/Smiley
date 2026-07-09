@@ -36,9 +36,6 @@ pub struct Status {
     pub elapsed_secs: Option<u64>,
     #[serde(default)]
     pub rotate_active: bool,
-    /// Live Valorant match board (ally/enemy seats) — local Riot only.
-    #[serde(default)]
-    pub match_board: Option<crate::riot::MatchBoard>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -163,15 +160,6 @@ pub struct Config {
     /// Prefer static activity tiles (hover reveals GIF) — saves CPU.
     #[serde(default = "default_false")]
     pub static_tiles: bool,
-    /// Show live Valorant match panel in-app.
-    #[serde(default = "default_true")]
-    pub show_match_board: bool,
-    /// Show other players' Riot IDs on the match board (opt-in).
-    #[serde(default = "default_false")]
-    pub show_other_riot_ids: bool,
-    /// Show other players' KDA on the match board.
-    #[serde(default = "default_false")]
-    pub show_other_player_stats: bool,
     /// Share score / KDA / detailed lines on Discord (not just "In match").
     #[serde(default = "default_true")]
     pub share_valorant_stats_discord: bool,
@@ -248,9 +236,6 @@ impl Default for Config {
             music_now_playing: true,
             coding_now_playing: true,
             static_tiles: false,
-            show_match_board: true,
-            show_other_riot_ids: false,
-            show_other_player_stats: false,
             share_valorant_stats_discord: true,
             gaming_presence_detail: default_gaming_presence_detail(),
             idle_enabled: false,

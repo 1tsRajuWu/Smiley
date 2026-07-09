@@ -154,14 +154,6 @@ fn probe_game(
 }
 
 #[tauri::command]
-fn get_match_board(state: tauri::State<'_, Arc<App>>) -> Option<riot::MatchBoard> {
-    let cfg = state.config.lock().clone();
-    let board = state.status.lock().match_board.clone()?;
-    crate::privacy::sanitize_board(board, &cfg)
-}
-
-/// Open donate URL from Rust only — webview cannot open arbitrary https.
-#[tauri::command]
 fn open_donation_url(
     app: tauri::AppHandle,
     state: tauri::State<'_, Arc<App>>,
@@ -361,7 +353,6 @@ pub fn run() {
             add_custom,
             remove_custom,
             probe_game,
-            get_match_board,
             open_donation_url,
             append_log,
             check_for_updates,

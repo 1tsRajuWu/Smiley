@@ -47,7 +47,6 @@ impl App {
                 paused: false,
                 elapsed_secs: None,
                 rotate_active: false,
-                match_board: None,
             }),
             started_at: Mutex::new(None),
             started_sig: Mutex::new(String::new()),
@@ -157,9 +156,6 @@ impl App {
             s.elapsed_secs = None;
         }
         s.rotate_active = cfg.rotate_enabled && !s.paused;
-        if let Some(board) = s.match_board.clone() {
-            s.match_board = crate::privacy::sanitize_board(board, &cfg);
-        }
         {
             let mut lock = self.status.lock();
             lock.connected = s.connected;
@@ -411,7 +407,6 @@ impl App {
             s.state = None;
             s.gif = None;
             s.elapsed_secs = None;
-            s.match_board = None;
             s.message = if s.connected {
                 "Cleared".into()
             } else {
@@ -431,7 +426,6 @@ impl App {
             {
                 let mut s = self.status.lock();
                 s.message = "Paused".into();
-                s.match_board = None;
             }
             Ok(self.refresh_status_fields())
         } else if let Some(id) = self.status.lock().activity_id.clone() {
@@ -782,18 +776,11 @@ impl App {
             return Ok(());
         }
 
-        // Always refresh match board when live gaming is on
+        // Refresh Valorant presence when live gaming is on
         if cfg.live_gaming {
-            let riot_opts = crate::riot::RiotProbeOptions {
-                resolve_names: cfg.show_other_riot_ids,
-            };
-            match crate::riot::probe_riot_presence_opts(riot_opts) {
+            match crate::riot::probe_riot_presence() {
                 Ok(Some(live)) if live.product == "valorant" || live.board.active => {
                     let cfg_snap = cfg.clone();
-                    {
-                        let mut s = self.status.lock();
-                        s.match_board = Some(live.board.clone());
-                    }
                     let activity = status.activity_id.as_deref().unwrap_or("");
                     let gaming_slot = activity.is_empty()
                         || activity.starts_with("live-")
@@ -851,12 +838,7 @@ impl App {
                     }
                     return Ok(());
                 }
-                _ => {
-                    let mut s = self.status.lock();
-                    if s.match_board.is_some() {
-                        s.match_board = None;
-                    }
-                }
+                _ => {}
             }
         }
 
@@ -938,11 +920,7 @@ fn live_tick_interval_for(cfg: &Config, status: &Status) -> Duration {
         return Duration::from_secs(8);
     }
 
-    let hot_valorant = status.activity_id.as_deref() == Some("live-valorant")
-        || status.match_board.as_ref().is_some_and(|board| {
-            board.product == "valorant"
-                && (board.phase == "match" || board.phase == "pregame" || !board.players.is_empty())
-        });
+    let hot_valorant = status.activity_id.as_deref() == Some("live-valorant");
     if hot_valorant {
         Duration::from_secs(2)
     } else {
@@ -995,7 +973,6 @@ mod tests {
             paused: false,
             elapsed_secs: None,
             rotate_active: false,
-            match_board: None,
         };
         assert_eq!(
             live_tick_interval_for(&cfg, &status),
@@ -1016,7 +993,6 @@ mod tests {
             paused: false,
             elapsed_secs: None,
             rotate_active: false,
-            match_board: None,
         };
         assert_eq!(
             live_tick_interval_for(&cfg, &status),
