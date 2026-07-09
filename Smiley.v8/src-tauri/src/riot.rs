@@ -3,6 +3,10 @@
 //! Riot IDs come from local name-service when available; PUUID never leaves to UI.
 
 use crate::error::AppResult;
+use crate::valorant_catalog::{
+    agent_display_name, is_ffa_deathmatch_queue, is_team_deathmatch_queue, match_queue_id,
+    queue_label, resolve_map,
+};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -54,11 +58,16 @@ pub struct MatchBoard {
     pub state: String,
     pub phase: String,
     pub map: Option<String>,
+    pub map_id: Option<String>,
     pub mode: Option<String>,
+    pub queue_id: Option<String>,
     pub score: Option<String>,
     pub party: Option<String>,
     pub self_agent: Option<String>,
+    pub self_agent_id: Option<String>,
     pub self_kda: Option<String>,
+    pub ally_count: Option<u32>,
+    pub enemy_count: Option<u32>,
     pub players: Vec<MatchPlayer>,
     pub updated_at: u64,
 }
@@ -72,6 +81,12 @@ pub struct RiotLive {
     pub state: String,
     pub phase: String,
     pub board: MatchBoard,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub self_agent_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub map_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub queue_id: Option<String>,
 }
 
 struct Lockfile {
@@ -218,6 +233,13 @@ fn flatten(v: &Value) -> Value {
             }
         }
     }
+    if let Some(inner) = v.get("playerPresenceData").cloned() {
+        if let (Some(a), Some(b)) = (base.as_object_mut(), inner.as_object()) {
+            for (k, val) in b {
+                a.entry(k.clone()).or_insert(val.clone());
+            }
+        }
+    }
     base
 }
 
@@ -257,7 +279,12 @@ fn refresh_agents() {
 
 fn agent_name(id: &str) -> Option<String> {
     refresh_agents();
-    agent_cache().lock().names.get(&id.to_lowercase()).cloned()
+    agent_cache()
+        .lock()
+        .names
+        .get(&id.to_lowercase())
+        .cloned()
+        .or_else(|| agent_display_name(id))
 }
 
 fn agent_icon(id: &str) -> String {
@@ -267,10 +294,20 @@ fn agent_icon(id: &str) -> String {
     )
 }
 
-fn phase_from(private: &Value) -> &'static str {
+fn phase_from_chat(private: &Value, has_core: bool, has_pregame: bool) -> &'static str {
+    if has_core {
+        return "match";
+    }
+    if has_pregame {
+        return "pregame";
+    }
     let loop_state = str_field(
         private,
-        &["sessionLoopState", "session_loop_state", "partyState", "party_state"],
+        &[
+            "sessionLoopState",
+            "session_loop_state",
+            "partyOwnerSessionLoopState",
+        ],
     )
     .unwrap_or_default()
     .to_uppercase();
@@ -280,41 +317,68 @@ fn phase_from(private: &Value) -> &'static str {
     if loop_state.contains("PREGAME") || loop_state.contains("AGENT") {
         return "pregame";
     }
-    if loop_state.contains("MATCHMAKING") || loop_state.contains("QUEUE") {
+    let party_state = str_field(private, &["partyState", "party_state"])
+        .unwrap_or_default()
+        .to_uppercase();
+    if loop_state.contains("MATCHMAKING")
+        || loop_state == "MATCHMAKING"
+        || matches!(
+            party_state.as_str(),
+            "MATCHMAKING"
+                | "STARTING_MATCHMAKING"
+                | "MATCHMAKINGREADYCHK"
+                | "MATCHMAKING_READY_CHECK"
+                | "MATCHMADE_GAME_STARTING"
+        )
+    {
         return "queue";
     }
     "lobby"
 }
 
-fn queue_label(id: &str) -> String {
-    let key = id.to_lowercase();
-    match key.as_str() {
-        "competitive" | "comp" => "Competitive".into(),
-        "unrated" => "Unrated".into(),
-        "spikerush" => "Spike Rush".into(),
-        "ggteam" | "escalation" => "Escalation".into(),
-        "swiftplay" => "Swiftplay".into(),
-        "deathmatch" => "Deathmatch".into(),
-        "hurm" | "onefa" => "Team Deathmatch".into(),
-        "premier" => "Premier".into(),
-        "fortcollins" | "retake" => "Retake".into(),
-        "custom" => "Custom".into(),
-        other => other.to_string(),
-    }
+fn queue_from_private(private: &Value) -> Option<String> {
+    str_field(
+        private,
+        &[
+            "queueId",
+            "queueID",
+            "QueueID",
+            "partyOwnerQueueId",
+            "mode",
+            "modeId",
+        ],
+    )
+    .map(|id| queue_label(&id))
 }
 
-fn queue_from_private(private: &Value) -> Option<String> {
-    str_field(private, &["queueId", "queueID", "QueueID", "mode", "modeId"]).map(|id| queue_label(&id))
+fn chat_team_score(private: &Value) -> Option<String> {
+    let ally = private
+        .get("partyOwnerMatchScoreAllyTeam")
+        .or_else(|| private.get("partyOwnerMatchCurrentTeamRoundScore"))
+        .or_else(|| private.get("matchScoreAllyTeam"))
+        .or_else(|| private.get("allyScore"))
+        .and_then(|v| v.as_i64());
+    let enemy = private
+        .get("partyOwnerMatchScoreEnemyTeam")
+        .or_else(|| private.get("matchScoreEnemyTeam"))
+        .or_else(|| private.get("enemyScore"))
+        .and_then(|v| v.as_i64());
+    if let (Some(a), Some(e)) = (ally, enemy) {
+        return Some(format!("{a}-{e}"));
+    }
+    None
 }
 
 fn party_label(private: &Value) -> Option<String> {
     let size = private
         .get("partySize")
         .or_else(|| private.get("party_size"))
+        .or_else(|| private.get("partyOwnerPartySize"))
         .and_then(|v| v.as_u64())
         .or_else(|| {
             private
                 .get("partyMembers")
+                .or_else(|| private.get("partyMemberUUIDs"))
                 .and_then(|v| v.as_array())
                 .map(|a| a.len() as u64)
         })?;
@@ -331,68 +395,78 @@ fn party_label(private: &Value) -> Option<String> {
     })
 }
 
-fn map_display(path: &str) -> String {
-    let last = path
-        .split('/')
-        .filter(|s| !s.is_empty())
-        .last()
-        .unwrap_or(path)
-        .to_lowercase();
-    let key = last
-        .replace("hurm_", "")
-        .replace("_primaryasset", "")
-        .replace('_', "");
-    let named = match key.as_str() {
-        "ascent" => "Ascent",
-        "split" | "bonsai" => "Split",
-        "fracture" | "canyon" => "Fracture",
-        "bind" | "duality" => "Bind",
-        "breeze" | "foxtrot" => "Breeze",
-        "icebox" | "port" => "Icebox",
-        "haven" | "triad" => "Haven",
-        "pearl" | "pitt" => "Pearl",
-        "lotus" | "jam" => "Lotus",
-        "sunset" | "juliett" => "Sunset",
-        "abyss" | "infinity" => "Abyss",
-        "corrode" | "rook" => "Corrode",
-        "district" | "pumice" | "kasbah" | "drift" => "Area",
-        other => other,
-    };
-    if named.chars().next().map(|c| c.is_ascii_lowercase()).unwrap_or(false) {
-        let mut c = named.chars();
-        match c.next() {
-            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-            None => named.to_string(),
-        }
+fn map_from_path(path: &str) -> (String, Option<String>) {
+    let resolved = resolve_map(path);
+    let map_id = resolved
+        .uuid
+        .clone()
+        .or_else(|| if path.len() == 36 { Some(path.to_string()) } else { None });
+    let name = if resolved.name.is_empty() {
+        path.split('/').filter(|s| !s.is_empty()).last().unwrap_or(path).to_string()
     } else {
-        named.to_string()
-    }
+        resolved.name
+    };
+    (name, map_id)
 }
 
 fn subject_of(p: &Value) -> Option<String> {
-    str_field(
-        p,
-        &["Subject", "subject", "PlayerIdentity.Subject", "puuid"],
-    )
-    .or_else(|| {
+    str_field(p, &["Subject", "subject", "puuid"]).or_else(|| {
         p.get("PlayerIdentity")
             .and_then(|pi| str_field(pi, &["Subject", "subject"]))
     })
 }
 
 fn character_id(p: &Value) -> Option<String> {
+    let pi = p.get("PlayerIdentity");
     let raw = str_field(
         p,
-        &["CharacterID", "CharacterId", "characterID", "Character"],
+        &[
+            "CharacterID",
+            "CharacterId",
+            "characterID",
+            "AgentID",
+            "AgentId",
+            "agentID",
+            "SelectedCharacterID",
+            "selectedCharacterID",
+        ],
     )
+    .or_else(|| pi.and_then(|pi| str_field(pi, &["CharacterID", "CharacterId", "AgentID"])))
     .or_else(|| {
         p.get("Character")
             .and_then(|c| str_field(c, &["ID", "id", "uuid"]))
+    })
+    .or_else(|| {
+        p.get("Character")
+            .and_then(|c| c.as_str())
+            .map(|s| s.to_string())
     })?;
     if raw == "00000000-0000-0000-0000-000000000000" {
         return None;
     }
     Some(raw)
+}
+
+fn pick_agent_id(candidates: &[Option<&Value>]) -> Option<String> {
+    for row in candidates {
+        if let Some(id) = row.and_then(|p| character_id(p)) {
+            return Some(id);
+        }
+    }
+    None
+}
+
+fn players_array(raw: &Value) -> Vec<Value> {
+    if let Some(arr) = raw.as_array() {
+        return arr.clone();
+    }
+    if let Some(obj) = raw.as_object() {
+        let vals: Vec<Value> = obj.values().filter(|v| v.is_object()).cloned().collect();
+        if !vals.is_empty() {
+            return vals;
+        }
+    }
+    Vec::new()
 }
 
 fn team_id(p: &Value) -> Option<String> {
@@ -415,6 +489,12 @@ fn kda_of(p: &Value) -> Option<String> {
     Some(format!("{k}/{d}/{a}"))
 }
 
+fn kills_only(p: &Value) -> Option<String> {
+    let stats = p.get("Stats").unwrap_or(p);
+    let k = stats.get("Kills").or_else(|| stats.get("kills"))?.as_i64()?;
+    Some(format!("{k} kills"))
+}
+
 fn team_points(team: &Value) -> Option<i64> {
     for k in [
         "NumPoints",
@@ -434,10 +514,11 @@ fn team_points(team: &Value) -> Option<i64> {
     None
 }
 
-fn score_hint(match_json: &Value, self_team: Option<&str>) -> Option<String> {
+fn team_score_from_teams(match_json: &Value, self_team: Option<&str>) -> Option<String> {
     let teams = match_json
         .get("Teams")
         .or_else(|| match_json.get("ScoreboardTeams"))
+        .or_else(|| match_json.get("TeamScores"))
         .and_then(|v| v.as_array())?;
     if teams.len() < 2 {
         return None;
@@ -464,18 +545,101 @@ fn score_hint(match_json: &Value, self_team: Option<&str>) -> Option<String> {
     Some(format!("{}-{}", scored[0].1, scored[1].1))
 }
 
+fn team_score_from_players(players: &[Value], self_team: Option<&str>) -> Option<String> {
+    let mut by_team: HashMap<String, i64> = HashMap::new();
+    for p in players {
+        let tid = team_id(p)?;
+        let k = p.get("Stats").or(Some(p))?;
+        let kills = k.get("Kills").or_else(|| k.get("kills"))?.as_i64()?;
+        *by_team.entry(tid).or_insert(0) += kills;
+    }
+    if by_team.len() < 2 {
+        return None;
+    }
+    let entries: Vec<(String, i64)> = by_team.into_iter().collect();
+    if let Some(want) = self_team {
+        let want = want.to_lowercase();
+        let ally = entries.iter().find(|(id, _)| id.to_lowercase() == want);
+        let enemy = entries.iter().find(|(id, _)| ally.is_none_or(|(aid, _)| id != aid));
+        if let (Some((_, a)), Some((_, e))) = (ally, enemy) {
+            return Some(format!("{a}-{e}"));
+        }
+    }
+    Some(format!("{}-{}", entries[0].1, entries[1].1))
+}
+
+fn match_score_hint(
+    match_json: &Value,
+    self_row: Option<&Value>,
+    queue_id: Option<&str>,
+    chat_score: Option<&str>,
+) -> Option<String> {
+    let q = queue_id.unwrap_or("");
+    let self_team = self_row.and_then(team_id);
+
+    if is_ffa_deathmatch_queue(q) {
+        return self_row
+            .and_then(kills_only)
+            .or_else(|| self_row.and_then(kda_of).map(|k| format!("{} kills", k.split('/').next().unwrap_or("0"))));
+    }
+
+    let from_teams = team_score_from_teams(match_json, self_team.as_deref());
+    if from_teams.is_some() {
+        return from_teams;
+    }
+
+    if is_team_deathmatch_queue(q) {
+        let players = core_game_players(match_json);
+        if let Some(s) = team_score_from_players(&players, self_team.as_deref()) {
+            return Some(s);
+        }
+    }
+
+    chat_score.map(|s| s.to_string())
+}
+
+fn extend_players(flat: &mut Vec<Value>, list: &Value) {
+    flat.extend(players_array(list));
+}
+
 fn pregame_players(match_json: &Value) -> Vec<Value> {
-    let ally = match_json.get("AllyTeam");
-    if let Some(arr) = ally.and_then(|a| a.get("Players")).and_then(|p| p.as_array()) {
-        return arr.clone();
+    let mut flat = Vec::new();
+    if let Some(ally) = match_json.get("AllyTeam") {
+        if let Some(p) = ally.get("Players") {
+            extend_players(&mut flat, p);
+        }
+        if let Some(c) = ally.get("Characters") {
+            extend_players(&mut flat, c);
+        }
+        if ally.get("Players").is_none() {
+            extend_players(&mut flat, ally);
+        }
     }
-    if let Some(arr) = ally.and_then(|a| a.as_array()) {
-        return arr.clone();
+    if let Some(enemy) = match_json.get("EnemyTeam") {
+        if let Some(p) = enemy.get("Players") {
+            extend_players(&mut flat, p);
+        }
     }
-    if let Some(arr) = match_json.get("Players").and_then(|p| p.as_array()) {
-        return arr.clone();
+    extend_players(&mut flat, &match_json["Players"]);
+    if let Some(teams) = match_json.get("Teams").and_then(|v| v.as_array()) {
+        for t in teams {
+            if let Some(p) = t.get("Players") {
+                extend_players(&mut flat, p);
+            }
+            if t.get("Subject").is_some() || character_id(t).is_some() {
+                flat.push(t.clone());
+            }
+        }
     }
-    Vec::new()
+    flat
+}
+
+fn core_game_players(match_json: &Value) -> Vec<Value> {
+    let players = players_array(&match_json["Players"]);
+    if !players.is_empty() {
+        return players;
+    }
+    pregame_players(match_json)
 }
 
 fn resolve_names(lock: &Lockfile, puuids: &[String]) -> HashMap<String, String> {
@@ -484,7 +648,6 @@ fn resolve_names(lock: &Lockfile, puuids: &[String]) -> HashMap<String, String> 
         return out;
     }
     let body = Value::Array(puuids.iter().map(|p| json!(p)).collect());
-    // Local name-service — same client, no third-party cloud APIs
     let res = local_post_json(lock, "/name-service/v2/players", &body)
         .or_else(|| local_post_json(lock, "/player-name-service/v2/players", &body));
     let Some(Value::Array(arr)) = res else {
@@ -545,6 +708,19 @@ fn build_player(
         is_self,
         team: tid,
     })
+}
+
+fn count_seats(players: &[MatchPlayer]) -> (u32, u32) {
+    let mut ally = 0u32;
+    let mut enemy = 0u32;
+    for p in players {
+        if p.seat == "Enemy" {
+            enemy += 1;
+        } else {
+            ally += 1;
+        }
+    }
+    (ally, enemy)
 }
 
 /// Probe local Valorant truth + full match board for UI.
@@ -627,42 +803,74 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
                 phase: "lobby".into(),
                 ..Default::default()
             },
+            self_agent_id: None,
+            map_id: None,
+            queue_id: None,
         }));
     }
 
-    let chat_phase = phase_from(&private);
     let party = party_label(&private);
     let mode_chat = queue_from_private(&private);
-    let map_chat = str_field(
+    let chat_score = chat_team_score(&private);
+    let map_path_chat = str_field(
         &private,
         &["matchMap", "partyOwnerMatchMap", "MapID", "mapId"],
-    )
-    .map(|m| map_display(&m));
+    );
+    let (map_chat_name, map_chat_id) = map_path_chat
+        .as_deref()
+        .map(map_from_path)
+        .unwrap_or_else(|| (String::new(), None));
 
-    // Prefer core-game / pregame truth over chat alone
-    let mut phase = chat_phase.to_string();
-    let mut map = map_chat;
-    let mut mode = mode_chat;
-    let mut score: Option<String> = None;
-    let mut self_agent: Option<String> = None;
-    let mut self_kda: Option<String> = None;
-    let mut players: Vec<MatchPlayer> = Vec::new();
+    let core = fetch_core_board(&lock, &puuid, opts.resolve_names);
+    let pre = fetch_pregame_board(&lock, &puuid, opts.resolve_names);
+    let has_core = core.is_some();
+    let has_pregame = pre.is_some();
+    let phase = phase_from_chat(&private, has_core, has_pregame).to_string();
 
-    if let Some(core) = fetch_core_board(&lock, &puuid, opts.resolve_names) {
-        phase = "match".into();
-        map = core.map.or(map);
-        mode = core.mode.or(mode);
-        score = core.score;
-        self_agent = core.self_agent;
-        self_kda = core.self_kda;
-        players = core.players;
-    } else if let Some(pre) = fetch_pregame_board(&lock, &puuid, opts.resolve_names) {
-        phase = "pregame".into();
-        map = pre.map.or(map);
-        mode = pre.mode.or(mode);
-        self_agent = pre.self_agent;
-        players = pre.players;
+    let mut map = core.as_ref().and_then(|c| c.map.clone()).or_else(|| {
+        pre.as_ref().and_then(|p| p.map.clone()).or(if map_chat_name.is_empty() {
+            None
+        } else {
+            Some(map_chat_name.clone())
+        })
+    });
+    let mut map_id = core
+        .as_ref()
+        .and_then(|c| c.map_id.clone())
+        .or_else(|| pre.as_ref().and_then(|p| p.map_id.clone()))
+        .or(map_chat_id);
+    let mut mode = core
+        .as_ref()
+        .and_then(|c| c.mode.clone())
+        .or_else(|| pre.as_ref().and_then(|p| p.mode.clone()))
+        .or_else(|| mode_chat.clone());
+    let mut queue_id = core
+        .as_ref()
+        .and_then(|c| c.queue_id.clone())
+        .or_else(|| pre.as_ref().and_then(|p| p.queue_id.clone()))
+        .or_else(|| mode_chat.as_ref().map(|m| m.to_lowercase().replace(' ', "")));
+    let mut score = core.as_ref().and_then(|c| c.score.clone());
+    if score.is_none() && phase == "match" {
+        score = chat_score.clone();
     }
+    let mut self_agent_id = core
+        .as_ref()
+        .and_then(|c| c.self_agent_id.clone())
+        .or_else(|| pre.as_ref().and_then(|p| p.self_agent_id.clone()));
+    let mut self_agent = self_agent_id
+        .as_ref()
+        .and_then(|id| agent_name(id))
+        .or_else(|| core.as_ref().and_then(|c| c.self_agent.clone()))
+        .or_else(|| pre.as_ref().and_then(|p| p.self_agent.clone()));
+    let self_kda = core.as_ref().and_then(|c| c.self_kda.clone());
+    let mut players = if has_core {
+        core.as_ref().map(|c| c.players.clone()).unwrap_or_default()
+    } else {
+        pre.as_ref().map(|p| p.players.clone()).unwrap_or_default()
+    };
+    let (ally_count, enemy_count) = count_seats(&players);
+
+    let roster = roster_hint(&players, ally_count, enemy_count);
 
     let (details, state) = match phase.as_str() {
         "match" => (
@@ -671,15 +879,19 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
                 score.as_deref(),
                 party.as_deref(),
                 mode.as_deref(),
+                roster.as_deref(),
                 self_kda.as_deref(),
             ]),
         ),
         "pregame" => (
             Some(
-                join(&[self_agent.as_deref(), Some("Agent Select")])
-                    .unwrap_or_else(|| "Agent Select".into()),
+                join(&[self_agent.as_deref(), Some("Agent Select"), map.as_deref()])
+                    .unwrap_or_else(|| {
+                        join(&[Some("Agent Select"), map.as_deref()])
+                            .unwrap_or_else(|| "Agent Select".into())
+                    }),
             ),
-            join(&[mode.as_deref(), map.as_deref(), party.as_deref()]),
+            join(&[party.as_deref(), mode.as_deref(), roster.as_deref()]),
         ),
         "queue" => (
             Some("VALORANT".into()),
@@ -705,12 +917,17 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         details: details.clone(),
         state: state.clone(),
         phase: phase.clone(),
-        map,
-        mode,
-        score,
-        party,
-        self_agent,
-        self_kda,
+        map: map.clone(),
+        map_id: map_id.clone(),
+        mode: mode.clone(),
+        queue_id: queue_id.clone(),
+        score: score.clone(),
+        party: party.clone(),
+        self_agent: self_agent.clone(),
+        self_agent_id: self_agent_id.clone(),
+        self_kda: self_kda.clone(),
+        ally_count: Some(ally_count),
+        enemy_count: Some(enemy_count),
         players,
         updated_at: now,
     };
@@ -722,14 +939,20 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         state,
         phase,
         board,
+        self_agent_id,
+        map_id,
+        queue_id,
     }))
 }
 
 struct BoardBits {
     map: Option<String>,
+    map_id: Option<String>,
     mode: Option<String>,
+    queue_id: Option<String>,
     score: Option<String>,
     self_agent: Option<String>,
+    self_agent_id: Option<String>,
     self_kda: Option<String>,
     players: Vec<MatchPlayer>,
 }
@@ -738,31 +961,26 @@ fn fetch_core_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Opt
     let player = local_get(lock, &format!("/core-game/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/core-game/v1/matches/{match_id}"))?;
-    let players_raw = match_json
-        .get("Players")
-        .and_then(|p| p.as_array())
-        .cloned()
-        .unwrap_or_default();
+    let _scoreboard = local_get(
+        lock,
+        &format!("/core-game/v1/matches/{match_id}/scoreboard"),
+    );
+
+    let players_raw = core_game_players(&match_json);
     let self_row = players_raw.iter().find(|p| {
         subject_of(p)
             .map(|s| s.eq_ignore_ascii_case(puuid))
             .unwrap_or(false)
     });
     let self_team = self_row.and_then(|p| team_id(p));
-    let self_agent_id = self_row.and_then(|p| character_id(p));
+    let self_agent_id = pick_agent_id(&[self_row, Some(&player)]);
     let self_agent = self_agent_id.as_ref().and_then(|id| agent_name(id));
     let self_kda = self_row.and_then(|p| kda_of(p));
-    let score = score_hint(&match_json, self_team.as_deref());
-    let map = str_field(&match_json, &["MapID", "MapId", "mapId"]).map(|m| map_display(&m));
-    let mode = str_field(
-        &match_json,
-        &["QueueID", "QueueId", "queueId", "ModeID", "Mode"],
-    )
-    .map(|q| {
-        // Mode paths → short id
-        let last = q.split('/').filter(|s| !s.is_empty()).last().unwrap_or(&q);
-        queue_label(last)
-    });
+    let queue_id = match_queue_id(&match_json);
+    let score = match_score_hint(&match_json, self_row, queue_id.as_deref(), None);
+    let map_path = str_field(&match_json, &["MapID", "MapId", "mapId"]);
+    let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
+    let mode = queue_id.as_ref().map(|q| queue_label(q));
 
     let puuids: Vec<String> = players_raw.iter().filter_map(subject_of).collect();
     let names = if do_resolve_names {
@@ -782,10 +1000,13 @@ fn fetch_core_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Opt
     });
 
     Some(BoardBits {
-        map,
+        map: if map.is_empty() { None } else { Some(map) },
+        map_id,
         mode,
+        queue_id,
         score,
         self_agent,
+        self_agent_id,
         self_kda,
         players,
     })
@@ -801,17 +1022,12 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> 
             .map(|s| s.eq_ignore_ascii_case(puuid))
             .unwrap_or(false)
     });
-    let self_agent_id = self_row.and_then(|p| character_id(p));
+    let self_agent_id = pick_agent_id(&[self_row, Some(&player)]);
     let self_agent = self_agent_id.as_ref().and_then(|id| agent_name(id));
-    let map = str_field(&match_json, &["MapID", "MapId", "mapId"]).map(|m| map_display(&m));
-    let mode = str_field(
-        &match_json,
-        &["QueueID", "QueueId", "queueId", "Mode", "ModeID"],
-    )
-    .map(|q| {
-        let last = q.split('/').filter(|s| !s.is_empty()).last().unwrap_or(&q);
-        queue_label(last)
-    });
+    let queue_id = match_queue_id(&match_json);
+    let map_path = str_field(&match_json, &["MapID", "MapId", "mapId"]);
+    let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
+    let mode = queue_id.as_ref().map(|q| queue_label(q));
 
     let puuids: Vec<String> = players_raw.iter().filter_map(subject_of).collect();
     let names = if do_resolve_names {
@@ -819,12 +1035,10 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> 
     } else {
         HashMap::new()
     };
-    // Pregame is usually ally-only; treat missing team as Ally
     let mut players: Vec<MatchPlayer> = players_raw
         .iter()
         .filter_map(|p| build_player(p, puuid, Some("Blue"), &names, false))
         .map(|mut mp| {
-            // Prefame seats: everyone in AllyTeam is Ally
             mp.seat = "Ally".into();
             mp
         })
@@ -832,13 +1046,38 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> 
     players.sort_by(|a, b| b.is_self.cmp(&a.is_self).then(a.name.cmp(&b.name)));
 
     Some(BoardBits {
-        map,
+        map: if map.is_empty() { None } else { Some(map) },
+        map_id,
         mode,
+        queue_id,
         score: None,
         self_agent,
+        self_agent_id,
         self_kda: None,
         players,
     })
+}
+
+fn roster_hint(players: &[MatchPlayer], ally_count: u32, enemy_count: u32) -> Option<String> {
+    let ally_agents: Vec<&str> = players
+        .iter()
+        .filter(|p| p.seat == "Ally")
+        .filter_map(|p| p.agent.as_deref())
+        .collect();
+    if ally_agents.len() >= 2 {
+        let preview: Vec<&str> = ally_agents.iter().copied().take(3).collect();
+        let mut line = preview.join(", ");
+        if ally_agents.len() > 3 {
+            line.push('…');
+        }
+        return Some(line);
+    }
+    match (ally_count, enemy_count) {
+        (a, e) if a > 0 && e > 0 => Some(format!("{a} allies · {e} enemies")),
+        (a, 0) if a > 0 => Some(format!("{a} allies")),
+        (0, e) if e > 0 => Some(format!("{e} enemies")),
+        _ => None,
+    }
 }
 
 fn join(parts: &[Option<&str>]) -> Option<String> {
@@ -851,5 +1090,52 @@ fn join(parts: &[Option<&str>]) -> Option<String> {
         None
     } else {
         Some(v.join(" · "))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    const JETT: &str = "add6443a-41bd-e414-f6ad-e58d267f4e95";
+
+    #[test]
+    fn character_id_reads_player_identity() {
+        let p = json!({
+            "PlayerIdentity": { "CharacterID": JETT }
+        });
+        assert_eq!(character_id(&p).as_deref(), Some(JETT));
+    }
+
+    #[test]
+    fn tdm_num_points_ally_first() {
+        let match_json = json!({
+            "Teams": [
+                { "TeamID": "Red", "NumPoints": 48 },
+                { "TeamID": "Blue", "NumPoints": 62 }
+            ],
+            "Players": [
+                { "Subject": "me", "TeamID": "Blue" }
+            ]
+        });
+        let self_row = match_json["Players"][0].clone();
+        assert_eq!(
+            match_score_hint(&match_json, Some(&self_row), Some("hurm"), None).as_deref(),
+            Some("62-48")
+        );
+    }
+
+    #[test]
+    fn pregame_players_from_ally_team_object() {
+        let m = json!({
+            "AllyTeam": {
+                "Players": [
+                    { "Subject": "a", "CharacterID": JETT },
+                    { "Subject": "b" }
+                ]
+            }
+        });
+        assert_eq!(pregame_players(&m).len(), 2);
     }
 }

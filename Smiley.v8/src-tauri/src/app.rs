@@ -243,10 +243,41 @@ impl App {
             state: state.into(),
             large_image: resolve_rpc_image(gif, fallback),
             large_text,
+            small_image: None,
+            small_text: None,
             start,
             button_label,
             button_url,
             activity_type,
+        }
+    }
+
+    fn build_valorant_presence(
+        &self,
+        live: &crate::riot::RiotLive,
+        details: &str,
+        state: &str,
+        start: Option<i64>,
+    ) -> Presence {
+        let cfg = self.config.lock();
+        let art = crate::valorant_assets::resolve_art(live);
+        let (button_label, button_url) = if cfg.show_button {
+            (Some(cfg.button_label.clone()), Some(cfg.button_url.clone()))
+        } else {
+            (None, None)
+        };
+        let start = if cfg.show_elapsed { start } else { None };
+        Presence {
+            details: details.into(),
+            state: state.into(),
+            large_image: art.large_image,
+            large_text: art.large_text,
+            small_image: art.small_image,
+            small_text: art.small_text,
+            start,
+            button_label,
+            button_url,
+            activity_type: Some(RpcActivityType::Playing),
         }
     }
 
@@ -752,28 +783,40 @@ impl App {
                     if gaming_slot {
                         let (details, state) =
                             crate::privacy::valorant_discord_lines(&live, &cfg_snap);
-                        let gif = status
-                            .activity_id
-                            .as_deref()
-                            .and_then(|id| self.resolve(id).ok())
-                            .map(|(_, _, _, g)| g)
-                            .unwrap_or_else(|| {
-                                "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif".into()
-                            });
                         let start = Some(Self::now_secs() as i64);
-                        self.discord.set(self.build_presence(
-                            &details,
-                            &state,
-                            "🎮",
-                            &gif,
-                            start,
-                        ))?;
+                        if live.product == "valorant" {
+                            self.discord.set(self.build_valorant_presence(
+                                &live,
+                                &details,
+                                &state,
+                                start,
+                            ))?;
+                        } else {
+                            let gif = status
+                                .activity_id
+                                .as_deref()
+                                .and_then(|id| self.resolve(id).ok())
+                                .map(|(_, _, _, g)| g)
+                                .unwrap_or_else(|| {
+                                    "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif"
+                                        .into()
+                                });
+                            self.discord.set(self.build_presence(
+                                &details,
+                                &state,
+                                "🎮",
+                                &gif,
+                                start,
+                            ))?;
+                        }
                         {
                             let mut s = self.status.lock();
                             s.activity_id = Some(format!("live-{}", live.product));
                             s.details = Some(details);
                             s.state = Some(state);
-                            s.gif = Some(gif);
+                            if live.product == "valorant" {
+                                s.gif = Some(crate::valorant_catalog::valorant_game_logo().into());
+                            }
                             s.message = format!("Live {}", live.title);
                         }
                     }

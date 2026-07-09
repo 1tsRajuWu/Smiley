@@ -1,7 +1,7 @@
 //! Discord IPC on its own thread — never blocks the UI.
 
 use crate::error::{AppError, AppResult};
-use crate::models::sanitize_gif_url;
+use crate::models::{sanitize_gif_url, sanitize_rpc_image_url};
 use discord_rich_presence::{
     activity::{Activity, ActivityType, Assets, Button, Timestamps},
     DiscordIpc, DiscordIpcClient,
@@ -22,6 +22,8 @@ pub struct Presence {
     pub state: String,
     pub large_image: String,
     pub large_text: String,
+    pub small_image: Option<String>,
+    pub small_text: Option<String>,
     pub start: Option<i64>,
     pub button_label: Option<String>,
     pub button_url: Option<String>,
@@ -42,12 +44,22 @@ pub struct Discord {
 const RPC_IMAGE_FALLBACK: &str =
     "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
 
-/// Tenor HTTPS URL Discord can proxy as an animated large_image.
+/// Tenor GIF or allowlisted HTTPS CDN (Valorant / Steam / etc.).
 pub fn resolve_rpc_image(candidate: &str, fallback: &str) -> String {
     let reject_spinner = |url: &str| {
         !url.contains("loading-gif.gif") && !url.contains("On7kvXhzml4")
     };
+    if let Some(url) = sanitize_rpc_image_url(candidate) {
+        if reject_spinner(&url) {
+            return url;
+        }
+    }
     if let Some(url) = sanitize_gif_url(candidate) {
+        if reject_spinner(&url) {
+            return url;
+        }
+    }
+    if let Some(url) = sanitize_rpc_image_url(fallback) {
         if reject_spinner(&url) {
             return url;
         }
@@ -147,8 +159,13 @@ fn worker(client_id: String, rx: Receiver<Job>) {
                 let res = (|| -> AppResult<()> {
                     ensure_client(&mut client, &client_id)?;
                     let sig = format!(
-                        "{}|{}|{}|{:?}|{:?}",
-                        p.details, p.state, p.large_image, p.start, p.button_label
+                        "{}|{}|{}|{:?}|{:?}|{:?}",
+                        p.details,
+                        p.state,
+                        p.large_image,
+                        p.small_image,
+                        p.start,
+                        p.button_label
                     );
                     if last_sig == sig && last_at.elapsed() < Duration::from_millis(350) {
                         return Ok(());
@@ -163,7 +180,29 @@ fn worker(client_id: String, rx: Receiver<Job>) {
                         512,
                     );
                     let text = trunc(&p.large_text, 128);
-                    let assets = Assets::new().large_image(&img).large_text(&text);
+                    let small_img = p.small_image.as_ref().map(|small| {
+                        trunc(
+                            &resolve_rpc_image(small, RPC_IMAGE_FALLBACK),
+                            512,
+                        )
+                    });
+                    let small_text_owned = p
+                        .small_text
+                        .as_ref()
+                        .map(|st| trunc(st, 128));
+
+                    let assets = match (small_img.as_deref(), small_text_owned.as_deref()) {
+                        (Some(si), Some(st)) => Assets::new()
+                            .large_image(&img)
+                            .large_text(&text)
+                            .small_image(si)
+                            .small_text(st),
+                        (Some(si), None) => Assets::new()
+                            .large_image(&img)
+                            .large_text(&text)
+                            .small_image(si),
+                        _ => Assets::new().large_image(&img).large_text(&text),
+                    };
 
                     let label_t;
                     let url_t;

@@ -93,6 +93,7 @@ export type Config = {
   showOtherRiotIds: boolean;
   showOtherPlayerStats: boolean;
   shareValorantStatsDiscord: boolean;
+  gamingPresenceDetail?: string;
   idleEnabled: boolean;
   idleDetails: string;
   idleState: string;

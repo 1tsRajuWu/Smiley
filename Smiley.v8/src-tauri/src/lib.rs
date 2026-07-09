@@ -15,6 +15,8 @@ mod music_mediaremote;
 mod privacy;
 mod riot;
 mod updates;
+mod valorant_assets;
+mod valorant_catalog;
 
 use app::App;
 use models::*;

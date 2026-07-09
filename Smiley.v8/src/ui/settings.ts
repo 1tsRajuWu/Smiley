@@ -87,14 +87,22 @@ export function settingsMarkup(): string {
 
       <section class="cfg-panel" data-panel="discord">
         <p class="cfg-lede">How presence looks on Discord.</p>
+        <p class="cfg-label">Gaming rich presence</p>
+        <div class="cfg-toggles">
+          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Valorant live board (local Riot API — score, agent, map)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Other games via window title (optional)</span></label>
+        </div>
+        <p class="cfg-hint">Valorant uses lockfile + 127.0.0.1 only. Privacy tab controls names/stats on Discord.</p>
+        <p class="cfg-label">Other live overlays</p>
+        <div class="cfg-toggles">
+          <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgCoding" /><span>Live coding (editor / IDE detection)</span></label>
+        </div>
+        <p class="cfg-label">Display</p>
         <div class="cfg-toggles">
           <label class="cfg-tog"><input type="checkbox" id="cfgElapsed" /><span>Show elapsed timer</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgShowBtn" /><span>Show Download button on Discord</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgRemember" /><span>Restore last activity on connect</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Process gaming probe (optional)</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Live Valorant match board (local Riot API)</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgCoding" /><span>Live coding (editor / IDE detection)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgStaticTiles" /><span>Static tiles (GIFs on hover — saves CPU)</span></label>
         </div>
       </section>
@@ -120,12 +128,12 @@ export function settingsMarkup(): string {
       <section class="cfg-panel" data-panel="privacy">
         <p class="cfg-lede">Your data stays on your machine. Smiley v8 uses only local APIs — no game injectors or memory reads.</p>
         <div class="cfg-toggles">
-          <label class="cfg-tog"><input type="checkbox" id="cfgMatchBoard" /><span>Show live Valorant match board in-app</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgMatchBoard" /><span>Show live Valorant board in-app</span></label>
+          <label class="cfg-tog"><input type="checkbox" id="cfgShareDiscord" /><span>Share score &amp; KDA on Discord</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgOtherNames" /><span>Show other players' Riot IDs (opt-in)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgOtherStats" /><span>Show other players' KDA on the board</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgShareDiscord" /><span>Share score &amp; KDA on Discord</span></label>
         </div>
-        <p class="cfg-hint">Off by default: other players' names and stats. Lockfile passwords and PUUIDs never leave Rust. Match board hides in tray.</p>
+        <p class="cfg-hint">Names/stats off by default. Lockfile passwords and PUUIDs never leave Rust.</p>
       </section>
 
       <section class="cfg-panel" data-panel="app">
@@ -186,6 +194,10 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   set("cfgOtherNames", cfg.showOtherRiotIds);
   set("cfgOtherStats", cfg.showOtherPlayerStats);
   set("cfgShareDiscord", cfg.shareValorantStatsDiscord !== false);
+  const valDetail =
+    cfg.gamingPresenceDetail ||
+    (cfg.shareValorantStatsDiscord !== false ? "full" : "minimal");
+  set("cfgValDetail", valDetail);
   set("cfgWallpaper", cfg.wallpaperEnabled);
   set("cfgDonate", cfg.showDonate);
   set("cfgRotate", cfg.rotateEnabled);
@@ -225,6 +237,10 @@ export function syncPickers(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>("[data-density]").forEach((b) => {
     b.classList.toggle("on", b.dataset.density === density);
   });
+  const valDetail = (root.querySelector("#cfgValDetail") as HTMLSelectElement)?.value;
+  root.querySelectorAll<HTMLElement>("[data-val-detail]").forEach((b) => {
+    b.classList.toggle("on", b.dataset.valDetail === valDetail);
+  });
 }
 
 export function readSettings(root: HTMLElement, base: Config): Config {
@@ -246,6 +262,11 @@ export function readSettings(root: HTMLElement, base: Config): Config {
   const skin = v("cfgSkin") || base.skin;
   if (!SKINS.some((s) => s.id === skin)) throw new Error("Invalid skin");
   const accent = v("cfgAccent") || base.themeAccent || "ember";
+
+  const valDetail = v("cfgValDetail") || base.gamingPresenceDetail || "full";
+  if (valDetail !== "full" && valDetail !== "minimal") {
+    throw new Error("Invalid Valorant detail preset");
+  }
 
   return {
     ...base,
@@ -274,7 +295,8 @@ export function readSettings(root: HTMLElement, base: Config): Config {
     showMatchBoard: c("cfgMatchBoard"),
     showOtherRiotIds: c("cfgOtherNames"),
     showOtherPlayerStats: c("cfgOtherStats"),
-    shareValorantStatsDiscord: c("cfgShareDiscord"),
+    shareValorantStatsDiscord: valDetail === "full",
+    gamingPresenceDetail: valDetail,
     idleEnabled: c("cfgIdle"),
     idleDetails: v("cfgIdleDetails") || base.idleDetails,
     idleState: v("cfgIdleState") || base.idleState,

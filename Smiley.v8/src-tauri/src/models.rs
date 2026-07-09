@@ -108,6 +108,9 @@ fn default_max_recents() -> u32 {
 fn default_theme() -> String {
     "ember".into()
 }
+fn default_gaming_presence_detail() -> String {
+    "full".into()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -172,6 +175,9 @@ pub struct Config {
     /// Share score / KDA / detailed lines on Discord (not just "In match").
     #[serde(default = "default_true")]
     pub share_valorant_stats_discord: bool,
+    /// `full` | `minimal` — presets for Valorant Discord detail level.
+    #[serde(default = "default_gaming_presence_detail")]
+    pub gaming_presence_detail: String,
     #[serde(default = "default_false")]
     pub idle_enabled: bool,
     #[serde(default = "default_idle_details")]
@@ -246,6 +252,7 @@ impl Default for Config {
             show_other_riot_ids: false,
             show_other_player_stats: false,
             share_valorant_stats_discord: true,
+            gaming_presence_detail: default_gaming_presence_detail(),
             idle_enabled: false,
             idle_details: default_idle_details(),
             idle_state: default_idle_state(),
@@ -332,6 +339,18 @@ impl Config {
         }
         if !["cozy", "comfy", "compact"].contains(&self.grid_density.as_str()) {
             self.grid_density = "cozy".into();
+        }
+        if !["full", "minimal"].contains(&self.gaming_presence_detail.as_str()) {
+            self.gaming_presence_detail = if self.share_valorant_stats_discord {
+                "full".into()
+            } else {
+                "minimal".into()
+            };
+        }
+        if self.gaming_presence_detail == "minimal" {
+            self.share_valorant_stats_discord = false;
+        } else {
+            self.share_valorant_stats_discord = true;
         }
         if self.theme_accent.trim().is_empty() {
             self.theme_accent = self.theme.clone();
@@ -427,6 +446,38 @@ pub fn sanitize_gif_url(url: &str) -> Option<String> {
     let u = normalize_gif_url(url);
     if is_valid_tenor_gif_url(&u) {
         Some(u)
+    } else {
+        None
+    }
+}
+
+/// HTTPS CDN URLs Discord can proxy (Valorant / Riot / Steam / Tenor GIFs).
+pub fn sanitize_rpc_image_url(url: &str) -> Option<String> {
+    let u = url.trim();
+    if u.is_empty() || u.len() >= 512 {
+        return None;
+    }
+    if u.contains(['"', '\'', '<', '>', ' ']) {
+        return None;
+    }
+    if let Some(gif) = sanitize_gif_url(u) {
+        return Some(gif);
+    }
+    let host = u
+        .strip_prefix("https://")
+        .and_then(|rest| rest.split('/').next())?;
+    let ok = matches!(
+        host,
+        "media.valorant-api.com"
+            | "cmsassets.rgpub.io"
+            | "ddragon.leagueoflegends.com"
+            | "cdn.cloudflare.steamstatic.com"
+            | "cdn.steamstatic.com"
+            | "static-cdn.jtvnw.net"
+            | "raw.githubusercontent.com"
+    );
+    if ok && u.starts_with("https://") {
+        Some(u.to_string())
     } else {
         None
     }
