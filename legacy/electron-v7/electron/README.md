@@ -1,6 +1,6 @@
 # `electron/` — Desktop backend helpers
 
-Smiley’s **main process** entry point is still **`main.js` at the repo root** (required by `package.json` → `"main": "main.js"`). This folder holds backend modules that `main.js` loads.
+Smiley’s **main process** entry point is **`main.js`** in this folder (`legacy/electron-v7/main.js`, required by `package.json` → `"main": "main.js"`). This folder holds backend modules that `main.js` loads.
 
 | File | Purpose |
 |------|---------|

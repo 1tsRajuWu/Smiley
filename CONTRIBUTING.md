@@ -8,7 +8,7 @@ Smiley is **open source**. You're welcome to fork the repo, fix bugs, improve th
 
 ```bash
 git clone https://github.com/YOUR_USER/Smiley.git
-cd Smiley
+cd Smiley/legacy/electron-v7
 cp discord.app.example.json discord.app.json
 # Optional for install telemetry in your builds:
 cp downloads.registry.example.json downloads.registry.json
@@ -34,10 +34,10 @@ Please open an issue first for large changes so we can align on direction. Keep 
 
 All of this is fair game to change and redistribute under the [LICENSE](LICENSE):
 
-- Application source (`src/`, `electron/`, `main.js`, `preload.js`)
+- Application source (`legacy/electron-v7/src/`, `legacy/electron-v7/electron/`, `main.js`, `preload.js`)
 - UI, themes, and activity picker
 - Electron packaging and build scripts
-- Mobile companion (`mobile/`)
+- Mobile companion (`legacy/electron-v7/mobile/`)
 - Documentation and examples
 
 ## Off-limits — author's infrastructure

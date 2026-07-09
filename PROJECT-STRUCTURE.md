@@ -1,13 +1,16 @@
 # Smiley — Project structure (newbie guide)
 
+> **v8 is shipping.** For the current desktop app, start at [`STRUCTURE.md`](STRUCTURE.md) and [`Smiley.v8/docs/NEWBIE-MAP.md`](Smiley.v8/docs/NEWBIE-MAP.md).  
+> This file documents the **archived Electron v7** tree under `legacy/electron-v7/`.
+
 **New to the repo?** Start here before opening random files.
 
 | Doc | Best for |
 |-----|----------|
 | **[docs/CODE-TOUR.md](docs/CODE-TOUR.md)** | Absolute beginners — what Electron is, step-by-step flow |
 | **This file** | Folder map and “which file do I edit?” |
-| [src/README.md](src/README.md) | UI folder (`src/`) |
-| [electron/README.md](electron/README.md) | Backend helpers + `main.js` section index |
+| [legacy/electron-v7/src/README.md](legacy/electron-v7/src/README.md) | UI folder (`src/`) |
+| [legacy/electron-v7/electron/README.md](legacy/electron-v7/electron/README.md) | Backend helpers + `main.js` section index |
 
 > **Quick link from README:** [README.md](README.md) is for users downloading the app. **This file** is for people reading or changing the code.
 
@@ -28,6 +31,7 @@
 **Run the desktop app locally:**
 
 ```bash
+cd legacy/electron-v7
 npm install
 cp discord.app.example.json discord.app.json   # paste your Discord Client ID
 npm start
@@ -38,58 +42,32 @@ npm start
 ## Folder tree
 
 ```
-Project Smiley/
-├── README.md                  # User-facing: download, features, quick start
-├── PROJECT-STRUCTURE.md       # ← You are here — code map for humans
-├── docs/
-│   └── CODE-TOUR.md           # Beginner walkthrough (start here if new to code)
+legacy/electron-v7/            # Archived Electron v7 app (all paths below are here)
 ├── package.json               # App version, npm scripts, electron-builder config
-│
 ├── main.js                    # Electron MAIN process (Node + Discord RPC)
 ├── preload.js                 # Safe bridge: window.smiley ↔ IPC
-│
 ├── electron/                  # Backend modules loaded by main.js
-│   ├── README.md
-│   └── install-registry.js    # Optional anonymous install stats
-│
-├── config.example.json        # Example user settings (theme, window size, etc.)
-├── discord.app.example.json   # Template: Discord Application Client ID
-├── discord.app.json           # Your real Client ID (gitignored — create locally)
-├── manifest.json              # PWA-style metadata (icons, name)
-│
 ├── src/                       # RENDERER — everything the user sees
-│   ├── README.md
-│   ├── index.html
-│   ├── renderer.js            # UI logic (search for // ─── sections ───)
-│   ├── activities.js          # Re-export → data/activities.js
-│   ├── discord-images.js      # Re-export → data/discord-images.js
-│   ├── data/                  # ← Edit activities & GIF logic here
-│   │   ├── activities.js
-│   │   ├── discord-images.js
-│   │   └── README.md
-│   ├── styles-v2.css          # Active UI theme
-│   ├── styles.css / styles-v1.css
-│   └── assets/                # Logos, icons, UPI QR
-│
 ├── build/                     # Icons, Mac entitlements, license RTF for installers
-├── scripts/                   # Icons, Mac signing, native builds, README links
-├── docs/                      # Developer docs + docs/site/ (GitHub Pages)
-├── .github/                   # CI (release, Pages, Android), issue templates
-│
-├── mobile/                    # Android/iOS Capacitor app (separate from Electron)
+├── scripts/                   # v7 build, signing, live-ui patch
+└── mobile/                    # Android/iOS Capacitor app
+
+Project Smiley/ (repo root)
+├── README.md                  # User-facing: download, features, quick start
+├── STRUCTURE.md               # v7 vs v8 folder map
+├── PROJECT-STRUCTURE.md       # ← You are here — v7 code map
+├── Smiley.v8/                 # Shipping Tauri app
+├── docs/
+│   └── CODE-TOUR.md           # Beginner walkthrough (start here if new to code)
+├── scripts/                   # Repo-wide infra (README downloads, v8 checks)
 ├── Smiley.Native/             # Optional native (.NET) build — README-NATIVE.md
-│
 ├── LICENSE, ToS.md, PRIVACY.md, LEGAL.md
-├── CONTRIBUTING.md, INSTALL-MAC.md, …
-│
-├── dist/                      # ⚠️ Build output — do not edit
-├── dist-native/               # ⚠️ Native build output — do not edit
-└── node_modules/              # ⚠️ Dependencies — do not edit
+└── .github/                   # CI (release, Pages, Android)
 ```
 
-**Why `main.js` and `preload.js` stay at the root:** `package.json` points `"main": "main.js"` and electron-builder packs those exact paths.
+**Why `main.js` and `preload.js` sit in `legacy/electron-v7/`:** `package.json` points `"main": "main.js"` and electron-builder packs those exact paths.
 
-**Why config JSON stays at the root:** `main.js`, CI, and electron-builder `files` list expect `discord.app.json` and `config.example.json` here.
+**Why config JSON stays in `legacy/electron-v7/`:** `main.js`, CI, and electron-builder `files` list expect `discord.app.json` and `config.example.json` there.
 
 ---
 
