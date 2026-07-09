@@ -2,7 +2,7 @@
 
 **Smiley** is a free Discord Rich Presence desktop app that puts **animated anime GIFs** on your Discord profile — gaming, coding, eating, chilling, and more. One click. No Developer Portal. Works on **Windows**, **macOS**, and **Linux**.
 
-**Official download:** [github.com/1tsRajuWu/Smiley/releases/latest](https://github.com/1tsRajuWu/Smiley/releases/latest)
+**Official download:** [Smiley v8.0.11](https://github.com/1tsRajuWu/Smiley/releases/tag/v8.0.11) · [Website](https://1tsrajuwu.github.io/Smiley/)
 
 ---
 
@@ -59,15 +59,17 @@ Smiley ships with a bundled Client ID. You never touch config files or the Devel
 
 ## Download
 
+**Smiley v8.0.11** is the current desktop app (Tauri + Rust). The Electron v7 stack is archived in [legacy/electron-v7/README.md](../legacy/electron-v7/README.md).
+
 <!-- DOWNLOADS_START -->
 | Platform | File | Link |
 |----------|------|------|
-| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-Setup-7.9.28.exe) |
-| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-arm64.dmg) |
-| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-x64.dmg) |
-| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.AppImage) |
-| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.deb) |
-| All platforms | — | [Latest releases](https://github.com/1tsRajuWu/Smiley/releases/latest) |
+| Windows | Installer (`.exe`) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_x64-setup.exe) |
+| macOS Apple Silicon | `.dmg` (Apple Silicon) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_aarch64.dmg) |
+| macOS Intel | `.dmg` (Intel) | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_x64.dmg) |
+| Linux (AppImage) | AppImage | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_amd64.AppImage) |
+| Linux (.deb) | `.deb` | [Download](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_amd64.deb) |
+| All platforms | — | [v8.0.11 release](https://github.com/1tsRajuWu/Smiley/releases/tag/v8.0.11) |
 <!-- DOWNLOADS_END -->
 
 **Needs:** Discord desktop app, macOS 11+ / Windows 10 (1809+) / Ubuntu 20.04+. [Full requirements →](MINIMUM-REQUIREMENTS.md)

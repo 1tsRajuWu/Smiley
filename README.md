@@ -34,12 +34,12 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 >
 > Read the full note from Raj: **[docs/FINAL.md](docs/FINAL.md)**
 
-**Smiley v8.0.11** (recommended) is the native Tauri + Rust desktop app. Electron **v7.9.28** remains for legacy users.
+**Smiley v8.0.11** is the current desktop app — native Tauri + Rust. The previous Electron stack (v7.9.x) is archived; see [legacy/electron-v7/README.md](legacy/electron-v7/README.md).
 
 ---
 
 <details open>
-<summary><strong>Smiley v8.0.11 — Direct downloads (recommended)</strong></summary>
+<summary><strong>Smiley v8.0.11 — Direct downloads</strong></summary>
 
 [![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_x64-setup.exe)
 [![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v8.0.11/Smiley.v8_8.0.11_aarch64.dmg)
@@ -58,29 +58,6 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 Release notes: [docs/releases/v8.0.11.md](docs/releases/v8.0.11.md)
 
 **macOS:** If Gatekeeper blocks first launch, use **System Settings → Privacy & Security → Open Anyway**, or run `xattr -cr "/Applications/Smiley v8.app"` once after install.
-
-</details>
-
-<details>
-<summary><strong>Legacy Electron v7.9.28 downloads</strong></summary>
-
-<!-- HERO_DOWNLOADS_START -->
-[![Windows](https://img.shields.io/badge/Windows-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-Setup-7.9.28.exe)
-[![macOS Apple Silicon](https://img.shields.io/badge/macOS_Apple_Silicon-Apple_Silicon-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-arm64.dmg)
-[![macOS Intel](https://img.shields.io/badge/macOS_Intel-Intel-555555?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-x64.dmg)
-[![Linux AppImage](https://img.shields.io/badge/Linux_AppImage-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.AppImage)
-[![Linux deb](https://img.shields.io/badge/Linux_deb-.deb-E95420?style=for-the-badge&logo=debian&logoColor=white)](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.deb)
-<!-- HERO_DOWNLOADS_END -->
-
-<!-- DOWNLOADS_START -->
-| Platform | File |
-|----------|------|
-| Windows | [Smiley-Setup-7.9.28.exe](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-Setup-7.9.28.exe) |
-| macOS Apple Silicon | [Smiley-7.9.28-arm64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-arm64.dmg) |
-| macOS Intel | [Smiley-7.9.28-x64.dmg](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28-x64.dmg) |
-| Linux (AppImage) | [Smiley-7.9.28.AppImage](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.AppImage) |
-| Linux (.deb) | [Smiley-7.9.28.deb](https://github.com/1tsRajuWu/Smiley/releases/download/v7.9.28/Smiley-7.9.28.deb) |
-<!-- DOWNLOADS_END -->
 
 </details>
 
@@ -207,6 +184,8 @@ Support: [paypal.me/1tsRaj](https://paypal.me/1tsRaj)
 <div align="center">
 
 Made by [**Raj (1tsRajuWu)**](https://github.com/1tsRajuWu)
+
+<sub>Archived Electron v7.9.x source and old installers: [legacy/electron-v7/README.md](legacy/electron-v7/README.md)</sub>
 
 </div>
 

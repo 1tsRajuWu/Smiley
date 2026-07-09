@@ -1,11 +1,11 @@
 # Platform upgrade — for other chats / agents
 
-**Status (2026-07-09):** **Smiley v8.0.11** is the recommended desktop download (Tauri + Rust).
+**Status (2026-07-09):** **Smiley v8.0.11** is the **shipping** desktop app (Tauri + Rust). Website and README promote v8 only.
 
 ## Do this in other conversations
 
 1. Prefer **`Smiley.v8/`** for new UI / presence / security work.
-2. Repo-root Electron (`main.js`, `electron/`, `src/`) is **v7.9.x legacy** — see `legacy/electron-v7/README.md`.
+2. Repo-root Electron (`main.js`, `electron/`, `src/`) is **archived v7.9.x** — not advertised to end users; see `legacy/electron-v7/README.md`.
 3. v8 safe live layers (no malware patterns):
    - Custom Tenor GIF activities
    - **Riot lockfile Valorant** — local match board + privacy toggles (`riot.rs`, `privacy.rs`)

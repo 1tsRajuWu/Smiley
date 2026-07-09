@@ -1,10 +1,12 @@
-# Electron Smiley v7 (archived reference)
+# Electron Smiley v7 (archived)
 
-The **shipping** Electron app for Discord Rich Presence through **v7.9.x** lives at the
+> **Archived:** Smiley **v8** (Tauri + Rust) is the current public desktop app. This folder documents the previous Electron stack for contributors and forks — it is **not** promoted on the website or README.
+
+The Electron app for Discord Rich Presence through **v7.9.x** lives at the
 repository root (`main.js`, `electron/`, `src/`, `preload.js`).
 
-This folder documents that stack so newcomers can find the “old platform” while
-**Smiley.v8** (Tauri + Rust) becomes the next major desktop app.
+This folder documents that stack so newcomers can find the old platform.
+Old v7 installers remain on [GitHub Releases](https://github.com/1tsRajuWu/Smiley/releases) but are no longer linked from the public site.
 
 ## What to open
 
@@ -24,8 +26,7 @@ release line on `main` was:
 
 - **v7.9.24** — `685816f` (`Release v7.9.24: fix Steam Discord small_image 404 spinner`)
 
-Do **not** delete the root Electron tree until official builds switch fully to v8
-and users have a migration path.
+Do **not** delete the root Electron tree — it is kept for reference, forks, and historical releases.
 
 ## Features that stay on Electron until ported
 
