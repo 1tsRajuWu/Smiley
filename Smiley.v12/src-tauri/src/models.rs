@@ -1,3 +1,4 @@
+use crate::install_telemetry::InstallTelemetry;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -210,6 +211,9 @@ pub struct Config {
     pub custom: Vec<CustomActivity>,
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// Local rollup of install section telemetry — synced to Supabase on official builds.
+    #[serde(default)]
+    pub install_telemetry: InstallTelemetry,
 }
 
 impl Default for Config {
@@ -260,6 +264,7 @@ impl Default for Config {
             last_activity_id: None,
             custom: vec![],
             theme: default_theme(),
+            install_telemetry: InstallTelemetry::default(),
         }
     }
 }
@@ -340,6 +345,7 @@ impl Config {
         if self.theme_accent.trim().is_empty() {
             self.theme_accent = self.theme.clone();
         }
+        self.install_telemetry = self.install_telemetry.clone().normalize();
         if !["ember", "ink", "moss", "violet", "gold"].contains(&self.theme_accent.as_str()) {
             self.theme_accent = match self.theme_accent.as_str() {
                 "signal" | "rose" => "ember".into(),

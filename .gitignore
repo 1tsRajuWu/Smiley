@@ -11,6 +11,7 @@ legacy/electron-v7/config.json
 legacy/electron-v7/config.secure
 legacy/electron-v7/discord.app.json
 legacy/electron-v7/downloads.registry.json
+Smiley.v12/src-tauri/downloads.registry.json
 # Runtime secrets on developer machines — never commit
 discord.app.json
 Smiley.v12/src-tauri/discord.app.json

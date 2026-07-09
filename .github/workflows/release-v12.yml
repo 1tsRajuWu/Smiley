@@ -69,6 +69,19 @@ jobs:
           fi
           printf '%s\n' "{\"clientId\":\"${DISCORD_CLIENT_ID}\"}" > Smiley.v12/src-tauri/discord.app.json
 
+      - name: Create downloads.registry.json
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_ANON_KEY:-}" ]; then
+            node -e "const fs=require('fs');fs.writeFileSync('Smiley.v12/src-tauri/downloads.registry.json',JSON.stringify({supabaseUrl:process.env.SUPABASE_URL.trim().replace(/\\/$/,''),supabaseAnonKey:process.env.SUPABASE_ANON_KEY.trim()}));console.log('Install registry configured for v12')"
+          else
+            echo "::warning::SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build"
+            printf '%s\n' '{"supabaseUrl":"","supabaseAnonKey":""}' > Smiley.v12/src-tauri/downloads.registry.json
+          fi
+
       - name: Load release notes
         id: relnotes
         shell: bash

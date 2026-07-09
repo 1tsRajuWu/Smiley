@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to downloads.registry.json for local install telemetry. Official CI injects secrets at release build time.",
+  "supabaseUrl": "https://YOUR_PROJECT_REF.supabase.co",
+  "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY"
+}

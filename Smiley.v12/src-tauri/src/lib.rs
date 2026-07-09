@@ -5,6 +5,8 @@ mod config;
 mod discord;
 mod error;
 mod gaming;
+mod install_registry;
+mod install_telemetry;
 mod log_file;
 mod models;
 mod music;
@@ -259,6 +261,17 @@ pub fn run() {
             }
 
             *state.bundle_resources.lock() = app.path().resource_dir().ok();
+            if let Some(dir) = state.bundle_resources.lock().clone() {
+                state.install_registry.set_resource_dir(Some(dir));
+            }
+
+            {
+                let app_state = state.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(Duration::from_millis(800));
+                    app_state.register_install_heartbeat();
+                });
+            }
 
             // Music now-playing — MediaRemote stream (instant) when listening; idle sleep otherwise
             {

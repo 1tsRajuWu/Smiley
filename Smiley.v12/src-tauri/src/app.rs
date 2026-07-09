@@ -2,6 +2,8 @@ use crate::activities;
 use crate::config;
 use crate::discord::{resolve_rpc_image, Discord, Presence, RpcActivityType};
 use crate::error::{AppError, AppResult};
+use crate::install_registry::{launch_info_from_config, InstallRegistry};
+use crate::install_telemetry::{ActivityHit, InstallTelemetry};
 use crate::models::{sanitize_gif_url, sanitize_gif_url_or, *};
 use parking_lot::Mutex;
 use std::path::PathBuf;
@@ -31,6 +33,7 @@ pub struct App {
     pub last_coding_sig: Mutex<String>,
     /// Tauri bundle Resources dir (mediaremote-adapter).
     pub bundle_resources: Mutex<Option<PathBuf>>,
+    pub install_registry: InstallRegistry,
 }
 
 impl App {
@@ -58,7 +61,41 @@ impl App {
             last_music_sig: Mutex::new(String::new()),
             last_coding_sig: Mutex::new(String::new()),
             bundle_resources: Mutex::new(None),
+            install_registry: InstallRegistry::new(),
         }))
+    }
+
+    fn persist_telemetry<F>(&self, update: F)
+    where
+        F: FnOnce(InstallTelemetry) -> InstallTelemetry,
+    {
+        let telemetry = {
+            let mut cfg = self.config.lock();
+            let next = update(cfg.install_telemetry.clone().normalize());
+            cfg.install_telemetry = next.clone();
+            next
+        };
+        let cfg_snap = self.config.lock().clone();
+        let _ = config::save(&cfg_snap);
+        self.install_registry.schedule_sync(telemetry);
+    }
+
+    pub fn register_install_heartbeat(&self) {
+        let (telemetry, launch) = {
+            let mut cfg = self.config.lock();
+            let launch = launch_info_from_config(&cfg);
+            let telemetry = cfg
+                .install_telemetry
+                .clone()
+                .normalize()
+                .record_launch(&launch);
+            cfg.install_telemetry = telemetry.clone();
+            (telemetry, launch)
+        };
+        let cfg_snap = self.config.lock().clone();
+        let _ = config::save(&cfg_snap);
+        self.install_registry
+            .register_launch(&telemetry, &launch);
     }
 
     fn now_secs() -> u64 {
@@ -395,9 +432,9 @@ impl App {
         {
             let mut s = self.status.lock();
             s.connected = *self.discord.connected.lock();
-            s.details = Some(details);
-            s.state = Some(state);
-            s.gif = Some(gif);
+            s.details = Some(details.clone());
+            s.state = Some(state.clone());
+            s.gif = Some(gif.clone());
             s.message = if paused {
                 "Paused (selection saved)".into()
             } else if Self::in_quiet_hours(&cfg_snap) {
@@ -405,6 +442,17 @@ impl App {
             } else {
                 "Presence live".into()
             };
+        }
+        if let Some(act) = activities::find(id) {
+            self.persist_telemetry(|t| {
+                t.record_activity(&ActivityHit {
+                    id: id.into(),
+                    details: details.clone(),
+                    state: state.clone(),
+                    category: act.category.clone(),
+                    emoji: emoji.clone(),
+                })
+            });
         }
         Ok(self.refresh_status_fields())
     }
@@ -545,6 +593,11 @@ impl App {
             if next.last_activity_id.is_none() {
                 next.last_activity_id = live.last_activity_id.clone();
             }
+            if next.install_telemetry.sections.is_empty()
+                && !live.install_telemetry.sections.is_empty()
+            {
+                next.install_telemetry = live.install_telemetry.clone();
+            }
             if !raw_idle.is_empty() {
                 next.idle_gif = sanitize_gif_url(&raw_idle).unwrap_or(raw_idle);
             } else if live.idle_gif != next.idle_gif {
@@ -649,6 +702,9 @@ impl App {
         let cfg = self.config.lock().clone();
         let status = self.status.lock().clone();
         if !status.connected || status.paused {
+            if track.is_some() {
+                crate::log_file::append("music: track dropped — not connected or paused");
+            }
             *self.last_music_sig.lock() = String::new();
             return Ok(());
         }
@@ -656,6 +712,12 @@ impl App {
             return Ok(());
         }
         if !cfg.music_now_playing || status.activity_id.as_deref() != Some("listening") {
+            if track.is_some() {
+                crate::log_file::append(&format!(
+                    "music: track dropped — listening inactive (music_now_playing={}, activity={:?})",
+                    cfg.music_now_playing, status.activity_id
+                ));
+            }
             *self.last_music_sig.lock() = String::new();
             return Ok(());
         }
@@ -689,11 +751,12 @@ impl App {
             ))?;
             {
                 let mut s = self.status.lock();
-                s.details = Some(details);
-                s.state = Some(state);
-                s.gif = Some(gif);
+                s.details = Some(details.clone());
+                s.state = Some(state.clone());
+                s.gif = Some(gif.clone());
                 s.message = "Music live".into();
             }
+            self.persist_telemetry(|t| t.record_music(&track));
         } else {
             let sig = format!("idle-listening\0{gif}");
             if sig == *self.last_music_sig.lock() {
@@ -783,11 +846,12 @@ impl App {
             .set(self.build_presence_typed(&details, &state, "💻", &gif, start, None))?;
         {
             let mut s = self.status.lock();
-            s.details = Some(details);
-            s.state = Some(state);
+            s.details = Some(details.clone());
+            s.state = Some(state.clone());
             s.gif = Some(resolve_rpc_image(&gif, CODING_GIF));
             s.message = "Coding live".into();
         }
+        self.persist_telemetry(|t| t.record_coding(&details, &details, &state));
         Ok(())
     }
 
@@ -886,13 +950,16 @@ impl App {
                     {
                         let mut s = self.status.lock();
                         s.activity_id = Some(format!("live-{}", live.product));
-                        s.details = Some(details);
-                        s.state = Some(state);
+                        s.details = Some(details.clone());
+                        s.state = Some(state.clone());
                         if live.product == "valorant" {
                             s.gif = Some(crate::valorant_catalog::valorant_game_logo().into());
                         }
                         s.message = format!("Live {}", live.title);
                     }
+                    self.persist_telemetry(|t| {
+                        t.record_game(&live.title, &state, &live.product)
+                    });
                     return Ok(());
                 }
             }
@@ -936,6 +1003,7 @@ impl App {
             s.gif = Some(resolve_rpc_image(image, GAMING_GIF));
             s.message = format!("Live {}", hit.title);
         }
+        self.persist_telemetry(|t| t.record_game(&hit.title, &hit.state, &hit.id));
         Ok(())
     }
 
