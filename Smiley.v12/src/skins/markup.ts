@@ -188,6 +188,26 @@ export function zenMarkup(): string {
 }
 
 function dialogs(_prefix: string): string {
+  // gifFieldMarkup imported at build time via app — inline the same structure for create dialog
+  const createGif = `
+    <label class="gif-field">
+      <span>GIF URL</span>
+      <div class="gif-field-row">
+        <input id="caGif" placeholder="https://media.tenor.com/… or Tenor page link" spellcheck="false" />
+        <button type="button" class="gif-test-btn" data-act="preview-gif" data-gif-input="caGif" data-gif-preview="caGifPreview" data-gif-status="caGifStatus">Test</button>
+      </div>
+    </label>
+    <p class="field-hint" id="caGifStatus" hidden></p>
+    <div class="gif-preview" id="caGifPreview" hidden>
+      <img alt="GIF preview" />
+      <code class="gif-resolved"></code>
+    </div>
+    <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or any Tenor page URL — click <strong>Test</strong> to preview before saving.</p>
+    <div class="gif-sources" role="group" aria-label="Find GIFs">
+      <span class="gif-sources-label">Browse:</span>
+      <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>
+    </div>`;
+
   return `
   <dialog class="dlg" id="settingsDlg">
     <form method="dialog" class="dlg-card" id="settingsForm">
@@ -209,15 +229,10 @@ function dialogs(_prefix: string): string {
         <button type="button" data-act="close-create" aria-label="Close">✕</button>
       </header>
       <div class="dlg-body">
-        <label><span>Details</span><input id="caDetails" maxlength="128" /></label>
-        <label><span>State</span><input id="caState" maxlength="128" /></label>
+        <label><span>Details</span><input id="caDetails" maxlength="128" placeholder="What you're doing" /></label>
+        <label><span>State</span><input id="caState" maxlength="128" placeholder="Optional subtitle" /></label>
         <label><span>Emoji</span><input id="caEmoji" maxlength="8" value="✨" /></label>
-        <label><span>GIF URL</span><input id="caGif" placeholder="https://media.tenor.com/… or Tenor page link" /></label>
-        <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or a Tenor page URL — Smiley resolves it on save.</p>
-        <div class="gif-sources" role="group" aria-label="Find GIFs">
-          <span class="gif-sources-label">Browse:</span>
-          <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>
-        </div>
+        ${createGif}
       </div>
       <footer>
         <button type="button" class="primary" data-act="save-custom">Add</button>

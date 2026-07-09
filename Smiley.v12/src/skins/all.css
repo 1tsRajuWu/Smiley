@@ -179,6 +179,65 @@ html.calm .wallpaper::after {
 .gif-source:hover {
   background: rgba(255,255,255,.12);
 }
+.gif-field-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.gif-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+.gif-test-btn {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.08);
+  color: inherit;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: .82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gif-test-btn:hover { background: rgba(255,255,255,.14); }
+.gif-preview {
+  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,.25);
+  text-align: center;
+}
+.gif-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.gif-preview .gif-resolved {
+  display: block;
+  font-size: .68rem;
+  opacity: .65;
+  padding: 6px 8px;
+  word-break: break-all;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.field-hint.err { color: #f7768e; opacity: 1; }
+.field-hint.ok { color: #9ece6a; opacity: 1; }
+.tile-create {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  border: 2px dashed rgba(255,255,255,.2);
+  background: rgba(255,255,255,.04);
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: .85;
+}
+.tile-create:hover { border-color: rgba(255,255,255,.35); opacity: 1; }
 
 /* Dialogs / settings shared */
 .dlg { border: 0; background: transparent; padding: 0; max-width: 720px; width: calc(100% - 28px); color: inherit; }

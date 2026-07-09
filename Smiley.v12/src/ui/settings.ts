@@ -3,6 +3,7 @@ import { SKINS } from "./types";
 
 /** Settings dialog markup + read/write helpers for the config form. */
 import { esc } from "./api";
+import { gifFieldMarkup, setGifPreview } from "./customGif";
 
 function isHhMm(s: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(s.trim());
@@ -133,12 +134,7 @@ export function settingsMarkup(): string {
           <label><span>Quiet end</span><input id="cfgQuietEnd" placeholder="08:00" /></label>
           <label><span>Idle details</span><input id="cfgIdleDetails" maxlength="128" /></label>
           <label><span>Idle state</span><input id="cfgIdleState" maxlength="128" /></label>
-          <label><span>Idle GIF</span><input id="cfgIdleGif" placeholder="https://media.tenor.com/… or Tenor page link" /></label>
-          <p class="field-hint">Direct <code>media.tenor.com</code> URL or Tenor page link — resolved when you save settings.</p>
-          <div class="gif-sources" role="group" aria-label="Find GIFs">
-            <span class="gif-sources-label">Browse:</span>
-            <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>
-          </div>
+          ${gifFieldMarkup("cfgIdleGif", "cfgIdleGifPreview", "cfgIdleGifStatus")}
         </div>
       </section>
 
@@ -164,7 +160,7 @@ export function settingsMarkup(): string {
           <label><span>Max recents</span><input id="cfgMaxRecents" type="number" min="3" max="20" /></label>
         </div>
         <p class="cfg-label">Updates</p>
-        <p class="cfg-version" id="cfgVersion">v12.0.2</p>
+        <p class="cfg-version" id="cfgVersion">v12.0.8</p>
         <button type="button" class="cfg-update-btn" data-act="check-updates">Check for updates</button>
         <p class="cfg-hint" id="cfgUpdateStatus" hidden></p>
       </section>
@@ -218,6 +214,10 @@ export function fillSettings(root: HTMLElement, cfg: Config, snap: Snapshot) {
   set("cfgIdleDetails", cfg.idleDetails);
   set("cfgIdleState", cfg.idleState);
   set("cfgIdleGif", cfg.idleGif);
+  const idlePreview = root.querySelector("#cfgIdleGifPreview");
+  if (idlePreview && cfg.idleGif) {
+    setGifPreview(root, "cfgIdleGifPreview", "cfgIdleGifStatus", cfg.idleGif);
+  }
   set("cfgAuto", cfg.autoConnect);
   set("cfgTray", cfg.minimizeToTray);
   set("cfgLaunchMin", cfg.launchMinimized);

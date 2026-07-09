@@ -113,7 +113,13 @@ jobs:
     if: ${{ needs.build-tauri.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Publish completed draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${GITHUB_REF_NAME}" --draft=false --repo "${GITHUB_REPOSITORY}"
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          notes="docs/releases/v${ver}.md"
+          if [ ! -f "$notes" ]; then notes="docs/releases/v12.0.1.md"; fi
+          gh release edit "${GITHUB_REF_NAME}" --draft=false --notes-file "$notes" --repo "${GITHUB_REPOSITORY}"

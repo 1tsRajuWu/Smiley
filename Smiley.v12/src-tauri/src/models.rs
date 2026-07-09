@@ -379,68 +379,10 @@ fn sanitize_text(s: &str, max: usize) -> String {
         .to_string()
 }
 
-const CUSTOM_GIF_FALLBACK: &str =
-    "https://media.tenor.com/_EzjRj8XOP4AAAAM/streaming-stream.gif";
-
-/// Normalize Tenor CDN variants (media1, media2, http) to Discord-safe HTTPS.
-pub fn normalize_gif_url(url: &str) -> String {
-    let mut u = url.trim().to_string();
-    if u.is_empty() {
-        return u;
-    }
-    if !u.starts_with("http://") && !u.starts_with("https://") && u.contains("tenor.com") {
-        u = format!("https://{u}");
-    }
-    if u.starts_with("http://") {
-        u = u.replacen("http://", "https://", 1);
-    }
-    if let Some(rest) = u.strip_prefix("https://media1.tenor.com/m/") {
-        let mut parts = rest.splitn(2, '/');
-        if let (Some(id), Some(file)) = (parts.next(), parts.next()) {
-            let id = if id.ends_with("AAAAC") {
-                format!("{}AAAAM", &id[..id.len().saturating_sub(5)])
-            } else {
-                id.to_string()
-            };
-            return format!("https://media.tenor.com/{id}/{file}");
-        }
-        u = u.replace("https://media1.tenor.com", "https://media.tenor.com");
-    }
-    if u.starts_with("https://media1.tenor.com/") {
-        u = u.replace("https://media1.tenor.com", "https://media.tenor.com");
-    }
-    u
-}
-
-fn is_valid_tenor_gif_url(url: &str) -> bool {
-    let u = url.trim();
-    if u.is_empty() || u.len() >= 500 {
-        return false;
-    }
-    if u.contains(['"', '\'', '<', '>', ' ']) {
-        return false;
-    }
-    let host = u
-        .strip_prefix("https://")
-        .and_then(|rest| rest.split('/').next());
-    let Some(host) = host else {
-        return false;
-    };
-    host == "media.tenor.com"
-        || host == "c.tenor.com"
-        || host == "media1.tenor.com"
-        || (host.starts_with("media") && host.ends_with(".tenor.com"))
-}
-
-/// Tenor HTTPS only — Discord-safe + matches CSP img-src.
-pub fn sanitize_gif_url(url: &str) -> Option<String> {
-    let u = normalize_gif_url(url);
-    if is_valid_tenor_gif_url(&u) {
-        Some(u)
-    } else {
-        None
-    }
-}
+pub use crate::tenor::{
+    extract_tenor_gif_from_html, is_safe_gif_source_url, normalize_gif_url, resolve_gif_url,
+    sanitize_gif_url, sanitize_gif_url_or, GIF_FALLBACK as CUSTOM_GIF_FALLBACK,
+};
 
 /// HTTPS CDN URLs Discord can proxy (Valorant / Riot / Steam / Tenor GIFs).
 pub fn sanitize_rpc_image_url(url: &str) -> Option<String> {
@@ -472,103 +414,6 @@ pub fn sanitize_rpc_image_url(url: &str) -> Option<String> {
     } else {
         None
     }
-}
-
-pub fn sanitize_gif_url_or(url: &str, fallback: &str) -> String {
-    sanitize_gif_url(url).unwrap_or_else(|| fallback.to_string())
-}
-
-/// Allowlisted GIF browse sites (Tenor attribution only).
-pub fn is_safe_gif_source_url(url: &str) -> bool {
-    let u = url.trim();
-    u == "https://tenor.com"
-        || u.starts_with("https://tenor.com/")
-        || u == "https://www.tenor.com"
-        || u.starts_with("https://www.tenor.com/")
-}
-
-/// Pull a direct Tenor CDN `.gif` URL from a Tenor HTML page.
-pub fn extract_tenor_gif_from_html(html: &str) -> Option<String> {
-    const PREFIXES: &[&str] = &[
-        "https://media.tenor.com/",
-        "https://media1.tenor.com/",
-        "https://media2.tenor.com/",
-        "https://media3.tenor.com/",
-    ];
-    for prefix in PREFIXES {
-        let mut search_from = 0;
-        while let Some(rel) = html[search_from..].find(prefix) {
-            let start = search_from + rel;
-            let slice = &html[start..];
-            let Some(gif_rel) = slice.find(".gif") else {
-                break;
-            };
-            let end = gif_rel + 4;
-            let candidate = &slice[..end];
-            if let Some(url) = sanitize_gif_url(candidate) {
-                return Some(url);
-            }
-            search_from = start + prefix.len();
-        }
-    }
-    None
-}
-
-/// Resolve a pasted Tenor CDN or Tenor page URL to a Discord-safe GIF URL.
-pub fn resolve_gif_url(raw: &str) -> crate::error::AppResult<String> {
-    use crate::error::AppError;
-    use std::time::Duration;
-
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        return Err(AppError::Msg("GIF URL is empty".into()));
-    }
-    let normalized = normalize_gif_url(trimmed);
-    if let Some(url) = sanitize_gif_url(&normalized) {
-        return Ok(url);
-    }
-    let lower = normalized.to_ascii_lowercase();
-    let is_tenor_page = lower.contains("tenor.com")
-        && !lower.contains("media.tenor.com")
-        && !lower.contains("media1.tenor.com")
-        && !lower.contains("media2.tenor.com")
-        && !lower.contains("media3.tenor.com");
-    if is_tenor_page {
-        let fetch_url = if normalized.starts_with("https://") {
-            normalized
-        } else if normalized.starts_with("http://") {
-            normalize_gif_url(&normalized)
-        } else {
-            format!("https://{normalized}")
-        };
-        let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(10))
-            .user_agent("Smiley/12")
-            .build()
-            .map_err(|e| AppError::Msg(format!("http client: {e}")))?;
-        let resp = client.get(&fetch_url).send().map_err(|e| {
-            AppError::Msg(format!("Could not fetch Tenor page: {e}"))
-        })?;
-        if !resp.status().is_success() {
-            return Err(AppError::Msg(format!(
-                "Tenor page returned HTTP {}",
-                resp.status()
-            )));
-        }
-        let body = resp
-            .text()
-            .map_err(|e| AppError::Msg(format!("Could not read Tenor page: {e}")))?;
-        if let Some(url) = extract_tenor_gif_from_html(&body) {
-            return Ok(url);
-        }
-        return Err(AppError::Msg(
-            "Could not find a GIF on that Tenor page — copy the media.tenor.com link instead"
-                .into(),
-        ));
-    }
-    Err(AppError::Msg(
-        "GIF must be a Tenor HTTPS URL (https://media.tenor.com/… or a Tenor page link)".into(),
-    ))
 }
 
 pub fn is_safe_donate_url(url: &str) -> bool {

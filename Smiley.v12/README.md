@@ -1,6 +1,6 @@
 # Smiley v12
 
-**Smiley 12.0.7** — the **final** native desktop app (Tauri + Rust + TypeScript). Only bugfix releases (`12.0.x`) ship from this tree. See [`docs/FINAL-V12.md`](docs/FINAL-V12.md).
+**Smiley 12.0.8** — the **final** native desktop app (Tauri + Rust + TypeScript). Only bugfix releases (`12.0.x`) ship from this tree. See [`docs/FINAL-V12.md`](docs/FINAL-V12.md).
 
 ## Run locally
 

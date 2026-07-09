@@ -1,5 +1,10 @@
 import { api, errMsg, esc } from "./api";
 import {
+  previewGifInput,
+  resetCustomForm,
+  setGifPreview,
+} from "./customGif";
+import {
   fillSettings,
   readSettings,
   setCfgTab,
@@ -213,6 +218,8 @@ export class AppController {
       }
       case "open-gif-source":
         return this.openGifSource(el.dataset.url || "");
+      case "preview-gif":
+        return this.previewGif(el);
       case "pick-category":
         this.activeCategory = el.dataset.category || this.activeCategory;
         this.lastGridKey = "";
@@ -500,6 +507,13 @@ export class AppController {
     const active = this.snap.status.activityId;
     const skin = normalizeSkin(this.snap.config.skin);
     const staticTiles = this.snap.config.staticTiles || this.snap.config.reduceMotion;
+    const showCreateTile =
+      this.activeCategory === "custom" && !q.trim() && list.length === 0;
+
+    if (showCreateTile) {
+      grid.innerHTML = `<button type="button" class="tile-create" data-act="create">＋ Create your first custom activity</button>`;
+      return;
+    }
 
     if (skin === "terminal") {
       grid.innerHTML = list
@@ -839,7 +853,19 @@ export class AppController {
   }
 
   private openCreate() {
-    this.$<HTMLDialogElement>("createDlg")?.showModal();
+    const dlg = this.$<HTMLDialogElement>("createDlg");
+    const form = this.$<HTMLElement>("createForm");
+    if (form) resetCustomForm(form);
+    dlg?.showModal();
+    this.$<HTMLInputElement>("caDetails")?.focus();
+  }
+
+  private async previewGif(el: HTMLElement) {
+    const inputId = el.dataset.gifInput || "";
+    const previewId = el.dataset.gifPreview || "";
+    const statusId = el.dataset.gifStatus || "";
+    const root = el.closest("dialog") ?? this.root;
+    await previewGifInput(root, inputId, previewId, statusId);
   }
 
   private async saveSettings() {
@@ -888,6 +914,7 @@ export class AppController {
   }
 
   private async saveCustom() {
+    const form = this.$<HTMLElement>("createForm");
     const details = this.$<HTMLInputElement>("caDetails")?.value.trim() ?? "";
     if (!details) {
       this.toast("Details required");
@@ -898,6 +925,7 @@ export class AppController {
     if (rawGif) {
       try {
         gif = await api.resolveGifUrl(rawGif);
+        if (form) setGifPreview(form, "caGifPreview", "caGifStatus", gif);
       } catch (e) {
         this.toast(errMsg(e));
         return;
@@ -913,6 +941,7 @@ export class AppController {
       });
       this.snap = await api.snapshot();
       this.activeCategory = "custom";
+      this.lastGridKey = "";
       this.$<HTMLDialogElement>("createDlg")?.close();
       this.paint();
       this.toast("Activity added");
