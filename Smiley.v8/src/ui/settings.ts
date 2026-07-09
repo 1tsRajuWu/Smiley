@@ -92,7 +92,16 @@ export function settingsMarkup(): string {
           <label class="cfg-tog"><input type="checkbox" id="cfgLiveGaming" /><span>Valorant live board (local Riot API — score, agent, map)</span></label>
           <label class="cfg-tog"><input type="checkbox" id="cfgGaming" /><span>Other games via window title (optional)</span></label>
         </div>
-        <p class="cfg-hint">Valorant uses lockfile + 127.0.0.1 only. Privacy tab controls names/stats on Discord.</p>
+        <p class="cfg-hint">Valorant uses lockfile + 127.0.0.1 only. No injectors or memory reads.</p>
+        <p class="cfg-label">Valorant on Discord</p>
+        <div class="cfg-chips">
+          <button type="button" data-act="pick-val-detail" data-val-detail="full">Full details</button>
+          <button type="button" data-act="pick-val-detail" data-val-detail="minimal">Minimal</button>
+        </div>
+        <select id="cfgValDetail" class="sr-only" tabindex="-1" aria-hidden="true">
+          <option value="full">full</option>
+          <option value="minimal">minimal</option>
+        </select>
         <p class="cfg-label">Other live overlays</p>
         <div class="cfg-toggles">
           <label class="cfg-tog"><input type="checkbox" id="cfgMusic" /><span>Live music (Spotify / Apple Music)</span></label>
@@ -129,11 +138,15 @@ export function settingsMarkup(): string {
         <p class="cfg-lede">Your data stays on your machine. Smiley v8 uses only local APIs — no game injectors or memory reads.</p>
         <div class="cfg-toggles">
           <label class="cfg-tog"><input type="checkbox" id="cfgMatchBoard" /><span>Show live Valorant board in-app</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgShareDiscord" /><span>Share score &amp; KDA on Discord</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgOtherNames" /><span>Show other players' Riot IDs (opt-in)</span></label>
-          <label class="cfg-tog"><input type="checkbox" id="cfgOtherStats" /><span>Show other players' KDA on the board</span></label>
         </div>
-        <p class="cfg-hint">Names/stats off by default. Lockfile passwords and PUUIDs never leave Rust.</p>
+        <details class="cfg-advanced">
+          <summary>Advanced privacy</summary>
+          <div class="cfg-toggles">
+            <label class="cfg-tog"><input type="checkbox" id="cfgOtherNames" /><span>Show other players' Riot IDs (opt-in)</span></label>
+            <label class="cfg-tog"><input type="checkbox" id="cfgOtherStats" /><span>Show other players' KDA on the board</span></label>
+          </div>
+        </details>
+        <p class="cfg-hint">Full details = score, agent, map on Discord. Names/stats off by default.</p>
       </section>
 
       <section class="cfg-panel" data-panel="app">

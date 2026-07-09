@@ -203,6 +203,12 @@ export class AppController {
         syncPickers(this.$("settingsBody")!);
         return;
       }
+      case "pick-val-detail": {
+        const sel = this.$<HTMLSelectElement>("cfgValDetail");
+        if (sel && el.dataset.valDetail) sel.value = el.dataset.valDetail;
+        syncPickers(this.$("settingsBody")!);
+        return;
+      }
       case "cat":
         this.cat = el.dataset.cat || this.cat;
         this.lastGridKey = "";
@@ -385,7 +391,17 @@ export class AppController {
       if (subtitle) subtitle.textContent = s.state || act?.state || s.message;
       if (details) details.textContent = s.details || act?.details || "—";
       if (stateLine) stateLine.textContent = s.state || act?.state || "—";
-      if (kicker) kicker.textContent = s.rotateActive ? "Auto-rotating" : "Now playing";
+      if (kicker) {
+        const mb = s.matchBoard;
+        kicker.textContent =
+          mb?.phase === "pregame"
+            ? "Agent select"
+            : mb?.phase === "match"
+              ? "Live match"
+              : s.rotateActive
+                ? "Auto-rotating"
+                : "Now playing";
+      }
       if (meta) {
         meta.textContent = [
           `details: ${s.details || act?.details}`,
