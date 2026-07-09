@@ -25,8 +25,8 @@ latest_url="https://github.com/${REPO}/releases/latest"
 release_base="https://github.com/${REPO}/releases/download"
 
 pkg_version=""
-if [[ -f "$ROOT/package.json" ]] && command -v node >/dev/null 2>&1; then
-  pkg_version=$(node -p "require('$ROOT/package.json').version" 2>/dev/null || echo "")
+if [[ -f "$ROOT/legacy/electron-v7/package.json" ]] && command -v node >/dev/null 2>&1; then
+  pkg_version=$(node -p "require('$ROOT/legacy/electron-v7/package.json').version" 2>/dev/null || echo "")
 fi
 
 latest_install_assets=$(echo "$latest_json" | jq '[.assets[] | select(.name | test("^Smiley-(Setup-[0-9]|[0-9].*\\.(exe|dmg|AppImage|deb)$)"))] | length')
