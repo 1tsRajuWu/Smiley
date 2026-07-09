@@ -780,7 +780,9 @@ impl App {
                             activity,
                             "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
                         );
-                    if gaming_slot {
+                    // Valorant live board always owns Discord when enabled — not only gaming GIF slots.
+                    let push_discord = gaming_slot || live.product == "valorant";
+                    if push_discord {
                         let (details, state) =
                             crate::privacy::valorant_discord_lines(&live, &cfg_snap);
                         let start = Some(Self::now_secs() as i64);

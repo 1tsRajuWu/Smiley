@@ -13,7 +13,12 @@ pub struct ValorantArt {
 
 pub fn resolve_art(live: &RiotLive) -> ValorantArt {
     let large_image = valorant_game_logo().to_string();
-    let large_text = live.title.clone();
+    let large_text = live
+        .board
+        .map
+        .clone()
+        .filter(|m| !m.is_empty())
+        .unwrap_or_else(|| live.title.clone());
 
     let agent_id = live.self_agent_id.as_deref();
     let map_ref = live

@@ -605,14 +605,18 @@ fn extend_players(flat: &mut Vec<Value>, list: &Value) {
 fn pregame_players(match_json: &Value) -> Vec<Value> {
     let mut flat = Vec::new();
     if let Some(ally) = match_json.get("AllyTeam") {
-        if let Some(p) = ally.get("Players") {
-            extend_players(&mut flat, p);
-        }
-        if let Some(c) = ally.get("Characters") {
-            extend_players(&mut flat, c);
-        }
-        if ally.get("Players").is_none() {
+        if ally.is_array() {
             extend_players(&mut flat, ally);
+        } else {
+            if let Some(p) = ally.get("Players") {
+                extend_players(&mut flat, p);
+            }
+            if let Some(c) = ally.get("Characters") {
+                extend_players(&mut flat, c);
+            }
+            if ally.get("Players").is_none() && !ally.is_array() {
+                extend_players(&mut flat, ally);
+            }
         }
     }
     if let Some(enemy) = match_json.get("EnemyTeam") {
@@ -821,7 +825,7 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
         .map(map_from_path)
         .unwrap_or_else(|| (String::new(), None));
 
-    let core = fetch_core_board(&lock, &puuid, opts.resolve_names);
+    let core = fetch_core_board(&lock, &puuid, opts.resolve_names, chat_score.as_deref());
     let pre = fetch_pregame_board(&lock, &puuid, opts.resolve_names);
     let has_core = core.is_some();
     let has_pregame = pre.is_some();
@@ -853,10 +857,21 @@ fn probe_riot_presence_inner(opts: RiotProbeOptions) -> AppResult<Option<RiotLiv
     if score.is_none() && phase == "match" {
         score = chat_score.clone();
     }
+    let chat_agent_id = str_field(
+        &private,
+        &[
+            "characterId",
+            "CharacterID",
+            "CharacterId",
+            "selectedAgent",
+            "SelectedAgent",
+        ],
+    );
     let mut self_agent_id = core
         .as_ref()
         .and_then(|c| c.self_agent_id.clone())
-        .or_else(|| pre.as_ref().and_then(|p| p.self_agent_id.clone()));
+        .or_else(|| pre.as_ref().and_then(|p| p.self_agent_id.clone()))
+        .or(chat_agent_id);
     let mut self_agent = self_agent_id
         .as_ref()
         .and_then(|id| agent_name(id))
@@ -957,7 +972,12 @@ struct BoardBits {
     players: Vec<MatchPlayer>,
 }
 
-fn fetch_core_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Option<BoardBits> {
+fn fetch_core_board(
+    lock: &Lockfile,
+    puuid: &str,
+    do_resolve_names: bool,
+    chat_score: Option<&str>,
+) -> Option<BoardBits> {
     let player = local_get(lock, &format!("/core-game/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/core-game/v1/matches/{match_id}"))?;
@@ -977,7 +997,7 @@ fn fetch_core_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> Opt
     let self_agent = self_agent_id.as_ref().and_then(|id| agent_name(id));
     let self_kda = self_row.and_then(|p| kda_of(p));
     let queue_id = match_queue_id(&match_json);
-    let score = match_score_hint(&match_json, self_row, queue_id.as_deref(), None);
+    let score = match_score_hint(&match_json, self_row, queue_id.as_deref(), chat_score);
     let map_path = str_field(&match_json, &["MapID", "MapId", "mapId"]);
     let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
     let mode = queue_id.as_ref().map(|q| queue_label(q));
@@ -1035,13 +1055,12 @@ fn fetch_pregame_board(lock: &Lockfile, puuid: &str, do_resolve_names: bool) -> 
     } else {
         HashMap::new()
     };
+    let self_team = self_row
+        .and_then(|p| team_id(p))
+        .or_else(|| Some("Blue".into()));
     let mut players: Vec<MatchPlayer> = players_raw
         .iter()
-        .filter_map(|p| build_player(p, puuid, Some("Blue"), &names, false))
-        .map(|mut mp| {
-            mp.seat = "Ally".into();
-            mp
-        })
+        .filter_map(|p| build_player(p, puuid, self_team.as_deref(), &names, false))
         .collect();
     players.sort_by(|a, b| b.is_self.cmp(&a.is_self).then(a.name.cmp(&b.name)));
 
@@ -1137,5 +1156,32 @@ mod tests {
             }
         });
         assert_eq!(pregame_players(&m).len(), 2);
+    }
+
+    #[test]
+    fn pregame_players_from_ally_team_array() {
+        let m = json!({
+            "AllyTeam": [
+                { "Subject": "a", "CharacterID": JETT },
+                { "Subject": "b" }
+            ]
+        });
+        assert_eq!(pregame_players(&m).len(), 2);
+    }
+
+    #[test]
+    fn pregame_enemy_team_seat() {
+        let players_raw = vec![
+            json!({ "Subject": "me", "TeamID": "Blue", "CharacterID": JETT }),
+            json!({ "Subject": "foe", "TeamID": "Red" }),
+        ];
+        let names = HashMap::new();
+        let built: Vec<MatchPlayer> = players_raw
+            .iter()
+            .filter_map(|p| build_player(p, "me", Some("Blue"), &names, false))
+            .collect();
+        assert_eq!(built.len(), 2);
+        assert!(built.iter().any(|p| p.is_self && p.seat == "Ally"));
+        assert!(built.iter().any(|p| !p.is_self && p.seat == "Enemy"));
     }
 }

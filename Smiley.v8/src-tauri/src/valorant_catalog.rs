@@ -1,7 +1,11 @@
 //! Valorant map / queue / agent registries — mirrors electron/valorant-catalog.js (2026-07).
+//! Static fallbacks + valorant-api.com cache (maps refresh daily).
 
+use parking_lot::Mutex;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapEntry {
@@ -141,6 +145,116 @@ fn slugify(token: &str) -> String {
         .collect()
 }
 
+const API_TTL: Duration = Duration::from_secs(86_400);
+
+struct ApiMapCache {
+    at: Instant,
+    by_slug: HashMap<String, MapEntry>,
+    by_uuid: HashMap<String, MapEntry>,
+}
+
+static API_MAPS: OnceLock<Mutex<ApiMapCache>> = OnceLock::new();
+static HTTP: OnceLock<reqwest::blocking::Client> = OnceLock::new();
+
+fn api_maps() -> &'static Mutex<ApiMapCache> {
+    API_MAPS.get_or_init(|| {
+        Mutex::new(ApiMapCache {
+            at: Instant::now() - API_TTL,
+            by_slug: HashMap::new(),
+            by_uuid: HashMap::new(),
+        })
+    })
+}
+
+fn http_client() -> &'static reqwest::blocking::Client {
+    HTTP.get_or_init(|| {
+        reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(8))
+            .build()
+            .expect("valorant-api client")
+    })
+}
+
+fn ingest_api_map(map: &Value, by_slug: &mut HashMap<String, MapEntry>, by_uuid: &mut HashMap<String, MapEntry>) {
+    let Some(uuid) = map.get("uuid").and_then(|v| v.as_str()) else {
+        return;
+    };
+    let name = map
+        .get("displayName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if name.is_empty() {
+        return;
+    }
+    let entry = MapEntry {
+        name: name.clone(),
+        uuid: Some(uuid.to_string()),
+    };
+    by_uuid.insert(uuid.to_lowercase(), entry.clone());
+    let mut slugs = Vec::new();
+    if let Some(url) = map.get("mapUrl").and_then(|v| v.as_str()) {
+        if let Some(last) = url.split('/').filter(|s| !s.is_empty()).last() {
+            slugs.push(slugify(last));
+        }
+    }
+    if let Some(path) = map.get("assetPath").and_then(|v| v.as_str()) {
+        if let Some(last) = path.split('/').filter(|s| !s.is_empty()).last() {
+            let tail = last.trim_end_matches("_PrimaryAsset");
+            slugs.push(slugify(tail));
+        }
+    }
+    slugs.push(slugify(&name));
+    for slug in slugs {
+        if !slug.is_empty() {
+            by_slug.insert(slug, entry.clone());
+        }
+    }
+}
+
+/// Refresh map registry from valorant-api.com (no-op if cached < 24h).
+pub fn refresh_maps_from_api() {
+    let mut cache = api_maps().lock();
+    if cache.at.elapsed() < API_TTL && !cache.by_uuid.is_empty() {
+        return;
+    }
+    let Ok(res) = http_client()
+        .get("https://valorant-api.com/v1/maps")
+        .send()
+    else {
+        return;
+    };
+    if !res.status().is_success() {
+        return;
+    }
+    let Ok(data) = res.json::<Value>() else {
+        return;
+    };
+    let mut by_slug = HashMap::new();
+    let mut by_uuid = HashMap::new();
+    if let Some(arr) = data.get("data").and_then(|d| d.as_array()) {
+        for map in arr {
+            ingest_api_map(map, &mut by_slug, &mut by_uuid);
+        }
+    }
+    if !by_uuid.is_empty() {
+        cache.by_slug = by_slug;
+        cache.by_uuid = by_uuid;
+        cache.at = Instant::now();
+    }
+}
+
+fn lookup_api_slug(slug: &str) -> Option<MapEntry> {
+    refresh_maps_from_api();
+    api_maps().lock().by_slug.get(slug).cloned()
+}
+
+fn lookup_api_uuid(uuid: &str) -> Option<MapEntry> {
+    refresh_maps_from_api();
+    api_maps().lock().by_uuid.get(&uuid.to_lowercase()).cloned()
+}
+
 pub fn agent_display_name(id: &str) -> Option<String> {
     let key = id.trim().to_lowercase();
     if key.is_empty() {
@@ -267,6 +381,9 @@ pub fn resolve_map(map_ref: &str) -> MapEntry {
                 return entry.clone();
             }
         }
+        if let Some(entry) = lookup_api_uuid(raw) {
+            return entry;
+        }
         return MapEntry {
             name: String::new(),
             uuid: Some(raw.to_string()),
@@ -284,6 +401,9 @@ pub fn resolve_map(map_ref: &str) -> MapEntry {
     for slug in candidates {
         if let Some(entry) = map_table().get(slug.as_str()) {
             return entry.clone();
+        }
+        if let Some(entry) = lookup_api_slug(&slug) {
+            return entry;
         }
     }
     let last = parts.last().copied().unwrap_or(raw);
