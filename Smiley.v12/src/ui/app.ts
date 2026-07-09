@@ -459,6 +459,7 @@ export class AppController {
       q,
       this.snap.status.activityId ?? "",
       this.snap.config.favorites.join(","),
+      this.snap.config.custom.map((c) => c.id).join(","),
       this.snap.config.staticTiles ? "1" : "0",
       normalizeSkin(this.snap.config.skin),
     ].join("|");
@@ -813,10 +814,12 @@ export class AppController {
     if (!id || !this.snap) return;
     if (!confirm("Delete this custom activity?")) return;
     try {
-      this.snap.config = await api.removeCustom(id);
+      await api.removeCustom(id);
       if (this.snap.status.activityId === id) {
         this.snap.status = await api.clear();
       }
+      this.snap = await api.snapshot();
+      this.lastGridKey = "";
       this.paint();
       this.toast("Deleted");
     } catch (e) {

@@ -904,6 +904,11 @@ impl App {
         }
 
         let activity = status.activity_id.as_deref().unwrap_or("");
+        // v7 parity: live gaming only when a Gaming slot (or ongoing live-game session) is active.
+        if activity.is_empty() || is_manual_presence_slot(activity) {
+            return Ok(());
+        }
+
         let gaming_slot = is_gaming_activity(activity);
         let probe_games = gaming_slot && (cfg.gaming_probe || cfg.live_gaming);
         let foreground = if probe_games {
@@ -930,6 +935,18 @@ impl App {
                     || (live.board.active && live.phase != "lobby");
                 let push_discord = gaming_slot || live.product == "valorant";
                 if riot_live && push_discord {
+                    if self
+                        .status
+                        .lock()
+                        .activity_id
+                        .as_deref()
+                        .is_some_and(is_manual_presence_slot)
+                    {
+                        return Ok(());
+                    }
+                    if !self.gaming_slot_active() && live.product != "valorant" {
+                        return Ok(());
+                    }
                     let cfg_snap = cfg.clone();
                     let (details, state) =
                         crate::privacy::valorant_discord_lines(&live, &cfg_snap);
@@ -989,11 +1006,26 @@ impl App {
         Ok(())
     }
 
+    /// Gaming probe / Riot overlay may run only when a Gaming activity is explicitly selected.
+    fn gaming_slot_active(&self) -> bool {
+        let cfg = self.config.lock();
+        let status = self.status.lock();
+        let activity = status.activity_id.as_deref().unwrap_or("");
+        status.connected
+            && !status.paused
+            && !Self::in_quiet_hours(&cfg)
+            && (cfg.gaming_probe || cfg.live_gaming)
+            && is_gaming_activity(activity)
+    }
+
     fn apply_probed_game(
         &self,
         hit: &crate::gaming::GameHit,
         status: &Status,
     ) -> AppResult<()> {
+        if !self.gaming_slot_active() {
+            return Ok(());
+        }
         const GAMING_GIF: &str = "https://media.tenor.com/yjGe52tfF-wAAAAM/gaming-gamer.gif";
         let slot_gif = status
             .activity_id
@@ -1033,7 +1065,11 @@ impl App {
         if cfg.last_activity_id.as_deref() == Some(id) {
             cfg.last_activity_id = None;
         }
-        self.save_config(cfg)
+        // Intentional list mutation — bypass save_config guard that restores a cleared custom list.
+        let cfg = cfg.sanitize();
+        config::save(&cfg)?;
+        *self.config.lock() = cfg.clone();
+        Ok(cfg)
     }
 
     pub fn get_status(&self) -> Status {
@@ -1060,13 +1096,22 @@ fn stable_started_at(
     }
 }
 
+const GAMING_SLOT_IDS: &[&str] =
+    &["gaming", "ranked", "coop", "retro", "speedrun", "vr-gaming"];
+
+fn is_explicit_gaming_slot(activity: &str) -> bool {
+    GAMING_SLOT_IDS.contains(&activity)
+}
+
+/// Manual picks (custom GIF, food, chill, work, social, etc.) — live gaming must not override.
+fn is_manual_presence_slot(activity: &str) -> bool {
+    !activity.is_empty()
+        && !activity.starts_with("live-")
+        && !is_explicit_gaming_slot(activity)
+}
+
 fn is_gaming_activity(activity: &str) -> bool {
-    activity.is_empty()
-        || activity.starts_with("live-")
-        || matches!(
-            activity,
-            "gaming" | "ranked" | "coop" | "retro" | "speedrun" | "vr-gaming"
-        )
+    is_explicit_gaming_slot(activity) || activity.starts_with("live-")
 }
 
 /// Foreground non-Riot title wins over a stale Riot lobby/queue (v7 parity).
@@ -1107,9 +1152,30 @@ fn live_presence_poll_interval_for(cfg: &Config, status: &Status) -> Duration {
 
 #[cfg(test)]
 mod tests {
-    use super::{live_presence_poll_interval_for, stable_started_at};
+    use super::{
+        is_explicit_gaming_slot, is_gaming_activity, is_manual_presence_slot,
+        live_presence_poll_interval_for, stable_started_at,
+    };
     use crate::models::{Config, Status};
     use std::time::Duration;
+
+    #[test]
+    fn manual_presence_slots_block_gaming_probe() {
+        assert!(is_manual_presence_slot("custom-abc"));
+        assert!(is_manual_presence_slot("eating-pizza"));
+        assert!(is_manual_presence_slot("listening"));
+        assert!(!is_manual_presence_slot("gaming"));
+        assert!(!is_manual_presence_slot("live-rust"));
+        assert!(!is_manual_presence_slot(""));
+    }
+
+    #[test]
+    fn gaming_activity_requires_explicit_slot_or_live_session() {
+        assert!(!is_gaming_activity(""));
+        assert!(is_explicit_gaming_slot("ranked"));
+        assert!(is_gaming_activity("live-cs2"));
+        assert!(!is_gaming_activity("custom-xyz"));
+    }
 
     #[test]
     fn stable_started_at_keeps_existing_timestamp_for_same_session() {

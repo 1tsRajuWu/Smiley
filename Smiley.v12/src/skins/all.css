@@ -137,10 +137,11 @@ html.calm .wallpaper::after {
 }
 .tile-fav.on { color: #ffd166; }
 .tile-del {
-  position: absolute; top: 8px; left: 8px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
-  display: grid; place-items: center; background: rgba(0,0,0,.45); color: #ff8e8e; font-size: 1rem;
-  opacity: 0; transition: opacity .12s ease;
+  position: absolute; top: 8px; left: 8px; z-index: 3; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(0,0,0,.55); color: #ff8e8e; font-size: 1rem;
+  opacity: 0.82; transition: opacity .12s ease;
   appearance: none; border: 0; padding: 0; cursor: pointer;
+  pointer-events: auto;
 }
 .tile-wrap:hover .tile-del, .row:hover .tile-del { opacity: 1; }
 .tile img.tile-still { filter: saturate(.85); }

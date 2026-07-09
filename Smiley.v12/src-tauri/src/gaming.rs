@@ -301,7 +301,8 @@ fn matches_needle(key: &str, spaced: &str, needle: &str) -> bool {
     if needle.contains(' ') {
         return spaced == needle || spaced.contains(needle);
     }
-    key == needle || spaced.contains(needle)
+    // Single-token needles: exact match only (v7 parity — avoids rustc/rust-analyzer false positives).
+    key == needle
 }
 
 fn match_known_game(process_name: &str) -> Option<&'static KnownGame> {
@@ -424,5 +425,13 @@ mod tests {
     fn valorant_is_riot_game() {
         assert!(is_riot_game_id("valorant"));
         assert!(!is_riot_game_id("cs2"));
+    }
+
+    #[test]
+    fn rust_game_exact_match_only() {
+        assert_eq!(match_known_game("rust").map(|g| g.id), Some("rust"));
+        assert_eq!(match_known_game("RustClient").map(|g| g.id), Some("rust"));
+        assert_eq!(match_known_game("rustc").map(|g| g.id), None);
+        assert_eq!(match_known_game("rust-analyzer").map(|g| g.id), None);
     }
 }

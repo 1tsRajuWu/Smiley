@@ -1,6 +1,6 @@
 # Platform upgrade — FROZEN (v12 final)
 
-**Status (2026-07-10):** **Smiley v12.0.6** is the **final shipping** desktop app (Tauri + Rust). **Bugfix-only** releases (`v12.0.x`) from [`Smiley.v12/`](Smiley.v12/). This document is **frozen** — do not plan new major versions here.
+**Status (2026-07-10):** **Smiley v12.0.7** is the **final shipping** desktop app (Tauri + Rust). **Bugfix-only** releases (`v12.0.x`) from [`Smiley.v12/`](Smiley.v12/). This document is **frozen** — do not plan new major versions here.
 
 ## Do this in other conversations
 
@@ -13,7 +13,7 @@
    - **Music** Spotify/Apple Music + system players (`music.rs`, macOS mediaremote-adapter stream)
    - Process gaming probe optional
 5. Donation = PayPal tip (`paypal.me/1tsRaj`). Discord = Application Client ID + desktop IPC — **not a bot**.
-6. Website + GitHub release **v12.0.6** point end users at native installers.
+6. Website + GitHub release **v12.0.7** point end users at native installers.
 7. v12 in-app updates: `TAURI_SIGNING_PRIVATE_KEY` GitHub secret required for signed `latest.json` on `v12.*` tags.
 
 ## Newbie map
