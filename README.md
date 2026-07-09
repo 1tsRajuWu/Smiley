@@ -32,7 +32,7 @@ Pick an activity. Get an anime GIF on your profile. No Developer Portal. No conf
 
 > **Smiley v12.0.0 is the final shipping release** — a clean rebuild consolidating stable v7 tray/updater/music patterns with the Tauri + Rust shell from v8. v8 and v7 trees are archived.
 
-**Smiley v12.0.0** is the current desktop app — native Tauri + Rust. Previous stacks: [legacy/smiley-v8-archived/](legacy/smiley-v8-archived/) (v8), [legacy/electron-v7/](legacy/electron-v7/) (v7.9.x).
+**Smiley v12.0.0** is the current desktop app — native Tauri + Rust. Previous stacks: [legacy/smiley-v8/](legacy/smiley-v8/) (v8), [legacy/electron-v7/](legacy/electron-v7/) (v7.9.x).
 
 ---
 
