@@ -159,13 +159,14 @@ fn worker(client_id: String, rx: Receiver<Job>) {
                 let res = (|| -> AppResult<()> {
                     ensure_client(&mut client, &client_id)?;
                     let sig = format!(
-                        "{}|{}|{}|{:?}|{:?}|{:?}",
+                        "{}|{}|{}|{:?}|{:?}|{:?}|{:?}",
                         p.details,
                         p.state,
                         p.large_image,
                         p.small_image,
                         p.start,
-                        p.button_label
+                        p.button_label,
+                        p.activity_type
                     );
                     if last_sig == sig && last_at.elapsed() < Duration::from_millis(350) {
                         return Ok(());

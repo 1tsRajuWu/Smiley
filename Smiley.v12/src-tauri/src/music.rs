@@ -19,7 +19,7 @@ use crate::music_mediaremote::{
 };
 
 const OSASCRIPT_TIMEOUT: Duration = Duration::from_millis(2200);
-const IDLE_SLEEP: Duration = Duration::from_secs(8);
+const IDLE_SLEEP: Duration = Duration::from_secs(2);
 const FALLBACK_POLL: Duration = Duration::from_secs(5);
 #[cfg(target_os = "linux")]
 const LINUX_POLL: Duration = Duration::from_secs(3);
@@ -312,15 +312,37 @@ pub fn track_signature(track: &TrackHit) -> String {
 /// Background music → Discord sync loop wired to `App` state.
 pub fn run_music_presence_loop(app: Arc<crate::app::App>, resource_dir: Option<PathBuf>) {
     run_sync_loop(resource_dir, || app.music_listening_active(), |track| {
-        let _ = app.music_apply_track(track);
+        if let Err(e) = app.music_apply_track(track) {
+            log_file::append(&format!("music: apply failed: {e}"));
+        }
     });
 }
 
 /// One-shot music probe for UI nudge / connect (uses bundled adapter when available).
+/// Includes paused tracks — unlike `probe_now_playing` which prefers actively playing media.
 pub fn nudge_now_playing(
     resource_dir: Option<&std::path::Path>,
 ) -> AppResult<Option<TrackHit>> {
-    probe_now_playing(resource_dir)
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(paths) = resolve_adapter_paths(resource_dir) {
+            if test_adapter(&paths) {
+                if let Some(track) = probe_once(&paths) {
+                    return Ok(Some(track));
+                }
+            }
+        }
+        return probe_macos_osascript();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        return Ok(crate::music_linux::probe_mpris());
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = resource_dir;
+        Ok(None)
+    }
 }
 
 #[cfg(test)]

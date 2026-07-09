@@ -8,7 +8,7 @@ Smiley started as a fun personal project — something I built because I wanted 
 
 ## v12 is the final version
 
-**Smiley v12 is the last major release.** After v12.0.2, expect **only occasional bug fixes** (`v12.0.x`) when something breaks — not a steady stream of new features. A major v13 is **not planned**. Consider this a warm goodbye from active development, not from the project itself.
+**Smiley v12 is the last major release.** After v12.0.4, expect **only occasional bug fixes** (`v12.0.x`) when something breaks — not a steady stream of new features. A major v13 is **not planned**. Consider this a warm goodbye from active development, not from the project itself.
 
 The **community is completely free** to use, fork, modify, and advance the code. Smiley is MIT-licensed. If you want live gaming presence, music sync, new skins, or anything else in a direction I didn't take — please fork it and make it yours.
 

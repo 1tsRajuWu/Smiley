@@ -37,7 +37,11 @@ const BUNDLE_APP_NAMES: &[(&str, &str)] = &[
     ("com.deezer.Deezer", "Deezer"),
 ];
 
-/// Resolve bundled or dev-tree mediaremote-adapter paths.
+fn normalize_adapter_dir(dir: PathBuf) -> PathBuf {
+    dir.canonicalize().unwrap_or(dir)
+}
+
+/// Resolve bundled or dev-tree mediaremote-adapter paths (absolute, for perl).
 pub fn resolve_adapter_paths(resource_dir: Option<&Path>) -> Option<AdapterPaths> {
     let mut candidates: Vec<PathBuf> = Vec::new();
     if let Some(dir) = resource_dir {
@@ -55,17 +59,17 @@ pub fn resolve_adapter_paths(resource_dir: Option<&Path>) -> Option<AdapterPaths
     candidates.push(Path::new(env!("CARGO_MANIFEST_DIR")).join(LEGACY_ADAPTER_DIR));
 
     for dir in candidates {
+        let dir = normalize_adapter_dir(dir);
         let framework = dir.join("MediaRemoteAdapter.framework");
         let script = dir.join("mediaremote-adapter.pl");
         if framework.is_dir() && script.is_file() {
+            let framework = normalize_adapter_dir(framework);
+            let script = normalize_adapter_dir(script);
             log_file::append(&format!(
                 "music: mediaremote adapter at {}",
                 dir.display()
             ));
-            return Some(AdapterPaths {
-                framework,
-                script,
-            });
+            return Some(AdapterPaths { framework, script });
         }
     }
     log_file::append("music: mediaremote adapter not found — osascript/MPRIS fallback");
@@ -115,18 +119,21 @@ fn parse_get_json(json: &str) -> Option<TrackHit> {
     adapter_state_to_track(obj)
 }
 
-/// One-shot adapter health check (`get --no-artwork`).
+/// Adapter entitlement / load check (`test` — works even when nothing is playing).
 pub fn test_adapter(paths: &AdapterPaths) -> bool {
     let mut child = match Command::new(PERL_BIN)
         .arg(&paths.script)
         .arg(&paths.framework)
-        .args(["get", "--no-artwork"])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .arg("test")
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
     {
         Ok(c) => c,
-        Err(_) => return false,
+        Err(e) => {
+            log_file::append(&format!("music: adapter test spawn failed: {e}"));
+            return false;
+        }
     };
 
     let started = Instant::now();
@@ -134,13 +141,23 @@ pub fn test_adapter(paths: &AdapterPaths) -> bool {
         match child.try_wait() {
             Ok(Some(status)) => {
                 if !status.success() {
-                    return false;
+                    let mut err = String::new();
+                    if let Some(mut stderr) = child.stderr.take() {
+                        let _ = stderr.read_to_string(&mut err);
+                    }
+                    let detail = err.trim();
+                    if detail.is_empty() {
+                        log_file::append("music: adapter test failed (non-zero exit)");
+                    } else {
+                        log_file::append(&format!("music: adapter test failed: {detail}"));
+                    }
                 }
-                break;
+                return status.success();
             }
             Ok(None) => thread::sleep(Duration::from_millis(40)),
-            Err(_) => {
+            Err(e) => {
                 let _ = child.kill();
+                log_file::append(&format!("music: adapter test wait failed: {e}"));
                 return false;
             }
         }
@@ -148,15 +165,10 @@ pub fn test_adapter(paths: &AdapterPaths) -> bool {
     if child.try_wait().ok().flatten().is_none() {
         let _ = child.kill();
         let _ = child.wait();
+        log_file::append("music: adapter test timed out");
         return false;
     }
-
-    let mut out = String::new();
-    if let Some(mut stdout) = child.stdout.take() {
-        let _ = stdout.read_to_string(&mut out);
-    }
-    let _ = child.wait();
-    !out.trim().is_empty()
+    true
 }
 
 pub fn bundle_id_to_app_name(bundle_id: &str) -> String {
@@ -246,7 +258,7 @@ impl StreamReader {
             .arg(&paths.framework)
             .args(["stream", "--no-artwork"])
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| AppError::Msg(format!("mediaremote stream: {e}")))?;
 
@@ -272,7 +284,23 @@ impl StreamReader {
             }
             if let Ok(mut guard) = child_for_thread.lock() {
                 if let Some(mut c) = guard.take() {
-                    let _ = c.wait();
+                    if let Some(mut stderr) = c.stderr.take() {
+                        let mut err = String::new();
+                        if stderr.read_to_string(&mut err).is_ok() {
+                            let trimmed = err.trim();
+                            if !trimmed.is_empty() {
+                                log_file::append(&format!("music: stream stderr: {trimmed}"));
+                            }
+                        }
+                    }
+                    let code = c.wait().ok().and_then(|s| s.code());
+                    if let Some(code) = code {
+                        if code != 0 {
+                            log_file::append(&format!(
+                                "music: MediaRemote stream exited ({code})"
+                            ));
+                        }
+                    }
                 }
             }
         });

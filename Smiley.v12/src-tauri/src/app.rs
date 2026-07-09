@@ -327,12 +327,31 @@ impl App {
                 if at.elapsed() < cooldown {
                     let current = self.status.lock().activity_id.clone();
                     if current.as_deref() == Some(id) {
+                        if id == "listening" {
+                            {
+                                let mut s = self.status.lock();
+                                s.connected = *self.discord.connected.lock();
+                            }
+                            self.music_nudge();
+                        }
                         return Ok(self.refresh_status_fields());
                     }
                     return Err(AppError::Msg("Slow down — presence cooling".into()));
                 }
             }
             *last = Some(Instant::now());
+        }
+
+        let started_at = Self::now_secs();
+        *self.started_at.lock() = Some(started_at);
+        *self.started_sig.lock() = format!("manual:{id}");
+        *self.last_music_sig.lock() = String::new();
+        *self.last_coding_sig.lock() = String::new();
+
+        // Slot id before Discord push so music/gaming background threads respect the new activity.
+        {
+            let mut s = self.status.lock();
+            s.activity_id = Some(id.into());
         }
 
         if !paused {
@@ -365,20 +384,17 @@ impl App {
             let _ = config::save(&cfg);
         }
 
-        let started_at = Self::now_secs();
-        *self.started_at.lock() = Some(started_at);
-        *self.started_sig.lock() = format!("manual:{id}");
-        *self.last_music_sig.lock() = String::new();
-        *self.last_coding_sig.lock() = String::new();
-
         if id == "listening" {
+            {
+                let mut s = self.status.lock();
+                s.connected = *self.discord.connected.lock();
+            }
             self.music_nudge();
         }
 
         {
             let mut s = self.status.lock();
             s.connected = *self.discord.connected.lock();
-            s.activity_id = Some(id.into());
             s.details = Some(details);
             s.state = Some(state);
             s.gif = Some(gif);
@@ -623,7 +639,9 @@ impl App {
         }
         let dir = self.bundle_resources.lock().clone();
         let track = crate::music::nudge_now_playing(dir.as_deref()).ok().flatten();
-        let _ = self.music_apply_track(track);
+        if let Err(e) = self.music_apply_track(track) {
+            crate::log_file::append(&format!("music: nudge apply failed: {e}"));
+        }
     }
 
     /// Apply now-playing track to Discord (event-driven or polled). Shows idle listening when no track.
