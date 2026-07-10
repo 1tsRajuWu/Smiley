@@ -331,18 +331,52 @@ fn queue_from_private(private: &Value) -> Option<String> {
     .map(|id| queue_label(&id))
 }
 
+/// Coerce Riot JSON numbers that may arrive as int, float, or string.
+fn json_i64(v: &Value) -> Option<i64> {
+    v.as_i64()
+        .or_else(|| v.as_u64().and_then(|n| i64::try_from(n).ok()))
+        .or_else(|| v.as_f64().map(|f| f as i64))
+        .or_else(|| v.as_str().and_then(|s| s.trim().parse::<i64>().ok()))
+}
+
+fn is_ally_enemy_score(s: &str) -> bool {
+    let mut parts = s.split('-');
+    matches!(
+        (parts.next(), parts.next(), parts.next()),
+        (Some(a), Some(b), None)
+            if a.chars().all(|c| c.is_ascii_digit())
+                && b.chars().all(|c| c.is_ascii_digit())
+                && !a.is_empty()
+                && !b.is_empty()
+    )
+}
+
+fn raw_queue_from_private(private: &Value) -> Option<String> {
+    str_field(
+        private,
+        &[
+            "queueId",
+            "queueID",
+            "QueueID",
+            "partyOwnerQueueId",
+            "mode",
+            "modeId",
+        ],
+    )
+}
+
 fn chat_team_score(private: &Value) -> Option<String> {
     let ally = private
         .get("partyOwnerMatchScoreAllyTeam")
         .or_else(|| private.get("partyOwnerMatchCurrentTeamRoundScore"))
         .or_else(|| private.get("matchScoreAllyTeam"))
         .or_else(|| private.get("allyScore"))
-        .and_then(|v| v.as_i64());
+        .and_then(json_i64);
     let enemy = private
         .get("partyOwnerMatchScoreEnemyTeam")
         .or_else(|| private.get("matchScoreEnemyTeam"))
         .or_else(|| private.get("enemyScore"))
-        .and_then(|v| v.as_i64());
+        .and_then(json_i64);
     if let (Some(a), Some(e)) = (ally, enemy) {
         return Some(format!("{a}-{e}"));
     }
@@ -479,17 +513,17 @@ fn kda_of(p: &Value) -> Option<String> {
     let stats = p.get("Stats").unwrap_or(p);
     let k = stats
         .get("Kills")
-        .or_else(|| stats.get("kills"))?
-        .as_i64()?;
+        .or_else(|| stats.get("kills"))
+        .and_then(json_i64)?;
     let d = stats
         .get("Deaths")
         .or_else(|| stats.get("deaths"))
-        .and_then(|v| v.as_i64())
+        .and_then(json_i64)
         .unwrap_or(0);
     let a = stats
         .get("Assists")
         .or_else(|| stats.get("assists"))
-        .and_then(|v| v.as_i64())
+        .and_then(json_i64)
         .unwrap_or(0);
     Some(format!("{k}/{d}/{a}"))
 }
@@ -498,31 +532,42 @@ fn kills_only(p: &Value) -> Option<String> {
     let stats = p.get("Stats").unwrap_or(p);
     let k = stats
         .get("Kills")
-        .or_else(|| stats.get("kills"))?
-        .as_i64()?;
+        .or_else(|| stats.get("kills"))
+        .and_then(json_i64)?;
     Some(format!("{k} kills"))
 }
 
-fn team_points(team: &Value) -> Option<i64> {
-    for k in [
-        "NumPoints",
-        "numPoints",
-        "RoundsWon",
-        "roundsWon",
-        "RoundScore",
-        "roundScore",
-        "Score",
-        "score",
-        "points",
-    ] {
-        if let Some(n) = team.get(k).and_then(|v| v.as_i64()) {
+/// Team points for Discord. TDM must use NumPoints — RoundScore is spike noise (often 0-0).
+fn team_points(team: &Value, queue_id: Option<&str>) -> Option<i64> {
+    let tdm = queue_id.is_some_and(is_team_deathmatch_queue);
+    let keys: &[&str] = if tdm {
+        &["NumPoints", "numPoints", "points"]
+    } else {
+        &[
+            "NumPoints",
+            "numPoints",
+            "RoundsWon",
+            "roundsWon",
+            "RoundScore",
+            "roundScore",
+            "Score",
+            "score",
+            "points",
+        ]
+    };
+    for k in keys {
+        if let Some(n) = team.get(*k).and_then(json_i64) {
             return Some(n);
         }
     }
     None
 }
 
-fn team_score_from_teams(match_json: &Value, self_team: Option<&str>) -> Option<String> {
+fn team_score_from_teams(
+    match_json: &Value,
+    self_team: Option<&str>,
+    queue_id: Option<&str>,
+) -> Option<String> {
     let teams = match_json
         .get("Teams")
         .or_else(|| match_json.get("ScoreboardTeams"))
@@ -535,7 +580,7 @@ fn team_score_from_teams(match_json: &Value, self_team: Option<&str>) -> Option<
         .iter()
         .filter_map(|t| {
             let id = str_field(t, &["TeamID", "TeamId", "teamId"]).unwrap_or_default();
-            let pts = team_points(t)?;
+            let pts = team_points(t, queue_id)?;
             Some((id, pts))
         })
         .collect();
@@ -556,9 +601,21 @@ fn team_score_from_teams(match_json: &Value, self_team: Option<&str>) -> Option<
 fn team_score_from_players(players: &[Value], self_team: Option<&str>) -> Option<String> {
     let mut by_team: HashMap<String, i64> = HashMap::new();
     for p in players {
-        let tid = team_id(p)?;
-        let k = p.get("Stats").or(Some(p))?;
-        let kills = k.get("Kills").or_else(|| k.get("kills"))?.as_i64()?;
+        let Some(tid) = team_id(p) else {
+            continue;
+        };
+        // FFA DM uses per-player TeamIDs (often the subject UUID) — skip for team totals.
+        if tid.len() > 8 && tid.contains('-') {
+            continue;
+        }
+        let stats = p.get("Stats").unwrap_or(p);
+        let Some(kills) = stats
+            .get("Kills")
+            .or_else(|| stats.get("kills"))
+            .and_then(json_i64)
+        else {
+            continue;
+        };
         *by_team.entry(tid).or_insert(0) += kills;
     }
     if by_team.len() < 2 {
@@ -578,11 +635,12 @@ fn team_score_from_players(players: &[Value], self_team: Option<&str>) -> Option
     Some(format!("{}-{}", entries[0].1, entries[1].1))
 }
 
-fn match_score_hint(
+/// Local-only score from core-game / merged scoreboard players. No chat fallback.
+fn local_match_score(
     match_json: &Value,
+    players: &[Value],
     self_row: Option<&Value>,
     queue_id: Option<&str>,
-    chat_score: Option<&str>,
 ) -> Option<String> {
     let q = queue_id.unwrap_or("");
     let self_team = self_row.and_then(team_id);
@@ -595,19 +653,72 @@ fn match_score_hint(
         });
     }
 
-    let from_teams = team_score_from_teams(match_json, self_team.as_deref());
-    if from_teams.is_some() {
-        return from_teams;
+    if let Some(from_teams) = team_score_from_teams(match_json, self_team.as_deref(), queue_id) {
+        return Some(from_teams);
     }
 
     if is_team_deathmatch_queue(q) {
-        let players = core_game_players(match_json);
-        if let Some(s) = team_score_from_players(&players, self_team.as_deref()) {
+        if let Some(s) = team_score_from_players(players, self_team.as_deref()) {
             return Some(s);
         }
     }
 
-    chat_score.map(|s| s.to_string())
+    None
+}
+
+/// Presence score line (v7 resolveScoreHint).
+/// FFA DM: kills only — never chat ally–enemy.
+/// TDM / spike / Comp: ally–enemy from local or chat; reject local "N kills" leftovers.
+fn resolve_presence_score(
+    in_match: bool,
+    queue_id: Option<&str>,
+    local_score: Option<&str>,
+    local_kda: Option<&str>,
+    chat_score: Option<&str>,
+) -> Option<String> {
+    if !in_match {
+        return None;
+    }
+    let q = queue_id.unwrap_or("");
+    let local = local_score.map(str::trim).filter(|s| !s.is_empty());
+    let local_team = local.filter(|s| is_ally_enemy_score(s));
+    let local_kills = local.filter(|s| !is_ally_enemy_score(s));
+
+    if is_ffa_deathmatch_queue(q) {
+        if let Some(kills) = local_kills {
+            return Some(kills.to_string());
+        }
+        if let Some(kda) = local_kda {
+            let kills = kda.split('/').next().unwrap_or("0");
+            if !kills.is_empty() {
+                return Some(format!("{kills} kills"));
+            }
+        }
+        return None;
+    }
+
+    local_team
+        .map(|s| s.to_string())
+        .or_else(|| chat_score.map(|s| s.to_string()))
+}
+
+/// Back-compat helper used by unit tests — local score then chat for team modes.
+fn match_score_hint(
+    match_json: &Value,
+    self_row: Option<&Value>,
+    queue_id: Option<&str>,
+    chat_score: Option<&str>,
+) -> Option<String> {
+    let players = core_game_players(match_json);
+    let local = local_match_score(match_json, &players, self_row, queue_id);
+    let kda = self_row.and_then(kda_of);
+    resolve_presence_score(
+        true,
+        queue_id,
+        local.as_deref(),
+        kda.as_deref(),
+        chat_score,
+    )
 }
 
 fn collect_players(flat: &mut Vec<Value>, raw: &Value, team: Option<&str>) {
@@ -899,6 +1010,7 @@ fn probe_riot_presence_inner() -> AppResult<Option<RiotLive>> {
 
     let party = party_label(&private);
     let mode_chat = queue_from_private(&private);
+    let chat_queue_raw = raw_queue_from_private(&private);
     let chat_score = chat_team_score(&private);
     let map_path_chat = str_field(
         &private,
@@ -909,7 +1021,7 @@ fn probe_riot_presence_inner() -> AppResult<Option<RiotLive>> {
         .map(map_from_path)
         .unwrap_or_else(|| (String::new(), None));
 
-    let core = fetch_core_board(&lock, &puuid, chat_score.as_deref());
+    let core = fetch_core_board(&lock, &puuid);
     let pre = fetch_pregame_board(&lock, &puuid);
     let has_core = core.is_some();
     let has_pregame = pre.is_some();
@@ -929,24 +1041,43 @@ fn probe_riot_presence_inner() -> AppResult<Option<RiotLive>> {
         .and_then(|c| c.map_id.clone())
         .or_else(|| pre.as_ref().and_then(|p| p.map_id.clone()))
         .or(map_chat_id);
-    let mode = core
+    // Prefer chat queue id for score mode (v7): recovers TDM when local ModeID was misread as DM.
+    let queue_id = chat_queue_raw
         .as_ref()
-        .and_then(|c| c.mode.clone())
-        .or_else(|| pre.as_ref().and_then(|p| p.mode.clone()))
-        .or_else(|| mode_chat.clone());
-    let queue_id = core
-        .as_ref()
-        .and_then(|c| c.queue_id.clone())
+        .and_then(|raw| {
+            let labeled = queue_label(raw);
+            if is_team_deathmatch_queue(raw) || labeled.eq_ignore_ascii_case("Team Deathmatch") {
+                Some("hurm".into())
+            } else if is_ffa_deathmatch_queue(raw) || labeled.eq_ignore_ascii_case("Deathmatch") {
+                Some("deathmatch".into())
+            } else if raw.len() < 32 && raw.chars().all(|c| c.is_ascii_alphanumeric()) {
+                Some(raw.to_lowercase())
+            } else {
+                match_queue_id(&serde_json::json!({ "QueueID": raw }))
+            }
+        })
+        .or_else(|| core.as_ref().and_then(|c| c.queue_id.clone()))
         .or_else(|| pre.as_ref().and_then(|p| p.queue_id.clone()))
         .or_else(|| {
             mode_chat
                 .as_ref()
                 .map(|m| m.to_lowercase().replace(' ', ""))
         });
-    let mut score = core.as_ref().and_then(|c| c.score.clone());
-    if score.is_none() && phase == "match" {
-        score = chat_score.clone();
-    }
+    let mode = queue_id
+        .as_ref()
+        .map(|q| queue_label(q))
+        .or_else(|| mode_chat.clone())
+        .or_else(|| core.as_ref().and_then(|c| c.mode.clone()))
+        .or_else(|| pre.as_ref().and_then(|p| p.mode.clone()));
+    let local_score = core.as_ref().and_then(|c| c.score.clone());
+    let self_kda = core.as_ref().and_then(|c| c.self_kda.clone());
+    let score = resolve_presence_score(
+        phase == "match",
+        queue_id.as_deref(),
+        local_score.as_deref(),
+        self_kda.as_deref(),
+        chat_score.as_deref(),
+    );
     let chat_agent_id = str_field(
         &private,
         &[
@@ -967,18 +1098,26 @@ fn probe_riot_presence_inner() -> AppResult<Option<RiotLive>> {
         .and_then(|id| agent_name(id))
         .or_else(|| core.as_ref().and_then(|c| c.self_agent.clone()))
         .or_else(|| pre.as_ref().and_then(|p| p.self_agent.clone()));
-    let self_kda = core.as_ref().and_then(|c| c.self_kda.clone());
 
     let (details, state) = match phase.as_str() {
-        "match" => (
-            join(&[self_agent.as_deref(), map.as_deref()]).or_else(|| Some("VALORANT".into())),
-            join(&[
-                score.as_deref(),
-                party.as_deref(),
-                mode.as_deref(),
-                self_kda.as_deref(),
-            ]),
-        ),
+        "match" => {
+            // FFA DM already puts kills in score — skip duplicate KDA (v7 presence-builder).
+            let show_kda = self_kda.as_ref().filter(|_| {
+                !(queue_id
+                    .as_deref()
+                    .is_some_and(is_ffa_deathmatch_queue)
+                    && score.is_some())
+            });
+            (
+                join(&[self_agent.as_deref(), map.as_deref()]).or_else(|| Some("VALORANT".into())),
+                join(&[
+                    score.as_deref(),
+                    party.as_deref(),
+                    mode.as_deref(),
+                    show_kda.map(|s| s.as_str()),
+                ]),
+            )
+        }
         "pregame" => (
             Some(
                 join(&[self_agent.as_deref(), Some("Agent Select"), map.as_deref()])
@@ -1049,11 +1188,7 @@ struct BoardBits {
     self_kda: Option<String>,
 }
 
-fn fetch_core_board(
-    lock: &Lockfile,
-    puuid: &str,
-    chat_score: Option<&str>,
-) -> Option<BoardBits> {
+fn fetch_core_board(lock: &Lockfile, puuid: &str) -> Option<BoardBits> {
     let player = local_get(lock, &format!("/core-game/v1/players/{puuid}"))?;
     let match_id = str_field(&player, &["MatchID", "MatchId", "matchId"])?;
     let match_json = local_get(lock, &format!("/core-game/v1/matches/{match_id}"))?;
@@ -1080,12 +1215,9 @@ fn fetch_core_board(
     let self_agent = self_agent_id.as_ref().and_then(|id| agent_name(id));
     let self_kda = self_row.and_then(|p| kda_of(p));
     let queue_id = match_queue_id(&match_json);
-    let score = scoreboard
-        .as_ref()
-        .and_then(|scoreboard| {
-            match_score_hint(scoreboard, self_row, queue_id.as_deref(), chat_score)
-        })
-        .or_else(|| match_score_hint(&match_json, self_row, queue_id.as_deref(), chat_score));
+    // Team scores come from the match payload (NumPoints / RoundScore). Scoreboard is
+    // merged only for player KDA/kills — preferring scoreboard Teams poisoned TDM with 0-0.
+    let score = local_match_score(&match_json, &players_raw, self_row, queue_id.as_deref());
     let map_path = str_field(&match_json, &["MapID", "MapId", "mapId"]);
     let (map, map_id) = map_path.as_deref().map(map_from_path).unwrap_or_default();
     let mode = queue_id.as_ref().map(|q| queue_label(q));
@@ -1174,6 +1306,145 @@ mod tests {
         assert_eq!(
             match_score_hint(&match_json, Some(&self_row), Some("hurm"), None).as_deref(),
             Some("62-48")
+        );
+    }
+
+    #[test]
+    fn tdm_ignores_scoreboard_round_score_zero() {
+        // Scoreboard often has RoundScore 0-0 for TDM; NumPoints lives on match payload / chat.
+        let scoreboard = json!({
+            "Teams": [
+                { "TeamID": "Blue", "RoundScore": 0 },
+                { "TeamID": "Red", "RoundScore": 0 }
+            ],
+            "Players": [
+                { "Subject": "me", "TeamID": "Blue", "Stats": { "Kills": 9, "Deaths": 4, "Assists": 1 } }
+            ]
+        });
+        let match_json = json!({
+            "ModeID": "/Game/GameModes/TeamDeathmatch/TeamDeathmatch_PrimaryAsset",
+            "Teams": [
+                { "TeamID": "Red", "NumPoints": 55 },
+                { "TeamID": "Blue", "NumPoints": 71 }
+            ],
+            "Players": [
+                { "Subject": "me", "TeamID": "Blue" }
+            ]
+        });
+        let players = merge_players_by_subject(
+            core_game_players(&match_json),
+            &core_game_players(&scoreboard),
+        );
+        let self_row = players.iter().find(|p| subject_of(p).as_deref() == Some("me"));
+        let local = local_match_score(&match_json, &players, self_row, Some("hurm"));
+        assert_eq!(local.as_deref(), Some("71-55"));
+        // Poisoned scoreboard alone must not win over chat when match has no NumPoints path used
+        let poisoned = local_match_score(&scoreboard, &players, self_row, Some("hurm"));
+        assert!(
+            poisoned.is_none() || poisoned.as_deref() != Some("0-0"),
+            "TDM must not treat RoundScore 0-0 as the live score: {poisoned:?}"
+        );
+        assert_eq!(
+            resolve_presence_score(true, Some("hurm"), poisoned.as_deref(), None, Some("71-55"))
+                .as_deref(),
+            Some("71-55")
+        );
+    }
+
+    #[test]
+    fn tdm_recovers_chat_score_when_local_misclassified_as_dm() {
+        // Local leftover "9 kills" + chat queue hurm → team score wins (v7.9.25 regression).
+        assert_eq!(
+            resolve_presence_score(
+                true,
+                Some("hurm"),
+                Some("9 kills"),
+                Some("9/3/1"),
+                Some("40-33"),
+            )
+            .as_deref(),
+            Some("40-33")
+        );
+    }
+
+    #[test]
+    fn dm_kills_only_never_chat_team_score() {
+        assert_eq!(
+            resolve_presence_score(
+                true,
+                Some("deathmatch"),
+                Some("14 kills"),
+                Some("14/8/2"),
+                Some("3-2"),
+            )
+            .as_deref(),
+            Some("14 kills")
+        );
+        assert_eq!(
+            resolve_presence_score(true, Some("deathmatch"), None, Some("14/8/2"), Some("3-2"))
+                .as_deref(),
+            Some("14 kills")
+        );
+        assert_eq!(
+            resolve_presence_score(true, Some("deathmatch"), None, None, Some("3-2")).as_deref(),
+            None
+        );
+    }
+
+    #[test]
+    fn dm_reads_string_and_float_kills() {
+        let row = json!({
+            "Subject": "me",
+            "Stats": { "Kills": "14", "Deaths": 8.0, "Assists": 2 }
+        });
+        assert_eq!(kills_only(&row).as_deref(), Some("14 kills"));
+        assert_eq!(kda_of(&row).as_deref(), Some("14/8/2"));
+    }
+
+    #[test]
+    fn tdm_kills_sum_skips_players_without_stats() {
+        let match_json = json!({
+            "QueueID": "hurm",
+            "Players": [
+                { "Subject": "coach", "IsCoach": true },
+                {
+                    "Subject": "me",
+                    "TeamID": "Blue",
+                    "Stats": { "Kills": 10, "Deaths": 2, "Assists": 1 }
+                },
+                {
+                    "Subject": "ally",
+                    "TeamID": "Blue",
+                    "Stats": { "Kills": 5, "Deaths": 3, "Assists": 0 }
+                },
+                {
+                    "Subject": "enemy",
+                    "TeamID": "Red",
+                    "Stats": { "Kills": 12, "Deaths": 4, "Assists": 2 }
+                }
+            ]
+        });
+        let self_row = &match_json["Players"][1];
+        assert_eq!(
+            match_score_hint(&match_json, Some(self_row), Some("hurm"), None).as_deref(),
+            Some("15-12")
+        );
+    }
+
+    #[test]
+    fn comp_still_uses_round_score() {
+        let match_json = json!({
+            "QueueID": "competitive",
+            "Teams": [
+                { "TeamID": "Blue", "RoundScore": 8 },
+                { "TeamID": "Red", "RoundScore": 6 }
+            ],
+            "Players": [{ "Subject": "me", "TeamID": "Blue" }]
+        });
+        let self_row = &match_json["Players"][0];
+        assert_eq!(
+            match_score_hint(&match_json, Some(self_row), Some("competitive"), None).as_deref(),
+            Some("8-6")
         );
     }
 
