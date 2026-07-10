@@ -2,6 +2,7 @@
 -- Default-on install/usage tracking (see PRIVACY.md).
 -- Run in Supabase SQL Editor: https://supabase.com/dashboard
 
+create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pgcrypto;
 
 create table if not exists public.installs (
@@ -52,6 +53,7 @@ alter table public.installs add column if not exists last_activity_source text;
 alter table public.installs add column if not exists last_activity_seen_at timestamptz;
 alter table public.installs add column if not exists active_sections integer default 0;
 alter table public.installs add column if not exists section_overview jsonb not null default '{}'::jsonb;
+alter table public.installs add column if not exists client_heartbeat_at timestamptz;
 
 update public.installs set launch_count = 1 where launch_count is null;
 alter table public.installs alter column launch_count set default 1;
@@ -182,12 +184,18 @@ create index if not exists install_section_sources_seen_count_idx on public.inst
 comment on table public.install_sections is 'Per-install rollups by telemetry section such as app, activity, music_sync, game_sync, and coding_sync.';
 comment on table public.install_section_sources is 'Per-install rollups by section source such as player app, game provider, coding editor, or activity preset.';
 
+-- Ensure pgcrypto is available where Supabase installs extensions.
+create extension if not exists pgcrypto with schema extensions;
+create extension if not exists pgcrypto;
+
 -- IP, country, launch_count, last_seen_at on every insert/update from the app (anon REST).
+-- IMPORTANT: search_path must include `extensions` — otherwise digest() is missing and
+-- every heartbeat fails with: function digest(text, unknown) does not exist (HTTP 404).
 create or replace function public.set_install_request_metadata()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   headers json;
@@ -195,6 +203,7 @@ declare
   country_hdr text;
   region_hdr text;
   city_hdr text;
+  ip_raw text;
 begin
   begin
     headers := current_setting('request.headers', true)::json;
@@ -210,8 +219,10 @@ begin
   );
 
   if forwarded is not null and coalesce(auth.role(), '') is distinct from 'service_role' then
+    ip_raw := trim(split_part(forwarded, ',', 1));
+    -- Explicit casts: Supabase pgcrypto lives in extensions; avoid digest(text, unknown).
     new.ip_address := encode(
-      digest(trim(split_part(forwarded, ',', 1)) || ':smiley-ip-hash-v1', 'sha256'),
+      extensions.digest(convert_to(ip_raw || ':smiley-ip-hash-v1', 'UTF8'), 'sha256'::text),
       'hex'
     );
   end if;
@@ -251,7 +262,34 @@ begin
       new.launch_count := 1;
     end if;
   elsif tg_op = 'UPDATE' then
-    new.launch_count := coalesce(old.launch_count, 1) + 1;
+    -- Prefer client_heartbeat_at (set only by app heartbeats, not geo patches).
+    -- Fallback: treat geo-only patches as non-heartbeats.
+    if new.client_heartbeat_at is distinct from old.client_heartbeat_at then
+      new.launch_count := coalesce(old.launch_count, 1) + 1;
+    elsif
+      new.app_version is not distinct from old.app_version
+      and new.user_agent is not distinct from old.user_agent
+      and new.consent_version is not distinct from old.consent_version
+      and new.section_overview is not distinct from old.section_overview
+      and new.last_activity_section is not distinct from old.last_activity_section
+      and new.os_version is not distinct from old.os_version
+      and new.locale is not distinct from old.locale
+      and new.timezone is not distinct from old.timezone
+      and (
+        new.country_code is distinct from old.country_code
+        or new.country_name is distinct from old.country_name
+        or new.region is distinct from old.region
+        or new.region_name is distinct from old.region_name
+        or new.city is distinct from old.city
+        or new.isp is distinct from old.isp
+        or new.geo_timezone is distinct from old.geo_timezone
+        or new.ip_address is distinct from old.ip_address
+      )
+    then
+      new.launch_count := coalesce(old.launch_count, 1);
+    else
+      new.launch_count := coalesce(old.launch_count, 1) + 1;
+    end if;
   end if;
 
   return new;

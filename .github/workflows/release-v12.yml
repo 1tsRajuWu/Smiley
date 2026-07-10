@@ -75,12 +75,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_ANON_KEY:-}" ]; then
-            node -e "const fs=require('fs');fs.writeFileSync('Smiley.v12/src-tauri/downloads.registry.json',JSON.stringify({supabaseUrl:process.env.SUPABASE_URL.trim().replace(/\\/$/,''),supabaseAnonKey:process.env.SUPABASE_ANON_KEY.trim()}));console.log('Install registry configured for v12')"
-          else
-            echo "::warning::SUPABASE_URL / SUPABASE_ANON_KEY not set — install registry disabled in this build"
-            printf '%s\n' '{"supabaseUrl":"","supabaseAnonKey":""}' > Smiley.v12/src-tauri/downloads.registry.json
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_ANON_KEY secrets are required for install telemetry"
+            exit 1
           fi
+          node -e "const fs=require('fs');const u=process.env.SUPABASE_URL.trim().replace(/\\/$/,'');const k=process.env.SUPABASE_ANON_KEY.trim();if(!u.endsWith('.supabase.co')||!k){console.error('Invalid Supabase registry secrets');process.exit(1)}fs.writeFileSync('Smiley.v12/src-tauri/downloads.registry.json',JSON.stringify({supabaseUrl:u,supabaseAnonKey:k}));console.log('Install registry configured for v12')"
+          # Fail closed if the file is empty / missing keys
+          node -e "const d=require('./Smiley.v12/src-tauri/downloads.registry.json');if(!d.supabaseUrl||!d.supabaseAnonKey){console.error('downloads.registry.json missing credentials');process.exit(1)}"
 
       - name: Load release notes
         id: relnotes

@@ -24,6 +24,7 @@ if (!token) {
 const defaultFiles = [
   path.join(__dirname, 'install-database-schema.sql'),
   path.join(__dirname, 'migrate-v8-columns.sql'),
+  path.join(__dirname, 'migrate-fix-digest-trigger.sql'),
 ];
 const files = process.argv.length > 2
   ? process.argv.slice(2).map((p) => path.resolve(p))

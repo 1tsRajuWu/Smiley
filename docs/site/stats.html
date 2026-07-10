@@ -443,6 +443,14 @@
           <h2>By city</h2>
           <div id="cityChart"></div>
         </div>
+        <div class="card" style="margin-top:0">
+          <h2>By runtime</h2>
+          <div id="runtimeChart"></div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <h2>By channel</h2>
+          <div id="channelChart"></div>
+        </div>
       </div>
 
       <div class="charts">
@@ -517,9 +525,13 @@
                 <th data-sort="arch">Arch</th>
                 <th data-sort="os_version">OS</th>
                 <th data-sort="app_version">Version</th>
+                <th data-sort="runtime_kind">Runtime</th>
+                <th data-sort="app_channel">Channel</th>
                 <th data-sort="locale">Locale</th>
                 <th data-sort="timezone">Timezone</th>
-                <th data-sort="ip_address">IP</th>
+                <th data-sort="last_activity_section">Section</th>
+                <th data-sort="last_music_source">Music</th>
+                <th data-sort="last_game_title">Game</th>
                 <th data-sort="city">City</th>
                 <th data-sort="country_code">Country</th>
                 <th data-sort="isp">ISP</th>
@@ -835,6 +847,8 @@
       const activeSections = new Set(sectionRows.map((r) => r.section_key).filter(Boolean)).size;
       const latestSection = [...sectionRows]
         .sort((a, b) => String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || '')))[0];
+      const tauriCount = data.filter((r) => (r.runtime_kind || '').includes('tauri') || String(r.electron_version || '').includes('tauri')).length;
+      const v12Count = data.filter((r) => String(r.app_version || '').startsWith('12.')).length;
 
       $('summaryStats').innerHTML = [
         ['Total installs', total],
@@ -842,6 +856,8 @@
         ['Active (30d)', active30],
         ['Total launches', totalLaunches],
         ['Countries', countries || '—'],
+        ['v12 installs', v12Count || '—'],
+        ['Tauri runtime', tauriCount || '—'],
         ['Sections seen', activeSections || '—'],
         ['Latest section', latestSection ? sectionLabel(latestSection.section_key) : '—'],
       ].map(([label, value]) => `
@@ -858,9 +874,12 @@
       if (q) {
         list = list.filter((r) =>
           [r.install_id, r.platform, r.arch, r.app_version, r.os_version, r.electron_version,
+            r.runtime_kind, r.tauri_version, r.host_os_name, r.app_channel,
             r.locale, r.timezone, r.geo_timezone, r.channel, r.ip_address,
             r.country_code, r.country_name, r.region, r.region_name, r.city, r.isp, r.user_agent,
-            r.last_activity_section, r.last_activity_source]
+            r.last_activity_section, r.last_activity_source,
+            r.last_music_source, r.last_music_title, r.last_game_title, r.last_game_state,
+            r.last_coding_source, r.last_coding_title]
             .some((v) => String(v || '').toLowerCase().includes(q))
         );
       }
@@ -893,20 +912,29 @@
       const fields = [
         ['Install ID', row.install_id],
         ['Platform', platformLabel(row.platform)],
+        ['Host OS', row.host_os_name],
         ['Architecture', row.arch],
         ['OS version', row.os_version],
         ['App version', row.app_version],
-        ['Electron', row.electron_version],
+        ['Runtime', row.runtime_kind || (String(row.electron_version || '').includes('tauri') ? 'tauri' : 'electron')],
+        ['Tauri / Electron', row.tauri_version || row.electron_version],
+        ['Channel', row.app_channel || row.channel],
         ['Locale', row.locale],
         ['Device timezone', row.timezone],
-        ['Channel', row.channel],
-        ['IP address', row.ip_address],
+        ['Music enabled', row.music_enabled == null ? '—' : (row.music_enabled ? 'yes' : 'no')],
+        ['Game enabled', row.game_enabled == null ? '—' : (row.game_enabled ? 'yes' : 'no')],
+        ['Coding enabled', row.coding_enabled == null ? '—' : (row.coding_enabled ? 'yes' : 'no')],
+        ['Last music', row.last_music_source ? `${row.last_music_source}${row.last_music_title ? ' · ' + row.last_music_title : ''}` : '—'],
+        ['Last game', row.last_game_title ? `${row.last_game_title}${row.last_game_state ? ' · ' + row.last_game_state : ''}` : '—'],
+        ['Last coding', row.last_coding_source ? `${row.last_coding_source}${row.last_coding_title ? ' · ' + row.last_coding_title : ''}` : '—'],
+        ['IP hash', row.ip_address],
         ['Country', row.country_name ? `${row.country_name} (${row.country_code || '?'})` : row.country_code],
         ['Region', row.region_name || row.region],
         ['City', row.city],
         ['ISP', row.isp],
         ['IP timezone', row.geo_timezone],
         ['Launch count', row.launch_count ?? 1],
+        ['Client heartbeat', formatDate(row.client_heartbeat_at)],
         ['Latest section', sectionLabel(row.last_activity_section)],
         ['Latest source', row.last_activity_source],
         ['Section count', row.active_sections ?? 0],
@@ -941,11 +969,15 @@
           <td>${formatDate(r.last_seen_at)}</td>
           <td><span class="platform-pill">${platformLabel(r.platform)}</span></td>
           <td class="muted">${r.arch || '—'}</td>
-          <td class="muted" title="${r.os_version || ''}">${(r.os_version || '—').slice(0, 12)}</td>
+          <td class="muted" title="${r.host_os_name || r.os_version || ''}">${(r.host_os_name || r.os_version || '—').slice(0, 12)}</td>
           <td>${r.app_version || '—'}</td>
+          <td class="muted">${r.runtime_kind || (String(r.electron_version || '').includes('tauri') ? 'tauri' : (r.electron_version ? 'electron' : '—'))}</td>
+          <td class="muted">${r.app_channel || r.channel || '—'}</td>
           <td>${r.locale || '—'}</td>
           <td class="muted" title="${r.timezone || ''}">${(r.timezone || '—').slice(0, 14)}</td>
-          <td class="mono">${r.ip_address || '—'}</td>
+          <td class="muted">${sectionLabel(r.last_activity_section)}</td>
+          <td class="muted" title="${r.last_music_title || ''}">${(r.last_music_source || '—').slice(0, 14)}</td>
+          <td class="muted" title="${r.last_game_state || ''}">${(r.last_game_title || '—').slice(0, 16)}</td>
           <td title="${r.country_name || ''}">${r.city || '—'}</td>
           <td>${rowCountryLabel(r)}</td>
           <td class="muted" title="${r.isp || ''}">${(r.isp || '—').slice(0, 18)}</td>
@@ -968,11 +1000,15 @@
     function exportCsv() {
       const list = getFilteredRows();
       const cols = [
-        'install_id', 'platform', 'arch', 'os_version', 'app_version', 'electron_version',
-        'locale', 'timezone', 'geo_timezone', 'channel', 'ip_address',
+        'install_id', 'platform', 'arch', 'os_version', 'host_os_name', 'app_version',
+        'runtime_kind', 'tauri_version', 'electron_version', 'app_channel', 'channel',
+        'locale', 'timezone', 'geo_timezone', 'ip_address',
         'country_code', 'country_name', 'region', 'region_name', 'city', 'isp',
+        'music_enabled', 'game_enabled', 'coding_enabled',
+        'last_music_source', 'last_music_title', 'last_game_title', 'last_game_state',
+        'last_coding_source', 'last_coding_title',
         'launch_count', 'last_activity_section', 'last_activity_source', 'active_sections',
-        'user_agent', 'consent_version', 'first_seen_at', 'last_seen_at',
+        'client_heartbeat_at', 'user_agent', 'consent_version', 'first_seen_at', 'last_seen_at',
       ];
       const escape = (v) => {
         const s = String(v ?? '');
@@ -1052,6 +1088,12 @@
         renderBarChart($('archChart'), countBy(rows, 'arch'));
         renderBarChart($('countryChart'), geoChartEntries(rows, 'country_code'));
         renderBarChart($('cityChart'), geoChartEntries(rows, 'city'));
+        renderBarChart($('runtimeChart'), countBy(rows.map((r) => ({
+          runtime_kind: r.runtime_kind || (String(r.electron_version || '').includes('tauri') ? 'tauri' : (r.electron_version ? 'electron' : '(unknown)')),
+        })), 'runtime_kind'));
+        renderBarChart($('channelChart'), countBy(rows.map((r) => ({
+          app_channel: r.app_channel || r.channel || '(unknown)',
+        })), 'app_channel'));
         renderSectionBreakdown();
         renderSourceBreakdown();
         selectedId = null;

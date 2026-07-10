@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Raj (@1tsRaj)** — last updated 8 July 2026 (v7.9.28)
+**Raj (@1tsRaj)** — last updated 10 July 2026 (v12.0.12)
 
 **Applies to official Smiley builds** from [1tsRajuWu/Smiley](https://github.com/1tsRajuWu/Smiley/releases). Forks using their own backend are responsible for their own privacy policy — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -50,8 +50,15 @@ Each **official packaged** app launch may send a heartbeat to the **author's** S
 | `locale` | App UI language (e.g. `en-US`) | Localization analytics |
 | `timezone` | IANA timezone (e.g. `Asia/Kolkata`) | Coarse time region |
 | `channel` | `release` or `portable` | Install type |
+| `app_channel` | Same as channel (dashboard alias) | Install type |
+| `runtime_kind` | `tauri` or `electron` | Desktop shell |
+| `tauri_version` / `electron_version` | Runtime version string | Runtime diagnostics |
+| `host_os_name` | Friendly OS name (e.g. macOS) | Platform analytics |
 | `app_version` | Smiley version | Version adoption |
-| `user_agent` | App + Electron/OS string | Compatibility diagnostics |
+| `user_agent` | App + runtime/OS string | Compatibility diagnostics |
+| `client_heartbeat_at` | Client UTC timestamp each launch | Distinguishes heartbeats from geo patches |
+| `music_enabled`, `game_enabled`, `coding_enabled` | Feature toggles at heartbeat | Feature adoption |
+| `last_music_*`, `last_game_*`, `last_coding_*` | Latest sanitized sync labels | Feature-area analytics |
 | `launch_count` | **Server-side** increment on each heartbeat | Usage frequency |
 | `first_seen_at`, `last_seen_at` | Server timestamps | Active install tracking |
 | `consent_version` | Policy version ID | Legal compliance record |

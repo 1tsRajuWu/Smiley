@@ -15,8 +15,17 @@ Track **installed and active Smiley users**. Disclosed in [PRIVACY.md](../PRIVAC
 | `locale` | `en-US` | Device |
 | `timezone` | `Asia/Kolkata` | Device |
 | `channel` | `release` | Device |
-| `user_agent` | `Smiley/7.9.28 Electron/…` | Device |
-| `consent_version` | `2026-07-08` | Device |
+| `app_channel` | `release` | Device (alias for dashboard filters) |
+| `runtime_kind` | `tauri` / `electron` | Device |
+| `tauri_version` | `2` | Device (when Tauri) |
+| `host_os_name` | `macOS` | Device |
+| `user_agent` | `Smiley/12.0.12 Tauri/2 …` | Device |
+| `consent_version` | `2026-07-10` | Device |
+| `client_heartbeat_at` | UTC timestamp | Device (each launch; drives `launch_count`) |
+| `music_enabled` / `game_enabled` / `coding_enabled` | booleans | Device |
+| `last_music_source` / `last_music_title` / `last_music_seen_at` | music rollup | Device |
+| `last_game_title` / `last_game_state` / `last_game_seen_at` | game rollup | Device |
+| `last_coding_source` / `last_coding_title` / `last_coding_seen_at` | coding rollup | Device |
 | `ip_address` | SHA-256 hash | **Server** |
 | `country_code`, `country_name`, `region`, `region_name`, `city`, `isp`, `geo_timezone` | geo fields | IP geolocation + edge headers |
 | `launch_count` | `12` | **Server** (increments each heartbeat) |
@@ -53,6 +62,8 @@ This is intended to answer dashboard questions like install overview, usage by s
    - For **schema migrations** (GitHub Actions → *Apply Supabase schema*), the workflow **prefers `SUPABASE_ACCESS_TOKEN`** (no database password needed).
    - Optional fallback: **`SUPABASE_DB_URL`** as the full Session pooler URI, e.g. `postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-[region].pooler.supabase.com:5432/postgres`. Do **not** paste host, password, or JDBC string alone. URL-encode special characters in the password (`@` → `%40`, `#` → `%23`). No surrounding quotes. Without a valid token or URI, the workflow fails instead of skipping.
 3. Trigger [`.github/workflows/supabase-schema.yml`](../.github/workflows/supabase-schema.yml) to apply schema and backfill geo.
+
+**If heartbeats return HTTP 404 with `digest(text, unknown) does not exist`:** the live trigger is missing the Supabase `extensions` search_path. Re-run the schema workflow (applies `migrate-fix-digest-trigger.sql`) or paste that file in the SQL Editor.
 
 **Backfill existing rows:**
 

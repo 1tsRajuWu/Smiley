@@ -1,6 +1,6 @@
 [package]
 name = "smiley-v12"
-version = "12.0.11"
+version = "12.0.12"
 description = "Smiley — final native Discord Rich Presence"
 authors = ["1tsRajuWu (Raj)"]
 edition = "2021"

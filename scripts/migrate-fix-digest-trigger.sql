@@ -1,8 +1,12 @@
--- One-time migration: store SHA-256 hash of IP instead of raw IP (see SECURITY.md).
--- Run in Supabase SQL Editor after deploying app v5.0.7+.
+-- Hotfix: install heartbeats were failing with
+--   function digest(text, unknown) does not exist
+-- because pgcrypto lives in the `extensions` schema on Supabase and the
+-- trigger search_path was `public` only. Safe to re-run.
 
 create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pgcrypto;
+
+alter table public.installs add column if not exists client_heartbeat_at timestamptz;
 
 create or replace function public.set_install_request_metadata()
 returns trigger
@@ -74,6 +78,7 @@ begin
       new.launch_count := 1;
     end if;
   elsif tg_op = 'UPDATE' then
+    -- Prefer client_heartbeat_at (set only by app heartbeats, not geo patches).
     if new.client_heartbeat_at is distinct from old.client_heartbeat_at then
       new.launch_count := coalesce(old.launch_count, 1) + 1;
     elsif
@@ -106,7 +111,8 @@ begin
 end;
 $$;
 
--- Optional: hash existing raw IPs (irreversible; run once if you stored raw IPs before)
--- update public.installs
--- set ip_address = encode(digest(ip_address || ':smiley-ip-hash-v1', 'sha256'), 'hex')
--- where ip_address is not null and ip_address !~ '^[a-f0-9]{64}$';
+drop trigger if exists installs_set_request_metadata on public.installs;
+create trigger installs_set_request_metadata
+  before insert or update on public.installs
+  for each row
+  execute function public.set_install_request_metadata();

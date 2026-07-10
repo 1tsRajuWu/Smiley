@@ -131,10 +131,9 @@ impl InstallRegistry {
         let mut map = HeaderMap::new();
         let key = cfg.supabase_anon_key.trim();
         map.insert("apikey", HeaderValue::from_str(key).unwrap_or(HeaderValue::from_static("")));
-        if key.starts_with("eyJ") {
-            if let Ok(v) = HeaderValue::from_str(&format!("Bearer {key}")) {
-                map.insert(AUTHORIZATION, v);
-            }
+        // JWT anon keys and new sb_publishable_ keys both expect Bearer.
+        if let Ok(v) = HeaderValue::from_str(&format!("Bearer {key}")) {
+            map.insert(AUTHORIZATION, v);
         }
         map.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         map
@@ -402,6 +401,12 @@ fn build_install_row(
         Value::String(os_release().chars().take(64).collect()),
     );
     row.insert("electron_version".into(), Value::String("tauri-2".into()));
+    row.insert("runtime_kind".into(), Value::String("tauri".into()));
+    row.insert("tauri_version".into(), Value::String("2".into()));
+    row.insert(
+        "host_os_name".into(),
+        Value::String(host_os_name().chars().take(32).collect()),
+    );
     row.insert(
         "locale".into(),
         Value::String(locale_name().chars().take(16).collect()),
@@ -415,6 +420,13 @@ fn build_install_row(
         Value::String(launch.channel.chars().take(32).collect()),
     );
     row.insert(
+        "app_channel".into(),
+        Value::String(launch.channel.chars().take(32).collect()),
+    );
+    row.insert("music_enabled".into(), Value::Bool(launch.music_enabled));
+    row.insert("game_enabled".into(), Value::Bool(launch.game_enabled));
+    row.insert("coding_enabled".into(), Value::Bool(launch.coding_enabled));
+    row.insert(
         "user_agent".into(),
         Value::String(build_user_agent(launch)),
     );
@@ -422,7 +434,71 @@ fn build_install_row(
         "consent_version".into(),
         Value::String(CONSENT_VERSION.into()),
     );
+    row.insert(
+        "client_heartbeat_at".into(),
+        Value::String(chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)),
+    );
+
+    if let Some(music) = telemetry.sections.get("music_sync") {
+        if let Some(v) = music
+            .last_source_label
+            .as_ref()
+            .or(music.last_source_key.as_ref())
+        {
+            row.insert("last_music_source".into(), Value::String(v.chars().take(96).collect()));
+        }
+        if let Some(v) = &music.last_title {
+            row.insert("last_music_title".into(), Value::String(v.chars().take(160).collect()));
+        }
+        if let Some(v) = &music.last_seen_at {
+            row.insert("last_music_seen_at".into(), Value::String(v.clone()));
+        }
+    }
+    if let Some(game) = telemetry.sections.get("game_sync") {
+        if let Some(v) = &game.last_title {
+            row.insert("last_game_title".into(), Value::String(v.chars().take(160).collect()));
+        }
+        if let Some(v) = &game.last_state {
+            row.insert("last_game_state".into(), Value::String(v.chars().take(160).collect()));
+        }
+        if let Some(v) = &game.last_seen_at {
+            row.insert("last_game_seen_at".into(), Value::String(v.clone()));
+        }
+    }
+    if let Some(coding) = telemetry.sections.get("coding_sync") {
+        if let Some(v) = coding
+            .last_source_label
+            .as_ref()
+            .or(coding.last_source_key.as_ref())
+        {
+            row.insert("last_coding_source".into(), Value::String(v.chars().take(96).collect()));
+        }
+        if let Some(v) = &coding.last_title {
+            row.insert("last_coding_title".into(), Value::String(v.chars().take(160).collect()));
+        }
+        if let Some(v) = &coding.last_seen_at {
+            row.insert("last_coding_seen_at".into(), Value::String(v.clone()));
+        }
+    }
     row
+}
+
+fn host_os_name() -> String {
+    match std::env::consts::OS {
+        "macos" => "macOS".into(),
+        "windows" => "Windows".into(),
+        "linux" => {
+            if let Ok(raw) = fs::read_to_string("/etc/os-release") {
+                for line in raw.lines() {
+                    if let Some(rest) = line.strip_prefix("NAME=") {
+                        return rest.trim_matches('"').chars().take(32).collect();
+                    }
+                }
+            }
+            "Linux".into()
+        }
+        other => other.into(),
+    }
 }
 
 fn build_user_agent(launch: &LaunchInfo) -> String {

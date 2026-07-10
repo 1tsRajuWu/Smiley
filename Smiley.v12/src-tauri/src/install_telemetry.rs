@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 pub const SCHEMA_VERSION: u32 = 2;
-pub const CONSENT_VERSION: &str = "2026-07-08";
+pub const CONSENT_VERSION: &str = "2026-07-10";
 
 const MAX_TITLE: usize = 160;
 const MAX_STATE: usize = 160;
