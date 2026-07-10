@@ -653,6 +653,10 @@ impl App {
         if act.id.is_empty() {
             act.id = format!("custom-{}", Uuid::new_v4());
         }
+        // Always use custom- prefix so resolve / manual-slot logic stay consistent.
+        if !act.id.starts_with("custom-") {
+            act.id = format!("custom-{}", act.id);
+        }
         if act.emoji.is_empty() {
             act.emoji = "✨".into();
         }
@@ -663,7 +667,8 @@ impl App {
                 "Add a Tenor GIF URL (https://media.tenor.com/… or a tenor.com page link)".into(),
             ));
         }
-        act.gif = Some(resolve_gif_url(raw_gif)?);
+        let resolved = resolve_gif_url(raw_gif)?;
+        act.gif = Some(resolved.clone());
         act.details = act
             .details
             .chars()
@@ -681,9 +686,14 @@ impl App {
         }
         let mut cfg = self.config.lock().clone();
         cfg.custom.retain(|c| c.id != act.id);
-        cfg.custom.push(act);
+        cfg.custom.push(act.clone());
         cfg.custom.truncate(40);
-        self.persist_config(cfg)
+        let saved = self.persist_config(cfg)?;
+        crate::log_file::append(&format!(
+            "custom: added {} gif={}",
+            act.id, resolved
+        ));
+        Ok(saved)
     }
 
     /// Music may drive Discord only when the Listening activity is explicitly selected.
@@ -1075,15 +1085,24 @@ impl App {
     }
 
     pub fn remove_custom(&self, id: &str) -> AppResult<Config> {
+        if id.trim().is_empty() {
+            return Err(AppError::Msg("Missing custom activity id".into()));
+        }
         let mut cfg = self.config.lock().clone();
+        let before = cfg.custom.len();
         cfg.custom.retain(|c| c.id != id);
+        if cfg.custom.len() == before {
+            return Err(AppError::Msg(format!("Custom activity not found: {id}")));
+        }
         cfg.favorites.retain(|x| x != id);
         cfg.recents.retain(|x| x != id);
         if cfg.last_activity_id.as_deref() == Some(id) {
             cfg.last_activity_id = None;
         }
         // Intentional list mutation — bypass save_config guard that restores a cleared custom list.
-        self.persist_config(cfg)
+        let saved = self.persist_config(cfg)?;
+        crate::log_file::append(&format!("custom: removed {id}"));
+        Ok(saved)
     }
 
     pub fn get_status(&self) -> Status {
@@ -1170,8 +1189,41 @@ mod tests {
         is_explicit_gaming_slot, is_gaming_activity, is_manual_presence_slot,
         live_presence_poll_interval_for, stable_started_at,
     };
-    use crate::models::{Config, Status};
+    use crate::models::{Config, CustomActivity, Status};
+    use crate::tenor::{resolve_gif_url, sanitize_gif_url};
     use std::time::Duration;
+
+    #[test]
+    fn custom_cdn_gif_with_query_resolves_like_v7() {
+        let raw = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif?hh=200&ww=200";
+        let out = resolve_gif_url(raw).expect("resolve");
+        assert_eq!(
+            out,
+            "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif"
+        );
+        assert!(sanitize_gif_url(&out).is_some());
+    }
+
+    #[test]
+    fn custom_activity_sanitize_keeps_tenor_gif() {
+        let mut cfg = Config::default();
+        cfg.custom.push(CustomActivity {
+            id: "custom-test".into(),
+            details: "Eating".into(),
+            state: "Tacos".into(),
+            emoji: "🌮".into(),
+            gif: Some(
+                "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif?hh=1".into(),
+            ),
+        });
+        let cfg = cfg.sanitize();
+        assert_eq!(cfg.custom.len(), 1);
+        assert_eq!(
+            cfg.custom[0].gif.as_deref(),
+            Some("https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif")
+        );
+        assert!(is_manual_presence_slot(&cfg.custom[0].id));
+    }
 
     #[test]
     fn manual_presence_slots_block_gaming_probe() {

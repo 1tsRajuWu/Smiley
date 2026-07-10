@@ -1,5 +1,10 @@
 import { api, errMsg, esc } from "./api";
 import {
+  createEmptyCustomTile,
+  renderTerminalRow,
+  renderVisualTile,
+} from "./customActivities";
+import {
   previewGifInput,
   resetCustomForm,
   setGifPreview,
@@ -36,6 +41,9 @@ export class AppController {
   private pollTimer = 0;
   private toastTimer = 0;
   private mounted = false;
+  /** Two-step delete arm (avoids flaky `window.confirm` in WKWebView). */
+  private pendingDeleteId: string | null = null;
+  private pendingDeleteTimer = 0;
 
   private lastGridKey = "";
   private lastGameProbe = 0;
@@ -76,7 +84,9 @@ export class AppController {
   destroy() {
     window.clearInterval(this.pollTimer);
     window.clearInterval(this.clockTimer);
+    window.clearTimeout(this.pendingDeleteTimer);
     this.root.onclick = null;
+    this.root.onkeydown = null;
     this.root.oninput = null;
     this.root.onsubmit = null;
     this.mounted = false;
@@ -112,15 +122,51 @@ export class AppController {
     this.mount();
   }
 
-  /** Single delegated click handler — every button uses data-act. */
+  /**
+   * Single delegated click bus — v7 priority: delete → fav → pick → other.
+   * Cards use `data-act` on the outer wrap (not a nested button under an overlay).
+   */
   private bind() {
     this.root.onclick = (e) => {
-      const t = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-act]");
+      const raw = e.target as HTMLElement | null;
+      if (!raw || !this.root.contains(raw)) return;
+
+      // Explicit action priority (mirrors v7 activity-grid delegation).
+      const del = raw.closest<HTMLElement>("[data-act='del-custom']");
+      if (del && this.root.contains(del)) {
+        e.preventDefault();
+        e.stopPropagation();
+        void this.deleteCustom(del.dataset.id || "");
+        return;
+      }
+      const fav = raw.closest<HTMLElement>("[data-act='fav']");
+      if (fav && this.root.contains(fav)) {
+        e.preventDefault();
+        e.stopPropagation();
+        void this.toggleFav(fav.dataset.id || "");
+        return;
+      }
+      const pick = raw.closest<HTMLElement>("[data-act='pick']");
+      if (pick && this.root.contains(pick)) {
+        e.preventDefault();
+        void this.pick(pick.dataset.id || "");
+        return;
+      }
+
+      const t = raw.closest<HTMLElement>("[data-act]");
       if (!t || !this.root.contains(t)) return;
       const act = t.dataset.act;
-      if (!act) return;
+      if (!act || act === "search") return;
       e.preventDefault();
       void this.handle(act, t, e);
+    };
+
+    this.root.onkeydown = (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const t = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-act='pick']");
+      if (!t || !this.root.contains(t)) return;
+      e.preventDefault();
+      void this.pick(t.dataset.id || "");
     };
 
     this.root.oninput = (e) => {
@@ -157,7 +203,7 @@ export class AppController {
     };
   }
 
-  private async handle(act: string, el: HTMLElement, ev: MouseEvent) {
+  private async handle(act: string, el: HTMLElement, _ev: MouseEvent) {
     switch (act) {
       case "connect":
         return this.connect();
@@ -228,16 +274,10 @@ export class AppController {
         return;
       case "pick":
         return this.pick(el.dataset.id || "");
-      case "fav": {
-        ev.stopPropagation();
-        ev.preventDefault();
+      case "fav":
         return this.toggleFav(el.dataset.id || "");
-      }
-      case "del-custom": {
-        ev.stopPropagation();
-        ev.preventDefault();
+      case "del-custom":
         return this.deleteCustom(el.dataset.id || "");
-      }
       case "search":
         return;
       default:
@@ -514,69 +554,37 @@ export class AppController {
       this.activeCategory === "custom" && !q.trim() && list.length === 0;
 
     if (showCreateTile) {
-      grid.innerHTML = `<button type="button" class="tile-create" data-act="create">＋ Create your first custom activity</button>`;
+      grid.innerHTML = createEmptyCustomTile();
       return;
     }
 
     if (skin === "terminal") {
       grid.innerHTML = list
-        .map((a) => {
-          const on = a.id === active ? " on" : "";
-          const star = favs.has(a.id) ? "*" : " ";
-          const custom = a.category === "custom";
-          const safeId = esc(a.id);
-          return `<div class="row-wrap${on}">
-            <button type="button" class="row${on}" data-act="pick" data-id="${safeId}">
-              <code>${star}${safeId}</code><span>${esc(a.emoji)} ${esc(a.details)}</span><em>${esc(a.state)}</em>
-            </button>
-            ${custom ? `<button type="button" class="tile-del" data-act="del-custom" data-id="${safeId}" aria-label="Delete custom activity" title="Delete">×</button>` : ""}
-          </div>`;
-        })
+        .map((a) =>
+          renderTerminalRow(a, {
+            active: a.id === active,
+            isFav: favs.has(a.id),
+          }),
+        )
         .join("");
       return;
     }
 
     grid.innerHTML = list
-      .map((a) => {
-        const on = a.id === active ? " on" : "";
-        const favOn = favs.has(a.id) ? " on" : "";
-        const color = /^#[0-9a-fA-F]{3,8}$/.test(a.color) ? a.color : "#888";
-        const gif = esc(a.gif);
-        const custom = a.category === "custom";
-        const safeId = esc(a.id);
-        const label = `${a.emoji} ${a.details}`.trim();
-        const img = staticTiles
-          ? `<img data-src="${gif}" alt="" loading="lazy" decoding="async" class="tile-gif tile-still" />`
-          : `<img src="${gif}" alt="" loading="lazy" decoding="async" class="tile-gif" />`;
-        return `<div class="tile-wrap${on}" style="--c:${color}">
-          <button type="button" class="tile${on}" data-act="pick" data-id="${safeId}" aria-label="${esc(label)}">
-            ${img}
-            <div class="tile-fade">
-              <b>${esc(label)}</b>
-              <i>${esc(a.state)}</i>
-            </div>
-          </button>
-          <div class="tile-actions">
-            <button
-              type="button"
-              class="tile-fav${favOn}"
-              data-act="fav"
-              data-id="${safeId}"
-              aria-label="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
-              title="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
-            >${favs.has(a.id) ? "★" : "☆"}</button>
-            ${custom
-              ? `<button type="button" class="tile-del" data-act="del-custom" data-id="${safeId}" aria-label="Delete custom activity" title="Delete custom activity">×</button>`
-              : ""}
-          </div>
-        </div>`;
-      })
+      .map((a) =>
+        renderVisualTile(a, {
+          active: a.id === active,
+          favOn: favs.has(a.id),
+          isFav: favs.has(a.id),
+          staticTiles,
+        }),
+      )
       .join("");
 
     // Lazy-load GIFs on hover when static tiles mode is on
     if (staticTiles) {
       grid.querySelectorAll<HTMLImageElement>("img.tile-still").forEach((img) => {
-        const tile = img.closest(".tile");
+        const tile = img.closest(".tile-wrap");
         if (!tile) return;
         tile.addEventListener(
           "mouseenter",
@@ -797,6 +805,13 @@ export class AppController {
       this.toast("Connect Discord first");
       return;
     }
+    // Customs use the same set_activity path as built-ins — verify the id resolves first.
+    const act = findActivity(this.snap, id);
+    if (!act) {
+      this.toast("Unknown activity");
+      this.pushLog(`error unknown ${id}`);
+      return;
+    }
     const g = ++this.pickGeneration;
     this.actionInProgress = true;
     try {
@@ -808,7 +823,7 @@ export class AppController {
         ...this.snap.config.recents.filter((x) => x !== id),
       ].slice(0, this.snap.config.maxRecents);
       this.paint();
-      this.toast("Presence updated");
+      this.toast(act.category === "custom" ? `Custom: ${act.details}` : "Presence updated");
       this.pushLog(`set ${id}`);
     } catch (e) {
       this.toast(errMsg(e));
@@ -831,7 +846,18 @@ export class AppController {
 
   private async deleteCustom(id: string) {
     if (!id || !this.snap) return;
-    if (!confirm("Delete this custom activity?")) return;
+    // Two-step confirm — `window.confirm` is unreliable in some WKWebView builds.
+    if (this.pendingDeleteId !== id) {
+      this.pendingDeleteId = id;
+      window.clearTimeout(this.pendingDeleteTimer);
+      this.pendingDeleteTimer = window.setTimeout(() => {
+        if (this.pendingDeleteId === id) this.pendingDeleteId = null;
+      }, 3500);
+      this.toast("Click × again to confirm delete");
+      return;
+    }
+    this.pendingDeleteId = null;
+    window.clearTimeout(this.pendingDeleteTimer);
     try {
       const cfg = await api.removeCustom(id);
       if (this.snap.status.activityId === id) {
@@ -839,14 +865,13 @@ export class AppController {
       }
       this.snap = await api.snapshot();
       this.snap.config = cfg;
-      if (this.activeCategory === "custom" && cfg.custom.length === 0) {
-        // stay on My Activities so the create tile appears
-      }
       this.lastGridKey = "";
       this.paint();
       this.toast("Deleted");
+      this.pushLog(`deleted ${id}`);
     } catch (e) {
       this.toast(errMsg(e));
+      this.pushLog(`error ${errMsg(e)}`);
     }
   }
 
@@ -923,10 +948,12 @@ export class AppController {
   }
 
   private async saveCustom() {
+    if (this.actionInProgress) return;
     const form = this.$<HTMLElement>("createForm");
     const details = this.$<HTMLInputElement>("caDetails")?.value.trim() ?? "";
     if (!details) {
       this.toast("Details required");
+      this.$<HTMLInputElement>("caDetails")?.focus();
       return;
     }
     const rawGif = this.$<HTMLInputElement>("caGif")?.value.trim() ?? "";
@@ -935,6 +962,7 @@ export class AppController {
       this.$<HTMLInputElement>("caGif")?.focus();
       return;
     }
+    this.actionInProgress = true;
     let gif: string;
     try {
       gif = await api.resolveGifUrl(rawGif);
@@ -942,6 +970,7 @@ export class AppController {
       const input = this.$<HTMLInputElement>("caGif");
       if (input) input.value = gif;
     } catch (e) {
+      this.actionInProgress = false;
       this.toast(errMsg(e));
       return;
     }
@@ -960,13 +989,18 @@ export class AppController {
       this.$<HTMLDialogElement>("createDlg")?.close();
       this.paint();
       this.toast("Activity added");
+      this.pushLog(`custom added (${cfg.custom.length})`);
       // Auto-apply so Discord shows the new custom GIF immediately (v7-like flow).
       const added = cfg.custom[cfg.custom.length - 1];
+      this.actionInProgress = false;
       if (added?.id && this.snap.status.connected) {
         await this.pick(added.id);
       }
     } catch (e) {
       this.toast(errMsg(e));
+      this.pushLog(`error ${errMsg(e)}`);
+    } finally {
+      this.actionInProgress = false;
     }
   }
 

@@ -96,23 +96,29 @@ html.calm .wallpaper::after {
 }
 .skin > *:not(.wallpaper) { position: relative; z-index: 1; }
 
-/* Shared tiles */
+/* Shared tiles — v7 card model: outer wrap applies; fav/del are sibling hit targets only. */
 .tile-wrap {
   position: relative;
   min-width: 0;
+  cursor: pointer;
+  outline: none;
+}
+.tile-wrap:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+  border-radius: 14px;
 }
 .tile {
-  position: relative; z-index: 0; appearance: none; border: 0; padding: 0; overflow: hidden;
-  border-radius: 14px; background: #1a1512; text-align: left; cursor: pointer;
+  position: relative; z-index: 0; overflow: hidden;
+  border-radius: 14px; background: #1a1512; text-align: left;
   box-shadow: 0 0 0 1px rgba(255,255,255,.08);
   transition: transform .12s ease, box-shadow .12s ease;
   width: 100%;
   display: block;
   aspect-ratio: 1;
+  pointer-events: none; /* clicks go to .tile-wrap[data-act=pick] */
 }
-.tile:hover { transform: translateY(-2px); }
 .tile-wrap:hover .tile { transform: translateY(-2px); }
-.tile.on { box-shadow: 0 0 0 2px var(--accent); }
+.tile-wrap.on .tile, .tile.on { box-shadow: 0 0 0 2px var(--accent); }
 .tile img,
 .tile img.tile-gif,
 .tile img.tile-still {
@@ -130,29 +136,20 @@ html.calm .wallpaper::after {
 }
 .tile-fade b { display: block; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-fade i { display: block; font-style: normal; opacity: .7; font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Overlay captures only fav/del hits — rest of the card still picks the activity. */
-.tile-actions {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-}
+/* Fav/del are real buttons sized to their hit box only — never a full-card overlay. */
 .tile-fav {
-  position: absolute; top: 8px; right: 8px; z-index: 2; width: 32px; height: 32px; border-radius: 50%;
+  position: absolute; top: 8px; right: 8px; z-index: 5; width: 32px; height: 32px; border-radius: 50%;
   display: grid; place-items: center; background: rgba(0,0,0,.55); color: #fff; font-size: .9rem;
   appearance: none; border: 0; padding: 0; cursor: pointer;
-  pointer-events: auto;
 }
 .tile-fav.on { color: #ffd166; }
 .tile-del {
-  position: absolute; top: 8px; left: 8px; z-index: 3; width: 32px; height: 32px; border-radius: 50%;
+  position: absolute; top: 8px; left: 8px; z-index: 5; width: 32px; height: 32px; border-radius: 50%;
   display: grid; place-items: center; background: rgba(0,0,0,.6); color: #ff8e8e; font-size: 1.1rem;
-  opacity: 1; transition: opacity .12s ease, background .12s ease;
+  opacity: 1; transition: background .12s ease;
   appearance: none; border: 0; padding: 0; cursor: pointer;
-  pointer-events: auto;
 }
 .tile-del:hover { background: rgba(120,0,0,.75); }
-.tile-wrap:hover .tile-del, .row:hover .tile-del { opacity: 1; }
 .tile img.tile-still { filter: saturate(.85); }
 
 .field-hint {

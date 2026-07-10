@@ -223,7 +223,7 @@ function dialogs(_prefix: string): string {
     </form>
   </dialog>
   <dialog class="dlg" id="createDlg">
-    <form method="dialog" class="dlg-card slim" id="createForm">
+    <form class="dlg-card slim" id="createForm">
       <header>
         <h2>New activity</h2>
         <button type="button" data-act="close-create" aria-label="Close">✕</button>
@@ -235,7 +235,8 @@ function dialogs(_prefix: string): string {
         ${createGif}
       </div>
       <footer>
-        <button type="submit" class="primary">Add</button>
+        <button type="button" data-act="close-create">Cancel</button>
+        <button type="button" class="primary" data-act="save-custom">Add</button>
       </footer>
     </form>
   </dialog>`;
