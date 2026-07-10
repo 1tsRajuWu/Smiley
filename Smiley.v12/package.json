@@ -1,7 +1,7 @@
 {
   "name": "smiley-v12",
   "private": true,
-  "version": "12.0.9",
+  "version": "12.0.10",
   "productName": "Smiley",
   "description": "Smiley — final native Discord Rich Presence (Rust + Tauri)",
   "type": "module",

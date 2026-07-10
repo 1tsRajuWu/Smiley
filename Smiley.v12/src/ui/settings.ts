@@ -160,7 +160,7 @@ export function settingsMarkup(): string {
           <label><span>Max recents</span><input id="cfgMaxRecents" type="number" min="3" max="20" /></label>
         </div>
         <p class="cfg-label">Updates</p>
-        <p class="cfg-version" id="cfgVersion">v12.0.9</p>
+        <p class="cfg-version" id="cfgVersion">v12.0.10</p>
         <button type="button" class="cfg-update-btn" data-act="check-updates">Check for updates</button>
         <p class="cfg-hint" id="cfgUpdateStatus" hidden></p>
       </section>

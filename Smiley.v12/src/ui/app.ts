@@ -140,6 +140,7 @@ export class AppController {
       }
       if (form.id === "createForm") {
         e.preventDefault();
+        void this.saveCustom();
         return;
       }
       if (form.dataset.act === "cmd-form" || form.classList.contains("tm-prompt")) {
@@ -555,17 +556,19 @@ export class AppController {
               <i>${esc(a.state)}</i>
             </div>
           </button>
-          <button
-            type="button"
-            class="tile-fav${favOn}"
-            data-act="fav"
-            data-id="${safeId}"
-            aria-label="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
-            title="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
-          >${favs.has(a.id) ? "★" : "☆"}</button>
-          ${custom
-            ? `<button type="button" class="tile-del" data-act="del-custom" data-id="${safeId}" aria-label="Delete custom activity" title="Delete custom activity">×</button>`
-            : ""}
+          <div class="tile-actions">
+            <button
+              type="button"
+              class="tile-fav${favOn}"
+              data-act="fav"
+              data-id="${safeId}"
+              aria-label="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
+              title="${favs.has(a.id) ? "Remove favorite" : "Add favorite"}"
+            >${favs.has(a.id) ? "★" : "☆"}</button>
+            ${custom
+              ? `<button type="button" class="tile-del" data-act="del-custom" data-id="${safeId}" aria-label="Delete custom activity" title="Delete custom activity">×</button>`
+              : ""}
+          </div>
         </div>`;
       })
       .join("");
@@ -836,6 +839,9 @@ export class AppController {
       }
       this.snap = await api.snapshot();
       this.snap.config = cfg;
+      if (this.activeCategory === "custom" && cfg.custom.length === 0) {
+        // stay on My Activities so the create tile appears
+      }
       this.lastGridKey = "";
       this.paint();
       this.toast("Deleted");
@@ -924,15 +930,20 @@ export class AppController {
       return;
     }
     const rawGif = this.$<HTMLInputElement>("caGif")?.value.trim() ?? "";
-    let gif: string | null = null;
-    if (rawGif) {
-      try {
-        gif = await api.resolveGifUrl(rawGif);
-        if (form) setGifPreview(form, "caGifPreview", "caGifStatus", gif);
-      } catch (e) {
-        this.toast(errMsg(e));
-        return;
-      }
+    if (!rawGif) {
+      this.toast("Add a Tenor GIF URL first");
+      this.$<HTMLInputElement>("caGif")?.focus();
+      return;
+    }
+    let gif: string;
+    try {
+      gif = await api.resolveGifUrl(rawGif);
+      if (form) setGifPreview(form, "caGifPreview", "caGifStatus", gif);
+      const input = this.$<HTMLInputElement>("caGif");
+      if (input) input.value = gif;
+    } catch (e) {
+      this.toast(errMsg(e));
+      return;
     }
     try {
       const cfg = await api.addCustom({
@@ -949,6 +960,11 @@ export class AppController {
       this.$<HTMLDialogElement>("createDlg")?.close();
       this.paint();
       this.toast("Activity added");
+      // Auto-apply so Discord shows the new custom GIF immediately (v7-like flow).
+      const added = cfg.custom[cfg.custom.length - 1];
+      if (added?.id && this.snap.status.connected) {
+        await this.pick(added.id);
+      }
     } catch (e) {
       this.toast(errMsg(e));
     }

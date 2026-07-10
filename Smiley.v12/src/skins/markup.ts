@@ -202,7 +202,7 @@ function dialogs(_prefix: string): string {
       <img alt="GIF preview" />
       <code class="gif-resolved"></code>
     </div>
-    <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or any Tenor page URL — click <strong>Test</strong> to preview before saving.</p>
+    <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or any Tenor page URL — click <strong>Test</strong> to preview before saving. A GIF is required.</p>
     <div class="gif-sources" role="group" aria-label="Find GIFs">
       <span class="gif-sources-label">Browse:</span>
       <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>
@@ -229,13 +229,13 @@ function dialogs(_prefix: string): string {
         <button type="button" data-act="close-create" aria-label="Close">✕</button>
       </header>
       <div class="dlg-body">
-        <label><span>Details</span><input id="caDetails" maxlength="128" placeholder="What you're doing" /></label>
+        <label><span>Details</span><input id="caDetails" maxlength="128" placeholder="What you're doing" required /></label>
         <label><span>State</span><input id="caState" maxlength="128" placeholder="Optional subtitle" /></label>
         <label><span>Emoji</span><input id="caEmoji" maxlength="8" value="✨" /></label>
         ${createGif}
       </div>
       <footer>
-        <button type="button" class="primary" data-act="save-custom">Add</button>
+        <button type="submit" class="primary">Add</button>
       </footer>
     </form>
   </dialog>`;

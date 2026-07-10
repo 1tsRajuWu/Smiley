@@ -102,7 +102,7 @@ html.calm .wallpaper::after {
   min-width: 0;
 }
 .tile {
-  position: relative; appearance: none; border: 0; padding: 0; overflow: hidden;
+  position: relative; z-index: 0; appearance: none; border: 0; padding: 0; overflow: hidden;
   border-radius: 14px; background: #1a1512; text-align: left; cursor: pointer;
   box-shadow: 0 0 0 1px rgba(255,255,255,.08);
   transition: transform .12s ease, box-shadow .12s ease;
@@ -130,15 +130,23 @@ html.calm .wallpaper::after {
 }
 .tile-fade b { display: block; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-fade i { display: block; font-style: normal; opacity: .7; font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Overlay captures only fav/del hits — rest of the card still picks the activity. */
+.tile-actions {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
 .tile-fav {
-  position: absolute; top: 8px; right: 8px; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
-  display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-size: .85rem;
+  position: absolute; top: 8px; right: 8px; z-index: 2; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(0,0,0,.55); color: #fff; font-size: .9rem;
   appearance: none; border: 0; padding: 0; cursor: pointer;
+  pointer-events: auto;
 }
 .tile-fav.on { color: #ffd166; }
 .tile-del {
-  position: absolute; top: 8px; left: 8px; z-index: 3; width: 28px; height: 28px; border-radius: 50%;
-  display: grid; place-items: center; background: rgba(0,0,0,.55); color: #ff8e8e; font-size: 1rem;
+  position: absolute; top: 8px; left: 8px; z-index: 3; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(0,0,0,.6); color: #ff8e8e; font-size: 1.1rem;
   opacity: 1; transition: opacity .12s ease, background .12s ease;
   appearance: none; border: 0; padding: 0; cursor: pointer;
   pointer-events: auto;

@@ -22,7 +22,7 @@ export function gifFieldMarkup(inputId: string, previewId: string, statusId: str
       <img alt="GIF preview" />
       <code class="gif-resolved"></code>
     </div>
-    <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or any Tenor page URL — click <strong>Test</strong> to preview before saving.</p>
+    <p class="field-hint">Paste a direct <code>media.tenor.com</code> link or any Tenor page URL — click <strong>Test</strong> to preview before saving. A GIF is required.</p>
     <div class="gif-sources" role="group" aria-label="Find GIFs">
       <span class="gif-sources-label">Browse:</span>
       <button type="button" class="gif-source" data-act="open-gif-source" data-url="https://tenor.com/" title="Open Tenor to find GIFs">Tenor</button>

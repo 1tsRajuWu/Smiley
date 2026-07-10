@@ -393,21 +393,30 @@ impl App {
 
         if !paused {
             if Self::in_quiet_hours(&cfg_snap) && cfg_snap.idle_enabled {
-                self.apply_idle()?;
+                if let Err(e) = self.apply_idle() {
+                    let mut s = self.status.lock();
+                    s.activity_id = None;
+                    return Err(e);
+                }
             } else {
                 let rpc_type = if id == "listening" {
                     Some(RpcActivityType::Listening)
                 } else {
                     None
                 };
-                self.discord.set(self.build_presence_typed(
+                if let Err(e) = self.discord.set(self.build_presence_typed(
                     &details,
                     &state,
                     &emoji,
                     &gif,
                     Some(start),
                     rpc_type,
-                ))?;
+                )) {
+                    // Roll back slot so a failed Discord push doesn't strand presence.
+                    let mut s = self.status.lock();
+                    s.activity_id = None;
+                    return Err(e);
+                }
             }
         }
 
@@ -634,7 +643,7 @@ impl App {
             cfg.favorites.push(id.into());
             cfg.favorites.truncate(40);
         }
-        self.save_config(cfg)
+        self.persist_config(cfg)
     }
 
     pub fn add_custom(&self, mut act: CustomActivity) -> AppResult<Config> {
@@ -647,14 +656,14 @@ impl App {
         if act.emoji.is_empty() {
             act.emoji = "✨".into();
         }
-        if let Some(gif) = act.gif.as_ref() {
-            let trimmed = gif.trim();
-            if trimmed.is_empty() {
-                act.gif = None;
-            } else {
-                act.gif = Some(resolve_gif_url(trimmed)?);
-            }
+        // v7 parity: a custom activity needs a Tenor GIF (no local file picker in v12).
+        let raw_gif = act.gif.as_deref().unwrap_or("").trim();
+        if raw_gif.is_empty() {
+            return Err(AppError::Msg(
+                "Add a Tenor GIF URL (https://media.tenor.com/… or a tenor.com page link)".into(),
+            ));
         }
+        act.gif = Some(resolve_gif_url(raw_gif)?);
         act.details = act
             .details
             .chars()
@@ -667,6 +676,9 @@ impl App {
             .filter(|c| !c.is_control())
             .take(128)
             .collect();
+        if act.state.trim().is_empty() {
+            act.state = "Custom".into();
+        }
         let mut cfg = self.config.lock().clone();
         cfg.custom.retain(|c| c.id != act.id);
         cfg.custom.push(act);

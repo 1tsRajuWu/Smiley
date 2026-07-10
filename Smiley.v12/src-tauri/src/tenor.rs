@@ -12,7 +12,7 @@ pub const GIF_FALLBACK: &str =
 const FETCH_UA: &str =
     "Mozilla/5.0 (compatible; Smiley/12; +https://github.com/1tsRajuWu/Smiley)";
 
-/// Strip paste noise (HTML wrappers, trailing punctuation).
+/// Strip paste noise (HTML wrappers, trailing punctuation, query/hash).
 pub fn clean_pasted_url(raw: &str) -> String {
     let mut u = raw.trim().trim_matches('"').trim_matches('\'').to_string();
     if u.starts_with('<') && u.ends_with('>') {
@@ -21,7 +21,17 @@ pub fn clean_pasted_url(raw: &str) -> String {
     if let Some(idx) = u.find(' ') {
         u.truncate(idx);
     }
+    // Browser "Copy image address" often appends ?hh=&ww= size params — Discord wants a clean .gif.
+    if let Some(idx) = u.find(['?', '#']) {
+        u.truncate(idx);
+    }
     u.trim_end_matches(&['.', ',', ';', ')', ']', '}'][..]).to_string()
+}
+
+/// True when the URL path (not query) ends with `.gif` — matches v7 `/\.gif(\?|#|$)/`.
+fn path_ends_with_gif(url: &str) -> bool {
+    let path = url.split(['?', '#']).next().unwrap_or(url);
+    path.to_ascii_lowercase().ends_with(".gif")
 }
 
 /// Normalize Tenor CDN variants (media1, media2, http) to Discord-safe HTTPS.
@@ -70,6 +80,9 @@ fn is_valid_tenor_gif_url(url: &str) -> bool {
     if u.contains(['"', '\'', '<', '>', ' ']) {
         return false;
     }
+    if !path_ends_with_gif(u) {
+        return false;
+    }
     let host = u
         .strip_prefix("https://")
         .and_then(|rest| rest.split('/').next());
@@ -85,7 +98,7 @@ fn is_valid_tenor_gif_url(url: &str) -> bool {
 /// Tenor HTTPS only — Discord-safe + matches CSP img-src.
 pub fn sanitize_gif_url(url: &str) -> Option<String> {
     let u = normalize_gif_url(url);
-    if is_valid_tenor_gif_url(&u) && u.ends_with(".gif") {
+    if is_valid_tenor_gif_url(&u) {
         Some(u)
     } else {
         None
@@ -154,7 +167,8 @@ fn extract_gif_from_json_script(html: &str) -> Option<String> {
 
 fn pick_gif_from_media_formats(root: &serde_json::Value) -> Option<String> {
     let formats = root.get("media_formats")?;
-    for key in ["tinygif", "gif", "mediumgif", "nanogif"] {
+    // Prefer medium/full GIF for Discord large_image clarity; tinygif last.
+    for key in ["mediumgif", "gif", "tinygif", "nanogif"] {
         if let Some(url) = formats
             .get(key)
             .and_then(|f| f.get("url"))
@@ -382,6 +396,27 @@ mod tests {
         assert_eq!(
             clean_pasted_url(r#"<https://media.tenor.com/abc/def.gif>"#),
             "https://media.tenor.com/abc/def.gif"
+        );
+    }
+
+    #[test]
+    fn accepts_cdn_gif_with_query_params() {
+        let raw = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif?hh=200&ww=200";
+        let out = sanitize_gif_url(raw).expect("query-string CDN GIF must sanitize");
+        assert_eq!(
+            out,
+            "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif"
+        );
+        assert_eq!(resolve_gif_url(raw).expect("resolve"), out);
+    }
+
+    #[test]
+    fn accepts_cdn_gif_with_hash() {
+        let raw = "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif#t";
+        let out = sanitize_gif_url(raw).expect("hash CDN GIF must sanitize");
+        assert_eq!(
+            out,
+            "https://media.tenor.com/BsoscZUHi-gAAAAM/sleepy-sleep.gif"
         );
     }
 
